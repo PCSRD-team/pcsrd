@@ -1,0 +1,407 @@
+
+### audit_logs (7)
+  id                             int64                        NN PK
+  actor_id                       uuid                         FK->profiles.id
+  action                         text                         NN
+  entity_type                    text                         NN
+  entity_id                      uuid                         
+  diff                           jsonb                        
+  created_at                     timestamp with time zone     NN def=now()
+
+### form_submissions (17)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  reference                      text                         NN
+  type                           public.submission_type       {partnership,contact,volunteer,job,complaint,fraud_report} NN
+  is_sensitive                   boolean                      NN def=False
+  locale                         public.locale_code           {ar,en} NN def=ar
+  payload                        jsonb                        
+  payload_encrypted              bytea                        
+  payload_key_id                 text                         
+  attachment_path                text                         
+  state                          public.submission_state      {new,in_progress,handled,archived} NN def=new
+  handled_by                     uuid                         FK->profiles.id
+  handled_at                     timestamp with time zone     
+  internal_note                  text                         
+  ip_hash                        text                         
+  user_agent                     text                         
+  created_at                     timestamp with time zone     NN def=now()
+  purge_after                    date                         NN
+
+### impact_metrics (17)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  label_ar                       text                         NN
+  label_en                       text                         
+  value                          numeric                      NN
+  unit                           text                         NN
+  display_prefix                 text                         
+  program_id                     uuid                         FK->programs.id
+  project_id                     uuid                         FK->projects.id
+  period_start                   date                         NN
+  period_end                     date                         NN
+  status                         public.metric_status         {target,reported,verified} NN
+  verification_source            text                         
+  is_public                      boolean                      NN def=False
+  is_featured                    boolean                      NN def=False
+  display_order                  int32                        NN def=0
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+
+### media_assets (20)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  kind                           public.media_kind            {image,video,document} NN def=image
+  bucket                         text                         NN def=media
+  path                           text                         NN
+  mime_type                      text                         NN
+  file_size                      int32                        NN
+  width                          int32                        
+  height                         int32                        
+  blur_data_url                  text                         
+  alt_ar                         text                         NN
+  alt_en                         text                         
+  caption_ar                     text                         
+  caption_en                     text                         
+  credit                         text                         
+  consent                        public.consent_status        {not_required,obtained,pending} NN def=not_required
+  consent_reference              text                         
+  has_identifiable_minors        boolean                      NN def=False
+  exif_stripped                  boolean                      NN def=False
+  created_at                     timestamp with time zone     NN def=now()
+  created_by                     uuid                         FK->profiles.id
+
+### organization_settings (36)
+  id                             boolean                      NN PK def=True
+  legal_name_ar                  text                         NN
+  legal_name_en                  text                         NN
+  short_name_ar                  text                         NN
+  short_name_en                  text                         NN
+  acronym                        text                         NN
+  alternate_names                text[]                       NN
+  founded_year                   int32                        NN
+  license_number                 text                         NN
+  license_authority_ar           text                         
+  license_authority_en           text                         
+  legal_form_ar                  text                         
+  legal_form_en                  text                         
+  vision_ar                      text                         
+  vision_en                      text                         
+  mission_ar                     text                         
+  mission_en                     text                         
+  core_values                    jsonb                        NN
+  principles                     jsonb                        NN
+  strategic_objectives           jsonb                        NN
+  primary_phone                  text                         
+  additional_phones              text[]                       NN
+  whatsapp_number                text                         
+  email                          text                         
+  address_ar                     text                         
+  address_en                     text                         
+  address_is_public              boolean                      NN def=False
+  office_hours_ar                text                         
+  office_hours_en                text                         
+  socials                        jsonb                        NN
+  official_channels              jsonb                        NN
+  logo_primary_id                uuid                         FK->media_assets.id
+  logo_mono_id                   uuid                         FK->media_assets.id
+  default_og_id                  uuid                         FK->media_assets.id
+  updated_at                     timestamp with time zone     NN def=now()
+  updated_by                     uuid                         FK->profiles.id
+
+### pages (21)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
+  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
+  published_at                   timestamp with time zone     
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+  created_by                     uuid                         FK->profiles.id
+  updated_by                     uuid                         FK->profiles.id
+  slug_ar                        text                         NN
+  slug_en                        text                         NN
+  key                            text                         NN
+  title_ar                       text                         NN
+  title_en                       text                         
+  body_ar                        jsonb                        
+  body_en                        jsonb                        
+  seo_title_ar                   text                         
+  seo_title_en                   text                         
+  seo_description_ar             text                         
+  seo_description_en             text                         
+  og_media_id                    uuid                         FK->media_assets.id
+  no_index                       boolean                      NN def=False
+
+### partners (17)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  name_ar                        text                         NN
+  name_en                        text                         
+  type                           public.partner_type          {implementing,donor,network,membership} NN
+  membership_level               public.membership_level      {full,observer} 
+  sector_ar                      text                         
+  sector_en                      text                         
+  description_ar                 text                         
+  description_en                 text                         
+  website                        text                         
+  logo_media_id                  uuid                         FK->media_assets.id
+  logo_permission                public.logo_permission       {granted,pending,denied} NN def=pending
+  is_featured                    boolean                      NN def=False
+  display_order                  int32                        NN def=0
+  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+
+### people (13)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  name_ar                        text                         NN
+  name_en                        text                         
+  role_ar                        text                         NN
+  role_en                        text                         
+  category                       public.person_category       {board,executive,staff} NN def=board
+  bio_ar                         text                         
+  bio_en                         text                         
+  photo_media_id                 uuid                         FK->media_assets.id
+  is_public                      boolean                      NN def=False
+  display_order                  int32                        NN def=0
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+
+### post_media (3)
+  post_id                        uuid                         NN PK FK->posts.id
+  media_id                       uuid                         NN PK FK->media_assets.id
+  display_order                  int32                        NN def=0
+
+### posts (28)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
+  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
+  published_at                   timestamp with time zone     
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+  created_by                     uuid                         FK->profiles.id
+  updated_by                     uuid                         FK->profiles.id
+  slug_ar                        text                         NN
+  slug_en                        text                         NN
+  category                       public.post_category         {news,statement,announcement} NN def=news
+  title_ar                       text                         NN
+  title_en                       text                         
+  excerpt_ar                     text                         
+  excerpt_en                     text                         
+  body_ar                        jsonb                        
+  body_en                        jsonb                        
+  program_id                     uuid                         FK->programs.id
+  project_id                     uuid                         FK->projects.id
+  hero_media_id                  uuid                         FK->media_assets.id
+  expires_at                     timestamp with time zone     
+  is_featured                    boolean                      NN def=False
+  seo_title_ar                   text                         
+  seo_title_en                   text                         
+  seo_description_ar             text                         
+  seo_description_en             text                         
+  og_media_id                    uuid                         FK->media_assets.id
+  no_index                       boolean                      NN def=False
+
+### profiles (9)
+  id                             uuid                         NN PK
+  email                          text                         NN
+  full_name                      text                         NN
+  role                           public.user_role             {admin,content_manager,editor} NN def=editor
+  can_view_sensitive             boolean                      NN def=False
+  is_active                      boolean                      NN def=True
+  last_login_at                  timestamp with time zone     
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+
+### program_media (3)
+  program_id                     uuid                         NN PK FK->programs.id
+  media_id                       uuid                         NN PK FK->media_assets.id
+  display_order                  int32                        NN def=0
+
+### programs (41)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
+  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
+  published_at                   timestamp with time zone     
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+  created_by                     uuid                         FK->profiles.id
+  updated_by                     uuid                         FK->profiles.id
+  slug_ar                        text                         NN
+  slug_en                        text                         NN
+  key                            public.program_key           {protection,humanitarian_response,early_recovery} NN
+  title_ar                       text                         NN
+  title_en                       text                         
+  tagline_ar                     text                         
+  tagline_en                     text                         
+  accent_token                   text                         NN def=--color-prog-protection
+  introduction_ar                jsonb                        
+  introduction_en                jsonb                        
+  rationale_ar                   jsonb                        
+  rationale_en                   jsonb                        
+  strategic_objective_ar         text                         
+  strategic_objective_en         text                         
+  specific_objectives            jsonb                        NN
+  key_interventions              jsonb                        NN
+  sustainability_ar              jsonb                        
+  sustainability_en              jsonb                        
+  impact_statement_ar            jsonb                        
+  impact_statement_en            jsonb                        
+  eligibility_ar                 jsonb                        
+  eligibility_en                 jsonb                        
+  how_to_access_ar               jsonb                        
+  how_to_access_en               jsonb                        
+  target_groups                  public.target_group[]        NN
+  hero_media_id                  uuid                         FK->media_assets.id
+  display_order                  int32                        NN def=0
+  seo_title_ar                   text                         
+  seo_title_en                   text                         
+  seo_description_ar             text                         
+  seo_description_en             text                         
+  og_media_id                    uuid                         FK->media_assets.id
+  no_index                       boolean                      NN def=False
+
+### project_media (3)
+  project_id                     uuid                         NN PK FK->projects.id
+  media_id                       uuid                         NN PK FK->media_assets.id
+  display_order                  int32                        NN def=0
+
+### project_partners (3)
+  project_id                     uuid                         NN PK FK->projects.id
+  partner_id                     uuid                         NN PK FK->partners.id
+  role                           public.partner_role          {implementing,donor} NN PK
+
+### projects (36)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
+  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
+  published_at                   timestamp with time zone     
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+  created_by                     uuid                         FK->profiles.id
+  updated_by                     uuid                         FK->profiles.id
+  slug_ar                        text                         NN
+  slug_en                        text                         NN
+  program_id                     uuid                         NN FK->programs.id
+  title_ar                       text                         NN
+  title_en                       text                         
+  summary_ar                     text                         
+  summary_en                     text                         
+  objective_ar                   jsonb                        
+  objective_en                   jsonb                        
+  activities_ar                  jsonb                        
+  activities_en                  jsonb                        
+  outcomes_ar                    jsonb                        
+  outcomes_en                    jsonb                        
+  project_state                  public.project_status        {planned,active,completed} NN def=active
+  start_date                     date                         
+  end_date                       date                         
+  governorates                   public.governorate[]         NN
+  localities                     text[]                       NN
+  themes                         public.theme_tag[]           NN
+  hero_media_id                  uuid                         FK->media_assets.id
+  is_featured                    boolean                      NN def=False
+  source_note                    text                         
+  seo_title_ar                   text                         
+  seo_title_en                   text                         
+  seo_description_ar             text                         
+  seo_description_en             text                         
+  og_media_id                    uuid                         FK->media_assets.id
+  no_index                       boolean                      NN def=False
+
+### publications (20)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
+  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
+  published_at                   timestamp with time zone     
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+  created_by                     uuid                         FK->profiles.id
+  updated_by                     uuid                         FK->profiles.id
+  slug_ar                        text                         NN
+  slug_en                        text                         NN
+  type                           public.publication_type      {report,policy,profile,strategy,evaluation,other} NN def=report
+  title_ar                       text                         NN
+  title_en                       text                         
+  description_ar                 text                         
+  description_en                 text                         
+  file_ar_id                     uuid                         FK->media_assets.id
+  file_en_id                     uuid                         FK->media_assets.id
+  published_year                 int32                        
+  is_featured                    boolean                      NN def=False
+  display_order                  int32                        NN def=0
+
+### redirects (5)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  source_path                    text                         NN
+  destination_path               text                         NN
+  status_code                    int32                        NN def=308
+  created_at                     timestamp with time zone     NN def=now()
+
+### stories (33)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
+  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
+  published_at                   timestamp with time zone     
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+  created_by                     uuid                         FK->profiles.id
+  updated_by                     uuid                         FK->profiles.id
+  slug_ar                        text                         NN
+  slug_en                        text                         NN
+  program_id                     uuid                         FK->programs.id
+  project_id                     uuid                         FK->projects.id
+  title_ar                       text                         NN
+  title_en                       text                         
+  summary_ar                     text                         
+  summary_en                     text                         
+  body_ar                        jsonb                        
+  body_en                        jsonb                        
+  quote_text_ar                  text                         
+  quote_text_en                  text                         
+  quote_attribution_ar           text                         
+  quote_attribution_en           text                         
+  subject_anonymized             boolean                      NN def=True
+  consent_obtained               boolean                      NN def=False
+  consent_reference              text                         
+  hero_media_id                  uuid                         FK->media_assets.id
+  is_featured                    boolean                      NN def=False
+  seo_title_ar                   text                         
+  seo_title_en                   text                         
+  seo_description_ar             text                         
+  seo_description_en             text                         
+  og_media_id                    uuid                         FK->media_assets.id
+  no_index                       boolean                      NN def=False
+
+### story_media (3)
+  story_id                       uuid                         NN PK FK->stories.id
+  media_id                       uuid                         NN PK FK->media_assets.id
+  display_order                  int32                        NN def=0
+
+### vacancies (30)
+  id                             uuid                         NN PK def=gen_random_uuid()
+  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
+  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
+  published_at                   timestamp with time zone     
+  created_at                     timestamp with time zone     NN def=now()
+  updated_at                     timestamp with time zone     NN def=now()
+  created_by                     uuid                         FK->profiles.id
+  updated_by                     uuid                         FK->profiles.id
+  slug_ar                        text                         NN
+  slug_en                        text                         NN
+  type                           public.vacancy_type          {job,volunteer} NN def=job
+  title_ar                       text                         NN
+  title_en                       text                         
+  location_ar                    text                         
+  location_en                    text                         
+  employment_type                text                         
+  description_ar                 jsonb                        
+  description_en                 jsonb                        
+  requirements_ar                jsonb                        
+  requirements_en                jsonb                        
+  deadline                       date                         NN
+  application_method             text                         NN def=form
+  application_email              text                         
+  posted_at                      date                         NN def=CURRENT_DATE
+  seo_title_ar                   text                         
+  seo_title_en                   text                         
+  seo_description_ar             text                         
+  seo_description_en             text                         
+  og_media_id                    uuid                         FK->media_assets.id
+  no_index                       boolean                      NN def=False
