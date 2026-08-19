@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  body { margin:0; background:#E5E2DA; font-family:'IBM Plex Sans Arabic', system-ui, sans-serif; }
+  a { color:#254284; text-underline-offset:3px; }
+  a:hover { color:#B87B12; }
+  * { box-sizing:border-box; }
+</style>
+</helmet>
+
+<div style="padding:72px 64px 140px; display:flex; flex-direction:column; gap:110px; background:#E5E2DA; min-height:100vh">
+
+  <section style="display:flex; flex-direction:column; gap:32px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; max-width:1180px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">13 — ADMIN CMS</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">ARABIC ONLY · RTL · force-dynamic · noindex</span>
+    </div>
+    <div style="max-width:1180px; background:#FBFAF6; border:1px solid #D8D3C7; border-inline-start:4px solid #254284; padding:26px 30px">
+      <p style="margin:0; font-size:16px; line-height:1.7; color:#3B4560">The admin is Arabic-only, as specified: the staff who use it work in Arabic, and a bilingual admin doubles the surface for no gain. The content inside it is still bilingual — that is a different axis, and it is carried by one component, <strong>the bilingual field</strong>, which shows both locales side by side with the correct <span style="font-family:'IBM Plex Mono',monospace; font-size:14px">dir</span> per input.</p>
+      <p style="margin:12px 0 0; font-size:16px; line-height:1.7; color:#3B4560">Two visual departures from the public site, both deliberate. Density goes up — this is a tool, not a document, and a content manager scanning forty projects needs rows, not cards. And shadow is permitted here on genuinely floating layers (dialog, sheet, dropdown), which the public site never has.</p>
+    </div>
+
+    <div style="display:flex; gap:56px; align-items:flex-start; flex-wrap:wrap">
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">13.1 · DASHBOARD · 1600</div>
+        <div data-screen-label="Admin dashboard" dir="rtl" lang="ar" style="width:1600px; background:#F2EFE7; border:1px solid #C9C3B4; display:flex; font-size:16px; line-height:1.7; color:#3B4560">
+
+          <aside style="width:260px; flex:none; background:#14213F; color:#C9CFDE; padding:20px 0; display:flex; flex-direction:column">
+            <div style="padding:0 20px 18px; border-bottom:1px solid #3B4560; display:flex; align-items:center; gap:12px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:38px; height:38px; object-fit:contain; background:#FBFAF6; border-radius:50%" />
+              <div>
+                <div style="font-size:14.5px; font-weight:600; color:#FBFAF6">لوحة التحكم</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; color:#8FA0C4" dir="ltr">PCSRD CMS</div>
+              </div>
+            </div>
+            <nav style="padding:16px 12px; display:flex; flex-direction:column; gap:22px; flex:1">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:#8FA0C4; padding:0 8px 8px" dir="ltr">OVERVIEW</div>
+                <a href="#" style="display:block; font-size:15px; font-weight:600; color:#14213F; background:#DD991C; border-radius:5px; padding:10px 12px; text-decoration:none">الرئيسية</a>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:#8FA0C4; padding:0 8px 8px" dir="ltr">CONTENT</div>
+                <div style="display:flex; flex-direction:column; gap:2px">
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">البرامج</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px; display:flex; justify-content:space-between"><span>المشاريع</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8FA0C4" dir="ltr">41</span></a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px; display:flex; justify-content:space-between"><span>الأخبار</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8FA0C4" dir="ltr">63</span></a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">القصص</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الوظائف</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الصفحات</a>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:#8FA0C4; padding:0 8px 8px" dir="ltr">DATA</div>
+                <div style="display:flex; flex-direction:column; gap:2px">
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">مؤشرات الأثر</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الشركاء</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الأشخاص</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">المنشورات</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">مكتبة الوسائط</a>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:#8FA0C4; padding:0 8px 8px" dir="ltr">INBOX</div>
+                <div style="display:flex; flex-direction:column; gap:2px">
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px; display:flex; justify-content:space-between; align-items:center"><span>الرسائل</span><span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; color:#14213F; background:#DD991C; border-radius:9px; padding:1px 8px" dir="ltr">7</span></a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px; display:flex; justify-content:space-between; align-items:center"><span>الشكاوى السرّية</span><span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; color:#FBFAF6; background:#A32B2B; border-radius:9px; padding:1px 8px" dir="ltr">2</span></a>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:#8FA0C4; padding:0 8px 8px" dir="ltr">SETTINGS</div>
+                <div style="display:flex; flex-direction:column; gap:2px">
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">بيانات المؤسسة</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">التحويلات</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">المستخدمون</a>
+                  <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">سجل التدقيق</a>
+                </div>
+              </div>
+            </nav>
+            <div style="padding:16px 20px 0; border-top:1px solid #3B4560; display:flex; align-items:center; gap:12px">
+              <div style="width:36px; height:36px; border-radius:50%; background:#254284; color:#FBFAF6; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600">م</div>
+              <div style="flex:1">
+                <div style="font-size:14px; color:#FBFAF6">[اسم المستخدم]</div>
+                <div style="font-size:12px; color:#8FA0C4">مدير محتوى</div>
+              </div>
+            </div>
+          </aside>
+
+          <div style="flex:1; min-width:0">
+            <div style="background:#FBFAF6; border-bottom:1px solid #D8D3C7; padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; gap:24px">
+              <div style="display:flex; align-items:center; gap:10px; font-size:14.5px; color:#8A8272">
+                <span style="color:#14213F; font-weight:500">الرئيسية</span>
+              </div>
+              <div style="display:flex; align-items:center gap:12px; gap:12px">
+                <input placeholder="بحث سريع…" style="font-family:inherit; font-size:14.5px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:9px 14px; width:280px" />
+                <a href="#" target="_blank" style="font-size:14.5px; color:#254284; text-decoration:none; border:1px solid #C9C3B4; border-radius:6px; padding:9px 14px">عرض الموقع ↗</a>
+              </div>
+            </div>
+
+            <div style="padding:28px 32px 40px">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:20px">
+                <h1 style="margin:0; font-size:28px; font-weight:600; color:#14213F">صباح الخير</h1>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#8A8272" dir="ltr">[DD MMM YYYY · HH:MM]</div>
+              </div>
+
+              <div style="margin-top:24px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px">
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:22px 24px">
+                  <div style="display:flex; align-items:baseline; justify-content:space-between">
+                    <div style="font-size:15px; font-weight:600; color:#14213F">رسائل جديدة</div>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272" dir="ltr">LAST 7 DAYS</span>
+                  </div>
+                  <div style="margin-top:14px; display:flex; align-items:baseline; gap:8px">
+                    <span style="font-size:38px; font-weight:600; color:#254284; line-height:1; font-variant-numeric:tabular-nums" dir="ltr">7</span>
+                    <span style="font-size:14.5px; color:#5A6478">بحاجة إلى متابعة</span>
+                  </div>
+                  <div style="margin-top:16px; border-top:1px solid #D8D3C7; padding-top:12px; display:flex; flex-direction:column; gap:7px; font-size:14.5px">
+                    <div style="display:flex; justify-content:space-between"><span>شراكة</span><span style="font-family:'IBM Plex Mono',monospace" dir="ltr">3</span></div>
+                    <div style="display:flex; justify-content:space-between"><span>تواصل عام</span><span style="font-family:'IBM Plex Mono',monospace" dir="ltr">2</span></div>
+                    <div style="display:flex; justify-content:space-between"><span>تطوع</span><span style="font-family:'IBM Plex Mono',monospace" dir="ltr">2</span></div>
+                  </div>
+                  <a href="#" style="display:inline-block; margin-top:14px; font-size:14.5px; font-weight:600; color:#254284; text-decoration:none">افتح الصندوق ←</a>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:22px 24px">
+                  <div style="font-size:15px; font-weight:600; color:#14213F">حالة المحتوى</div>
+                  <div style="margin-top:14px; display:flex; flex-direction:column; gap:9px; font-size:14.5px">
+                    <div style="display:flex; justify-content:space-between; align-items:center"><span>مسوّدات</span><span style="font-family:'IBM Plex Mono',monospace; font-size:15px; color:#14213F" dir="ltr">12</span></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center"><span>قيد المراجعة</span><span style="font-family:'IBM Plex Mono',monospace; font-size:15px; color:#B3591B" dir="ltr">4</span></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center"><span>منشور</span><span style="font-family:'IBM Plex Mono',monospace; font-size:15px; color:#1F6B54" dir="ltr">118</span></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center"><span>مؤرشف</span><span style="font-family:'IBM Plex Mono',monospace; font-size:15px; color:#8A8272" dir="ltr">31</span></div>
+                  </div>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; border-top:3px solid #B3591B; padding:22px 24px">
+                  <div style="font-size:15px; font-weight:600; color:#14213F">ينتهي قريباً</div>
+                  <div style="margin-top:14px; display:flex; flex-direction:column; gap:12px">
+                    <div style="display:flex; gap:10px; align-items:flex-start">
+                      <span style="width:8px; height:8px; background:#B3591B; border-radius:50%; margin-top:7px; flex:none"></span>
+                      <div>
+                        <div style="font-size:14.5px; color:#14213F">[المسمى الوظيفي — منسّق/ة مشروع]</div>
+                        <div style="font-size:13px; color:#8A8272">يُغلق بعد ٣ أيام</div>
+                      </div>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:flex-start">
+                      <span style="width:8px; height:8px; background:#B3591B; border-radius:50%; margin-top:7px; flex:none"></span>
+                      <div>
+                        <div style="font-size:14.5px; color:#14213F">[إعلان — تنتهي صلاحيته]</div>
+                        <div style="font-size:13px; color:#8A8272">بعد ٥ أيام</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:22px 24px">
+                  <div style="font-size:15px; font-weight:600; color:#14213F">فجوات الترجمة</div>
+                  <div style="margin-top:14px; display:flex; align-items:baseline; gap:8px">
+                    <span style="font-size:38px; font-weight:600; color:#B3591B; line-height:1; font-variant-numeric:tabular-nums" dir="ltr">9</span>
+                    <span style="font-size:14.5px; color:#5A6478">عنصراً منشوراً بالعربية فقط</span>
+                  </div>
+                  <p style="margin:12px 0 0; font-size:13.5px; line-height:1.7; color:#8A8272">تُعرض هذه العناصر في النسخة الإنجليزية داخل إشعار «الترجمة قادمة» مع <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px" dir="ltr">noindex</span>.</p>
+                  <a href="#" style="display:inline-block; margin-top:12px; font-size:14.5px; font-weight:600; color:#254284; text-decoration:none">اعرض القائمة ←</a>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:22px 24px">
+                  <div style="font-size:15px; font-weight:600; color:#14213F">وسائط بحاجة إلى مراجعة</div>
+                  <div style="margin-top:14px; display:flex; flex-direction:column; gap:9px; font-size:14.5px">
+                    <div style="display:flex; justify-content:space-between"><span>بلا نص بديل إنجليزي</span><span style="font-family:'IBM Plex Mono',monospace" dir="ltr">23</span></div>
+                    <div style="display:flex; justify-content:space-between; color:#A32B2B"><span>أطفال يمكن التعرف عليهم بلا موافقة</span><span style="font-family:'IBM Plex Mono',monospace; font-weight:600" dir="ltr">2</span></div>
+                  </div>
+                  <div style="margin-top:14px; border:1px solid #E0C4C4; background:#FBF0F0; padding:12px 14px; font-size:13.5px; line-height:1.7; color:#3B4560">الصورتان تمنعان نشر أي عنصر يستخدمهما حتى تُوثَّق الموافقة.</div>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:22px 24px">
+                  <div style="font-size:15px; font-weight:600; color:#14213F">آخر النشاط</div>
+                  <div style="margin-top:12px; display:flex; flex-direction:column; gap:0">
+                    <div style="padding:9px 0; border-bottom:1px solid #E3DED2; font-size:14px; display:flex; justify-content:space-between; gap:12px"><span>[المستخدم] نشر مشروعاً</span><span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">10:42</span></div>
+                    <div style="padding:9px 0; border-bottom:1px solid #E3DED2; font-size:14px; display:flex; justify-content:space-between; gap:12px"><span>[المستخدم] حدّث خبراً</span><span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">09:15</span></div>
+                    <div style="padding:9px 0; font-size:14px; display:flex; justify-content:space-between; gap:12px"><span>[المستخدم] رفع ٤ صور</span><span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">أمس</span></div>
+                  </div>
+                  <a href="#" style="display:inline-block; margin-top:12px; font-size:14.5px; font-weight:600; color:#254284; text-decoration:none">سجل التدقيق ←</a>
+                </div>
+              </div>
+              <p style="margin:22px 0 0; font-size:14px; color:#8A8272">لا رسوم بيانية في اللوحة: كل بطاقة تقابل إجراءً يمكن لأحدهم تنفيذه اليوم. إحصاءات الزيارات تُقرأ من لوحة التحليلات المرتبطة، ولا تُعاد بناؤها هنا.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">13.2 · PROJECTS TABLE · 1600</div>
+        <div data-screen-label="Admin projects" dir="rtl" lang="ar" style="width:1600px; background:#F2EFE7; border:1px solid #C9C3B4; display:flex; font-size:16px; line-height:1.7; color:#3B4560">
+          <aside style="width:260px; flex:none; background:#14213F; color:#C9CFDE; padding:20px 0">
+            <div style="padding:0 20px 18px; border-bottom:1px solid #3B4560; display:flex; align-items:center; gap:12px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:38px; height:38px; object-fit:contain; background:#FBFAF6; border-radius:50%" />
+              <div style="font-size:14.5px; font-weight:600; color:#FBFAF6">لوحة التحكم</div>
+            </div>
+            <nav style="padding:16px 12px; display:flex; flex-direction:column; gap:2px">
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الرئيسية</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">البرامج</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#14213F; background:#DD991C; border-radius:5px; padding:10px 12px; text-decoration:none; display:flex; justify-content:space-between"><span>المشاريع</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12px" dir="ltr">41</span></a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الأخبار</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">القصص</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الوظائف</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">مكتبة الوسائط</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px; display:flex; justify-content:space-between; align-items:center"><span>الرسائل</span><span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; color:#14213F; background:#DD991C; border-radius:9px; padding:1px 8px" dir="ltr">7</span></a>
+            </nav>
+          </aside>
+
+          <div style="flex:1; min-width:0">
+            <div style="background:#FBFAF6; border-bottom:1px solid #D8D3C7; padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; gap:24px">
+              <div style="display:flex; align-items:center; gap:10px; font-size:14.5px; color:#8A8272">
+                <a href="#" style="color:#5A6478; text-decoration:none">الرئيسية</a><span style="color:#C9C3B4">←</span><span style="color:#14213F; font-weight:500">المشاريع</span>
+              </div>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:10px 20px; text-decoration:none">مشروع جديد</a>
+            </div>
+
+            <div style="padding:24px 32px 40px">
+              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+                <input placeholder="ابحث في العناوين والملخصات…" style="font-family:inherit; font-size:15px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:11px 14px; flex:1; min-width:260px" />
+                <select style="font-family:inherit; font-size:15px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:11px 12px"><option>كل البرامج</option></select>
+                <select style="font-family:inherit; font-size:15px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:11px 12px"><option>كل الحالات</option></select>
+                <select style="font-family:inherit; font-size:15px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:11px 12px"><option>كل السنوات</option></select>
+              </div>
+
+              <div style="margin-top:14px; background:#FEF7E7; border:1px solid #EBD9AE; padding:11px 16px; display:flex; align-items:center; justify-content:space-between; gap:20px">
+                <div style="font-size:14.5px; color:#3B4560">تم تحديد <span style="font-family:'IBM Plex Mono',monospace; font-weight:600" dir="ltr">3</span> مشاريع</div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap">
+                  <button style="font-family:inherit; font-size:14px; color:#14213F; background:#FBFAF6; border:1px solid #C9C3B4; border-radius:5px; padding:8px 14px">نشر</button>
+                  <button style="font-family:inherit; font-size:14px; color:#14213F; background:#FBFAF6; border:1px solid #C9C3B4; border-radius:5px; padding:8px 14px">إلى المراجعة</button>
+                  <button style="font-family:inherit; font-size:14px; color:#14213F; background:#FBFAF6; border:1px solid #C9C3B4; border-radius:5px; padding:8px 14px">أرشفة</button>
+                  <button style="font-family:inherit; font-size:14px; color:#A32B2B; background:#FBFAF6; border:1px solid #E0C4C4; border-radius:5px; padding:8px 14px">حذف</button>
+                </div>
+              </div>
+
+              <div style="margin-top:16px; background:#FBFAF6; border:1px solid #D8D3C7">
+                <div style="display:grid; grid-template-columns:44px minmax(0,1fr) 150px 130px 130px 150px 120px; gap:16px; padding:13px 18px; border-bottom:1px solid #D8D3C7; background:#F2EFE7; font-size:12.5px; font-weight:600; color:#5A6478">
+                  <div><span style="width:17px; height:17px; border:1px solid #C9C3B4; border-radius:3px; display:inline-block; background:#FFFFFF"></span></div>
+                  <div>العنوان</div><div>البرنامج</div><div>الحالة</div><div>الترجمة</div><div>آخر تحديث</div><div></div>
+                </div>
+                <div style="display:grid; grid-template-columns:44px minmax(0,1fr) 150px 130px 130px 150px 120px; gap:16px; padding:15px 18px; border-bottom:1px solid #E3DED2; align-items:center; background:#FEF7E7">
+                  <div><span style="width:17px; height:17px; border:1px solid #254284; border-radius:3px; display:inline-block; background:#254284; color:#FBFAF6; font-size:12px; text-align:center; line-height:16px">✓</span></div>
+                  <div>
+                    <div style="font-size:16px; font-weight:600; color:#14213F">[عنوان المشروع الأول]</div>
+                    <div style="margin-top:3px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">/projects/[slug-en]</div>
+                  </div>
+                  <div style="font-size:14.5px">الحماية</div>
+                  <div><span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; background:#EFF6F3; padding:2px 9px; border-radius:3px">منشور</span></div>
+                  <div><span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; padding:2px 9px; border-radius:3px">مترجم</span></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#5A6478" dir="ltr">12 MAR 2025</div>
+                  <div style="display:flex; gap:12px; font-size:14px"><a href="#" style="color:#254284; text-decoration:none">تحرير</a><a href="#" style="color:#5A6478; text-decoration:none">⋯</a></div>
+                </div>
+                <div style="display:grid; grid-template-columns:44px minmax(0,1fr) 150px 130px 130px 150px 120px; gap:16px; padding:15px 18px; border-bottom:1px solid #E3DED2; align-items:center">
+                  <div><span style="width:17px; height:17px; border:1px solid #C9C3B4; border-radius:3px; display:inline-block; background:#FFFFFF"></span></div>
+                  <div>
+                    <div style="font-size:16px; font-weight:600; color:#14213F">[عنوان مشروع ثانٍ أطول قليلاً لاختبار السطر]</div>
+                    <div style="margin-top:3px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">/projects/[slug-en]</div>
+                  </div>
+                  <div style="font-size:14.5px">الاستجابة الإنسانية</div>
+                  <div><span style="font-size:12.5px; color:#B3591B; border:1px solid #E8CDB6; background:#FBF3EC; padding:2px 9px; border-radius:3px">قيد المراجعة</span></div>
+                  <div><span style="font-size:12.5px; color:#B3591B; border:1px solid #E8CDB6; padding:2px 9px; border-radius:3px">جزئية</span></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#5A6478" dir="ltr">11 MAR 2025</div>
+                  <div style="display:flex; gap:12px; font-size:14px"><a href="#" style="color:#254284; text-decoration:none">تحرير</a><a href="#" style="color:#5A6478; text-decoration:none">⋯</a></div>
+                </div>
+                <div style="display:grid; grid-template-columns:44px minmax(0,1fr) 150px 130px 130px 150px 120px; gap:16px; padding:15px 18px; border-bottom:1px solid #E3DED2; align-items:center">
+                  <div><span style="width:17px; height:17px; border:1px solid #C9C3B4; border-radius:3px; display:inline-block; background:#FFFFFF"></span></div>
+                  <div>
+                    <div style="font-size:16px; font-weight:600; color:#14213F">[عنوان مشروع ثالث]</div>
+                    <div style="margin-top:3px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">/projects/[slug-en]</div>
+                  </div>
+                  <div style="font-size:14.5px">التعافي المبكر</div>
+                  <div><span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px">مسوّدة</span></div>
+                  <div><span style="font-size:12.5px; color:#8A8272; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px">عربي فقط</span></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#5A6478" dir="ltr">08 MAR 2025</div>
+                  <div style="display:flex; gap:12px; font-size:14px"><a href="#" style="color:#254284; text-decoration:none">تحرير</a><a href="#" style="color:#5A6478; text-decoration:none">⋯</a></div>
+                </div>
+                <div style="display:grid; grid-template-columns:44px minmax(0,1fr) 150px 130px 130px 150px 120px; gap:16px; padding:15px 18px; align-items:center; opacity:.65">
+                  <div><span style="width:17px; height:17px; border:1px solid #C9C3B4; border-radius:3px; display:inline-block; background:#FFFFFF"></span></div>
+                  <div>
+                    <div style="font-size:16px; font-weight:600; color:#5A6478">[عنوان مشروع مؤرشف]</div>
+                    <div style="margin-top:3px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">/projects/[slug-en]</div>
+                  </div>
+                  <div style="font-size:14.5px">الحماية</div>
+                  <div><span style="font-size:12.5px; color:#8A8272; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px">مؤرشف</span></div>
+                  <div><span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; padding:2px 9px; border-radius:3px">مترجم</span></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#5A6478" dir="ltr">02 JAN 2024</div>
+                  <div style="display:flex; gap:12px; font-size:14px"><a href="#" style="color:#254284; text-decoration:none">تحرير</a><a href="#" style="color:#5A6478; text-decoration:none">⋯</a></div>
+                </div>
+              </div>
+
+              <div style="margin-top:18px; display:flex; align-items:center; justify-content:space-between; gap:20px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272" dir="ltr">1—4 OF 41</div>
+                <nav style="display:flex; gap:8px; align-items:center">
+                  <span style="font-size:14.5px; color:#C9C3B4; border:1px solid #D8D3C7; border-radius:6px; padding:8px 14px; background:#FBFAF6">السابق</span>
+                  <span style="font-size:14.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:8px 14px">١</span>
+                  <a href="#" style="font-size:14.5px; color:#14213F; border:1px solid #D8D3C7; border-radius:6px; padding:8px 14px; text-decoration:none; background:#FBFAF6">٢</a>
+                  <a href="#" style="font-size:14.5px; color:#14213F; border:1px solid #D8D3C7; border-radius:6px; padding:8px 14px; text-decoration:none; background:#FBFAF6">التالي</a>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:32px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; max-width:1180px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">14 — PROJECT EDITOR</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">ELEVEN ENTITIES SHARE THIS SHAPE</span>
+    </div>
+    <p style="margin:0; max-width:96ch; font-size:16px; line-height:1.7; color:#3B4560">The generic form layer is drawn once, on the hardest entity. Every field type in the system appears here: bilingual text, slug, relation, enum, enum-multi, date range, bilingual rich text, media, media-multi, SEO. The other ten entities are field configs against this same layout, not new screens.</p>
+
+    <div style="display:flex; gap:56px; align-items:flex-start; flex-wrap:wrap">
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">14.1 · PROJECT EDITOR · 1600</div>
+        <div data-screen-label="Admin editor" dir="rtl" lang="ar" style="width:1600px; background:#F2EFE7; border:1px solid #C9C3B4; display:flex; font-size:16px; line-height:1.7; color:#3B4560">
+          <aside style="width:260px; flex:none; background:#14213F; color:#C9CFDE; padding:20px 0">
+            <div style="padding:0 20px 18px; border-bottom:1px solid #3B4560; display:flex; align-items:center; gap:12px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:38px; height:38px; object-fit:contain; background:#FBFAF6; border-radius:50%" />
+              <div style="font-size:14.5px; font-weight:600; color:#FBFAF6">لوحة التحكم</div>
+            </div>
+            <nav style="padding:16px 12px; display:flex; flex-direction:column; gap:2px">
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الرئيسية</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">البرامج</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#14213F; background:#DD991C; border-radius:5px; padding:10px 12px; text-decoration:none">المشاريع</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الأخبار</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">القصص</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">مكتبة الوسائط</a>
+            </nav>
+          </aside>
+
+          <div style="flex:1; min-width:0">
+            <div style="background:#FBFAF6; border-bottom:1px solid #D8D3C7; padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; gap:24px">
+              <div style="display:flex; align-items:center; gap:10px; font-size:14.5px; color:#8A8272">
+                <a href="#" style="color:#5A6478; text-decoration:none">المشاريع</a><span style="color:#C9C3B4">←</span><span style="color:#14213F; font-weight:500">تحرير مشروع</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:14px">
+                <span style="font-size:12.5px; color:#B3591B; border:1px solid #E8CDB6; background:#FBF3EC; padding:3px 10px; border-radius:3px">تغييرات غير محفوظة</span>
+                <a href="#" target="_blank" style="font-size:14.5px; color:#254284; text-decoration:none; border:1px solid #C9C3B4; border-radius:6px; padding:9px 14px">معاينة ↗</a>
+              </div>
+            </div>
+
+            <div style="padding:26px 32px 120px; display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:36px; align-items:start">
+
+              <div style="display:flex; flex-direction:column; gap:20px">
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:26px 28px">
+                  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:2px solid #14213F; padding-bottom:12px">
+                    <div style="font-size:19px; font-weight:600; color:#14213F">العنوان والرابط</div>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8A8272" dir="ltr">BILINGUAL FIELD</span>
+                  </div>
+                  <fieldset style="border:none; margin:20px 0 0; padding:0">
+                    <legend style="font-size:14.5px; font-weight:500; color:#14213F; padding:0">العنوان <span style="color:#A32B2B">*</span></legend>
+                    <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:20px">
+                      <div>
+                        <div style="display:flex; align-items:center; justify-content:space-between">
+                          <label style="font-size:12.5px; color:#5A6478">العربية <span style="color:#A32B2B">مطلوب</span></label>
+                          <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272" dir="ltr">54 / 120</span>
+                        </div>
+                        <input dir="rtl" lang="ar" value="[عنوان المشروع بالعربية]" style="margin-top:6px; width:100%; font-family:inherit; font-size:16px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 14px" />
+                      </div>
+                      <div>
+                        <div style="display:flex; align-items:center; justify-content:space-between">
+                          <label style="font-size:12.5px; color:#5A6478">English <span style="color:#8A8272">اختياري</span></label>
+                          <button type="button" style="font-family:inherit; font-size:12px; color:#254284; background:transparent; border:none; text-decoration:underline; cursor:pointer">نسخ من العربية</button>
+                        </div>
+                        <input dir="ltr" lang="en" value="[Project title in English]" style="margin-top:6px; width:100%; font-family:inherit; font-size:16px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 14px" />
+                      </div>
+                    </div>
+                  </fieldset>
+                  <fieldset style="border:none; margin:20px 0 0; padding:0">
+                    <legend style="font-size:14.5px; font-weight:500; color:#14213F; padding:0">الرابط <span style="font-weight:400; color:#8A8272">— يُولَّد من العنوان ويمكن تعديله</span></legend>
+                    <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:20px">
+                      <div>
+                        <label style="font-size:12.5px; color:#5A6478">العربية</label>
+                        <div style="margin-top:6px; display:flex; align-items:center; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; overflow:hidden">
+                          <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#8A8272; background:#F2EFE7; padding:12px 10px; border-inline-end:1px solid #C9C3B4" dir="ltr">/ar/projects/</span>
+                          <input dir="rtl" lang="ar" value="[الرابط-بالعربية]" style="flex:1; font-family:inherit; font-size:15px; color:#14213F; background:transparent; border:none; padding:12px 12px; outline:none" />
+                        </div>
+                        <div style="margin-top:5px; display:flex; gap:7px; align-items:center"><span style="color:#1F6B54; font-size:13px">✓</span><span style="font-size:12.5px; color:#1F6B54">متاح</span></div>
+                      </div>
+                      <div>
+                        <label style="font-size:12.5px; color:#5A6478">English</label>
+                        <div style="margin-top:6px; display:flex; align-items:center; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; overflow:hidden" dir="ltr">
+                          <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#8A8272; background:#F2EFE7; padding:12px 10px; border-inline-end:1px solid #C9C3B4">/en/projects/</span>
+                          <input dir="ltr" lang="en" value="[project-slug]" style="flex:1; font-family:'IBM Plex Mono',monospace; font-size:14px; color:#14213F; background:transparent; border:none; padding:12px 12px; outline:none" />
+                        </div>
+                        <div style="margin-top:5px; display:flex; gap:7px; align-items:center"><span style="color:#1F6B54; font-size:13px">✓</span><span style="font-size:12.5px; color:#1F6B54">متاح</span></div>
+                      </div>
+                    </div>
+                    <div style="margin-top:10px; font-size:13px; line-height:1.7; color:#8A8272">الرابط العربي يبقى بالحرف العربي ولا يُنقل حرفياً إلى اللاتينية. تغييره بعد النشر ينشئ تحويلاً تلقائياً في جدول التحويلات.</div>
+                  </fieldset>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:26px 28px">
+                  <div style="font-size:19px; font-weight:600; color:#14213F; border-bottom:2px solid #14213F; padding-bottom:12px">التصنيف</div>
+                  <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:20px">
+                    <div>
+                      <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">البرنامج <span style="color:#A32B2B">*</span></label>
+                      <select style="margin-top:8px; width:100%; font-family:inherit; font-size:16px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 12px"><option>الحماية</option><option>الاستجابة الإنسانية</option><option>التعافي المبكر</option></select>
+                    </div>
+                    <div>
+                      <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">حالة المشروع</label>
+                      <select style="margin-top:8px; width:100%; font-family:inherit; font-size:16px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 12px"><option>جارٍ</option><option>مخطط</option><option>مكتمل</option></select>
+                    </div>
+                  </div>
+                  <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:20px">
+                    <div>
+                      <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">تاريخ البداية</label>
+                      <input dir="ltr" value="2024-01-01" style="margin-top:8px; width:100%; font-family:'IBM Plex Mono',monospace; font-size:15px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 14px" />
+                    </div>
+                    <div>
+                      <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">تاريخ النهاية</label>
+                      <input dir="ltr" value="2025-06-30" style="margin-top:8px; width:100%; font-family:'IBM Plex Mono',monospace; font-size:15px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 14px" />
+                      <div style="margin-top:5px; font-size:12.5px; color:#8A8272">قيد قاعدة البيانات: النهاية ≥ البداية.</div>
+                    </div>
+                  </div>
+                  <div style="margin-top:22px">
+                    <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">المحافظات</label>
+                    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+                      <span style="font-size:14.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:5px; padding:9px 14px; background:#FFFFFF">شمال غزة</span>
+                      <span style="font-size:14.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:5px; padding:9px 14px; background:#FFFFFF">غزة</span>
+                      <span style="font-size:14.5px; color:#FBFAF6; background:#254284; border-radius:5px; padding:9px 14px">الوسطى ✕</span>
+                      <span style="font-size:14.5px; color:#FBFAF6; background:#254284; border-radius:5px; padding:9px 14px">خان يونس ✕</span>
+                      <span style="font-size:14.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:5px; padding:9px 14px; background:#FFFFFF">رفح</span>
+                    </div>
+                  </div>
+                  <div style="margin-top:22px">
+                    <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">المحاور</label>
+                    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+                      <span style="font-size:14.5px; color:#FBFAF6; background:#254284; border-radius:5px; padding:9px 14px">النساء ✕</span>
+                      <span style="font-size:14.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:5px; padding:9px 14px; background:#FFFFFF">الأطفال</span>
+                      <span style="font-size:14.5px; color:#FBFAF6; background:#254284; border-radius:5px; padding:9px 14px">الصحة النفسية والاجتماعية ✕</span>
+                      <span style="font-size:14.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:5px; padding:9px 14px; background:#FFFFFF">الإغاثة</span>
+                    </div>
+                  </div>
+                  <div style="margin-top:22px; display:grid; grid-template-columns:1fr 1fr; gap:20px">
+                    <div>
+                      <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">الشركاء المنفّذون</label>
+                      <div style="margin-top:8px; border:1px solid #C9C3B4; background:#FFFFFF; border-radius:6px; padding:10px 12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; min-height:48px">
+                        <span style="font-size:14px; color:#14213F; background:#E7EBF4; border-radius:4px; padding:5px 10px"><bdi dir="ltr">[PARTNER A]</bdi> ✕</span>
+                        <input placeholder="ابحث وأضف…" style="flex:1; min-width:120px; font-family:inherit; font-size:14.5px; border:none; outline:none; background:transparent; padding:4px" />
+                      </div>
+                    </div>
+                    <div>
+                      <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">الممولون</label>
+                      <div style="margin-top:8px; border:1px solid #C9C3B4; background:#FFFFFF; border-radius:6px; padding:10px 12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; min-height:48px">
+                        <span style="font-size:14px; color:#14213F; background:#E7EBF4; border-radius:4px; padding:5px 10px"><bdi dir="ltr">[DONOR]</bdi> ✕</span>
+                        <input placeholder="ابحث وأضف…" style="flex:1; min-width:120px; font-family:inherit; font-size:14.5px; border:none; outline:none; background:transparent; padding:4px" />
+                      </div>
+                      <div style="margin-top:5px; font-size:12.5px; color:#8A8272">الجهة نفسها يمكن أن تكون منفّذاً وممولاً في المشروع ذاته.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:26px 28px">
+                  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:2px solid #14213F; padding-bottom:12px">
+                    <div style="font-size:19px; font-weight:600; color:#14213F">المحتوى</div>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8A8272" dir="ltr">TIPTAP · ALLOW-LISTED NODES</span>
+                  </div>
+                  <div style="margin-top:20px">
+                    <div style="font-size:14.5px; font-weight:500; color:#14213F">الهدف</div>
+                    <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:20px">
+                      <div>
+                        <label style="font-size:12.5px; color:#5A6478">العربية <span style="color:#A32B2B">مطلوب</span></label>
+                        <div style="margin-top:6px; border:1px solid #C9C3B4; background:#FFFFFF; border-radius:6px">
+                          <div style="border-bottom:1px solid #E3DED2; padding:7px 10px; display:flex; gap:4px; align-items:center">
+                            <button style="font-family:inherit; font-size:14px; font-weight:700; color:#14213F; background:transparent; border:none; width:30px; height:30px; cursor:pointer">ب</button>
+                            <button style="font-family:inherit; font-size:14px; font-style:italic; color:#14213F; background:transparent; border:none; width:30px; height:30px; cursor:pointer">م</button>
+                            <span style="width:1px; height:18px; background:#E3DED2; margin:0 4px"></span>
+                            <button style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer" dir="ltr">H2</button>
+                            <button style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer" dir="ltr">H3</button>
+                            <span style="width:1px; height:18px; background:#E3DED2; margin:0 4px"></span>
+                            <button style="font-family:inherit; font-size:13px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer">قائمة</button>
+                            <button style="font-family:inherit; font-size:13px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer">اقتباس</button>
+                            <button style="font-family:inherit; font-size:13px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer">رابط</button>
+                          </div>
+                          <div dir="rtl" lang="ar" style="padding:14px; min-height:130px; font-size:16px; line-height:1.85; color:#14213F">[نص الهدف بالعربية — المحرّر يخرج شجرة عقد، لا HTML.]</div>
+                        </div>
+                      </div>
+                      <div>
+                        <label style="font-size:12.5px; color:#5A6478">English</label>
+                        <div style="margin-top:6px; border:1px solid #C9C3B4; background:#FFFFFF; border-radius:6px">
+                          <div style="border-bottom:1px solid #E3DED2; padding:7px 10px; display:flex; gap:4px; align-items:center" dir="ltr">
+                            <button style="font-family:inherit; font-size:14px; font-weight:700; color:#14213F; background:transparent; border:none; width:30px; height:30px; cursor:pointer">B</button>
+                            <button style="font-family:inherit; font-size:14px; font-style:italic; color:#14213F; background:transparent; border:none; width:30px; height:30px; cursor:pointer">I</button>
+                            <span style="width:1px; height:18px; background:#E3DED2; margin:0 4px"></span>
+                            <button style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer">H2</button>
+                            <button style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer">H3</button>
+                            <span style="width:1px; height:18px; background:#E3DED2; margin:0 4px"></span>
+                            <button style="font-family:inherit; font-size:13px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer">List</button>
+                            <button style="font-family:inherit; font-size:13px; color:#14213F; background:transparent; border:none; padding:0 8px; height:30px; cursor:pointer">Quote</button>
+                          </div>
+                          <div dir="ltr" lang="en" style="padding:14px; min-height:130px; font-size:15.5px; line-height:1.7; color:#14213F">[Objective text in English.]</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="margin-top:10px; font-size:13px; line-height:1.7; color:#8A8272">كل محرّر يحمل اتجاهه الصحيح: العربي من اليمين والإنجليزي من اليسار، في الصف نفسه. العُقد غير المسموح بها تُحذف عند اللصق ولا تُخزَّن.</div>
+                  </div>
+                  <div style="margin-top:24px; border-top:1px solid #D8D3C7; padding-top:20px; display:flex; flex-direction:column; gap:10px">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 14px; border:1px solid #E3DED2; background:#FFFFFF; border-radius:6px">
+                      <span style="font-size:15px; color:#14213F">الأنشطة</span>
+                      <span style="font-size:13px; color:#8A8272">عربي ✓ · إنجليزي ✓</span>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 14px; border:1px solid #E3DED2; background:#FFFFFF; border-radius:6px">
+                      <span style="font-size:15px; color:#14213F">النتائج</span>
+                      <span style="font-size:13px; color:#B3591B">عربي ✓ · إنجليزي — ناقص</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:26px 28px">
+                  <div style="font-size:19px; font-weight:600; color:#14213F; border-bottom:2px solid #14213F; padding-bottom:12px">الوسائط</div>
+                  <div style="margin-top:20px; display:grid; grid-template-columns:280px minmax(0,1fr); gap:24px">
+                    <div>
+                      <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">الصورة الرئيسية</label>
+                      <div style="margin-top:8px; position:relative; width:100%; height:170px; border:1px solid #C9C3B4"><image-slot id="adm-hero" shape="rect" placeholder="اختر من المكتبة"></image-slot></div>
+                      <div style="margin-top:8px; display:flex; gap:8px">
+                        <button style="font-family:inherit; font-size:14px; color:#254284; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:5px; padding:9px 14px; flex:1">تغيير</button>
+                        <button style="font-family:inherit; font-size:14px; color:#A32B2B; background:#FFFFFF; border:1px solid #E0C4C4; border-radius:5px; padding:9px 14px">إزالة</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">معرض الصور <span style="font-weight:400; color:#8A8272">— يمكن سحبها لإعادة الترتيب</span></label>
+                      <div style="margin-top:8px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px">
+                        <div style="position:relative; width:100%; height:80px; border:1px solid #C9C3B4"><image-slot id="adm-g1" shape="rect" placeholder="١"></image-slot></div>
+                        <div style="position:relative; width:100%; height:80px; border:1px solid #C9C3B4"><image-slot id="adm-g2" shape="rect" placeholder="٢"></image-slot></div>
+                        <div style="width:100%; height:80px; border:1px solid #E0C4C4; background:#FBF0F0; display:flex; align-items:center; justify-content:center; text-align:center; padding:6px">
+                          <span style="font-size:11px; line-height:1.5; color:#A32B2B; font-weight:600">موافقة ناقصة</span>
+                        </div>
+                        <button style="width:100%; height:80px; border:1px dashed #C9C3B4; background:#FFFFFF; font-family:inherit; font-size:22px; color:#8A8272; cursor:pointer">+</button>
+                      </div>
+                      <div style="margin-top:12px; border:1px solid #E0C4C4; background:#FBF0F0; padding:14px 16px; display:flex; gap:12px; align-items:flex-start">
+                        <span style="color:#A32B2B; font-size:15px; line-height:1.5">◆</span>
+                        <div>
+                          <div style="font-size:15px; font-weight:600; color:#A32B2B">لا يمكن النشر: صورة تتضمن أطفالاً يمكن التعرف عليهم دون موافقة موثقة</div>
+                          <p style="margin:6px 0 0; font-size:14px; line-height:1.7; color:#3B4560">أزل الصورة من المعرض، أو أضف مرجع الموافقة في مكتبة الوسائط، ثم أعد المحاولة. الفحص يتم عند حفظ حالة «منشور» — لا يعتمد على انتباه المحرّر.</p>
+                          <a href="#" style="display:inline-block; margin-top:8px; font-size:14px; font-weight:600; color:#254284; text-decoration:none">افتح الصورة في المكتبة ←</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:26px 28px">
+                  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:2px solid #14213F; padding-bottom:12px">
+                    <div style="font-size:19px; font-weight:600; color:#14213F">تحسين محركات البحث</div>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8A8272" dir="ltr">SEO BLOCK</span>
+                  </div>
+                  <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:20px">
+                    <div>
+                      <div style="display:flex; align-items:center; justify-content:space-between">
+                        <label style="font-size:12.5px; color:#5A6478">عنوان الصفحة — العربية</label>
+                        <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#B3591B" dir="ltr">62 / 60</span>
+                      </div>
+                      <input dir="rtl" style="margin-top:6px; width:100%; font-family:inherit; font-size:15.5px; color:#14213F; background:#FFFFFF; border:1.5px solid #B3591B; border-radius:6px; padding:12px 14px" />
+                      <div style="margin-top:5px; font-size:12.5px; color:#B3591B">أطول من الحد الموصى به — الحرف العربي يشغل مساحة أكبر بنحو ١٠٪.</div>
+                    </div>
+                    <div>
+                      <div style="display:flex; align-items:center; justify-content:space-between">
+                        <label style="font-size:12.5px; color:#5A6478">Page title — English</label>
+                        <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272" dir="ltr">48 / 60</span>
+                      </div>
+                      <input dir="ltr" style="margin-top:6px; width:100%; font-family:inherit; font-size:15.5px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 14px" />
+                    </div>
+                  </div>
+                  <div style="margin-top:18px; display:flex; align-items:center; gap:12px">
+                    <span style="width:20px; height:20px; border:1px solid #C9C3B4; border-radius:3px; display:inline-block; background:#FFFFFF"></span>
+                    <span style="font-size:14.5px; color:#3B4560">استثنِ هذه الصفحة من محركات البحث <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">no_index</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <aside style="display:flex; flex-direction:column; gap:20px; position:sticky; top:20px">
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:22px 24px">
+                  <div style="font-size:16px; font-weight:600; color:#14213F">الحالة</div>
+                  <div style="margin-top:14px; display:flex; flex-direction:column; gap:10px">
+                    <label style="display:flex; align-items:center; gap:10px; font-size:15px; color:#3B4560; cursor:pointer"><input type="radio" name="st" style="width:17px; height:17px; accent-color:#254284" /><span>مسوّدة</span></label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:15px; color:#3B4560; cursor:pointer"><input type="radio" name="st" style="width:17px; height:17px; accent-color:#254284" /><span>قيد المراجعة</span></label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:15px; color:#14213F; cursor:pointer"><input type="radio" name="st" checked="checked" style="width:17px; height:17px; accent-color:#254284" /><span style="font-weight:600">منشور</span></label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:15px; color:#3B4560; cursor:pointer"><input type="radio" name="st" style="width:17px; height:17px; accent-color:#254284" /><span>مؤرشف</span></label>
+                  </div>
+                  <div style="margin-top:16px; border-top:1px solid #D8D3C7; padding-top:14px; font-size:13.5px; line-height:1.7; color:#8A8272">المحرِّر لا يملك صلاحية النشر — يظهر له الخيار معطّلاً مع سبب واضح، لا رسالة خطأ بعد المحاولة.</div>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:22px 24px">
+                  <div style="font-size:16px; font-weight:600; color:#14213F">حالة الترجمة</div>
+                  <div style="margin-top:12px; display:flex; align-items:center gap:10px; gap:10px">
+                    <span style="font-size:12.5px; color:#B3591B; border:1px solid #E8CDB6; background:#FBF3EC; padding:3px 10px; border-radius:3px">جزئية</span>
+                    <span style="font-size:13.5px; color:#5A6478">٤ من ٦ حقول مترجمة</span>
+                  </div>
+                  <div style="margin-top:12px; height:6px; background:#E3DED2; border-radius:3px; overflow:hidden">
+                    <div style="width:66%; height:100%; background:#B3591B"></div>
+                  </div>
+                  <div style="margin-top:12px; font-size:13.5px; line-height:1.7; color:#8A8272">تُحسب الحالة تلقائياً من الحقول الإنجليزية المملوءة، ولا يُطلب من المحرّر تحديثها يدوياً.</div>
+                </div>
+
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:22px 24px">
+                  <div style="font-size:16px; font-weight:600; color:#14213F">سجل التغييرات</div>
+                  <div style="margin-top:12px; display:flex; flex-direction:column">
+                    <div style="padding:9px 0; border-bottom:1px solid #E3DED2; font-size:13.5px; color:#3B4560">[المستخدم] · تحديث · <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">12 MAR 10:42</span></div>
+                    <div style="padding:9px 0; border-bottom:1px solid #E3DED2; font-size:13.5px; color:#3B4560">[المستخدم] · نشر · <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">02 MAR 14:20</span></div>
+                    <div style="padding:9px 0; font-size:13.5px; color:#3B4560">[المستخدم] · إنشاء · <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">28 FEB 09:05</span></div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+
+            <div style="position:sticky; bottom:0; background:#FBFAF6; border-top:2px solid #14213F; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; gap:24px">
+              <div style="display:flex; align-items:center; gap:14px">
+                <span style="font-size:14px; color:#8A8272">آخر حفظ <span style="font-family:'IBM Plex Mono',monospace; font-size:13px" dir="ltr">10:42</span></span>
+                <span style="font-size:12.5px; color:#B3591B; border:1px solid #E8CDB6; background:#FBF3EC; padding:3px 10px; border-radius:3px">تغييرات غير محفوظة</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px">
+                <button style="font-family:inherit; font-size:14.5px; color:#A32B2B; background:transparent; border:1px solid #E0C4C4; border-radius:6px; padding:11px 18px">حذف</button>
+                <button style="font-family:inherit; font-size:14.5px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:11px 18px">إلغاء النشر</button>
+                <button style="font-family:inherit; font-size:14.5px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:11px 18px">حفظ كمسوّدة</button>
+                <button style="font-family:inherit; font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border:none; border-radius:6px; padding:12px 26px">حفظ ونشر</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:32px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; max-width:1180px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">15 — SUBMISSIONS INBOX</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">TWO ROUTES · ONE PERMISSION BOUNDARY</span>
+    </div>
+    <p style="margin:0; max-width:96ch; font-size:16px; line-height:1.7; color:#3B4560">Confidential complaints are absent from the general inbox's result set, not merely hidden in its UI. The second frame shows the confidential route as a user with the permission sees it — no export, no bulk action, no attachment download, and a visible notice that opening a complaint is itself written to the audit log.</p>
+
+    <div style="display:flex; gap:56px; align-items:flex-start; flex-wrap:wrap">
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">15.1 · GENERAL INBOX · 1600</div>
+        <div data-screen-label="Admin inbox" dir="rtl" lang="ar" style="width:1600px; background:#F2EFE7; border:1px solid #C9C3B4; display:flex; font-size:16px; line-height:1.7; color:#3B4560">
+          <aside style="width:260px; flex:none; background:#14213F; color:#C9CFDE; padding:20px 0">
+            <div style="padding:0 20px 18px; border-bottom:1px solid #3B4560; display:flex; align-items:center; gap:12px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:38px; height:38px; object-fit:contain; background:#FBFAF6; border-radius:50%" />
+              <div style="font-size:14.5px; font-weight:600; color:#FBFAF6">لوحة التحكم</div>
+            </div>
+            <nav style="padding:16px 12px; display:flex; flex-direction:column; gap:2px">
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الرئيسية</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">المشاريع</a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px">الأخبار</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#14213F; background:#DD991C; border-radius:5px; padding:10px 12px; text-decoration:none; display:flex; justify-content:space-between; align-items:center"><span>الرسائل</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12px" dir="ltr">7</span></a>
+              <a href="#" style="font-size:15px; color:#C9CFDE; padding:9px 12px; text-decoration:none; border-radius:5px; display:flex; justify-content:space-between; align-items:center"><span>الشكاوى السرّية</span><span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; color:#FBFAF6; background:#A32B2B; border-radius:9px; padding:1px 8px" dir="ltr">2</span></a>
+            </nav>
+          </aside>
+
+          <div style="flex:1; min-width:0; display:flex">
+            <div style="width:420px; flex:none; background:#FBFAF6; border-inline-end:1px solid #D8D3C7">
+              <div style="border-bottom:1px solid #D8D3C7; padding:16px 20px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <div style="font-size:19px; font-weight:600; color:#14213F">الرسائل</div>
+                  <span style="font-size:13.5px; color:#8A8272"><span style="font-family:'IBM Plex Mono',monospace" dir="ltr">7</span> جديدة</span>
+                </div>
+                <div style="margin-top:12px; display:flex; gap:7px; flex-wrap:wrap">
+                  <span style="font-size:13.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:4px; padding:6px 12px">الكل</span>
+                  <span style="font-size:13.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:4px; padding:5px 12px">شراكة</span>
+                  <span style="font-size:13.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:4px; padding:5px 12px">تواصل</span>
+                  <span style="font-size:13.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:4px; padding:5px 12px">تطوع</span>
+                  <span style="font-size:13.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:4px; padding:5px 12px">وظائف</span>
+                </div>
+              </div>
+              <div>
+                <a href="#" style="display:block; padding:16px 20px; border-bottom:1px solid #E3DED2; text-decoration:none; background:#FEF7E7; border-inline-start:3px solid #DD991C">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#14213F" dir="ltr">PCS-4F21C9</span>
+                    <span style="font-size:12px; color:#254284; border:1px solid #C8CFE1; padding:1px 8px; border-radius:3px">شراكة</span>
+                  </div>
+                  <div style="margin-top:7px; font-size:16px; font-weight:600; color:#14213F">[اسم المؤسسة المرسلة]</div>
+                  <div style="margin-top:4px; font-size:14px; line-height:1.6; color:#5A6478">[أول سطر من الرسالة يظهر كمعاينة…]</div>
+                  <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between">
+                    <span style="font-size:12px; font-weight:600; color:#B87B12">جديدة</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">12 MAR 09:14</span>
+                  </div>
+                </a>
+                <a href="#" style="display:block; padding:16px 20px; border-bottom:1px solid #E3DED2; text-decoration:none">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#14213F" dir="ltr">PCS-9A03D1</span>
+                    <span style="font-size:12px; color:#1F6B54; border:1px solid #B9D3C9; padding:1px 8px; border-radius:3px">تطوع</span>
+                  </div>
+                  <div style="margin-top:7px; font-size:16px; font-weight:600; color:#14213F">[اسم المتقدم]</div>
+                  <div style="margin-top:4px; font-size:14px; line-height:1.6; color:#5A6478">[معاينة الرسالة…]</div>
+                  <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between">
+                    <span style="font-size:12px; color:#5A6478">قيد المعالجة</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">11 MAR 16:40</span>
+                  </div>
+                </a>
+                <a href="#" style="display:block; padding:16px 20px; border-bottom:1px solid #E3DED2; text-decoration:none">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#14213F" dir="ltr">PCS-77B2E0</span>
+                    <span style="font-size:12px; color:#5A6478; border:1px solid #D8D3C7; padding:1px 8px; border-radius:3px">وظيفة</span>
+                  </div>
+                  <div style="margin-top:7px; font-size:16px; font-weight:600; color:#14213F">[اسم المتقدم]</div>
+                  <div style="margin-top:4px; display:flex; gap:8px; align-items:center">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#FBFAF6; background:#254284; padding:2px 6px" dir="ltr">CV</span>
+                    <span style="font-size:14px; color:#5A6478">مرفق سيرة ذاتية</span>
+                  </div>
+                  <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between">
+                    <span style="font-size:12px; color:#1F6B54">تمت المعالجة</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">09 MAR 11:02</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <div style="flex:1; min-width:0; background:#F2EFE7">
+              <div style="background:#FBFAF6; border-bottom:1px solid #D8D3C7; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; gap:20px">
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F" dir="ltr">PCS-4F21C9</div>
+                  <div style="margin-top:2px; font-size:13.5px; color:#8A8272">استفسار شراكة · <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px" dir="ltr">12 MAR 2025 09:14</span></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px">
+                  <select style="font-family:inherit; font-size:14.5px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:9px 12px"><option>جديدة</option><option>قيد المعالجة</option><option>تمت المعالجة</option><option>مؤرشفة</option></select>
+                  <button style="font-family:inherit; font-size:14.5px; font-weight:600; color:#FBFAF6; background:#254284; border:none; border-radius:6px; padding:10px 18px">حدّث الحالة</button>
+                </div>
+              </div>
+              <div style="padding:24px 28px 40px; display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:28px; align-items:start">
+                <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:24px 26px">
+                  <div style="font-size:18px; font-weight:600; color:#14213F; border-bottom:2px solid #14213F; padding-bottom:12px">محتوى الاستفسار</div>
+                  <div style="margin-top:18px">
+                    <div style="padding:12px 0; border-bottom:1px solid #E3DED2; display:grid; grid-template-columns:180px 1fr; gap:16px">
+                      <span style="font-size:13.5px; color:#8A8272">اسم المؤسسة</span>
+                      <span style="font-size:15.5px; color:#14213F">[اسم المؤسسة المرسلة]</span>
+                    </div>
+                    <div style="padding:12px 0; border-bottom:1px solid #E3DED2; display:grid; grid-template-columns:180px 1fr; gap:16px">
+                      <span style="font-size:13.5px; color:#8A8272">النوع · الدولة</span>
+                      <span style="font-size:15.5px; color:#14213F">منظمة دولية · [الدولة]</span>
+                    </div>
+                    <div style="padding:12px 0; border-bottom:1px solid #E3DED2; display:grid; grid-template-columns:180px 1fr; gap:16px">
+                      <span style="font-size:13.5px; color:#8A8272">مسؤول التواصل</span>
+                      <span style="font-size:15.5px; color:#14213F">[الاسم] — [المسمى الوظيفي]</span>
+                    </div>
+                    <div style="padding:12px 0; border-bottom:1px solid #E3DED2; display:grid; grid-template-columns:180px 1fr; gap:16px">
+                      <span style="font-size:13.5px; color:#8A8272">البريد والهاتف</span>
+                      <span style="font-size:15.5px; color:#14213F"><bdi dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:14px">[email@domain]</bdi> · <bdi dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:14px">+970 …</bdi></span>
+                    </div>
+                    <div style="padding:12px 0; border-bottom:1px solid #E3DED2; display:grid; grid-template-columns:180px 1fr; gap:16px">
+                      <span style="font-size:13.5px; color:#8A8272">مجال الاهتمام</span>
+                      <span style="font-size:15.5px; color:#14213F">الحماية · التعافي المبكر</span>
+                    </div>
+                    <div style="padding:16px 0 0">
+                      <span style="font-size:13.5px; color:#8A8272">الرسالة</span>
+                      <p style="margin:8px 0 0; font-size:16px; line-height:1.85; color:#14213F">[نص الرسالة كما أُرسل — يُعرض بمُصيِّر خاص بنوع النموذج، ولا يُدرج كـ HTML.]</p>
+                    </div>
+                  </div>
+                  <div style="margin-top:22px; border-top:1px solid #D8D3C7; padding-top:18px">
+                    <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">ملاحظة داخلية</label>
+                    <textarea rows="3" placeholder="لا تظهر للمرسل." style="margin-top:8px; width:100%; font-family:inherit; font-size:15.5px; line-height:1.7; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 14px; resize:vertical"></textarea>
+                    <button style="margin-top:10px; font-family:inherit; font-size:14.5px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">أضف الملاحظة</button>
+                  </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:18px">
+                  <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:20px 22px">
+                    <div style="font-size:15.5px; font-weight:600; color:#14213F">بيانات الإرسال</div>
+                    <div style="margin-top:12px; display:flex; flex-direction:column; gap:9px; font-size:14px">
+                      <div style="display:flex; justify-content:space-between; gap:12px"><span style="color:#8A8272">اللغة</span><span style="color:#14213F">الإنجليزية</span></div>
+                      <div style="display:flex; justify-content:space-between; gap:12px"><span style="color:#8A8272">بصمة الشبكة</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#14213F" dir="ltr">a3f9…</span></div>
+                      <div style="display:flex; justify-content:space-between; gap:12px"><span style="color:#8A8272">تُحذف تلقائياً</span><span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#14213F" dir="ltr">MAR 2027</span></div>
+                    </div>
+                    <div style="margin-top:12px; border-top:1px solid #E3DED2; padding-top:10px; font-size:13px; line-height:1.7; color:#8A8272">يُخزَّن هاش العنوان لا العنوان نفسه.</div>
+                  </div>
+                  <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:20px 22px">
+                    <div style="font-size:15.5px; font-weight:600; color:#14213F">إجراءات</div>
+                    <div style="margin-top:12px; display:flex; flex-direction:column; gap:9px">
+                      <a href="#" style="font-size:14.5px; color:#254284; text-decoration:none">ردّ بالبريد الإلكتروني ←</a>
+                      <a href="#" style="font-size:14.5px; color:#254284; text-decoration:none">أرسل الملف المؤسسي ←</a>
+                      <a href="#" style="font-size:14.5px; color:#5A6478; text-decoration:none">أرشفة</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">15.2 · CONFIDENTIAL ROUTE · 1100</div>
+        <div data-screen-label="Admin confidential" dir="rtl" lang="ar" style="width:1100px; background:#F2EFE7; border:1px solid #C9C3B4; font-size:16px; line-height:1.7; color:#3B4560">
+          <div style="background:#14213F; color:#FBFAF6; padding:18px 28px; display:flex; align-items:center; justify-content:space-between; gap:20px">
+            <div style="display:flex; align-items:center; gap:12px">
+              <span style="width:8px; height:8px; background:#A32B2B; border-radius:50%"></span>
+              <div>
+                <div style="font-size:17px; font-weight:600; color:#FBFAF6">الشكاوى السرّية</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em; color:#8FA0C4" dir="ltr">requireSensitiveAccess()</div>
+              </div>
+            </div>
+            <span style="font-size:13px; color:#C9CFDE; border:1px solid #4A5773; padding:5px 12px; border-radius:4px">صلاحية ممنوحة لك بالاسم</span>
+          </div>
+          <div style="background:#FBF0F0; border-bottom:1px solid #E0C4C4; padding:14px 28px; display:flex; gap:12px; align-items:flex-start">
+            <span style="color:#A32B2B; font-size:15px; line-height:1.5">◆</span>
+            <p style="margin:0; font-size:14.5px; line-height:1.75; color:#3B4560">كل عملية اطلاع على شكوى تُسجَّل في سجل التدقيق باسمك ووقتها. لا يوجد تصدير، ولا إجراءات جماعية، ولا تحميل للمرفقات على هذا المسار. لا تحتوي هذه السجلات على عنوان شبكة أو بيانات متصفح — لم تُخزَّن أصلاً.</p>
+          </div>
+          <div style="padding:22px 28px 32px; display:grid; grid-template-columns:320px minmax(0,1fr); gap:24px; align-items:start">
+            <div style="background:#FBFAF6; border:1px solid #D8D3C7">
+              <div style="padding:14px 18px; border-bottom:1px solid #D8D3C7; font-size:15.5px; font-weight:600; color:#14213F">القائمة</div>
+              <a href="#" style="display:block; padding:14px 18px; border-bottom:1px solid #E3DED2; text-decoration:none; background:#FEF7E7; border-inline-start:3px solid #A32B2B">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#14213F" dir="ltr">PCS-B10C42</span>
+                  <span style="font-size:11.5px; font-weight:600; color:#B87B12">جديدة</span>
+                </div>
+                <div style="margin-top:6px; font-size:15px; font-weight:600; color:#14213F">سلوك موظف أو متطوع</div>
+                <div style="margin-top:4px; font-size:13.5px; color:#8A8272">مُرسل مجهول</div>
+                <div style="margin-top:6px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">10 MAR 2025</div>
+              </a>
+              <a href="#" style="display:block; padding:14px 18px; text-decoration:none">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#14213F" dir="ltr">PCS-C55A19</span>
+                  <span style="font-size:11.5px; color:#5A6478">قيد المعالجة</span>
+                </div>
+                <div style="margin-top:6px; font-size:15px; font-weight:600; color:#14213F">عدالة الاستهداف والاختيار</div>
+                <div style="margin-top:4px; font-size:13.5px; color:#8A8272">بيانات تواصل متوفرة</div>
+                <div style="margin-top:6px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">04 MAR 2025</div>
+              </a>
+            </div>
+            <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:24px 26px">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:2px solid #A32B2B; padding-bottom:12px">
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F" dir="ltr">PCS-B10C42</div>
+                  <div style="margin-top:3px; font-size:18px; font-weight:600; color:#14213F">سلوك موظف أو متطوع</div>
+                </div>
+                <select style="font-family:inherit; font-size:14.5px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:9px 12px"><option>جديدة</option><option>قيد المعالجة</option><option>تمت المعالجة</option></select>
+              </div>
+              <div style="margin-top:18px">
+                <div style="padding:12px 0; border-bottom:1px solid #E3DED2; display:grid; grid-template-columns:150px 1fr; gap:16px">
+                  <span style="font-size:13.5px; color:#8A8272">المُرسل</span>
+                  <span style="font-size:15.5px; color:#14213F">مجهول — لم تُقدَّم بيانات تواصل</span>
+                </div>
+                <div style="padding:12px 0; border-bottom:1px solid #E3DED2; display:grid; grid-template-columns:150px 1fr; gap:16px">
+                  <span style="font-size:13.5px; color:#8A8272">عنوان الشبكة</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#8A8272" dir="ltr">NULL — never stored</span>
+                </div>
+                <div style="padding:16px 0 0">
+                  <span style="font-size:13.5px; color:#8A8272">تفاصيل الشكوى</span>
+                  <p style="margin:8px 0 0; font-size:16px; line-height:1.85; color:#14213F">[نص الشكوى كما أُرسل.]</p>
+                </div>
+              </div>
+              <div style="margin-top:22px; border-top:1px solid #D8D3C7; padding-top:18px">
+                <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">ملاحظة المعالجة</label>
+                <textarea rows="3" style="margin-top:8px; width:100%; font-family:inherit; font-size:15.5px; line-height:1.7; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 14px; resize:vertical"></textarea>
+                <div style="margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+                  <button style="font-family:inherit; font-size:14.5px; font-weight:600; color:#FBFAF6; background:#254284; border:none; border-radius:6px; padding:11px 20px">حفظ</button>
+                  <span style="font-size:13.5px; color:#8A8272">لا يوجد زر تصدير أو تحميل على هذه الصفحة — بحكم التصميم.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">15.3 · LOGIN · 560</div>
+        <div data-screen-label="Admin login" dir="rtl" lang="ar" style="width:560px; background:#14213F; border:1px solid #C9C3B4; padding:48px 52px; font-size:16px; line-height:1.7; color:#C9CFDE">
+          <div style="display:flex; align-items:center; gap:14px">
+            <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:46px; height:46px; object-fit:contain; background:#FBFAF6; border-radius:50%" />
+            <div>
+              <div style="font-size:17px; font-weight:600; color:#FBFAF6">لوحة تحكم الموقع</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.14em; color:#8FA0C4" dir="ltr">PCSRD CMS · STAFF ONLY</div>
+            </div>
+          </div>
+          <div style="margin-top:34px; height:2px; width:72px; background:#DD991C"></div>
+          <h1 style="margin:22px 0 0; font-size:28px; font-weight:600; color:#FBFAF6">تسجيل الدخول</h1>
+          <div style="margin-top:24px; display:grid; gap:18px">
+            <div>
+              <label style="display:block; font-size:14px; font-weight:500; color:#FBFAF6">البريد الإلكتروني</label>
+              <input dir="ltr" style="margin-top:8px; width:100%; font-family:'IBM Plex Mono',monospace; font-size:15px; color:#14213F; background:#FBFAF6; border:1px solid #4A5773; border-radius:6px; padding:14px" />
+            </div>
+            <div>
+              <label style="display:block; font-size:14px; font-weight:500; color:#FBFAF6">كلمة المرور</label>
+              <input type="password" value="••••••••••" style="margin-top:8px; width:100%; font-family:inherit; font-size:16px; color:#14213F; background:#FBFAF6; border:1px solid #4A5773; border-radius:6px; padding:14px" />
+            </div>
+            <button style="font-family:inherit; font-size:16px; font-weight:600; color:#14213F; background:#DD991C; border:none; border-radius:6px; padding:16px; cursor:pointer">تسجيل الدخول</button>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px">
+              <a href="#" style="font-size:14px; color:#C9CFDE; text-decoration:none; border-bottom:1px solid #4A5773">نسيت كلمة المرور</a>
+              <span style="font-size:13px; color:#8FA0C4">لا يوجد تسجيل ذاتي</span>
+            </div>
+          </div>
+          <div style="margin-top:28px; border-top:1px solid #3B4560; padding-top:18px; display:flex; gap:12px; align-items:flex-start">
+            <span style="color:#DD991C; font-size:14px; line-height:1.6">◆</span>
+            <p style="margin:0; font-size:13.5px; line-height:1.8; color:#8FA0C4">التحقق بخطوتين مطلوب لجميع المستخدمين. بعد كلمة المرور يُطلب رمز التطبيق، ويُرفض الحساب الموقوف حتى مع جلسة صالحة.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000}}"></script>
+</body>
+</html>
