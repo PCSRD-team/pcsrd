@@ -69,6 +69,13 @@ const config: NextConfig = {
 
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    serverActions: {
+      // The job-application form posts a CV through a Server Action, and the
+      // default limit is 1 MB. 4.5 MB is Vercel's platform ceiling; uploads are
+      // rejected at 4 MB in src/lib/security/upload.ts so the message comes
+      // from us rather than as an opaque 413 from the edge.
+      bodySizeLimit: '4.5mb',
+    },
   },
 
   async headers() {
