@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Everything that can run without a single secret. This is deliberately the
+  # bigger job — see docs/spec/06-BUILD-PLAN.md §10.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint (incl. logical-properties rule)
+        run: npm run lint
+
+      - name: Lint CSS
+        run: npm run lint:css
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests (PGlite — no database credentials needed)
+        run: npm run test:int
+
+      - name: Drizzle schema/migration consistency
+        run: npx drizzle-kit check
+        env:
+          # drizzle-kit check reads migration files, not the database, but the
+          # config still parses the URL.
+          DIRECT_URL: postgresql://placeholder:placeholder@localhost:5432/postgres
+
+      - name: Build
+        run: npm run build
+        env:
+          SKIP_ENV_VALIDATION: '1'
+
+      # 00-ARCHITECTURE §0.9 rule 10 — a service-role key in the client bundle
+      # is a total compromise, so the build fails rather than warns.
+      - name: Assert no service-role key in the client bundle
+        run: |
+          if grep -rl "SUPABASE_SERVICE_ROLE\|service_role" .next/static/ 2>/dev/null; then
+            echo "::error::Service role key leaked into the client bundle"
+            exit 1
+          fi
+          echo "OK — no service_role reference in .next/static/"
+
+  # Needs real credentials, so it only runs on push to main.
+  db-verify:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # 01-DATABASE §6 — every table must have RLS on and zero policies.
+      # If this ever returns a row, the tripwire is off on that table.
+      - name: RLS assertion
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: npx tsx scripts/assert-rls.ts

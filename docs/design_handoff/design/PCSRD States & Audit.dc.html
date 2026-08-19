@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#E5E2DA; font-family:'IBM Plex Sans Arabic', system-ui, sans-serif; }
+  a { color:#254284; text-underline-offset:3px; }
+  a:hover { color:#B87B12; }
+  * { box-sizing:border-box; }
+  @keyframes pcsrd-pulse { 0%,100% { opacity:.55 } 50% { opacity:.9 } }
+</style>
+</helmet>
+
+<div style="padding:72px 64px 140px; display:flex; flex-direction:column; gap:110px; background:#E5E2DA; min-height:100vh">
+
+  <section style="display:flex; flex-direction:column; gap:32px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; max-width:1180px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">16 — STATE GALLERY</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">THE PATHS THAT ARE NOT HAPPY</span>
+    </div>
+    <p style="margin:0; max-width:96ch; font-size:16px; line-height:1.7; color:#3B4560">Every state here has a route out. The one that matters most for this product is the untranslated state: an English visitor landing on a record that exists only in Arabic must get the Arabic text inside an honest notice — never a blank page, never machine translation.</p>
+
+    <div style="display:flex; gap:36px; align-items:flex-start; flex-wrap:wrap">
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.1 · UNTRANSLATED — EN ROUTE, ar_only RECORD</div>
+        <div data-screen-label="Untranslated state" dir="ltr" lang="en" style="width:760px; background:#FBFAF6; border:1px solid #C9C3B4; padding:36px 40px; font-size:16px; line-height:1.65; color:#3B4560">
+          <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+            <a href="#" style="color:#5A6478; text-decoration:none">News</a><span style="color:#C9C3B4">→</span><span style="color:#14213F">[Headline]</span>
+          </div>
+          <div style="margin-top:22px; border:1px solid #EBD9AE; background:#FEF7E7; border-inline-start:4px solid #DD991C; padding:20px 22px">
+            <div style="font-size:17px; font-weight:600; color:#14213F">English translation coming soon</div>
+            <p style="margin:8px 0 0; font-size:15.5px; line-height:1.65; color:#3B4560">This item has not been translated yet. The original Arabic text is shown below, unaltered — we do not machine-translate published content.</p>
+            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap">
+              <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; text-decoration:none; border-bottom:2px solid #DD991C; padding-bottom:3px">Read it on the Arabic site</a>
+              <span style="font-size:14.5px; color:#8A8272">·</span>
+              <a href="#" style="font-size:14.5px; color:#254284; text-decoration:none">Back to News</a>
+            </div>
+          </div>
+          <div style="margin-top:26px; padding:24px 26px; border:1px solid #D8D3C7; background:#FFFFFF" dir="rtl" lang="ar">
+            <h1 style="margin:0; font-size:29px; line-height:1.4; font-weight:600; color:#14213F">[عنوان الخبر بالعربية]</h1>
+            <div style="margin-top:8px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">14 MAR 2025</div>
+            <p style="margin:16px 0 0; font-size:16.5px; line-height:1.85; color:#3B4560">[نص الخبر بالعربية كما نُشر.]</p>
+          </div>
+          <div style="margin-top:20px; border-top:1px solid #D8D3C7; padding-top:14px; display:flex; gap:10px; flex-wrap:wrap">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272; border:1px solid #D8D3C7; padding:2px 8px">robots: noindex</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272; border:1px solid #D8D3C7; padding:2px 8px">hreflang omitted for this page</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272; border:1px solid #D8D3C7; padding:2px 8px">lang="ar" dir="rtl" on the quoted block</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.2 · LOADING SKELETON — MATCHES FINAL LAYOUT</div>
+        <div data-screen-label="Loading state" dir="rtl" lang="ar" style="width:760px; background:#FBFAF6; border:1px solid #C9C3B4; padding:32px 36px">
+          <div style="width:180px; height:14px; background:#E3DED2; animation:pcsrd-pulse 1.6s ease-in-out infinite"></div>
+          <div style="margin-top:18px; width:340px; height:34px; background:#E3DED2; animation:pcsrd-pulse 1.6s ease-in-out infinite"></div>
+          <div style="margin-top:12px; width:520px; height:14px; background:#EDE9E0; animation:pcsrd-pulse 1.6s ease-in-out infinite"></div>
+          <div style="margin-top:28px; border-top:1px solid #D8D3C7; padding-top:20px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px">
+            <div style="border:1px solid #E3DED2">
+              <div style="width:100%; height:150px; background:#E3DED2; animation:pcsrd-pulse 1.6s ease-in-out infinite"></div>
+              <div style="padding:16px 18px">
+                <div style="width:90px; height:12px; background:#EDE9E0"></div>
+                <div style="margin-top:12px; width:100%; height:18px; background:#E3DED2"></div>
+                <div style="margin-top:8px; width:70%; height:18px; background:#E3DED2"></div>
+                <div style="margin-top:14px; width:60%; height:12px; background:#EDE9E0"></div>
+              </div>
+            </div>
+            <div style="border:1px solid #E3DED2">
+              <div style="width:100%; height:150px; background:#E3DED2; animation:pcsrd-pulse 1.6s ease-in-out infinite"></div>
+              <div style="padding:16px 18px">
+                <div style="width:90px; height:12px; background:#EDE9E0"></div>
+                <div style="margin-top:12px; width:100%; height:18px; background:#E3DED2"></div>
+                <div style="margin-top:8px; width:55%; height:18px; background:#E3DED2"></div>
+                <div style="margin-top:14px; width:60%; height:12px; background:#EDE9E0"></div>
+              </div>
+            </div>
+          </div>
+          <p style="margin:20px 0 0; font-size:13.5px; line-height:1.7; color:#8A8272">الهيكل يطابق التخطيط النهائي بالحجم نفسه، فلا يتحرك المحتوى عند وصوله. مع <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px" dir="ltr">prefers-reduced-motion</span> يتوقف النبض ويبقى الهيكل ثابتاً.</p>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.3 · ZERO RESULTS — FILTERS TOO NARROW</div>
+        <div data-screen-label="Empty results" dir="rtl" lang="ar" style="width:760px; background:#FBFAF6; border:1px solid #C9C3B4; padding:32px 36px; font-size:16.5px; line-height:1.8; color:#3B4560">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:20px; border-bottom:1px solid #D8D3C7; padding-bottom:14px">
+            <div style="font-size:17px; color:#14213F"><span style="font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600" dir="ltr">0</span> مشاريع مطابقة</div>
+            <a href="#" style="font-size:14.5px; color:#254284; text-decoration:none">مسح كل الفلاتر</a>
+          </div>
+          <div style="margin-top:14px; display:flex; gap:9px; flex-wrap:wrap">
+            <span style="font-size:13.5px; color:#254284; border:1px solid #C8CFE1; background:#F2F5FB; padding:4px 10px; border-radius:3px">رفح ✕</span>
+            <span style="font-size:13.5px; color:#254284; border:1px solid #C8CFE1; background:#F2F5FB; padding:4px 10px; border-radius:3px">الشباب والمراهقون ✕</span>
+            <span style="font-size:13.5px; color:#254284; border:1px solid #C8CFE1; background:#F2F5FB; padding:4px 10px; border-radius:3px">٢٠٢٣ ✕</span>
+          </div>
+          <div style="margin-top:28px; border:1px solid #D8D3C7; background:#F2EFE7; padding:32px 34px; text-align:center">
+            <div style="font-size:21px; font-weight:600; color:#14213F">لا مشاريع تطابق هذه الفلاتر الثلاثة معاً</div>
+            <p style="margin:10px auto 0; font-size:16px; line-height:1.8; color:#5A6478; max-width:52ch">جرّب إزالة السنة أو المحور، أو تصفّح البرنامج مباشرة.</p>
+            <div style="margin-top:20px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap">
+              <a href="#" style="font-size:15.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:13px 22px; text-decoration:none">أزل فلتر السنة</a>
+              <a href="#" style="font-size:15.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:12px 22px; text-decoration:none">كل مشاريع رفح</a>
+            </div>
+          </div>
+          <p style="margin:18px 0 0; font-size:13.5px; line-height:1.7; color:#8A8272">الحالة الفارغة تقترح الفلتر الذي إزالته ستُعيد نتائج — ولا تكتفي بعبارة «لا نتائج». عدد النتائج يُعلن في منطقة <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px" dir="ltr">aria-live</span>.</p>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.4 · NOTHING PUBLISHED YET</div>
+        <div data-screen-label="Empty section" dir="rtl" lang="ar" style="width:760px; background:#FBFAF6; border:1px solid #C9C3B4; padding:32px 36px; font-size:16.5px; line-height:1.8; color:#3B4560">
+          <h1 style="margin:0; font-size:32px; font-weight:600; color:#14213F">الوظائف والتطوع</h1>
+          <div style="margin-top:24px; border-top:2px solid #14213F; padding-top:28px; text-align:center">
+            <div style="font-size:20px; font-weight:600; color:#14213F">لا شواغر مفتوحة حالياً</div>
+            <p style="margin:10px auto 0; font-size:16px; line-height:1.8; color:#5A6478; max-width:54ch">تُعلن الشواغر على هذه الصفحة أولاً. إن أردت، أرسل سيرتك الذاتية للحفظ في قاعدة المتقدمين لمدة اثني عشر شهراً.</p>
+            <div style="margin-top:20px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap">
+              <a href="#" style="font-size:15.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:13px 22px; text-decoration:none">أرسل سيرة ذاتية عامة</a>
+              <a href="#" style="font-size:15.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:12px 22px; text-decoration:none">فرص التطوع</a>
+            </div>
+            <div style="margin-top:22px; font-size:14px; color:#8A8272">لا نطلب أي رسوم مقابل التقديم أو التوظيف.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.5 · 404 — LOCALIZED</div>
+        <div data-screen-label="404" dir="rtl" lang="ar" style="width:560px; background:#FBFAF6; border:1px solid #C9C3B4; padding:40px 42px; font-size:16.5px; line-height:1.8; color:#3B4560">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#B87B12" dir="ltr">404</div>
+          <h1 style="margin:16px 0 0; font-size:30px; line-height:1.4; font-weight:600; color:#14213F">هذه الصفحة غير موجودة</h1>
+          <p style="margin:12px 0 0; font-size:16.5px; line-height:1.8">قد يكون الرابط قديماً أو مكتوباً بشكل غير صحيح. هذه أكثر الصفحات طلباً:</p>
+          <div style="margin-top:20px; border-top:1px solid #D8D3C7">
+            <a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #D8D3C7; text-decoration:none; min-height:44px"><span style="font-size:16.5px; color:#14213F">البرامج والخدمات</span><span style="color:#8A8272">←</span></a>
+            <a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #D8D3C7; text-decoration:none; min-height:44px"><span style="font-size:16.5px; color:#14213F">المشاريع</span><span style="color:#8A8272">←</span></a>
+            <a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid #D8D3C7; text-decoration:none; min-height:44px"><span style="font-size:16.5px; color:#14213F">القنوات الرسمية</span><span style="color:#8A8272">←</span></a>
+            <a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:14px 0; text-decoration:none; min-height:44px"><span style="font-size:16.5px; color:#14213F">تواصل معنا</span><span style="color:#8A8272">←</span></a>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.6 · ERROR BOUNDARY</div>
+        <div data-screen-label="Error boundary" dir="rtl" lang="ar" style="width:560px; background:#FBFAF6; border:1px solid #C9C3B4; padding:40px 42px; font-size:16.5px; line-height:1.8; color:#3B4560">
+          <div style="height:2px; width:72px; background:#A32B2B"></div>
+          <h1 style="margin:20px 0 0; font-size:28px; line-height:1.4; font-weight:600; color:#14213F">تعذّر تحميل هذا القسم</h1>
+          <p style="margin:12px 0 0; font-size:16.5px; line-height:1.8">الخطأ من عندنا، لا من عندك. سُجِّل الخطأ تلقائياً وسنراجعه.</p>
+          <div style="margin-top:22px; display:flex; gap:12px; flex-wrap:wrap">
+            <button style="font-family:inherit; font-size:15.5px; font-weight:600; color:#FBFAF6; background:#254284; border:none; border-radius:6px; padding:14px 24px; cursor:pointer">أعد المحاولة</button>
+            <a href="#" style="font-size:15.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:13px 24px; text-decoration:none">الصفحة الرئيسية</a>
+          </div>
+          <div style="margin-top:24px; border-top:1px solid #D8D3C7; padding-top:16px; font-size:14.5px; line-height:1.8; color:#5A6478">
+            إن كنت تحتاج مساعدة عاجلة، راسلنا على واتساب <bdi dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#254284">+970 59 588 9697</bdi>
+          </div>
+          <div style="margin-top:14px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272" dir="ltr">ERROR REF [a3f9c1] — NO PERSONAL DATA IN THE LOG</div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.7 · SUBMISSION FAILED — CONNECTIVITY</div>
+        <div data-screen-label="Submit failed" dir="rtl" lang="ar" style="width:560px; background:#FFFFFF; border:1px solid #C9C3B4; padding:32px 34px; font-size:16px; line-height:1.75; color:#3B4560">
+          <div role="alert" style="border:1px solid #E0C4C4; background:#FBF0F0; padding:16px 18px; display:flex; gap:12px; align-items:flex-start">
+            <span style="color:#A32B2B; font-size:16px; line-height:1.5">◆</span>
+            <div>
+              <div style="font-size:16px; font-weight:600; color:#A32B2B">لم يُرسل النموذج — تعذّر الاتصال</div>
+              <p style="margin:8px 0 0; font-size:15px; line-height:1.75; color:#3B4560">ما كتبته محفوظ في هذه الصفحة ولم يُفقد. أعد المحاولة، أو أرسل المحتوى نفسه بالبريد.</p>
+            </div>
+          </div>
+          <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap">
+            <button style="font-family:inherit; font-size:15.5px; font-weight:600; color:#FBFAF6; background:#254284; border:none; border-radius:6px; padding:14px 24px; cursor:pointer">أعد الإرسال</button>
+            <a href="#" style="font-size:15.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:13px 24px; text-decoration:none">أرسل بالبريد بدلاً من ذلك</a>
+          </div>
+          <div style="margin-top:20px; border-top:1px solid #D8D3C7; padding-top:16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+            <button disabled="disabled" style="font-family:inherit; font-size:15.5px; font-weight:600; color:#8A8272; background:#F2EFE7; border:1px solid #D8D3C7; border-radius:6px; padding:14px 24px">جارٍ الإرسال…</button>
+            <span style="font-size:14px; color:#8A8272">حالة الانتظار: الزر معطّل ونصه يتغيّر، فلا يُرسل النموذج مرتين.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.8 · DESTRUCTIVE ACTION — ADMIN</div>
+        <div data-screen-label="Confirm dialog" dir="rtl" lang="ar" style="width:560px; height:360px; background:#F2EFE7; border:1px solid #C9C3B4; position:relative; overflow:hidden">
+          <div style="position:absolute; inset:0; background:#14213F; opacity:.45"></div>
+          <div style="position:absolute; inset-inline:40px; top:60px; background:#FBFAF6; border:1px solid #C9C3B4; box-shadow:0 12px 32px rgb(18 32 63 / .28); padding:28px 30px">
+            <div style="height:2px; width:64px; background:#A32B2B"></div>
+            <div style="margin-top:18px; font-size:20px; font-weight:600; color:#14213F">حذف هذا المشروع نهائياً؟</div>
+            <p style="margin:10px 0 0; font-size:15.5px; line-height:1.8; color:#3B4560">سيُحذف المشروع وارتباطاته بالشركاء والوسائط. لا يمكن التراجع عن هذا الإجراء، ويُسجَّل في سجل التدقيق باسمك.</p>
+            <div style="margin-top:16px; border:1px solid #E0C4C4; background:#FBF0F0; padding:12px 14px; font-size:14px; line-height:1.7; color:#3B4560">مرتبط بـ <span style="font-weight:600">قصة أثر واحدة</span> و<span style="font-weight:600">خبرين</span> — ستفقد هذه العناصر الرابط إلى المشروع.</div>
+            <div style="margin-top:20px; display:flex; gap:12px; justify-content:flex-start">
+              <button style="font-family:inherit; font-size:15px; font-weight:600; color:#FBFAF6; background:#A32B2B; border:none; border-radius:6px; padding:13px 22px; cursor:pointer">نعم، احذف</button>
+              <button style="font-family:inherit; font-size:15px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:12px 22px; cursor:pointer">إلغاء</button>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0; max-width:560px; font-size:13.5px; line-height:1.65; color:#5A6478">Shadow appears here and nowhere on the public site: this layer genuinely floats. The dialog names what else breaks — deletion of a referenced media asset is refused outright with the list of usages.</p>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.9 · PERMISSION &amp; SESSION</div>
+        <div data-screen-label="Permission states" dir="rtl" lang="ar" style="width:560px; display:flex; flex-direction:column; gap:16px">
+          <div style="background:#FBFAF6; border:1px solid #C9C3B4; padding:26px 28px; font-size:16px; line-height:1.75; color:#3B4560">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8A8272" dir="ltr">403 · FORBIDDEN</div>
+            <div style="margin-top:12px; font-size:19px; font-weight:600; color:#14213F">لا تملك صلاحية النشر</div>
+            <p style="margin:8px 0 0; font-size:15.5px; line-height:1.8">دورك الحالي «محرِّر». احفظ العمل كمسوّدة أو أرسله إلى المراجعة، وسيتولّى مدير المحتوى النشر.</p>
+            <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap">
+              <button style="font-family:inherit; font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border:none; border-radius:6px; padding:12px 20px">أرسل إلى المراجعة</button>
+              <button style="font-family:inherit; font-size:15px; color:#14213F; background:#FFFFFF; border:1px solid #C9C3B4; border-radius:6px; padding:11px 20px">حفظ كمسوّدة</button>
+            </div>
+            <p style="margin:14px 0 0; font-size:13.5px; line-height:1.7; color:#8A8272">الخيار غير المتاح يُعرض معطّلاً مع سببه قبل المحاولة، لا كرسالة خطأ بعدها.</p>
+          </div>
+          <div style="background:#FBFAF6; border:1px solid #C9C3B4; padding:26px 28px; font-size:16px; line-height:1.75; color:#3B4560">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8A8272" dir="ltr">SESSION EXPIRED</div>
+            <div style="margin-top:12px; font-size:19px; font-weight:600; color:#14213F">انتهت الجلسة</div>
+            <p style="margin:8px 0 0; font-size:15.5px; line-height:1.8">سجّل الدخول من جديد. مسوّدتك محفوظة ولن تفقد ما كتبته.</p>
+            <button style="margin-top:14px; font-family:inherit; font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border:none; border-radius:6px; padding:12px 20px">تسجيل الدخول</button>
+          </div>
+          <div style="background:#FBFAF6; border:1px solid #C9C3B4; padding:26px 28px; font-size:16px; line-height:1.75; color:#3B4560">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8A8272" dir="ltr">ENTITY GONE</div>
+            <div style="margin-top:12px; font-size:19px; font-weight:600; color:#14213F">هذا العنصر لم يعد منشوراً</div>
+            <p style="margin:8px 0 0; font-size:15.5px; line-height:1.8">أُرشف الشاغر بعد انتهاء موعده. هذه الشواغر المفتوحة حالياً.</p>
+            <a href="#" style="display:inline-block; margin-top:12px; font-size:15px; font-weight:600; color:#254284; text-decoration:none; border-bottom:2px solid #DD991C; padding-bottom:3px">الشواغر المفتوحة</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">16.10 · PARTIAL DATA — WHAT DEGRADES GRACEFULLY</div>
+        <div data-screen-label="Partial data" dir="rtl" lang="ar" style="width:760px; background:#FBFAF6; border:1px solid #C9C3B4; padding:30px 34px; font-size:16px; line-height:1.75; color:#3B4560">
+          <div style="border-top:2px solid #14213F">
+            <div style="padding:16px 0; border-bottom:1px solid #D8D3C7; display:grid; grid-template-columns:220px 1fr; gap:20px; align-items:baseline">
+              <span style="font-size:15px; font-weight:600; color:#14213F">مشروع بلا صورة رئيسية</span>
+              <span style="font-size:15px; line-height:1.75; color:#5A6478">البطاقة تنتقل إلى شكل نصي والملخص يحمل الوزن البصري — لا مربع رمادي فارغ.</span>
+            </div>
+            <div style="padding:16px 0; border-bottom:1px solid #D8D3C7; display:grid; grid-template-columns:220px 1fr; gap:20px; align-items:baseline">
+              <span style="font-size:15px; font-weight:600; color:#14213F">شريك بلا إذن شعار</span>
+              <span style="font-size:15px; line-height:1.75; color:#5A6478">يُعرض الاسم نصاً مع ملاحظة صغيرة. القاعدة في الاستعلام لا في المكوّن.</span>
+            </div>
+            <div style="padding:16px 0; border-bottom:1px solid #D8D3C7; display:grid; grid-template-columns:220px 1fr; gap:20px; align-items:baseline">
+              <span style="font-size:15px; font-weight:600; color:#14213F">رقم بلا فترة</span>
+              <span style="font-size:15px; line-height:1.75; color:#5A6478">غير قابل للعرض: الفترة خاصية إلزامية في نوع البطاقة، فالحالة لا توجد أصلاً.</span>
+            </div>
+            <div style="padding:16px 0; border-bottom:1px solid #D8D3C7; display:grid; grid-template-columns:220px 1fr; gap:20px; align-items:baseline">
+              <span style="font-size:15px; font-weight:600; color:#14213F">قصة بلا موافقة تصوير</span>
+              <span style="font-size:15px; line-height:1.75; color:#5A6478">تُستبدل الصورة ببطاقة اقتباس على أرضية كحلية فاتحة.</span>
+            </div>
+            <div style="padding:16px 0; border-bottom:1px solid #D8D3C7; display:grid; grid-template-columns:220px 1fr; gap:20px; align-items:baseline">
+              <span style="font-size:15px; font-weight:600; color:#14213F">عضو مجلس غير مُعلن</span>
+              <span style="font-size:15px; line-height:1.75; color:#5A6478">لا يظهر إطلاقاً؛ ويُذكر في مكانه سطر يوضح أن النشر يتطلب موافقة.</span>
+            </div>
+            <div style="padding:16px 0; display:grid; grid-template-columns:220px 1fr; gap:20px; align-items:baseline">
+              <span style="font-size:15px; font-weight:600; color:#14213F">نص عربي طويل جداً</span>
+              <span style="font-size:15px; line-height:1.75; color:#5A6478">العناوين تلتف على سطرين أو ثلاثة بلا قطع، والبطاقات تتساوى بالشبكة لا بارتفاع ثابت.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:32px; max-width:1180px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">17 — AUDIT &amp; RECOMMENDATIONS</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">DESIGN vs THE PLAN DOCUMENTS</span>
+    </div>
+
+    <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:48px 56px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; color:#B87B12">17.1</div>
+      <h2 style="margin:12px 0 0; font-size:32px; line-height:1.15; font-weight:600; color:#14213F; letter-spacing:-0.015em">Product understanding</h2>
+      <p style="margin:16px 0 0; font-size:16.5px; line-height:1.7; color:#3B4560; max-width:88ch">A bilingual institutional website for a licensed Palestinian civil-society organisation working across the five governorates of the Gaza Strip, with three purposes in a stated priority order: pass institutional donor due diligence (the primary conversion is a partnership inquiry, never a donation), protect the community from impersonation, and let non-technical Arabic-speaking staff publish. There is no payment path anywhere by design; support is a WhatsApp deep link. The design follows that order of priority literally — which is why partnership and channel verification are the only two actions in persistent chrome.</p>
+      <div style="margin-top:28px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px">
+        <div style="border-top:2px solid #254284; padding-top:14px">
+          <div style="font-size:16px; font-weight:600; color:#14213F">Institutional reader</div>
+          <p style="margin:6px 0 0; font-size:15px; line-height:1.6; color:#5A6478">Donor, UN agency, INGO compliance officer. Needs licence, governance, verifiable figures, partners, policies — fast, in English, from a shared link.</p>
+        </div>
+        <div style="border-top:2px solid #B3591B; padding-top:14px">
+          <div style="font-size:16px; font-weight:600; color:#14213F">Community reader</div>
+          <p style="margin:6px 0 0; font-size:15px; line-height:1.6; color:#5A6478">Arabic, on a phone, often on a poor connection. Needs eligibility, how to access a service, and certainty about which channel is genuinely the organisation's.</p>
+        </div>
+        <div style="border-top:2px solid #1F6B54; padding-top:14px">
+          <div style="font-size:16px; font-weight:600; color:#14213F">Staff author</div>
+          <p style="margin:6px 0 0; font-size:15px; line-height:1.6; color:#5A6478">Arabic-first, non-technical, publishing 2–4 items a month. Needs one form shape, both locales visible at once, and blocks that stop protection mistakes before they publish.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:48px 56px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; color:#B87B12">17.2</div>
+      <h2 style="margin:12px 0 0; font-size:32px; line-height:1.15; font-weight:600; color:#14213F; letter-spacing:-0.015em">Roles, and where each one is visible in the design</h2>
+      <div style="margin-top:24px; border-top:2px solid #14213F">
+        <div style="display:grid; grid-template-columns:180px minmax(0,1.3fr) minmax(0,1fr); gap:24px; padding:12px 0; border-bottom:1px solid #D8D3C7; font-size:12px; font-weight:500; color:#8A8272">
+          <div>ROLE</div><div>CAN</div><div>DRAWN IN</div>
+        </div>
+        <div style="display:grid; grid-template-columns:180px minmax(0,1.3fr) minmax(0,1fr); gap:24px; padding:14px 0; border-bottom:1px solid #D8D3C7; font-size:15px; line-height:1.6; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Public (anon)</div><div>Read published content in either locale; submit six forms; download public documents. No account exists.</div><div style="color:#5A6478">Sections 02–12</div>
+        </div>
+        <div style="display:grid; grid-template-columns:180px minmax(0,1.3fr) minmax(0,1fr); gap:24px; padding:14px 0; border-bottom:1px solid #D8D3C7; font-size:15px; line-height:1.6; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">editor</div><div>Create and edit; submit for review. Cannot publish — the control is disabled with its reason, not an error after the attempt.</div><div style="color:#5A6478">14.1 status panel · 16.9</div>
+        </div>
+        <div style="display:grid; grid-template-columns:180px minmax(0,1.3fr) minmax(0,1fr); gap:24px; padding:14px 0; border-bottom:1px solid #D8D3C7; font-size:15px; line-height:1.6; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">content_manager</div><div>Publish, unpublish, archive, handle the general inbox, edit contact fields on organisation settings.</div><div style="color:#5A6478">13.1 · 13.2 · 15.1</div>
+        </div>
+        <div style="display:grid; grid-template-columns:180px minmax(0,1.3fr) minmax(0,1fr); gap:24px; padding:14px 0; border-bottom:1px solid #D8D3C7; font-size:15px; line-height:1.6; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">admin</div><div>Everything above, plus users, redirects, audit log, full organisation settings.</div><div style="color:#5A6478">13.1 sidebar · <span style="color:#A32B2B">screens not drawn</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:180px minmax(0,1.3fr) minmax(0,1fr); gap:24px; padding:14px 0; font-size:15px; line-height:1.6; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">can_view_sensitive</div><div>A per-person grant, not derived from role. Opens the confidential complaints route; every view is audited.</div><div style="color:#5A6478">15.2</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:48px 56px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; color:#B87B12">17.3</div>
+      <h2 style="margin:12px 0 0; font-size:32px; line-height:1.15; font-weight:600; color:#14213F; letter-spacing:-0.015em">Route coverage against the 24-route inventory</h2>
+      <p style="margin:14px 0 0; font-size:16px; line-height:1.7; color:#3B4560; max-width:88ch">Fourteen of the twenty-four public routes are drawn. The ten that are not are all instances of a pattern that <em>is</em> drawn — a ruled list, a prose page, or a card grid — which is why they were deprioritised rather than forgotten. They are listed explicitly below so nothing is discovered late.</p>
+      <div style="margin-top:24px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:32px">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#1F6B54">DRAWN — 14 ROUTES</div>
+          <div style="margin-top:12px; border-top:2px solid #1F6B54">
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/{locale}</span><span style="color:#5A6478">02.1—02.5</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/about</span><span style="color:#5A6478">12.1—12.3</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/about/vision-mission</span><span style="color:#5A6478">12.1 band</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/about/governance</span><span style="color:#5A6478">12.1 board</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/about/strategy</span><span style="color:#5A6478">12.1 objectives</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/programs/[slug]</span><span style="color:#5A6478">03.1—03.4</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/projects</span><span style="color:#5A6478">04.1—04.4</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/projects/[slug]</span><span style="color:#5A6478">05.1—05.3</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/impact</span><span style="color:#5A6478">06.1—06.3</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/impact/stories/[slug]</span><span style="color:#5A6478">07.1—07.3</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/get-involved/partner</span><span style="color:#5A6478">09.1—09.5</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/careers · /careers/[slug]</span><span style="color:#5A6478">10.1—10.5</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/verify</span><span style="color:#5A6478">08.1—08.3</span></div>
+            <div style="padding:10px 0; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/contact</span><span style="color:#5A6478">11.1—11.3</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#B3591B">NOT DRAWN — 10 ROUTES</div>
+          <div style="margin-top:12px; border-top:2px solid #B3591B">
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/news</span><span style="color:#8A8272">pattern: ruled list (02 §08)</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/news/[slug]</span><span style="color:#8A8272">pattern: story (07)</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/programs</span><span style="color:#8A8272">pattern: 3 cards (02 §02)</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/partners</span><span style="color:#8A8272">pattern: logo/text grid (02 §07)</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/about/memberships</span><span style="color:#8A8272">pattern: ledger rows (12.1)</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/get-involved</span><span style="color:#8A8272">pattern: 3 panels (02 §07)</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/get-involved/volunteer</span><span style="color:#A32B2B">form not drawn</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/get-involved/support</span><span style="color:#A32B2B">WhatsApp-only page not drawn</span></div>
+            <div style="padding:10px 0; border-bottom:1px solid #E3DED2; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/resources</span><span style="color:#8A8272">pattern: ruled list + PDF rows</span></div>
+            <div style="padding:10px 0; display:flex; justify-content:space-between; gap:16px; font-size:14.5px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#14213F">/legal/[slug]</span><span style="color:#8A8272">pattern: prose (07 measure)</span></div>
+          </div>
+          <div style="margin-top:20px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#B3591B">ADMIN — NOT DRAWN</div>
+          <div style="margin-top:10px; font-size:14.5px; line-height:1.75; color:#5A6478">Media library grid and detail · nine remaining entity forms (posts, stories, vacancies, metrics, partners, people, publications, pages, organisation) · users · redirects · audit log. All are field configs or list variants of 13.2 and 14.1.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:48px 56px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; color:#B87B12">17.4</div>
+      <h2 style="margin:12px 0 0; font-size:32px; line-height:1.15; font-weight:600; color:#14213F; letter-spacing:-0.015em">Four-way validation matrix</h2>
+      <div style="margin-top:22px; border-top:2px solid #14213F">
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #D8D3C7; font-size:12px; font-weight:500; color:#8A8272">
+          <div>SCREEN</div><div>AR DESKTOP</div><div>EN DESKTOP</div><div>AR MOBILE</div><div>EN MOBILE</div><div>NOTE</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Home</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#8A8272">+ nav sheet</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Programme detail</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#8A8272">access block first</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Projects, faceted</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">+ filter sheet</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Project detail</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">ledger sidebar → stacked</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Impact</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">method block first</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Impact story</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">720px measure</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">/verify</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">share card + report form</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Partnership inquiry</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">+ success + validation failure</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Careers + application</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">3 deadline states</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Contact + complaint</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">confidential surface differs</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; border-bottom:1px solid #E3DED2; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">About / governance / strategy</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#1F6B54">✓</div><div style="color:#B3591B">mirror of AR</div><div style="color:#8A8272">identity ledger</div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 110px 110px 110px 110px minmax(0,1fr); gap:16px; padding:12px 0; font-size:14.5px; color:#3B4560; align-items:baseline">
+          <div style="font-weight:600; color:#14213F">Admin (dashboard · table · editor · inbox · login)</div><div style="color:#1F6B54">✓</div><div style="color:#8A8272">n/a</div><div style="color:#B3591B">not drawn</div><div style="color:#8A8272">n/a</div><div style="color:#8A8272">AR-only by specification</div>
+        </div>
+      </div>
+      <p style="margin:18px 0 0; font-size:14.5px; line-height:1.7; color:#8A8272; max-width:96ch">“Mirror of AR” means the mobile layout is the same markup with <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px">dir</span> flipped and the English type scale applied — the composition itself does not change, and the paired desktop frames already prove the mirroring. Where the mobile composition genuinely differs from desktop (nav sheet, filter sheet, sticky action bars) both directions are drawn or the difference is annotated.</p>
+    </div>
+
+    <div style="background:#FBFAF6; border:1px solid #D8D3C7; padding:48px 56px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; color:#B87B12">17.5</div>
+      <h2 style="margin:12px 0 0; font-size:32px; line-height:1.15; font-weight:600; color:#14213F; letter-spacing:-0.015em">Plan documents vs this design</h2>
+      <div style="margin-top:24px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:32px">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#1F6B54">HONOURED</div>
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px; font-size:15px; line-height:1.65; color:#3B4560">
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span>Navy and gold ramps kept verbatim, including the two-gold distinction (#B87B12 for text, #DD991C for marks).</span></div>
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span>Every figure renders with its period and status; a bare number is not expressible.</span></div>
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span>Logical properties only — no physical margins, paddings or alignments anywhere in the design.</span></div>
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span><span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px">&lt;bdi dir="ltr"&gt;</span> on every Latin run and numeral inside Arabic prose.</span></div>
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span>Email fallback line under every form; pending state disables the submit button.</span></div>
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span>Partner logos only with permission; unpublished people absent; consent gate blocks publication.</span></div>
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span>Complaint surface visibly distinct, anonymous permitted, no IP, no analytics, audited access.</span></div>
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span>44px minimum touch targets; 17px Arabic body at leading 1.8; no shadow on public routes.</span></div>
+            <div style="display:flex; gap:12px"><span style="color:#1F6B54">✓</span><span>No payment path, no third-party embed, no map library — the governorate view is plain markup.</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#B3591B">DEPARTURES — EACH ONE DELIBERATE</div>
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:14px">
+            <div style="border-inline-start:3px solid #DD991C; padding-inline-start:14px">
+              <div style="font-size:15.5px; font-weight:600; color:#14213F">Three warm tokens added</div>
+              <p style="margin:5px 0 0; font-size:14.5px; line-height:1.65; color:#5A6478">paper #FBFAF6, paper-alt #F2EFE7, rule #D8D3C7 replace white / #F6F7FB / #DDE3EE. Reason in 00 — the same navy and gold read as software on cool grey and as a document on warm paper. <strong>Needs your sign-off before it enters globals.css.</strong></p>
+            </div>
+            <div style="border-inline-start:3px solid #DD991C; padding-inline-start:14px">
+              <div style="font-size:15.5px; font-weight:600; color:#14213F">Type: one family, plus mono</div>
+              <p style="margin:5px 0 0; font-size:14.5px; line-height:1.65; color:#5A6478">IBM Plex Sans Arabic carries both scripts (true parity, one subset), and IBM Plex Mono carries metadata. That is a third font file against the 120KB budget — subset to digits, Latin caps and punctuation only.</p>
+            </div>
+            <div style="border-inline-start:3px solid #DD991C; padding-inline-start:14px">
+              <div style="font-size:15.5px; font-weight:600; color:#14213F">Utility bar in persistent chrome</div>
+              <p style="margin:5px 0 0; font-size:14.5px; line-height:1.65; color:#5A6478">A 44px navy strip carrying the no-fees statement and the verify link on every route. Not in the component inventory; it is how priority 2 stops depending on someone finding a page.</p>
+            </div>
+            <div style="border-inline-start:3px solid #DD991C; padding-inline-start:14px">
+              <div style="font-size:15.5px; font-weight:600; color:#14213F">The /verify share card</div>
+              <p style="margin:5px 0 0; font-size:14.5px; line-height:1.65; color:#5A6478">A bordered plate designed to be screenshotted and forwarded, with a save-as-image control. New scope: needs a route producing a PNG, or the button drops and the plate stays screenshot-friendly.</p>
+            </div>
+            <div style="border-inline-start:3px solid #DD991C; padding-inline-start:14px">
+              <div style="font-size:15.5px; font-weight:600; color:#14213F">Governorate rows instead of the SVG map</div>
+              <p style="margin:5px 0 0; font-size:14.5px; line-height:1.65; color:#5A6478">Ordered north→south with counts. The spec's five-shape inline SVG still stands; this is a placeholder until real geometry is drawn, not a replacement decision.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#14213F; color:#FBFAF6; padding:48px 56px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; color:#DD991C">17.6</div>
+      <h2 style="margin:12px 0 0; font-size:32px; line-height:1.15; font-weight:600; color:#FBFAF6; letter-spacing:-0.015em">Recommendations, in the order they should be taken</h2>
+
+      <div style="margin-top:30px; border-top:2px solid #A32B2B; padding-top:18px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#A32B2B">CRITICAL — BLOCKS THE BUILD</div>
+        <div style="margin-top:16px; display:flex; flex-direction:column; gap:20px">
+          <div style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px">
+            <div style="font-size:17px; font-weight:600; color:#FBFAF6">Real organisational facts</div>
+            <div>
+              <p style="margin:0; font-size:15.5px; line-height:1.7; color:#C9CFDE"><strong style="color:#FBFAF6">Problem:</strong> legal name, licence number, licensing authority, founding year, office hours and the strategic plan text are bracketed placeholders throughout. <strong style="color:#FBFAF6">Evidence:</strong> every frame in every file. <strong style="color:#FBFAF6">Why it matters:</strong> the identity ledger is the due-diligence surface; with placeholders it cannot be reviewed for accuracy, only for layout. <strong style="color:#FBFAF6">Do:</strong> supply the strategic plan and registration documents; I load them into the frames before implementation starts. <strong style="color:#FBFAF6">Impact:</strong> turns a layout review into a content review.</p>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px">
+            <div style="font-size:17px; font-weight:600; color:#FBFAF6">Confirm the official channels</div>
+            <div>
+              <p style="margin:0; font-size:15.5px; line-height:1.7; color:#C9CFDE"><strong style="color:#FBFAF6">Problem:</strong> /verify lists one real phone number from the environment file and placeholders for the rest, including a “former account, no longer used” row that is invented structure. <strong style="color:#FBFAF6">Why it matters:</strong> a wrong or incomplete channel list on this page is worse than no page — it can legitimise an impersonator. <strong style="color:#FBFAF6">Do:</strong> give me the complete, verified list including any accounts that should be publicly marked as retired. <strong style="color:#FBFAF6">Impact:</strong> the page becomes usable as designed.</p>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px">
+            <div style="font-size:17px; font-weight:600; color:#FBFAF6">Token sign-off</div>
+            <div>
+              <p style="margin:0; font-size:15.5px; line-height:1.7; color:#C9CFDE"><strong style="color:#FBFAF6">Problem:</strong> three colour tokens depart from 04-DESIGN-SYSTEM §1. <strong style="color:#FBFAF6">Why it matters:</strong> tokens are the one thing that must be settled before any component is written; changing them later is a repaint of everything. <strong style="color:#FBFAF6">Do:</strong> accept the warm set, or reject it and I revert to white / #F6F7FB / #DDE3EE across all files in one pass. <strong style="color:#FBFAF6">Impact:</strong> unblocks M1.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:30px; border-top:2px solid #DD991C; padding-top:18px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#DD991C">HIGH — SIGNIFICANT UX OR ENGINEERING IMPACT</div>
+        <div style="margin-top:16px; display:flex; flex-direction:column; gap:18px">
+          <div style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px">
+            <div style="font-size:16.5px; font-weight:600; color:#FBFAF6">Field photography</div>
+            <div><p style="margin:0; font-size:15px; line-height:1.7; color:#C9CFDE">Twenty-eight image slots sit empty. The design treats photography as captioned evidence with a credit and a consent reference — it needs real images with those attributes, or the caption apparatus is decoration. Supply 8–12 images with activity, governorate, date and consent status per image.</p></div>
+          </div>
+          <div style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px">
+            <div style="font-size:16.5px; font-weight:600; color:#FBFAF6">Governorate map geometry</div>
+            <div><p style="margin:0; font-size:15px; line-height:1.7; color:#C9CFDE">Decide now whether the five governorates are drawn as real geometry (accurate boundaries, one static SVG, ~4KB) or stay as the ordered rows. Both are defensible; the rows are more legible on a phone, the map is more credible to a donor. This affects the home and projects layouts, so decide before M3.</p></div>
+          </div>
+          <div style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px">
+            <div style="font-size:16.5px; font-weight:600; color:#FBFAF6">Ten remaining public routes</div>
+            <div><p style="margin:0; font-size:15px; line-height:1.7; color:#C9CFDE">News list and detail, programmes index, partners, memberships, get-involved index, volunteer form, support page, resources, legal pages. Each follows a pattern already drawn — roughly one further pass. The volunteer form and support page are the two with genuinely new content and should be drawn, not inferred.</p></div>
+          </div>
+          <div style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px">
+            <div style="font-size:16.5px; font-weight:600; color:#FBFAF6">Media library and consent workflow</div>
+            <div><p style="margin:0; font-size:15px; line-height:1.7; color:#C9CFDE">The consent gate is drawn as a blocking error at the point of publish, but the screen where a staff member resolves it — the library detail panel with alt text, credit, consent reference and the identifiable-minors flag — is not. It is the second-most protection-critical screen in the admin after the confidential inbox.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:30px; border-top:2px solid #4A5773; padding-top:18px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#8FA0C4">MEDIUM — MEANINGFUL IMPROVEMENTS</div>
+        <div style="margin-top:14px; display:flex; flex-direction:column; gap:12px; font-size:15px; line-height:1.7; color:#C9CFDE">
+          <div style="display:flex; gap:14px"><span style="color:#DD991C">◆</span><span><strong style="color:#FBFAF6">OG image templates.</strong> Social sharing is the organisation's dominant distribution channel and per-template OG cards are specified, but none are designed. Four templates cover everything: project, story, post, vacancy.</span></div>
+          <div style="display:flex; gap:14px"><span style="color:#DD991C">◆</span><span><strong style="color:#FBFAF6">Arabic numeral decision.</strong> The design uses Latin digits inside Arabic throughout, per the current formatter setting. It is a one-line change to Eastern Arabic numerals and it materially changes the look of every figure — settle it while it is still one line.</span></div>
+          <div style="display:flex; gap:14px"><span style="color:#DD991C">◆</span><span><strong style="color:#FBFAF6">Nine remaining admin entity forms.</strong> Field configs against 14.1, but metrics and partners each have a field type worth drawing once: the metric period/status pair, and the logo-permission control.</span></div>
+          <div style="display:flex; gap:14px"><span style="color:#DD991C">◆</span><span><strong style="color:#FBFAF6">Print styling for the dossier pages.</strong> Compliance officers print. About, governance and a project record should have a print stylesheet; the ruled, shadow-free design already prints well.</span></div>
+          <div style="display:flex; gap:14px"><span style="color:#DD991C">◆</span><span><strong style="color:#FBFAF6">Admin on a tablet.</strong> The spec exempts the admin from mobile, but staff will open the inbox on a phone. A one-column fallback for the inbox and the status panel is cheap insurance.</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:30px; border-top:1px solid #3B4560; padding-top:18px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#8FA0C4">LOW — POLISH</div>
+        <div style="margin-top:14px; display:flex; flex-direction:column; gap:10px; font-size:15px; line-height:1.7; color:#C9CFDE">
+          <div style="display:flex; gap:14px"><span style="color:#8FA0C4">◆</span><span>A copy-to-clipboard confirmation on /verify (the copy buttons have no success feedback drawn).</span></div>
+          <div style="display:flex; gap:14px"><span style="color:#8FA0C4">◆</span><span>Favicon and app-manifest icon set from the logo mark, cropped to the wheat-and-figure device without the wordmark.</span></div>
+          <div style="display:flex; gap:14px"><span style="color:#8FA0C4">◆</span><span>An RSS-discovery link and a newsletter question — currently no subscription surface exists at all, which may be intentional.</span></div>
+          <div style="display:flex; gap:14px"><span style="color:#8FA0C4">◆</span><span>Focus-visible specimen: the 3px gold ring is specified and used, but not shown in the foundations plate.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#FEF7E7; border:1px solid #EBD9AE; border-inline-start:4px solid #DD991C; padding:36px 40px">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; color:#B87B12">17.7 · OPEN QUESTIONS FOR YOU</div>
+      <div style="margin-top:18px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 40px; font-size:15.5px; line-height:1.7; color:#3B4560">
+        <div style="display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#B87B12">Q1</span><span>Warm paper tokens: keep or revert?</span></div>
+        <div style="display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#B87B12">Q2</span><span>Mobile sticky bar: WhatsApp + verify as drawn, or the partnership CTA instead?</span></div>
+        <div style="display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#B87B12">Q3</span><span>Governorate rows or a real five-shape map?</span></div>
+        <div style="display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#B87B12">Q4</span><span>Latin or Eastern Arabic numerals inside Arabic text?</span></div>
+        <div style="display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#B87B12">Q5</span><span>Does the /verify share card get a real PNG route, or stay screenshot-only?</span></div>
+        <div style="display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#B87B12">Q6</span><span>Next pass: the ten remaining public routes, or the rest of the admin?</span></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000}}"></script>
+</body>
+</html>

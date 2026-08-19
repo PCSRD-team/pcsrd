@@ -1,0 +1,106 @@
+/* PCSRD — design tokens. Drop in as src/app/globals.css at M2 step 1.
+   Tailwind v4 @theme. Navy and gold ramps per 04-DESIGN-SYSTEM; paper, rule
+   and programme tokens added during design. Radius is 0 by system. */
+
+@import "tailwindcss";
+
+@theme {
+  /* ink */
+  --color-ink:            #14213F;
+  --color-ink-70:         #3B4560;
+  --color-ink-55:         #5A6478;
+
+  /* navy */
+  --color-navy-900:       #182E5D;
+  --color-navy-700:       #254284;
+  --color-navy-100:       #E7EBF4;
+
+  /* gold — marking colour only; gold-600 never carries text on paper */
+  --color-gold-700:       #B87B12;
+  --color-gold-600:       #DD991C;
+  --color-gold-050:       #FEF7E7;
+
+  /* paper */
+  --color-paper:          #FBFAF6;
+  --color-paper-alt:      #F2EFE7;
+  --color-paper-ground:   #E5E2DA;
+
+  /* rules */
+  --color-rule:           #D8D3C7;
+  --color-rule-strong:    #C9C3B4;
+  --color-hairline:       #E3DED2;
+
+  /* labels */
+  --color-mono-muted:     #8A8272;
+
+  /* programme identity */
+  --color-prog-protection: #254284;
+  --color-prog-response:   #B3591B;
+  --color-prog-recovery:   #1F6B54;
+
+  /* type */
+  --font-sans: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --text-display:    4rem;      --text-display--line-height:   1.06;
+  --text-display-ar: 2.375rem;  --text-display-ar--line-height:1.30;
+  --text-h1:         2.5rem;    --text-h1--line-height:        1.20;
+  --text-h2:         1.75rem;   --text-h2--line-height:        1.30;
+  --text-h3:         1.25rem;   --text-h3--line-height:        1.40;
+  --text-lead:       1.125rem;  --text-lead--line-height:      1.65;
+  --text-body:       1rem;      --text-body--line-height:      1.80;
+  --text-small:      0.9375rem; --text-small--line-height:     1.60;
+  --text-caption:    0.90625rem;--text-caption--line-height:   1.60;
+  --text-eyebrow:    0.75rem;   --text-eyebrow--line-height:   1.40;
+
+  /* layout */
+  --container-content: 1180px;
+  --radius-none: 0;
+}
+
+@layer base {
+  :root { color-scheme: light; }
+
+  body {
+    background: var(--color-paper-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Arabic runs looser than Latin at the same size */
+  :lang(ar) { line-height: 1.8; }
+  :lang(en) { line-height: 1.65; }
+
+  a {
+    color: var(--color-navy-700);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  a:hover { color: var(--color-gold-700); }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-600);
+    outline-offset: 2px;
+  }
+
+  p, li { text-wrap: pretty; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* The three rule weights. Fixed meanings — do not add a fourth.
+   1px rule        = container edge / list separator
+   2px ink         = section boundary
+   2px x 88px gold = heading mark */
+@utility rule-edge     { border: 1px solid var(--color-rule); }
+@utility rule-section  { border-block-start: 2px solid var(--color-ink); }
+@utility rule-mark     {
+  inline-size: 88px; block-size: 2px;
+  background: var(--color-gold-600);
+}

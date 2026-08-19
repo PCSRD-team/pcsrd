@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  body { margin:0; background:#E5E2DA; font-family:'IBM Plex Sans Arabic', system-ui, sans-serif; }
+  a { color:#254284; text-underline-offset:3px; }
+  a:hover { color:#B87B12; }
+  * { box-sizing:border-box; }
+</style>
+</helmet>
+
+<div style="padding:72px 64px 140px; display:flex; flex-direction:column; gap:110px; background:#E5E2DA; min-height:100vh">
+
+  <section style="display:flex; flex-direction:column; gap:32px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; max-width:1180px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">18 — NEWS</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">/news · DYN per category · /news/[slug] · SSG+ISR</span>
+    </div>
+    <p style="margin:0; max-width:96ch; font-size:16px; line-height:1.7; color:#3B4560">One list holds three categories with different lifespans: news persists, statements are the organisation speaking on the record, and announcements expire on a date and archive themselves. The list makes that difference visible rather than flattening all three into “posts”.</p>
+
+    <div style="display:flex; gap:48px; align-items:flex-start; flex-wrap:wrap">
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">18.1 · NEWS LIST — ARABIC · RTL · 1440</div>
+        <div data-screen-label="News AR" dir="rtl" lang="ar" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="background:#14213F; color:#C9CFDE; padding:0 120px; height:44px; display:flex; align-items:center; gap:10px; font-size:13.5px">
+            <span style="width:7px; height:7px; background:#DD991C; border-radius:50%"></span>
+            <span>لا نطلب رسوماً مقابل أي خدمة أو مساعدة.</span>
+            <a href="#" style="color:#FBFAF6; font-weight:500; border-bottom:1px solid #DD991C; text-decoration:none">تحقّق من قنواتنا الرسمية</a>
+          </div>
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:30px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">من نحن</a>
+              <a href="#" style="color:#14213F; text-decoration:none">البرامج</a>
+              <a href="#" style="color:#14213F; text-decoration:none">المشاريع</a>
+              <a href="#" style="color:#14213F; text-decoration:none">الأثر</a>
+              <a href="#" style="color:#14213F; text-decoration:none; border-bottom:2px solid #254284; padding:6px 0">الأخبار</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">كن شريكاً معنا</a>
+            </nav>
+          </div>
+
+          <div style="padding:36px 120px 24px; border-bottom:1px solid #D8D3C7">
+            <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+              <a href="#" style="color:#5A6478; text-decoration:none">الرئيسية</a><span style="color:#C9C3B4">←</span><span style="color:#14213F">الأخبار</span>
+            </div>
+            <div style="margin-top:16px; display:flex; align-items:flex-end; justify-content:space-between; gap:40px">
+              <div>
+                <h1 style="margin:0; font-size:44px; line-height:1.25; font-weight:600; color:#14213F">الأخبار والبيانات</h1>
+                <p style="margin:12px 0 0; font-size:18px; line-height:1.75; color:#5A6478; max-width:60ch">ما نعلنه رسمياً: أخبار العمل، والبيانات الصادرة عن المؤسسة، والإعلانات المؤقتة.</p>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center">
+                <span style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 18px">الكل</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">أخبار</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">بيانات</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">إعلانات</span>
+                <a href="#" style="margin-inline-start:8px; font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em; color:#254284; border:1px solid #C9C3B4; border-radius:6px; padding:11px 14px; text-decoration:none" dir="ltr">RSS</a>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:36px 120px 56px">
+            <a href="#" style="display:grid; grid-template-columns:minmax(0,1fr) 520px; gap:48px; text-decoration:none; border-top:2px solid #14213F; padding-top:26px" style-hover="opacity:.88">
+              <div>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+                  <span style="font-size:12.5px; color:#254284; border:1px solid #C8CFE1; background:#F2F5FB; padding:2px 9px; border-radius:3px">بيان</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">14 MAR 2025</span>
+                  <span style="font-size:12.5px; color:#B87B12; border:1px solid #EBD9AE; padding:2px 9px; border-radius:3px">مثبّت</span>
+                </div>
+                <h2 style="margin:14px 0 0; font-size:34px; line-height:1.4; font-weight:600; color:#14213F">[عنوان البيان الرئيسي — بطول واقعي يمتد إلى سطرين]</h2>
+                <p style="margin:14px 0 0; font-size:17.5px; line-height:1.85; color:#5A6478; max-width:62ch">[مقتطف من البيان في ثلاثة أسطر. البيانات تُنشر بصيغة رسمية وتظل في السجل، ولا تُحذف بعد انتهاء المناسبة.]</p>
+                <span style="display:inline-block; margin-top:18px; font-size:16px; font-weight:600; color:#254284; border-bottom:2px solid #DD991C; padding-bottom:3px">اقرأ البيان كاملاً</span>
+              </div>
+              <div style="position:relative; width:100%; height:300px; border:1px solid #D8D3C7"><image-slot id="news-feat-ar" shape="rect" placeholder="صورة الخبر المميّز"></image-slot></div>
+            </a>
+
+            <div style="margin-top:44px; border-top:2px solid #14213F">
+              <a href="#" style="display:grid; grid-template-columns:200px 140px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272" dir="ltr">02 MAR 2025</span>
+                <span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px; justify-self:start">خبر</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#14213F; line-height:1.5">[عنوان خبر عن نشاط ميداني]</div>
+                  <div style="margin-top:6px; font-size:15.5px; line-height:1.7; color:#5A6478">[سطر من المقتطف.]</div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">الحماية</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:200px 140px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272" dir="ltr">21 FEB 2025</span>
+                <span style="font-size:12.5px; color:#B3591B; border:1px solid #E8CDB6; padding:2px 9px; border-radius:3px; justify-self:start">إعلان</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#14213F; line-height:1.5">[عنوان إعلان مؤقت]</div>
+                  <div style="margin-top:6px; display:flex; gap:8px; align-items:center">
+                    <span style="width:7px; height:7px; background:#B3591B; border-radius:50%"></span>
+                    <span style="font-size:14.5px; color:#B3591B">تنتهي صلاحيته <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px" dir="ltr">30 APR 2025</span></span>
+                  </div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">—</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:200px 140px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272" dir="ltr">08 FEB 2025</span>
+                <span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px; justify-self:start">خبر</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#14213F; line-height:1.5">[عنوان خبر آخر]</div>
+                  <div style="margin-top:6px; font-size:15.5px; line-height:1.7; color:#5A6478">[سطر من المقتطف.]</div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">التعافي المبكر</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:200px 140px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272" dir="ltr">19 JAN 2025</span>
+                <span style="font-size:12.5px; color:#254284; border:1px solid #C8CFE1; padding:2px 9px; border-radius:3px; justify-self:start">بيان</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#14213F; line-height:1.5">[عنوان بيان سابق]</div>
+                  <div style="margin-top:6px; font-size:15.5px; line-height:1.7; color:#5A6478">[سطر من المقتطف.]</div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">—</span>
+              </a>
+              <div style="display:grid; grid-template-columns:200px 140px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; opacity:.6">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272" dir="ltr">04 DEC 2024</span>
+                <span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px; justify-self:start">إعلان</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#5A6478; line-height:1.5">[إعلان انتهت صلاحيته وأُرشف تلقائياً]</div>
+                  <div style="margin-top:6px; font-size:14.5px; color:#8A8272">لا يظهر في القائمة العامة — معروض هنا لتوضيح الحالة فقط.</div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">—</span>
+              </div>
+            </div>
+
+            <div style="margin-top:32px; display:flex; align-items:center; justify-content:space-between; gap:20px">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272" dir="ltr">1—5 OF 63</div>
+              <nav style="display:flex; gap:8px; align-items:center">
+                <span style="font-size:15px; color:#C9C3B4; border:1px solid #D8D3C7; border-radius:6px; padding:9px 14px">السابق</span>
+                <span style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:9px 15px">١</span>
+                <a href="#" style="font-size:15px; color:#14213F; border:1px solid #D8D3C7; border-radius:6px; padding:9px 15px; text-decoration:none">٢</a>
+                <a href="#" style="font-size:15px; color:#14213F; border:1px solid #D8D3C7; border-radius:6px; padding:9px 15px; text-decoration:none">٣</a>
+                <a href="#" style="font-size:15px; color:#14213F; border:1px solid #D8D3C7; border-radius:6px; padding:9px 14px; text-decoration:none">التالي</a>
+              </nav>
+            </div>
+          </div>
+
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">18.2 · NEWS LIST — ENGLISH · LTR · 1440</div>
+        <div data-screen-label="News EN" dir="ltr" lang="en" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:16px; line-height:1.65; color:#3B4560">
+          <div style="background:#14213F; color:#C9CFDE; padding:0 120px; height:44px; display:flex; align-items:center; gap:10px; font-size:13.5px">
+            <span style="width:7px; height:7px; background:#DD991C; border-radius:50%"></span>
+            <span>We never charge a fee for any service or assistance.</span>
+            <a href="#" style="color:#FBFAF6; font-weight:500; border-bottom:1px solid #DD991C; text-decoration:none">Verify our official channels</a>
+          </div>
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="PCSRD logo" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[Registered legal name]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:28px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">About</a>
+              <a href="#" style="color:#14213F; text-decoration:none">Programmes</a>
+              <a href="#" style="color:#14213F; text-decoration:none">Projects</a>
+              <a href="#" style="color:#14213F; text-decoration:none">Impact</a>
+              <a href="#" style="color:#14213F; text-decoration:none; border-bottom:2px solid #254284; padding:6px 0">News</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">Partner with us</a>
+            </nav>
+          </div>
+
+          <div style="padding:36px 120px 24px; border-bottom:1px solid #D8D3C7">
+            <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+              <a href="#" style="color:#5A6478; text-decoration:none">Home</a><span style="color:#C9C3B4">→</span><span style="color:#14213F">News</span>
+            </div>
+            <div style="margin-top:16px; display:flex; align-items:flex-end; justify-content:space-between; gap:40px">
+              <div>
+                <h1 style="margin:0; font-size:44px; line-height:1.1; font-weight:600; color:#14213F; letter-spacing:-0.02em">News &amp; statements</h1>
+                <p style="margin:12px 0 0; font-size:17px; line-height:1.6; color:#5A6478; max-width:70ch">What we announce on the record: news from the work, statements issued by the organisation, and time-limited announcements.</p>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center">
+                <span style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 18px">All</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">News</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">Statements</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">Announcements</span>
+                <a href="#" style="margin-inline-start:8px; font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em; color:#254284; border:1px solid #C9C3B4; border-radius:6px; padding:11px 14px; text-decoration:none">RSS</a>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:36px 120px 56px">
+            <a href="#" style="display:grid; grid-template-columns:minmax(0,1fr) 520px; gap:48px; text-decoration:none; border-top:2px solid #14213F; padding-top:26px">
+              <div>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+                  <span style="font-size:12.5px; color:#254284; border:1px solid #C8CFE1; background:#F2F5FB; padding:2px 9px; border-radius:3px">Statement</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272">14 MAR 2025</span>
+                  <span style="font-size:12.5px; color:#B87B12; border:1px solid #EBD9AE; padding:2px 9px; border-radius:3px">Pinned</span>
+                </div>
+                <h2 style="margin:14px 0 0; font-size:34px; line-height:1.2; font-weight:600; color:#14213F; letter-spacing:-0.015em">[Lead statement headline — realistic length, running to two lines]</h2>
+                <p style="margin:14px 0 0; font-size:17px; line-height:1.65; color:#5A6478; max-width:70ch">[Three-line excerpt. Statements are published on the record and stay in the archive; they are not removed once the occasion passes.]</p>
+                <span style="display:inline-block; margin-top:18px; font-size:16px; font-weight:600; color:#254284; border-bottom:2px solid #DD991C; padding-bottom:3px">Read the full statement</span>
+              </div>
+              <div style="position:relative; width:100%; height:300px; border:1px solid #D8D3C7"><image-slot id="news-feat-en" shape="rect" placeholder="featured photograph"></image-slot></div>
+            </a>
+
+            <div style="margin-top:44px; border-top:2px solid #14213F">
+              <a href="#" style="display:grid; grid-template-columns:200px 150px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272">02 MAR 2025</span>
+                <span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px; justify-self:start">News</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#14213F; line-height:1.35">[Headline about field activity]</div>
+                  <div style="margin-top:6px; font-size:15.5px; line-height:1.6; color:#5A6478">[One line of the excerpt.]</div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">Protection</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:200px 150px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272">21 FEB 2025</span>
+                <span style="font-size:12.5px; color:#B3591B; border:1px solid #E8CDB6; padding:2px 9px; border-radius:3px; justify-self:start">Announcement</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#14213F; line-height:1.35">[Time-limited announcement headline]</div>
+                  <div style="margin-top:6px; display:flex; gap:8px; align-items:center">
+                    <span style="width:7px; height:7px; background:#B3591B; border-radius:50%"></span>
+                    <span style="font-size:14.5px; color:#B3591B">Expires <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px">30 APR 2025</span></span>
+                  </div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">—</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:200px 150px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272">08 FEB 2025</span>
+                <span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px; justify-self:start">News</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#14213F; line-height:1.35">[Another news headline]</div>
+                  <div style="margin-top:6px; font-size:15.5px; line-height:1.6; color:#5A6478">[One line of the excerpt.]</div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">Early recovery</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:200px 150px minmax(0,1fr) 200px; gap:28px; align-items:baseline; padding:22px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:#8A8272">19 JAN 2025</span>
+                <span style="font-size:12.5px; color:#254284; border:1px solid #C8CFE1; padding:2px 9px; border-radius:3px; justify-self:start">Statement</span>
+                <div>
+                  <div style="font-size:21px; font-weight:600; color:#14213F; line-height:1.35">[An earlier statement headline]</div>
+                  <div style="margin-top:6px; font-size:15.5px; line-height:1.6; color:#5A6478">[One line of the excerpt.]</div>
+                </div>
+                <span style="font-size:14px; color:#8A8272; text-align:end">—</span>
+              </a>
+            </div>
+
+            <div style="margin-top:32px; display:flex; align-items:center; justify-content:space-between; gap:20px">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272">1—5 OF 63</div>
+              <nav style="display:flex; gap:8px; align-items:center">
+                <span style="font-size:15px; color:#C9C3B4; border:1px solid #D8D3C7; border-radius:6px; padding:9px 14px">Previous</span>
+                <span style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:9px 15px">1</span>
+                <a href="#" style="font-size:15px; color:#14213F; border:1px solid #D8D3C7; border-radius:6px; padding:9px 15px; text-decoration:none">2</a>
+                <a href="#" style="font-size:15px; color:#14213F; border:1px solid #D8D3C7; border-radius:6px; padding:9px 15px; text-decoration:none">3</a>
+                <a href="#" style="font-size:15px; color:#14213F; border:1px solid #D8D3C7; border-radius:6px; padding:9px 14px; text-decoration:none">Next</a>
+              </nav>
+            </div>
+          </div>
+
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">Official channels</a>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">18.3 · STATEMENT DETAIL — AR · 1440</div>
+        <div data-screen-label="Post AR" dir="rtl" lang="ar" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:30px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">البرامج</a>
+              <a href="#" style="color:#14213F; text-decoration:none">المشاريع</a>
+              <a href="#" style="color:#14213F; text-decoration:none; border-bottom:2px solid #254284; padding:6px 0">الأخبار</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">كن شريكاً معنا</a>
+            </nav>
+          </div>
+          <div style="padding:40px 120px 64px; display:flex; justify-content:center">
+            <article style="width:100%; max-width:780px">
+              <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+                <a href="#" style="color:#5A6478; text-decoration:none">الأخبار</a><span style="color:#C9C3B4">←</span><span style="color:#14213F">بيان</span>
+              </div>
+              <div style="margin-top:22px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+                <span style="font-size:13px; color:#254284; border:1px solid #C8CFE1; background:#F2F5FB; padding:3px 10px; border-radius:3px">بيان صادر عن المؤسسة</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">14 MAR 2025</span>
+              </div>
+              <h1 style="margin:18px 0 0; font-size:42px; line-height:1.35; font-weight:600; color:#14213F">[عنوان البيان — بطول واقعي يمتد إلى سطرين]</h1>
+              <div style="margin-top:22px; height:2px; width:88px; background:#DD991C"></div>
+              <div style="margin-top:28px; font-size:17.5px; line-height:1.9; color:#3B4560">
+                <p style="margin:0">[الفقرة الأولى من البيان.]</p>
+                <p style="margin:20px 0 0">[الفقرة الثانية.]</p>
+                <ul style="margin:20px 0 0; padding-inline-start:24px">
+                  <li>[نقطة أولى.]</li>
+                  <li>[نقطة ثانية.]</li>
+                </ul>
+                <p style="margin:20px 0 0">[الفقرة الختامية.]</p>
+              </div>
+              <div style="margin-top:34px; border-top:1px solid #D8D3C7; padding-top:18px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap">
+                <div style="font-size:14.5px; color:#8A8272">صادر عن <span style="color:#14213F">[الاسم القانوني للمؤسسة]</span></div>
+                <div style="display:flex; gap:10px; align-items:center">
+                  <span style="font-size:14px; color:#8A8272">شارك</span>
+                  <button style="font-family:inherit; font-size:14px; color:#14213F; background:transparent; border:1px solid #C9C3B4; border-radius:6px; padding:10px 14px; min-height:44px">واتساب</button>
+                  <button style="font-family:inherit; font-size:14px; color:#14213F; background:transparent; border:1px solid #C9C3B4; border-radius:6px; padding:10px 14px; min-height:44px">نسخ الرابط</button>
+                </div>
+              </div>
+              <div style="margin-top:34px; border-top:2px solid #14213F; padding-top:20px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#8A8272" dir="ltr">RELATED</div>
+                <div style="margin-top:12px">
+                  <a href="#" style="display:flex; align-items:baseline; gap:20px; padding:13px 0; border-bottom:1px solid #D8D3C7; text-decoration:none">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#8A8272; width:110px" dir="ltr">02 MAR 2025</span>
+                    <span style="font-size:17.5px; font-weight:500; color:#14213F; line-height:1.6">[عنوان خبر مرتبط]</span>
+                  </a>
+                  <a href="#" style="display:flex; align-items:baseline; gap:20px; padding:13px 0; text-decoration:none">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#8A8272; width:110px" dir="ltr">19 JAN 2025</span>
+                    <span style="font-size:17.5px; font-weight:500; color:#14213F; line-height:1.6">[عنوان بيان سابق]</span>
+                  </a>
+                </div>
+              </div>
+            </article>
+          </div>
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">18.4 · NEWS — AR · 390</div>
+        <div data-screen-label="News AR mobile" dir="rtl" lang="ar" style="width:390px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:16.5px; line-height:1.8; color:#3B4560">
+          <div style="border-bottom:1px solid #D8D3C7; padding:12px 20px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:10px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:40px; height:40px; object-fit:contain" />
+              <div style="font-size:14.5px; font-weight:600; color:#14213F">[الاسم القانوني]</div>
+            </div>
+            <button aria-label="القائمة" style="background:#254284; border:none; border-radius:6px; width:46px; height:46px; display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center">
+              <span style="width:18px; height:2px; background:#FBFAF6"></span><span style="width:18px; height:2px; background:#FBFAF6"></span><span style="width:18px; height:2px; background:#FBFAF6"></span>
+            </button>
+          </div>
+          <div style="padding:22px 20px 14px">
+            <h1 style="margin:0; font-size:29px; line-height:1.35; font-weight:600; color:#14213F">الأخبار والبيانات</h1>
+          </div>
+          <div style="padding:0 20px 14px; display:flex; gap:8px; overflow:hidden">
+            <span style="font-size:14.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 16px; min-height:44px; display:flex; align-items:center; white-space:nowrap">الكل</span>
+            <span style="font-size:14.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:11px 16px; min-height:44px; display:flex; align-items:center; white-space:nowrap">أخبار</span>
+            <span style="font-size:14.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:11px 16px; min-height:44px; display:flex; align-items:center; white-space:nowrap">بيانات</span>
+            <span style="font-size:14.5px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:11px 16px; min-height:44px; display:flex; align-items:center; white-space:nowrap">إعلانات</span>
+          </div>
+          <div style="padding:0 20px 24px">
+            <a href="#" style="display:block; border:1px solid #D8D3C7; text-decoration:none">
+              <div style="position:relative; width:100%; height:180px; border-bottom:1px solid #D8D3C7"><image-slot id="news-m1-ar" shape="rect" placeholder="صورة"></image-slot></div>
+              <div style="padding:16px 18px 18px">
+                <div style="display:flex; gap:8px; align-items:center">
+                  <span style="font-size:11.5px; color:#254284; border:1px solid #C8CFE1; padding:2px 8px; border-radius:3px">بيان</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272" dir="ltr">14 MAR 2025</span>
+                </div>
+                <div style="margin-top:8px; font-size:19px; font-weight:600; color:#14213F; line-height:1.55">[عنوان البيان الرئيسي بطول واقعي]</div>
+                <div style="margin-top:6px; font-size:15px; line-height:1.7; color:#5A6478">[سطران من المقتطف.]</div>
+              </div>
+            </a>
+            <div style="margin-top:18px; border-top:2px solid #14213F">
+              <a href="#" style="display:block; padding:16px 0; border-bottom:1px solid #D8D3C7; text-decoration:none">
+                <div style="display:flex; gap:8px; align-items:center">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">02 MAR 2025</span>
+                  <span style="font-size:11.5px; color:#5A6478; border:1px solid #D8D3C7; padding:1px 8px; border-radius:3px">خبر</span>
+                </div>
+                <div style="margin-top:7px; font-size:17.5px; font-weight:500; color:#14213F; line-height:1.6">[عنوان خبر عن نشاط ميداني]</div>
+              </a>
+              <a href="#" style="display:block; padding:16px 0; border-bottom:1px solid #D8D3C7; text-decoration:none">
+                <div style="display:flex; gap:8px; align-items:center">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">21 FEB 2025</span>
+                  <span style="font-size:11.5px; color:#B3591B; border:1px solid #E8CDB6; padding:1px 8px; border-radius:3px">إعلان</span>
+                </div>
+                <div style="margin-top:7px; font-size:17.5px; font-weight:500; color:#14213F; line-height:1.6">[عنوان إعلان مؤقت]</div>
+                <div style="margin-top:6px; font-size:13.5px; color:#B3591B">تنتهي صلاحيته <span style="font-family:'IBM Plex Mono',monospace; font-size:13px" dir="ltr">30 APR 2025</span></div>
+              </a>
+              <a href="#" style="display:block; padding:16px 0; text-decoration:none">
+                <div style="display:flex; gap:8px; align-items:center">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#8A8272" dir="ltr">08 FEB 2025</span>
+                  <span style="font-size:11.5px; color:#5A6478; border:1px solid #D8D3C7; padding:1px 8px; border-radius:3px">خبر</span>
+                </div>
+                <div style="margin-top:7px; font-size:17.5px; font-weight:500; color:#14213F; line-height:1.6">[عنوان خبر آخر]</div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:32px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; max-width:1180px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">19 — PROGRAMMES INDEX · PARTNERS · MEMBERSHIPS</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">/programs · /partners · /about/memberships</span>
+    </div>
+    <p style="margin:0; max-width:96ch; font-size:16px; line-height:1.7; color:#3B4560">The partners page is where the logo-permission rule becomes visible at scale: most partners render as text, and the page has to look deliberate that way rather than half-loaded. It is organised by relationship type — implementing, donor, network, membership — because that is the distinction a donor checks.</p>
+
+    <div style="display:flex; gap:48px; align-items:flex-start; flex-wrap:wrap">
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">19.1 · PROGRAMMES INDEX — AR · 1440</div>
+        <div data-screen-label="Programmes index AR" dir="rtl" lang="ar" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="background:#14213F; color:#C9CFDE; padding:0 120px; height:44px; display:flex; align-items:center; gap:10px; font-size:13.5px">
+            <span style="width:7px; height:7px; background:#DD991C; border-radius:50%"></span>
+            <span>لا نطلب رسوماً مقابل أي خدمة أو مساعدة.</span>
+            <a href="#" style="color:#FBFAF6; font-weight:500; border-bottom:1px solid #DD991C; text-decoration:none">تحقّق من قنواتنا الرسمية</a>
+          </div>
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:30px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">من نحن</a>
+              <a href="#" style="color:#14213F; text-decoration:none; border-bottom:2px solid #254284; padding:6px 0">البرامج</a>
+              <a href="#" style="color:#14213F; text-decoration:none">المشاريع</a>
+              <a href="#" style="color:#14213F; text-decoration:none">الأثر</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">كن شريكاً معنا</a>
+            </nav>
+          </div>
+          <div style="padding:40px 120px 34px">
+            <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+              <a href="#" style="color:#5A6478; text-decoration:none">الرئيسية</a><span style="color:#C9C3B4">←</span><span style="color:#14213F">البرامج</span>
+            </div>
+            <h1 style="margin:16px 0 0; font-size:46px; line-height:1.25; font-weight:600; color:#14213F">البرامج</h1>
+            <p style="margin:14px 0 0; font-size:19px; line-height:1.8; color:#5A6478; max-width:62ch">ثلاثة برامج تعمل في المحافظات الخمس. لكل برنامج شروط استفادة معلنة ومسار واضح للوصول إلى الخدمة.</p>
+          </div>
+          <div style="padding:0 120px 64px; display:flex; flex-direction:column; gap:0">
+            <a href="#" style="display:grid; grid-template-columns:56px minmax(0,1fr) 420px; gap:40px; align-items:start; padding:34px 0; border-top:3px solid #254284; text-decoration:none" style-hover="background:#F2EFE7">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#254284; padding-top:6px" dir="ltr">P-01</div>
+              <div>
+                <h2 style="margin:0; font-size:32px; font-weight:600; color:#14213F">الحماية</h2>
+                <p style="margin:10px 0 0; font-size:17.5px; line-height:1.85; color:#5A6478; max-width:58ch">[سطران تعريفيان للبرنامج من محتواه في لوحة التحكم.]</p>
+                <div style="margin-top:16px; display:flex; gap:7px; flex-wrap:wrap">
+                  <span style="font-size:13px; color:#5A6478; border:1px solid #D8D3C7; padding:3px 9px; border-radius:3px">أطفال</span>
+                  <span style="font-size:13px; color:#5A6478; border:1px solid #D8D3C7; padding:3px 9px; border-radius:3px">نساء</span>
+                  <span style="font-size:13px; color:#5A6478; border:1px solid #D8D3C7; padding:3px 9px; border-radius:3px">ذوو الإعاقة</span>
+                </div>
+                <div style="margin-top:18px; display:flex; gap:22px; align-items:center; flex-wrap:wrap">
+                  <span style="font-size:16px; font-weight:600; color:#254284">من يحق له الاستفادة ←</span>
+                  <span style="font-size:15.5px; color:#5A6478">١٤ مشروعاً</span>
+                </div>
+              </div>
+              <div style="position:relative; width:100%; height:200px; border:1px solid #D8D3C7"><image-slot id="pi-1-ar" shape="rect" placeholder="صورة البرنامج"></image-slot></div>
+            </a>
+            <a href="#" style="display:grid; grid-template-columns:56px minmax(0,1fr) 420px; gap:40px; align-items:start; padding:34px 0; border-top:3px solid #B3591B; text-decoration:none" style-hover="background:#F2EFE7">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#B3591B; padding-top:6px" dir="ltr">P-02</div>
+              <div>
+                <h2 style="margin:0; font-size:32px; font-weight:600; color:#14213F">الاستجابة الإنسانية</h2>
+                <p style="margin:10px 0 0; font-size:17.5px; line-height:1.85; color:#5A6478; max-width:58ch">[سطران تعريفيان للبرنامج.]</p>
+                <div style="margin-top:16px; display:flex; gap:7px; flex-wrap:wrap">
+                  <span style="font-size:13px; color:#5A6478; border:1px solid #D8D3C7; padding:3px 9px; border-radius:3px">أسر فقيرة</span>
+                  <span style="font-size:13px; color:#5A6478; border:1px solid #D8D3C7; padding:3px 9px; border-radius:3px">كبار السن</span>
+                </div>
+                <div style="margin-top:18px; display:flex; gap:22px; align-items:center; flex-wrap:wrap">
+                  <span style="font-size:16px; font-weight:600; color:#254284">من يحق له الاستفادة ←</span>
+                  <span style="font-size:15.5px; color:#5A6478">١٩ مشروعاً</span>
+                </div>
+              </div>
+              <div style="position:relative; width:100%; height:200px; border:1px solid #D8D3C7"><image-slot id="pi-2-ar" shape="rect" placeholder="صورة البرنامج"></image-slot></div>
+            </a>
+            <a href="#" style="display:grid; grid-template-columns:56px minmax(0,1fr) 420px; gap:40px; align-items:start; padding:34px 0; border-top:3px solid #1F6B54; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#1F6B54; padding-top:6px" dir="ltr">P-03</div>
+              <div>
+                <h2 style="margin:0; font-size:32px; font-weight:600; color:#14213F">التعافي المبكر</h2>
+                <p style="margin:10px 0 0; font-size:17.5px; line-height:1.85; color:#5A6478; max-width:58ch">[سطران تعريفيان للبرنامج.]</p>
+                <div style="margin-top:16px; display:flex; gap:7px; flex-wrap:wrap">
+                  <span style="font-size:13px; color:#5A6478; border:1px solid #D8D3C7; padding:3px 9px; border-radius:3px">شباب</span>
+                  <span style="font-size:13px; color:#5A6478; border:1px solid #D8D3C7; padding:3px 9px; border-radius:3px">نساء</span>
+                </div>
+                <div style="margin-top:18px; display:flex; gap:22px; align-items:center; flex-wrap:wrap">
+                  <span style="font-size:16px; font-weight:600; color:#254284">من يحق له الاستفادة ←</span>
+                  <span style="font-size:15.5px; color:#5A6478">٨ مشاريع</span>
+                </div>
+              </div>
+              <div style="position:relative; width:100%; height:200px; border:1px solid #D8D3C7"><image-slot id="pi-3-ar" shape="rect" placeholder="صورة البرنامج"></image-slot></div>
+            </a>
+            <div style="margin-top:34px; background:#F2F5FB; border:1px solid #C8CFE1; padding:26px 30px; display:flex; align-items:center; justify-content:space-between; gap:40px">
+              <div>
+                <div style="font-size:20px; font-weight:600; color:#14213F">لا تعرف أي برنامج يناسب حالتك؟</div>
+                <p style="margin:8px 0 0; font-size:16.5px; line-height:1.75; color:#5A6478; max-width:70ch">راسلنا على واتساب وسنوجّهك إلى الخدمة الصحيحة. لا نطلب أي رسوم.</p>
+              </div>
+              <a href="#" style="font-size:15.5px; font-weight:600; color:#FBFAF6; background:#1F6B54; border-radius:6px; padding:14px 24px; text-decoration:none; white-space:nowrap">اسأل عبر واتساب</a>
+            </div>
+          </div>
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">19.2 · PARTNERS — AR · 1440</div>
+        <div data-screen-label="Partners AR" dir="rtl" lang="ar" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:30px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">من نحن</a>
+              <a href="#" style="color:#14213F; text-decoration:none">البرامج</a>
+              <a href="#" style="color:#14213F; text-decoration:none">المشاريع</a>
+              <a href="#" style="color:#14213F; text-decoration:none; border-bottom:2px solid #254284; padding:6px 0">الشركاء</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">كن شريكاً معنا</a>
+            </nav>
+          </div>
+          <div style="padding:40px 120px 30px">
+            <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+              <a href="#" style="color:#5A6478; text-decoration:none">الرئيسية</a><span style="color:#C9C3B4">←</span><span style="color:#14213F">الشركاء</span>
+            </div>
+            <div style="margin-top:16px; display:grid; grid-template-columns:minmax(0,1fr) 420px; gap:64px; align-items:start">
+              <div>
+                <h1 style="margin:0; font-size:46px; line-height:1.25; font-weight:600; color:#14213F">الشركاء والممولون</h1>
+                <p style="margin:14px 0 0; font-size:19px; line-height:1.8; color:#5A6478">نعمل مع مؤسسات دولية ووطنية وشبكات أهلية. القائمة مرتّبة بنوع العلاقة لا بالأهمية.</p>
+              </div>
+              <div style="border:1px solid #D8D3C7; background:#F2EFE7; padding:20px 22px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#8A8272" dir="ltr">LOGO POLICY</div>
+                <p style="margin:10px 0 0; font-size:15px; line-height:1.8; color:#3B4560">يُعرض شعار الشريك فقط عند وجود إذن كتابي موثق. في غير ذلك يُعرض الاسم نصاً — وهذا ليس نقصاً في الصفحة بل التزام بالإذن.</p>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 120px 64px">
+            <div style="border-top:2px solid #14213F; padding-top:24px">
+              <div style="display:flex; align-items:baseline; gap:14px">
+                <h2 style="margin:0; font-size:26px; font-weight:600; color:#14213F">شركاء التنفيذ</h2>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">4</span>
+              </div>
+              <div style="margin-top:20px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px">
+                <div style="border:1px solid #D8D3C7; background:#FBFAF6; padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:180px">
+                  <div style="position:relative; width:130px; height:52px"><image-slot id="prt-1" shape="rect" placeholder="logo"></image-slot></div>
+                  <div style="text-align:center">
+                    <bdi dir="ltr" style="font-size:15.5px; font-weight:600; color:#14213F">[Partner name]</bdi>
+                    <div style="margin-top:3px; font-size:13.5px; color:#8A8272">[القطاع]</div>
+                  </div>
+                </div>
+                <div style="border:1px solid #D8D3C7; background:#FBFAF6; padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:180px">
+                  <div style="position:relative; width:130px; height:52px"><image-slot id="prt-2" shape="rect" placeholder="logo"></image-slot></div>
+                  <div style="text-align:center">
+                    <bdi dir="ltr" style="font-size:15.5px; font-weight:600; color:#14213F">[Partner name]</bdi>
+                    <div style="margin-top:3px; font-size:13.5px; color:#8A8272">[القطاع]</div>
+                  </div>
+                </div>
+                <div style="border:1px solid #D8D3C7; background:#F2EFE7; padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:180px">
+                  <bdi dir="ltr" style="font-size:18px; font-weight:600; color:#14213F">[Partner name]</bdi>
+                  <div style="margin-top:6px; font-size:13.5px; color:#8A8272">[القطاع]</div>
+                  <div style="margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; color:#8A8272" dir="ltr">LOGO PERMISSION PENDING</div>
+                </div>
+                <div style="border:1px solid #D8D3C7; background:#F2EFE7; padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:180px">
+                  <bdi dir="ltr" style="font-size:18px; font-weight:600; color:#14213F">[Partner name]</bdi>
+                  <div style="margin-top:6px; font-size:13.5px; color:#8A8272">[القطاع]</div>
+                  <div style="margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; color:#8A8272" dir="ltr">LOGO PERMISSION PENDING</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:40px; border-top:2px solid #14213F; padding-top:24px">
+              <div style="display:flex; align-items:baseline; gap:14px">
+                <h2 style="margin:0; font-size:26px; font-weight:600; color:#14213F">الجهات المانحة</h2>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272" dir="ltr">5</span>
+              </div>
+              <div style="margin-top:20px; border-top:1px solid #D8D3C7">
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 260px 200px; gap:28px; align-items:center; padding:18px 0; border-bottom:1px solid #D8D3C7">
+                  <bdi dir="ltr" style="font-size:19px; font-weight:600; color:#14213F">[DONOR NAME]</bdi>
+                  <span style="font-size:15.5px; color:#5A6478">[نوع الجهة]</span>
+                  <a href="#" style="font-size:15px; color:#254284; text-decoration:none; text-align:end">المشاريع المشتركة ←</a>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 260px 200px; gap:28px; align-items:center; padding:18px 0; border-bottom:1px solid #D8D3C7">
+                  <bdi dir="ltr" style="font-size:19px; font-weight:600; color:#14213F">[DONOR NAME]</bdi>
+                  <span style="font-size:15.5px; color:#5A6478">[نوع الجهة]</span>
+                  <a href="#" style="font-size:15px; color:#254284; text-decoration:none; text-align:end">المشاريع المشتركة ←</a>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 260px 200px; gap:28px; align-items:center; padding:18px 0; border-bottom:1px solid #D8D3C7">
+                  <bdi dir="ltr" style="font-size:19px; font-weight:600; color:#14213F">[DONOR NAME]</bdi>
+                  <span style="font-size:15.5px; color:#5A6478">[نوع الجهة]</span>
+                  <a href="#" style="font-size:15px; color:#254284; text-decoration:none; text-align:end">المشاريع المشتركة ←</a>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:40px; border-top:2px solid #14213F; padding-top:24px">
+              <div style="display:flex; align-items:baseline; gap:14px">
+                <h2 style="margin:0; font-size:26px; font-weight:600; color:#14213F">الشبكات والعضويات</h2>
+                <a href="#" style="font-size:15px; color:#254284; text-decoration:none">صفحة العضويات ←</a>
+              </div>
+              <div style="margin-top:20px; border-top:1px solid #D8D3C7">
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 220px 220px; gap:28px; align-items:center; padding:16px 0; border-bottom:1px solid #D8D3C7">
+                  <span style="font-size:18px; font-weight:500; color:#14213F">[اسم الشبكة الأهلية]</span>
+                  <span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; padding:2px 9px; border-radius:3px; justify-self:start">عضوية كاملة</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272; text-align:end" dir="ltr">SINCE [YEAR]</span>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 220px 220px; gap:28px; align-items:center; padding:16px 0; border-bottom:1px solid #D8D3C7">
+                  <span style="font-size:18px; font-weight:500; color:#14213F">[اسم الشبكة الثانية]</span>
+                  <span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; padding:2px 9px; border-radius:3px; justify-self:start">عضوية كاملة</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272; text-align:end" dir="ltr">SINCE [YEAR]</span>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 220px 220px; gap:28px; align-items:center; padding:16px 0">
+                  <span style="font-size:18px; font-weight:500; color:#14213F">[اسم الشبكة الثالثة]</span>
+                  <span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px; justify-self:start">مراقب</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272; text-align:end" dir="ltr">SINCE [YEAR]</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:44px; background:#182E5D; color:#FBFAF6; padding:34px 38px; display:flex; align-items:center; justify-content:space-between; gap:48px">
+              <div>
+                <div style="font-size:24px; font-weight:600; color:#FBFAF6">هل تبحث عن شريك منفّذ في قطاع غزة؟</div>
+                <p style="margin:8px 0 0; font-size:16.5px; line-height:1.75; color:#C9CFDE; max-width:76ch">ابدأ استفساراً وسنعود إليك بالملف المؤسسي ووثائق الحوكمة.</p>
+              </div>
+              <a href="#" style="font-size:16px; font-weight:600; color:#14213F; background:#FBFAF6; border-radius:6px; padding:14px 26px; text-decoration:none; white-space:nowrap">ابدأ استفساراً</a>
+            </div>
+          </div>
+          <div style="background:#14213F; border-top:1px solid #3B4560; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">19.3 · PARTNERS — EN · 1440</div>
+        <div data-screen-label="Partners EN" dir="ltr" lang="en" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:16px; line-height:1.65; color:#3B4560">
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="PCSRD logo" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[Registered legal name]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:28px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">About</a>
+              <a href="#" style="color:#14213F; text-decoration:none">Programmes</a>
+              <a href="#" style="color:#14213F; text-decoration:none">Projects</a>
+              <a href="#" style="color:#14213F; text-decoration:none; border-bottom:2px solid #254284; padding:6px 0">Partners</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">Partner with us</a>
+            </nav>
+          </div>
+          <div style="padding:40px 120px 30px">
+            <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+              <a href="#" style="color:#5A6478; text-decoration:none">Home</a><span style="color:#C9C3B4">→</span><span style="color:#14213F">Partners</span>
+            </div>
+            <div style="margin-top:16px; display:grid; grid-template-columns:minmax(0,1fr) 420px; gap:64px; align-items:start">
+              <div>
+                <h1 style="margin:0; font-size:46px; line-height:1.1; font-weight:600; color:#14213F; letter-spacing:-0.02em">Partners &amp; donors</h1>
+                <p style="margin:14px 0 0; font-size:18px; line-height:1.65; color:#5A6478">We work with international and national organisations and civil-society networks. The list is ordered by type of relationship, not by prominence.</p>
+              </div>
+              <div style="border:1px solid #D8D3C7; background:#F2EFE7; padding:20px 22px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#8A8272">LOGO POLICY</div>
+                <p style="margin:10px 0 0; font-size:15px; line-height:1.7; color:#3B4560">A partner's logo appears only where written permission is on file. Otherwise the name renders as text — that is compliance with the permission, not a missing asset.</p>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 120px 64px">
+            <div style="border-top:2px solid #14213F; padding-top:24px">
+              <div style="display:flex; align-items:baseline; gap:14px">
+                <h2 style="margin:0; font-size:26px; font-weight:600; color:#14213F; letter-spacing:-0.015em">Implementing partners</h2>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272">4</span>
+              </div>
+              <div style="margin-top:20px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px">
+                <div style="border:1px solid #D8D3C7; padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:180px">
+                  <div style="position:relative; width:130px; height:52px"><image-slot id="prt-1-en" shape="rect" placeholder="logo"></image-slot></div>
+                  <div style="text-align:center">
+                    <span style="font-size:15.5px; font-weight:600; color:#14213F">[Partner name]</span>
+                    <div style="margin-top:3px; font-size:13.5px; color:#8A8272">[Sector]</div>
+                  </div>
+                </div>
+                <div style="border:1px solid #D8D3C7; padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:180px">
+                  <div style="position:relative; width:130px; height:52px"><image-slot id="prt-2-en" shape="rect" placeholder="logo"></image-slot></div>
+                  <div style="text-align:center">
+                    <span style="font-size:15.5px; font-weight:600; color:#14213F">[Partner name]</span>
+                    <div style="margin-top:3px; font-size:13.5px; color:#8A8272">[Sector]</div>
+                  </div>
+                </div>
+                <div style="border:1px solid #D8D3C7; background:#F2EFE7; padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:180px">
+                  <span style="font-size:18px; font-weight:600; color:#14213F">[Partner name]</span>
+                  <div style="margin-top:6px; font-size:13.5px; color:#8A8272">[Sector]</div>
+                  <div style="margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; color:#8A8272">LOGO PERMISSION PENDING</div>
+                </div>
+                <div style="border:1px solid #D8D3C7; background:#F2EFE7; padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:180px">
+                  <span style="font-size:18px; font-weight:600; color:#14213F">[Partner name]</span>
+                  <div style="margin-top:6px; font-size:13.5px; color:#8A8272">[Sector]</div>
+                  <div style="margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; color:#8A8272">LOGO PERMISSION PENDING</div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:40px; border-top:2px solid #14213F; padding-top:24px">
+              <div style="display:flex; align-items:baseline; gap:14px">
+                <h2 style="margin:0; font-size:26px; font-weight:600; color:#14213F; letter-spacing:-0.015em">Donors</h2>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#8A8272">5</span>
+              </div>
+              <div style="margin-top:20px; border-top:1px solid #D8D3C7">
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 260px 220px; gap:28px; align-items:center; padding:18px 0; border-bottom:1px solid #D8D3C7">
+                  <span style="font-size:19px; font-weight:600; color:#14213F">[DONOR NAME]</span>
+                  <span style="font-size:15.5px; color:#5A6478">[Type of institution]</span>
+                  <a href="#" style="font-size:15px; color:#254284; text-decoration:none; text-align:end">Joint projects →</a>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 260px 220px; gap:28px; align-items:center; padding:18px 0; border-bottom:1px solid #D8D3C7">
+                  <span style="font-size:19px; font-weight:600; color:#14213F">[DONOR NAME]</span>
+                  <span style="font-size:15.5px; color:#5A6478">[Type of institution]</span>
+                  <a href="#" style="font-size:15px; color:#254284; text-decoration:none; text-align:end">Joint projects →</a>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 260px 220px; gap:28px; align-items:center; padding:18px 0">
+                  <span style="font-size:19px; font-weight:600; color:#14213F">[DONOR NAME]</span>
+                  <span style="font-size:15.5px; color:#5A6478">[Type of institution]</span>
+                  <a href="#" style="font-size:15px; color:#254284; text-decoration:none; text-align:end">Joint projects →</a>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:40px; border-top:2px solid #14213F; padding-top:24px">
+              <h2 style="margin:0; font-size:26px; font-weight:600; color:#14213F; letter-spacing:-0.015em">Networks &amp; memberships</h2>
+              <div style="margin-top:20px; border-top:1px solid #D8D3C7">
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 220px 220px; gap:28px; align-items:center; padding:16px 0; border-bottom:1px solid #D8D3C7">
+                  <span style="font-size:18px; font-weight:500; color:#14213F">[Civil-society network]</span>
+                  <span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; padding:2px 9px; border-radius:3px; justify-self:start">Full member</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272; text-align:end">SINCE [YEAR]</span>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 220px 220px; gap:28px; align-items:center; padding:16px 0">
+                  <span style="font-size:18px; font-weight:500; color:#14213F">[Third network]</span>
+                  <span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px; justify-self:start">Observer</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272; text-align:end">SINCE [YEAR]</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">Official channels</a>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">19.4 · MEMBERSHIPS — AR · 900</div>
+        <div data-screen-label="Memberships AR" dir="rtl" lang="ar" style="width:900px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 56px; height:80px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:14px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:44px; height:44px; object-fit:contain" />
+              <div style="font-size:16px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <a href="#" style="font-size:14.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:10px 18px; text-decoration:none">كن شريكاً معنا</a>
+          </div>
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 56px; display:flex; gap:26px; font-size:15px">
+            <a href="#" style="color:#5A6478; text-decoration:none; padding:14px 0">من نحن</a>
+            <a href="#" style="color:#5A6478; text-decoration:none; padding:14px 0">الرؤية والرسالة</a>
+            <a href="#" style="color:#5A6478; text-decoration:none; padding:14px 0">الحوكمة</a>
+            <a href="#" style="color:#5A6478; text-decoration:none; padding:14px 0">الخطة الاستراتيجية</a>
+            <a href="#" style="color:#14213F; font-weight:600; text-decoration:none; padding:14px 0; border-bottom:2px solid #DD991C">العضويات</a>
+          </div>
+          <div style="padding:36px 56px 48px">
+            <h1 style="margin:0; font-size:36px; line-height:1.3; font-weight:600; color:#14213F">العضويات والشبكات</h1>
+            <p style="margin:12px 0 0; font-size:17.5px; line-height:1.85; color:#5A6478; max-width:60ch">عضوياتنا في الشبكات الأهلية والتحالفات القطاعية، وما تعنيه كل عضوية عملياً.</p>
+            <div style="margin-top:30px; border-top:2px solid #14213F">
+              <div style="padding:22px 0; border-bottom:1px solid #D8D3C7">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:20px">
+                  <div style="font-size:22px; font-weight:600; color:#14213F">[اسم الشبكة الأهلية الأولى]</div>
+                  <span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; padding:2px 10px; border-radius:3px; white-space:nowrap">عضوية كاملة</span>
+                </div>
+                <p style="margin:8px 0 0; font-size:16.5px; line-height:1.8; color:#5A6478; max-width:74ch">[سطران عن الشبكة ودور المؤسسة فيها.]</p>
+                <div style="margin-top:10px; display:flex; gap:20px; align-items:center; flex-wrap:wrap">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272" dir="ltr">MEMBER SINCE [YEAR]</span>
+                  <a href="#" style="font-size:15px; color:#254284; text-decoration:none">موقع الشبكة ↗</a>
+                </div>
+              </div>
+              <div style="padding:22px 0; border-bottom:1px solid #D8D3C7">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:20px">
+                  <div style="font-size:22px; font-weight:600; color:#14213F">[اسم الشبكة الثانية]</div>
+                  <span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; padding:2px 10px; border-radius:3px; white-space:nowrap">عضوية كاملة</span>
+                </div>
+                <p style="margin:8px 0 0; font-size:16.5px; line-height:1.8; color:#5A6478; max-width:74ch">[سطران عن الشبكة.]</p>
+                <div style="margin-top:10px; font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272" dir="ltr">MEMBER SINCE [YEAR]</div>
+              </div>
+              <div style="padding:22px 0">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:20px">
+                  <div style="font-size:22px; font-weight:600; color:#14213F">[اسم التحالف القطاعي]</div>
+                  <span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 10px; border-radius:3px; white-space:nowrap">مراقب</span>
+                </div>
+                <p style="margin:8px 0 0; font-size:16.5px; line-height:1.8; color:#5A6478; max-width:74ch">[سطر يوضح معنى صفة المراقب في هذا التحالف.]</p>
+              </div>
+            </div>
+          </div>
+          <div style="background:#14213F; padding:24px 56px; display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; font-size:13px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:.1em">© [YEAR] PCSRD</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:32px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; max-width:1180px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">20 — GET INVOLVED · VOLUNTEER · SUPPORT</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">/get-involved · /volunteer · /support</span>
+    </div>
+    <p style="margin:0; max-width:96ch; font-size:16px; line-height:1.7; color:#3B4560">The support page is the one that has to resist a convention: every NGO site puts a donate button here. This one has no payment path by design, so the page states plainly what support means, routes to WhatsApp, and spends most of its space on the anti-fraud warning — because a page about money is exactly where an impersonator would like to be mistaken for the organisation.</p>
+
+    <div style="display:flex; gap:48px; align-items:flex-start; flex-wrap:wrap">
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">20.1 · GET INVOLVED INDEX — AR · 1440</div>
+        <div data-screen-label="Get involved AR" dir="rtl" lang="ar" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="background:#14213F; color:#C9CFDE; padding:0 120px; height:44px; display:flex; align-items:center; gap:10px; font-size:13.5px">
+            <span style="width:7px; height:7px; background:#DD991C; border-radius:50%"></span>
+            <span>لا نطلب رسوماً مقابل أي خدمة أو مساعدة.</span>
+            <a href="#" style="color:#FBFAF6; font-weight:500; border-bottom:1px solid #DD991C; text-decoration:none">تحقّق من قنواتنا الرسمية</a>
+          </div>
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:30px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">من نحن</a>
+              <a href="#" style="color:#14213F; text-decoration:none">البرامج</a>
+              <a href="#" style="color:#14213F; text-decoration:none">المشاريع</a>
+              <a href="#" style="color:#14213F; text-decoration:none">الأثر</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">كن شريكاً معنا</a>
+            </nav>
+          </div>
+          <div style="padding:44px 120px 34px">
+            <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+              <a href="#" style="color:#5A6478; text-decoration:none">الرئيسية</a><span style="color:#C9C3B4">←</span><span style="color:#14213F">شارك معنا</span>
+            </div>
+            <h1 style="margin:16px 0 0; font-size:46px; line-height:1.25; font-weight:600; color:#14213F">شارك معنا</h1>
+            <p style="margin:14px 0 0; font-size:19px; line-height:1.8; color:#5A6478; max-width:64ch">أربعة مسارات، ولكل منها ما يناسبه. اختر المسار الذي يعنيك وستجد فيه ما نطلبه بالضبط ومتى نرد.</p>
+          </div>
+          <div style="padding:0 120px 64px">
+            <div style="border-top:2px solid #14213F">
+              <a href="#" style="display:grid; grid-template-columns:56px minmax(0,1fr) 260px; gap:36px; align-items:start; padding:30px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#254284; padding-top:6px" dir="ltr">01</div>
+                <div>
+                  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+                    <h2 style="margin:0; font-size:28px; font-weight:600; color:#14213F">شراكة أو تمويل</h2>
+                    <span style="font-size:12px; color:#B87B12; border:1px solid #EBD9AE; background:#FEF7E7; padding:2px 9px; border-radius:3px">المسار الأساسي</span>
+                  </div>
+                  <p style="margin:8px 0 0; font-size:17px; line-height:1.8; color:#5A6478; max-width:66ch">للمؤسسات الدولية والوطنية والجهات المانحة. نرسل الملف المؤسسي ووثائق الحوكمة والسياسات، ونرد خلال ثلاثة أيام عمل.</p>
+                </div>
+                <span style="font-size:15.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:13px 20px; text-align:center">ابدأ استفساراً</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:56px minmax(0,1fr) 260px; gap:36px; align-items:start; padding:30px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#1F6B54; padding-top:6px" dir="ltr">02</div>
+                <div>
+                  <h2 style="margin:0; font-size:28px; font-weight:600; color:#14213F">التطوع</h2>
+                  <p style="margin:8px 0 0; font-size:17px; line-height:1.8; color:#5A6478; max-width:66ch">من داخل المحافظات الخمس. نموذج قصير — فئة عمرية ومحافظة وبيانات تواصل، بلا سيرة ذاتية إلزامية. التسجيل مجاني دائماً.</p>
+                </div>
+                <span style="font-size:15.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:12px 20px; text-align:center">قدّم طلب تطوع</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:56px minmax(0,1fr) 260px; gap:36px; align-items:start; padding:30px 0; border-bottom:1px solid #D8D3C7; text-decoration:none" style-hover="background:#F2EFE7">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#B3591B; padding-top:6px" dir="ltr">03</div>
+                <div>
+                  <h2 style="margin:0; font-size:28px; font-weight:600; color:#14213F">دعم العمل</h2>
+                  <p style="margin:8px 0 0; font-size:17px; line-height:1.8; color:#5A6478; max-width:66ch">الدعم يُنسَّق بالتواصل المباشر عبر واتساب. لا نستقبل تبرعات عبر هذا الموقع، ولا توجد بوابة دفع، ولا نطلب بيانات بنكية.</p>
+                </div>
+                <span style="font-size:15.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:12px 20px; text-align:center">كيف يصل الدعم</span>
+              </a>
+              <a href="#" style="display:grid; grid-template-columns:56px minmax(0,1fr) 260px; gap:36px; align-items:start; padding:30px 0; text-decoration:none" style-hover="background:#F2EFE7">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#8A8272; padding-top:6px" dir="ltr">04</div>
+                <div>
+                  <h2 style="margin:0; font-size:28px; font-weight:600; color:#14213F">العمل معنا</h2>
+                  <p style="margin:8px 0 0; font-size:17px; line-height:1.8; color:#5A6478; max-width:66ch">الشواغر تُعلن على صفحة الوظائف فقط، والتقديم من صفحة الشاغر نفسه.</p>
+                </div>
+                <span style="font-size:15.5px; font-weight:600; color:#254284; border:1px solid #C9C3B4; border-radius:6px; padding:12px 20px; text-align:center">الشواغر المتاحة</span>
+              </a>
+            </div>
+            <div style="margin-top:36px; background:#FEF7E7; border:1px solid #EBD9AE; border-inline-start:4px solid #DD991C; padding:22px 26px">
+              <p style="margin:0; font-size:16.5px; line-height:1.8; color:#3B4560">في كل هذه المسارات: لا نطلب أي رسوم، ولا نتواصل من حسابات شخصية. <a href="#" style="color:#254284; font-weight:600">راجع القنوات الرسمية</a> قبل التعامل مع أي جهة تتحدث باسمنا.</p>
+            </div>
+          </div>
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">20.2 · VOLUNTEER FORM — AR · 1440</div>
+        <div data-screen-label="Volunteer AR" dir="rtl" lang="ar" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:30px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">البرامج</a>
+              <a href="#" style="color:#14213F; text-decoration:none">المشاريع</a>
+              <a href="#" style="color:#14213F; text-decoration:none">الأثر</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">كن شريكاً معنا</a>
+            </nav>
+          </div>
+          <div style="padding:40px 120px 20px">
+            <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+              <a href="#" style="color:#5A6478; text-decoration:none">شارك معنا</a><span style="color:#C9C3B4">←</span><span style="color:#14213F">التطوع</span>
+            </div>
+            <h1 style="margin:16px 0 0; font-size:44px; line-height:1.25; font-weight:600; color:#14213F">التطوع معنا</h1>
+          </div>
+          <div style="padding:20px 120px 64px; display:grid; grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr); gap:80px; align-items:start">
+            <div>
+              <p style="margin:0; font-size:19px; line-height:1.8; color:#3B4560">نستقبل طلبات التطوع من سكان المحافظات الخمس. النموذج قصير عن قصد: نطلب الحد الأدنى الذي يمكّننا من التواصل معك عند توفر فرصة مناسبة.</p>
+              <div style="margin-top:30px; border-top:2px solid #14213F; padding-top:22px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#8A8272" dir="ltr">WHAT WE ASK, AND WHY</div>
+                <div style="margin-top:14px">
+                  <div style="padding:13px 0; border-bottom:1px solid #D8D3C7; display:grid; grid-template-columns:150px 1fr; gap:18px">
+                    <span style="font-size:15px; font-weight:600; color:#14213F">الفئة العمرية</span>
+                    <span style="font-size:15.5px; line-height:1.75; color:#5A6478">فئة لا تاريخ ميلاد — بعض الأنشطة لها شروط عمرية، ولا نحتاج أكثر من ذلك.</span>
+                  </div>
+                  <div style="padding:13px 0; border-bottom:1px solid #D8D3C7; display:grid; grid-template-columns:150px 1fr; gap:18px">
+                    <span style="font-size:15px; font-weight:600; color:#14213F">المحافظة</span>
+                    <span style="font-size:15.5px; line-height:1.75; color:#5A6478">لا عنوان تفصيلي — نوزّع الفرص على مستوى المحافظة.</span>
+                  </div>
+                  <div style="padding:13px 0; border-bottom:1px solid #D8D3C7; display:grid; grid-template-columns:150px 1fr; gap:18px">
+                    <span style="font-size:15px; font-weight:600; color:#14213F">بيانات التواصل</span>
+                    <span style="font-size:15.5px; line-height:1.75; color:#5A6478">هاتف أو بريد إلكتروني — واحد منهما يكفي.</span>
+                  </div>
+                  <div style="padding:13px 0; display:grid; grid-template-columns:150px 1fr; gap:18px">
+                    <span style="font-size:15px; font-weight:600; color:#14213F">مدة الحفظ</span>
+                    <span style="font-size:15.5px; line-height:1.75; color:#5A6478">اثنا عشر شهراً، ثم تُحذف بياناتك تلقائياً.</span>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:26px; border:1px solid #EBD9AE; background:#FEF7E7; border-inline-start:3px solid #DD991C; padding:18px 20px">
+                <p style="margin:0; font-size:15.5px; line-height:1.8; color:#3B4560">التسجيل للتطوع مجاني بالكامل. لا نطلب رسوماً ولا «مصاريف إدارية»، ولا نتواصل مع المتطوعين من حسابات شخصية.</p>
+              </div>
+            </div>
+            <form style="border:1px solid #D8D3C7; background:#FFFFFF; padding:36px 40px 40px">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:2px solid #14213F; padding-bottom:14px">
+                <div style="font-size:22px; font-weight:600; color:#14213F">طلب تطوع</div>
+                <div style="font-size:13.5px; color:#8A8272">الحقول المعلَّمة <span style="color:#A32B2B">*</span> مطلوبة</div>
+              </div>
+              <div style="margin-top:24px; display:grid; gap:20px">
+                <div>
+                  <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">الاسم <span style="color:#A32B2B">*</span></label>
+                  <input style="margin-top:8px; width:100%; font-family:inherit; font-size:16px; color:#14213F; background:#FBFAF6; border:1px solid #C9C3B4; border-radius:6px; padding:13px 14px" />
+                </div>
+                <fieldset style="border:none; margin:0; padding:0">
+                  <legend style="font-size:14.5px; font-weight:500; color:#14213F; padding:0">الفئة العمرية <span style="color:#A32B2B">*</span></legend>
+                  <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap">
+                    <label style="display:flex; align-items:center; gap:9px; font-size:15.5px; color:#3B4560; border:1px solid #C9C3B4; border-radius:6px; padding:11px 16px; cursor:pointer; min-height:44px"><input type="radio" name="age" style="width:17px; height:17px; accent-color:#254284" /><span>١٨—٢٤</span></label>
+                    <label style="display:flex; align-items:center; gap:9px; font-size:15.5px; color:#3B4560; border:1px solid #C9C3B4; border-radius:6px; padding:11px 16px; cursor:pointer; min-height:44px"><input type="radio" name="age" style="width:17px; height:17px; accent-color:#254284" /><span>٢٥—٣٤</span></label>
+                    <label style="display:flex; align-items:center; gap:9px; font-size:15.5px; color:#3B4560; border:1px solid #C9C3B4; border-radius:6px; padding:11px 16px; cursor:pointer; min-height:44px"><input type="radio" name="age" style="width:17px; height:17px; accent-color:#254284" /><span>٣٥—٤٩</span></label>
+                    <label style="display:flex; align-items:center; gap:9px; font-size:15.5px; color:#3B4560; border:1px solid #C9C3B4; border-radius:6px; padding:11px 16px; cursor:pointer; min-height:44px"><input type="radio" name="age" style="width:17px; height:17px; accent-color:#254284" /><span>٥٠+</span></label>
+                  </div>
+                </fieldset>
+                <div>
+                  <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">المحافظة <span style="color:#A32B2B">*</span></label>
+                  <select style="margin-top:8px; width:100%; font-family:inherit; font-size:16px; color:#14213F; background:#FBFAF6; border:1px solid #C9C3B4; border-radius:6px; padding:13px 12px">
+                    <option>شمال غزة</option><option>غزة</option><option>الوسطى</option><option>خان يونس</option><option>رفح</option>
+                  </select>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+                  <div>
+                    <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">الهاتف</label>
+                    <input dir="ltr" placeholder="+970 …" style="margin-top:8px; width:100%; font-family:'IBM Plex Mono',monospace; font-size:15px; color:#14213F; background:#FBFAF6; border:1px solid #C9C3B4; border-radius:6px; padding:13px 14px" />
+                  </div>
+                  <div>
+                    <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">البريد الإلكتروني</label>
+                    <input dir="ltr" style="margin-top:8px; width:100%; font-family:'IBM Plex Mono',monospace; font-size:15px; color:#14213F; background:#FBFAF6; border:1px solid #C9C3B4; border-radius:6px; padding:13px 14px" />
+                  </div>
+                </div>
+                <div style="font-size:13.5px; line-height:1.7; color:#8A8272; margin-top:-8px">أدخل وسيلة تواصل واحدة على الأقل.</div>
+                <fieldset style="border:none; margin:0; padding:0">
+                  <legend style="font-size:14.5px; font-weight:500; color:#14213F; padding:0">مجالات تهمّك</legend>
+                  <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap">
+                    <label style="display:flex; align-items:center; gap:9px; font-size:15.5px; color:#3B4560; border:1px solid #C9C3B4; border-radius:6px; padding:11px 15px; cursor:pointer; min-height:44px"><input type="checkbox" style="width:17px; height:17px; accent-color:#254284" /><span>أنشطة الأطفال</span></label>
+                    <label style="display:flex; align-items:center; gap:9px; font-size:15.5px; color:#3B4560; border:1px solid #C9C3B4; border-radius:6px; padding:11px 15px; cursor:pointer; min-height:44px"><input type="checkbox" style="width:17px; height:17px; accent-color:#254284" /><span>الدعم النفسي</span></label>
+                    <label style="display:flex; align-items:center; gap:9px; font-size:15.5px; color:#3B4560; border:1px solid #C9C3B4; border-radius:6px; padding:11px 15px; cursor:pointer; min-height:44px"><input type="checkbox" style="width:17px; height:17px; accent-color:#254284" /><span>التوزيعات</span></label>
+                    <label style="display:flex; align-items:center; gap:9px; font-size:15.5px; color:#3B4560; border:1px solid #C9C3B4; border-radius:6px; padding:11px 15px; cursor:pointer; min-height:44px"><input type="checkbox" style="width:17px; height:17px; accent-color:#254284" /><span>التوثيق والإعلام</span></label>
+                  </div>
+                </fieldset>
+                <div>
+                  <label style="display:block; font-size:14.5px; font-weight:500; color:#14213F">الوقت المتاح <span style="font-weight:400; color:#8A8272">— اختياري</span></label>
+                  <input placeholder="مثال: صباحاً في أيام الأسبوع" style="margin-top:8px; width:100%; font-family:inherit; font-size:16px; color:#14213F; background:#FBFAF6; border:1px solid #C9C3B4; border-radius:6px; padding:13px 14px" />
+                </div>
+                <div style="border:1px solid #D8D3C7; background:#FBFAF6; border-radius:6px; padding:14px 16px; display:flex; align-items:center; gap:12px">
+                  <span style="width:20px; height:20px; border:1px solid #C9C3B4; border-radius:3px; display:inline-block; background:#FFFFFF"></span>
+                  <span style="font-size:14.5px; color:#5A6478">أنا لست روبوتاً <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8272" dir="ltr">TURNSTILE</span></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; border-top:1px solid #D8D3C7; padding-top:22px">
+                  <button style="font-family:inherit; font-size:16px; font-weight:600; color:#FBFAF6; background:#254284; border:none; border-radius:6px; padding:16px 32px; cursor:pointer">أرسل الطلب</button>
+                  <span style="font-size:14.5px; color:#5A6478">نتواصل عند توفر فرصة مناسبة.</span>
+                </div>
+                <div style="font-size:14px; line-height:1.8; color:#8A8272">إن تعذّر الإرسال، راسلنا على <bdi dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#254284">info@[domain]</bdi></div>
+              </div>
+            </form>
+          </div>
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">20.3 · SUPPORT — WHATSAPP ONLY · AR · 1440</div>
+        <div data-screen-label="Support AR" dir="rtl" lang="ar" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="background:#14213F; color:#C9CFDE; padding:0 120px; height:44px; display:flex; align-items:center; gap:10px; font-size:13.5px">
+            <span style="width:7px; height:7px; background:#DD991C; border-radius:50%"></span>
+            <span>لا يوجد على هذا الموقع أي بوابة دفع، ولا نطلب بيانات بنكية.</span>
+          </div>
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:30px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">البرامج</a>
+              <a href="#" style="color:#14213F; text-decoration:none">المشاريع</a>
+              <a href="#" style="color:#14213F; text-decoration:none">الأثر</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">كن شريكاً معنا</a>
+            </nav>
+          </div>
+          <div style="padding:44px 120px 40px; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr); gap:80px; align-items:start">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+                <a href="#" style="color:#5A6478; text-decoration:none">شارك معنا</a><span style="color:#C9C3B4">←</span><span style="color:#14213F">دعم العمل</span>
+              </div>
+              <h1 style="margin:16px 0 0; font-size:46px; line-height:1.25; font-weight:600; color:#14213F">كيف يصل الدعم إلينا</h1>
+              <div style="margin-top:26px; height:2px; width:88px; background:#DD991C"></div>
+              <p style="margin:24px 0 0; font-size:19px; line-height:1.8; color:#3B4560; max-width:58ch">لا نستقبل تبرعات عبر هذا الموقع. الدعم يُنسَّق بالتواصل المباشر معنا، حتى نتفق على وجهته وطريقة توثيقه قبل أي تحويل.</p>
+              <div style="margin-top:30px; border-top:2px solid #14213F">
+                <div style="padding:18px 0; border-bottom:1px solid #D8D3C7; display:flex; gap:18px; align-items:flex-start">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:26px; height:26px; display:flex; align-items:center; justify-content:center; flex:none" dir="ltr">1</span>
+                  <div>
+                    <div style="font-size:18px; font-weight:600; color:#14213F">راسلنا على واتساب</div>
+                    <div style="margin-top:4px; font-size:16px; line-height:1.75; color:#5A6478">من الرقم المعلن على صفحة القنوات الرسمية فقط.</div>
+                  </div>
+                </div>
+                <div style="padding:18px 0; border-bottom:1px solid #D8D3C7; display:flex; gap:18px; align-items:flex-start">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:26px; height:26px; display:flex; align-items:center; justify-content:center; flex:none" dir="ltr">2</span>
+                  <div>
+                    <div style="font-size:18px; font-weight:600; color:#14213F">نتفق على وجهة الدعم</div>
+                    <div style="margin-top:4px; font-size:16px; line-height:1.75; color:#5A6478">برنامج محدّد أو مشروع قائم، مع توضيح ما يمكن تحقيقه.</div>
+                  </div>
+                </div>
+                <div style="padding:18px 0; display:flex; gap:18px; align-items:flex-start">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:26px; height:26px; display:flex; align-items:center; justify-content:center; flex:none" dir="ltr">3</span>
+                  <div>
+                    <div style="font-size:18px; font-weight:600; color:#14213F">توثيق ومتابعة</div>
+                    <div style="margin-top:4px; font-size:16px; line-height:1.75; color:#5A6478">سند رسمي بالاستلام، وتقرير عن وجهة الدعم عند اكتماله.</div>
+                  </div>
+                </div>
+              </div>
+              <a href="#" style="display:inline-flex; align-items:center; gap:12px; margin-top:30px; font-size:17px; font-weight:600; color:#FBFAF6; background:#1F6B54; border-radius:6px; padding:17px 30px; text-decoration:none">
+                <span>تواصل عبر واتساب</span>
+                <bdi dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:14.5px; opacity:.85">+970 59 588 9697</bdi>
+              </a>
+              <p style="margin:14px 0 0; font-size:14.5px; line-height:1.75; color:#8A8272; max-width:60ch">يفتح واتساب برسالة عربية جاهزة. إن كنت تكتب بالإنجليزية، افتح النسخة الإنجليزية من الصفحة وستكون الرسالة بالإنجليزية.</p>
+            </div>
+            <div>
+              <div style="border:2px solid #A32B2B; background:#FBF0F0; padding:30px 32px">
+                <div style="display:flex; align-items:center; gap:12px">
+                  <span style="width:9px; height:9px; background:#A32B2B; border-radius:50%"></span>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#A32B2B" dir="ltr">FRAUD WARNING</div>
+                </div>
+                <h2 style="margin:16px 0 0; font-size:26px; line-height:1.4; font-weight:600; color:#14213F">صفحة الدعم هي أكثر ما يُنتحل باسمنا</h2>
+                <div style="margin-top:18px; display:flex; flex-direction:column; gap:14px">
+                  <div style="display:flex; gap:12px; align-items:flex-start"><span style="color:#A32B2B; margin-top:5px">◆</span><span style="font-size:16.5px; line-height:1.8; color:#3B4560">لا نطلب تحويلاً إلى حساب شخصي، ولا إلى محفظة إلكترونية باسم فرد.</span></div>
+                  <div style="display:flex; gap:12px; align-items:flex-start"><span style="color:#A32B2B; margin-top:5px">◆</span><span style="font-size:16.5px; line-height:1.8; color:#3B4560">لا نرسل روابط دفع، ولا نطلب رمز تحقّق أو بيانات بطاقة.</span></div>
+                  <div style="display:flex; gap:12px; align-items:flex-start"><span style="color:#A32B2B; margin-top:5px">◆</span><span style="font-size:16.5px; line-height:1.8; color:#3B4560">لا نتواصل معك أولاً بطلب دعم — نحن نستقبل التواصل، لا نبدأه.</span></div>
+                </div>
+                <div style="margin-top:22px; padding-top:18px; border-top:1px solid #E0C4C4; display:flex; gap:12px; flex-wrap:wrap">
+                  <a href="#" style="font-size:15.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:13px 20px; text-decoration:none">القنوات الرسمية</a>
+                  <a href="#" style="font-size:15.5px; font-weight:600; color:#A32B2B; border:1px solid #E0C4C4; background:#FFFFFF; border-radius:6px; padding:12px 20px; text-decoration:none">أبلغ عن انتحال</a>
+                </div>
+              </div>
+              <div style="margin-top:22px; border:1px solid #D8D3C7; background:#F2EFE7; padding:24px 26px">
+                <div style="font-size:18px; font-weight:600; color:#14213F">مؤسسة أو جهة مانحة؟</div>
+                <p style="margin:8px 0 14px; font-size:16px; line-height:1.8; color:#5A6478">التمويل المؤسسي يمرّ بمسار الشراكة، لا بهذه الصفحة.</p>
+                <a href="#" style="font-size:15.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:12px 20px; text-decoration:none">ابدأ استفسار شراكة</a>
+              </div>
+            </div>
+          </div>
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:26px">
+        <div style="display:flex; flex-direction:column; gap:12px">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">20.4 · SUPPORT — EN · 900</div>
+          <div data-screen-label="Support EN" dir="ltr" lang="en" style="width:900px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:16px; line-height:1.65; color:#3B4560">
+            <div style="background:#14213F; color:#C9CFDE; padding:0 48px; height:44px; display:flex; align-items:center; gap:10px; font-size:13.5px">
+              <span style="width:7px; height:7px; background:#DD991C; border-radius:50%"></span>
+              <span>This site runs no payment gateway and never asks for bank details.</span>
+            </div>
+            <div style="border-bottom:1px solid #D8D3C7; padding:0 48px; height:80px; display:flex; align-items:center; justify-content:space-between">
+              <div style="display:flex; align-items:center; gap:14px">
+                <img src="assets/pcsrd-logo.jpg" alt="PCSRD logo" style="width:44px; height:44px; object-fit:contain" />
+                <div style="font-size:16px; font-weight:600; color:#14213F">[Registered legal name]</div>
+              </div>
+              <a href="#" style="font-size:14.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:10px 18px; text-decoration:none">Partner with us</a>
+            </div>
+            <div style="padding:36px 48px 40px">
+              <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+                <a href="#" style="color:#5A6478; text-decoration:none">Get involved</a><span style="color:#C9C3B4">→</span><span style="color:#14213F">Support</span>
+              </div>
+              <h1 style="margin:16px 0 0; font-size:40px; line-height:1.1; font-weight:600; color:#14213F; letter-spacing:-0.02em">How support reaches us</h1>
+              <div style="margin-top:22px; height:2px; width:80px; background:#DD991C"></div>
+              <p style="margin:22px 0 0; font-size:18px; line-height:1.65; color:#3B4560; max-width:66ch">We accept no donations through this website. Support is arranged by contacting us directly, so that its destination and documentation are agreed before any transfer.</p>
+              <div style="margin-top:26px; border-top:2px solid #14213F">
+                <div style="padding:16px 0; border-bottom:1px solid #D8D3C7; display:flex; gap:16px; align-items:flex-start">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex:none">1</span>
+                  <div><div style="font-size:17px; font-weight:600; color:#14213F">Message us on WhatsApp</div><div style="margin-top:3px; font-size:15.5px; line-height:1.6; color:#5A6478">Only from the number published on the official channels page.</div></div>
+                </div>
+                <div style="padding:16px 0; border-bottom:1px solid #D8D3C7; display:flex; gap:16px; align-items:flex-start">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex:none">2</span>
+                  <div><div style="font-size:17px; font-weight:600; color:#14213F">We agree where it goes</div><div style="margin-top:3px; font-size:15.5px; line-height:1.6; color:#5A6478">A named programme or an existing project, with what it can realistically achieve.</div></div>
+                </div>
+                <div style="padding:16px 0; display:flex; gap:16px; align-items:flex-start">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex:none">3</span>
+                  <div><div style="font-size:17px; font-weight:600; color:#14213F">Documented and reported</div><div style="margin-top:3px; font-size:15.5px; line-height:1.6; color:#5A6478">An official receipt, and a report on where it went once complete.</div></div>
+                </div>
+              </div>
+              <a href="#" style="display:inline-flex; align-items:center; gap:12px; margin-top:26px; font-size:16.5px; font-weight:600; color:#FBFAF6; background:#1F6B54; border-radius:6px; padding:16px 28px; text-decoration:none">
+                <span>Message us on WhatsApp</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:14px; opacity:.85">+970 59 588 9697</span>
+              </a>
+              <div style="margin-top:30px; border:2px solid #A32B2B; background:#FBF0F0; padding:26px 28px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#A32B2B">FRAUD WARNING</div>
+                <h2 style="margin:14px 0 0; font-size:23px; line-height:1.25; font-weight:600; color:#14213F">This page is the one most often impersonated in our name</h2>
+                <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px">
+                  <div style="display:flex; gap:12px; align-items:flex-start"><span style="color:#A32B2B; margin-top:4px">◆</span><span style="font-size:16px; line-height:1.65; color:#3B4560">We never ask for a transfer to a personal account or an individual's e-wallet.</span></div>
+                  <div style="display:flex; gap:12px; align-items:flex-start"><span style="color:#A32B2B; margin-top:4px">◆</span><span style="font-size:16px; line-height:1.65; color:#3B4560">We never send payment links, and never ask for a card or a verification code.</span></div>
+                  <div style="display:flex; gap:12px; align-items:flex-start"><span style="color:#A32B2B; margin-top:4px">◆</span><span style="font-size:16px; line-height:1.65; color:#3B4560">We never contact you first asking for support — we receive contact, we do not initiate it.</span></div>
+                </div>
+                <div style="margin-top:20px; padding-top:16px; border-top:1px solid #E0C4C4; display:flex; gap:12px; flex-wrap:wrap">
+                  <a href="#" style="font-size:15.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:13px 20px; text-decoration:none">Official channels</a>
+                  <a href="#" style="font-size:15.5px; font-weight:600; color:#A32B2B; border:1px solid #E0C4C4; background:#FFFFFF; border-radius:6px; padding:12px 20px; text-decoration:none">Report impersonation</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">20.5 · SUPPORT — AR · 390</div>
+          <div data-screen-label="Support AR mobile" dir="rtl" lang="ar" style="width:390px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:16.5px; line-height:1.8; color:#3B4560">
+            <div style="background:#14213F; color:#C9CFDE; padding:9px 20px; font-size:12.5px; display:flex; gap:8px; align-items:flex-start">
+              <span style="width:6px; height:6px; background:#DD991C; border-radius:50%; margin-top:7px; flex:none"></span>
+              <span>لا توجد بوابة دفع على هذا الموقع.</span>
+            </div>
+            <div style="border-bottom:1px solid #D8D3C7; padding:12px 20px; display:flex; align-items:center; justify-content:space-between">
+              <div style="display:flex; align-items:center; gap:10px">
+                <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:40px; height:40px; object-fit:contain" />
+                <div style="font-size:14.5px; font-weight:600; color:#14213F">[الاسم القانوني]</div>
+              </div>
+              <button aria-label="القائمة" style="background:#254284; border:none; border-radius:6px; width:46px; height:46px; display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center">
+                <span style="width:18px; height:2px; background:#FBFAF6"></span><span style="width:18px; height:2px; background:#FBFAF6"></span><span style="width:18px; height:2px; background:#FBFAF6"></span>
+              </button>
+            </div>
+            <div style="padding:22px 20px 20px">
+              <h1 style="margin:0; font-size:28px; line-height:1.4; font-weight:600; color:#14213F">كيف يصل الدعم إلينا</h1>
+              <div style="margin-top:16px; height:2px; width:64px; background:#DD991C"></div>
+              <p style="margin:16px 0 0; font-size:16.5px; line-height:1.8">لا نستقبل تبرعات عبر الموقع. الدعم يُنسَّق بالتواصل المباشر.</p>
+              <div style="margin-top:20px; border-top:2px solid #14213F">
+                <div style="padding:14px 0; border-bottom:1px solid #D8D3C7; display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex:none" dir="ltr">1</span><span style="font-size:16px; line-height:1.75">راسلنا على واتساب من الرقم المعلن.</span></div>
+                <div style="padding:14px 0; border-bottom:1px solid #D8D3C7; display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex:none" dir="ltr">2</span><span style="font-size:16px; line-height:1.75">نتفق على وجهة الدعم.</span></div>
+                <div style="padding:14px 0; display:flex; gap:12px"><span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#FBFAF6; background:#254284; width:24px; height:24px; display:flex; align-items:center; justify-content:center; flex:none" dir="ltr">3</span><span style="font-size:16px; line-height:1.75">سند استلام وتقرير عند الاكتمال.</span></div>
+              </div>
+            </div>
+            <div style="margin:0 20px 20px; border:2px solid #A32B2B; background:#FBF0F0; padding:18px 18px">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.14em; color:#A32B2B" dir="ltr">FRAUD WARNING</div>
+              <div style="margin-top:10px; font-size:18px; font-weight:600; color:#14213F; line-height:1.45">هذه الصفحة أكثر ما يُنتحل باسمنا</div>
+              <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; gap:10px"><span style="color:#A32B2B; margin-top:4px">◆</span><span style="font-size:15.5px; line-height:1.75">لا تحويل إلى حساب شخصي.</span></div>
+                <div style="display:flex; gap:10px"><span style="color:#A32B2B; margin-top:4px">◆</span><span style="font-size:15.5px; line-height:1.75">لا روابط دفع ولا رموز تحقّق.</span></div>
+                <div style="display:flex; gap:10px"><span style="color:#A32B2B; margin-top:4px">◆</span><span style="font-size:15.5px; line-height:1.75">لا نبدأ التواصل بطلب دعم.</span></div>
+              </div>
+              <a href="#" style="display:block; margin-top:16px; text-align:center; font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:13px; text-decoration:none">القنوات الرسمية</a>
+            </div>
+            <div style="position:sticky; bottom:0; background:#FBFAF6; border-top:1px solid #C9C3B4; padding:12px 16px">
+              <a href="#" style="display:block; text-align:center; font-size:16px; font-weight:600; color:#FBFAF6; background:#1F6B54; border-radius:6px; padding:16px; text-decoration:none">تواصل عبر واتساب</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:32px">
+    <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; max-width:1180px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">21 — RESOURCES · LEGAL</span>
+      <span style="height:1px; flex:1; min-width:60px; background:#C9C3B4"></span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8A8272">/resources · /legal/[slug] — LAST 2 OF 24</span>
+    </div>
+    <p style="margin:0; max-width:96ch; font-size:16px; line-height:1.7; color:#3B4560">Resources is a download register, so it is set as one: type, year, language availability, file size. A compliance officer scans this page for a specific document and needs to know before clicking whether an English version exists and how large the file is on a metered connection.</p>
+
+    <div style="display:flex; gap:48px; align-items:flex-start; flex-wrap:wrap">
+
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">21.1 · RESOURCES — AR · 1440</div>
+        <div data-screen-label="Resources AR" dir="rtl" lang="ar" style="width:1440px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+          <div style="background:#14213F; color:#C9CFDE; padding:0 120px; height:44px; display:flex; align-items:center; gap:10px; font-size:13.5px">
+            <span style="width:7px; height:7px; background:#DD991C; border-radius:50%"></span>
+            <span>لا نطلب رسوماً مقابل أي خدمة أو مساعدة.</span>
+            <a href="#" style="color:#FBFAF6; font-weight:500; border-bottom:1px solid #DD991C; text-decoration:none">تحقّق من قنواتنا الرسمية</a>
+          </div>
+          <div style="border-bottom:1px solid #D8D3C7; padding:0 120px; height:88px; display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:16px">
+              <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:52px; height:52px; object-fit:contain" />
+              <div style="font-size:17px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+            </div>
+            <nav style="display:flex; align-items:center; gap:30px; font-size:16px; font-weight:500">
+              <a href="#" style="color:#14213F; text-decoration:none">من نحن</a>
+              <a href="#" style="color:#14213F; text-decoration:none">البرامج</a>
+              <a href="#" style="color:#14213F; text-decoration:none">المشاريع</a>
+              <a href="#" style="color:#14213F; text-decoration:none">الأثر</a>
+              <a href="#" style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 20px; text-decoration:none">كن شريكاً معنا</a>
+            </nav>
+          </div>
+          <div style="padding:40px 120px 26px; border-bottom:1px solid #D8D3C7">
+            <div style="display:flex; align-items:center; gap:10px; font-size:14px; color:#8A8272">
+              <a href="#" style="color:#5A6478; text-decoration:none">الرئيسية</a><span style="color:#C9C3B4">←</span><span style="color:#14213F">الموارد</span>
+            </div>
+            <div style="margin-top:16px; display:flex; align-items:flex-end; justify-content:space-between; gap:40px">
+              <div>
+                <h1 style="margin:0; font-size:44px; line-height:1.25; font-weight:600; color:#14213F">التقارير والموارد</h1>
+                <p style="margin:12px 0 0; font-size:18px; line-height:1.75; color:#5A6478; max-width:64ch">الوثائق المتاحة للعموم. النسخ التفصيلية للجهات المانحة تُرسل عبر مسار الشراكة.</p>
+              </div>
+              <div style="display:flex; gap:8px">
+                <span style="font-size:15px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:11px 18px">الكل</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">تقارير</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">سياسات</span>
+                <span style="font-size:15px; color:#14213F; border:1px solid #C9C3B4; border-radius:6px; padding:10px 18px">تقييمات</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:32px 120px 60px">
+            <div style="border-top:2px solid #14213F">
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) 170px 110px 210px 210px; gap:24px; padding:12px 0; border-bottom:1px solid #D8D3C7; font-size:12.5px; font-weight:500; color:#8A8272">
+                <div>الوثيقة</div><div>النوع</div><div>السنة</div><div>اللغات</div><div></div>
+              </div>
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) 170px 110px 210px 210px; gap:24px; padding:20px 0; border-bottom:1px solid #D8D3C7; align-items:center">
+                <div>
+                  <div style="font-size:20px; font-weight:600; color:#14213F">[الملف التعريفي المؤسسي]</div>
+                  <div style="margin-top:4px; font-size:15px; line-height:1.7; color:#5A6478">[سطر عن محتوى الوثيقة.]</div>
+                </div>
+                <div><span style="font-size:12.5px; color:#254284; border:1px solid #C8CFE1; background:#F2F5FB; padding:2px 9px; border-radius:3px">ملف تعريفي</span></div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478" dir="ltr">2025</div>
+                <div style="display:flex; gap:7px">
+                  <span style="font-size:12.5px; color:#14213F; border:1px solid #C9C3B4; padding:2px 9px; border-radius:3px">العربية</span>
+                  <span style="font-size:12.5px; color:#14213F; border:1px solid #C9C3B4; padding:2px 9px; border-radius:3px" dir="ltr">EN</span>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center">
+                  <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center">عربي <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7" dir="ltr">2.1 MB</span></a>
+                  <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #C9C3B4; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center" dir="ltr">EN <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7">1.9 MB</span></a>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) 170px 110px 210px 210px; gap:24px; padding:20px 0; border-bottom:1px solid #D8D3C7; align-items:center">
+                <div>
+                  <div style="font-size:20px; font-weight:600; color:#14213F">[التقرير السنوي]</div>
+                  <div style="margin-top:4px; font-size:15px; line-height:1.7; color:#5A6478">[سطر عن محتوى التقرير.]</div>
+                </div>
+                <div><span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px">تقرير سنوي</span></div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478" dir="ltr">2024</div>
+                <div style="display:flex; gap:7px; align-items:center">
+                  <span style="font-size:12.5px; color:#14213F; border:1px solid #C9C3B4; padding:2px 9px; border-radius:3px">العربية</span>
+                  <span style="font-size:12.5px; color:#8A8272">الإنجليزية قادمة</span>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end">
+                  <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center">عربي <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7" dir="ltr">4.6 MB</span></a>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) 170px 110px 210px 210px; gap:24px; padding:20px 0; border-bottom:1px solid #D8D3C7; align-items:center">
+                <div>
+                  <div style="font-size:20px; font-weight:600; color:#14213F">[سياسة حماية الطفل]</div>
+                  <div style="margin-top:4px; font-size:15px; line-height:1.7; color:#5A6478">[سطر عن السياسة.]</div>
+                </div>
+                <div><span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; background:#EFF6F3; padding:2px 9px; border-radius:3px">سياسة</span></div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478" dir="ltr">2024</div>
+                <div style="display:flex; gap:7px">
+                  <span style="font-size:12.5px; color:#14213F; border:1px solid #C9C3B4; padding:2px 9px; border-radius:3px">العربية</span>
+                  <span style="font-size:12.5px; color:#14213F; border:1px solid #C9C3B4; padding:2px 9px; border-radius:3px" dir="ltr">EN</span>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end">
+                  <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center">عربي <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7" dir="ltr">640 KB</span></a>
+                  <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #C9C3B4; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center" dir="ltr">EN <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7">610 KB</span></a>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) 170px 110px 210px 210px; gap:24px; padding:20px 0; align-items:center">
+                <div>
+                  <div style="font-size:20px; font-weight:600; color:#14213F">[تقييم مشروع خارجي]</div>
+                  <div style="margin-top:4px; font-size:15px; line-height:1.7; color:#5A6478">[سطر عن التقييم والجهة التي أعدّته.]</div>
+                </div>
+                <div><span style="font-size:12.5px; color:#B3591B; border:1px solid #E8CDB6; background:#FBF3EC; padding:2px 9px; border-radius:3px">تقييم</span></div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478" dir="ltr">2023</div>
+                <div style="display:flex; gap:7px">
+                  <span style="font-size:12.5px; color:#14213F; border:1px solid #C9C3B4; padding:2px 9px; border-radius:3px" dir="ltr">EN</span>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end">
+                  <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center" dir="ltr">EN <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7">3.2 MB</span></a>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:30px; background:#F2EFE7; border:1px solid #D8D3C7; padding:24px 28px; display:flex; align-items:center; justify-content:space-between; gap:40px">
+              <div>
+                <div style="font-size:19px; font-weight:600; color:#14213F">تحتاج وثيقة غير منشورة هنا؟</div>
+                <p style="margin:8px 0 0; font-size:16.5px; line-height:1.75; color:#5A6478; max-width:74ch">التقارير المالية المدقّقة ووثائق الحوكمة الكاملة تُرسل للجهات المؤسسية عبر مسار الشراكة.</p>
+              </div>
+              <a href="#" style="font-size:15.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:14px 24px; text-decoration:none; white-space:nowrap">اطلبها عبر الشراكة</a>
+            </div>
+          </div>
+          <div style="background:#14213F; padding:28px 120px; display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap; font-size:13.5px; color:#8FA0C4">
+            <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+            <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em">© [YEAR] PCSRD — FOOTER ABBREVIATED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:26px">
+        <div style="display:flex; flex-direction:column; gap:12px">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">21.2 · RESOURCES — EN · 900</div>
+          <div data-screen-label="Resources EN" dir="ltr" lang="en" style="width:900px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:16px; line-height:1.65; color:#3B4560">
+            <div style="border-bottom:1px solid #D8D3C7; padding:0 48px; height:80px; display:flex; align-items:center; justify-content:space-between">
+              <div style="display:flex; align-items:center; gap:14px">
+                <img src="assets/pcsrd-logo.jpg" alt="PCSRD logo" style="width:44px; height:44px; object-fit:contain" />
+                <div style="font-size:16px; font-weight:600; color:#14213F">[Registered legal name]</div>
+              </div>
+              <a href="#" style="font-size:14.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:10px 18px; text-decoration:none">Partner with us</a>
+            </div>
+            <div style="padding:34px 48px 22px; border-bottom:1px solid #D8D3C7">
+              <h1 style="margin:0; font-size:38px; line-height:1.1; font-weight:600; color:#14213F; letter-spacing:-0.02em">Reports &amp; resources</h1>
+              <p style="margin:12px 0 0; font-size:17px; line-height:1.6; color:#5A6478; max-width:74ch">Publicly available documents. Detailed versions for institutional donors are sent through the partnership route.</p>
+            </div>
+            <div style="padding:26px 48px 40px">
+              <div style="border-top:2px solid #14213F">
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 150px 90px 200px; gap:20px; padding:12px 0; border-bottom:1px solid #D8D3C7; font-size:12.5px; font-weight:500; color:#8A8272">
+                  <div>DOCUMENT</div><div>TYPE</div><div>YEAR</div><div></div>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 150px 90px 200px; gap:20px; padding:18px 0; border-bottom:1px solid #D8D3C7; align-items:center">
+                  <div>
+                    <div style="font-size:19px; font-weight:600; color:#14213F">[Capability statement]</div>
+                    <div style="margin-top:3px; font-size:14.5px; line-height:1.6; color:#5A6478">[One line about the document.]</div>
+                  </div>
+                  <div><span style="font-size:12.5px; color:#254284; border:1px solid #C8CFE1; background:#F2F5FB; padding:2px 9px; border-radius:3px">Profile</span></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478">2025</div>
+                  <div style="display:flex; gap:8px; justify-content:flex-end">
+                    <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center">EN <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7">1.9 MB</span></a>
+                    <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #C9C3B4; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center" dir="rtl" lang="ar">عربي</a>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 150px 90px 200px; gap:20px; padding:18px 0; border-bottom:1px solid #D8D3C7; align-items:center">
+                  <div>
+                    <div style="font-size:19px; font-weight:600; color:#14213F">[Annual report]</div>
+                    <div style="margin-top:3px; font-size:14.5px; color:#B3591B">English translation coming soon — Arabic available</div>
+                  </div>
+                  <div><span style="font-size:12.5px; color:#5A6478; border:1px solid #D8D3C7; padding:2px 9px; border-radius:3px">Report</span></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478">2024</div>
+                  <div style="display:flex; gap:8px; justify-content:flex-end">
+                    <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #C9C3B4; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center" dir="rtl" lang="ar">عربي <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7" dir="ltr">4.6 MB</span></a>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) 150px 90px 200px; gap:20px; padding:18px 0; align-items:center">
+                  <div>
+                    <div style="font-size:19px; font-weight:600; color:#14213F">[Child protection policy]</div>
+                    <div style="margin-top:3px; font-size:14.5px; line-height:1.6; color:#5A6478">[One line about the policy.]</div>
+                  </div>
+                  <div><span style="font-size:12.5px; color:#1F6B54; border:1px solid #B9D3C9; background:#EFF6F3; padding:2px 9px; border-radius:3px">Policy</span></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478">2024</div>
+                  <div style="display:flex; gap:8px; justify-content:flex-end">
+                    <a href="#" style="font-size:14.5px; font-weight:600; color:#254284; border:1px solid #254284; border-radius:6px; padding:10px 14px; text-decoration:none; min-height:44px; display:flex; align-items:center">EN <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; margin-inline-start:6px; opacity:.7">610 KB</span></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; color:#5A6478">21.3 · LEGAL PAGE — AR · 900</div>
+          <div data-screen-label="Legal AR" dir="rtl" lang="ar" style="width:900px; background:#FBFAF6; border:1px solid #C9C3B4; font-size:17px; line-height:1.8; color:#3B4560">
+            <div style="border-bottom:1px solid #D8D3C7; padding:0 48px; height:80px; display:flex; align-items:center; justify-content:space-between">
+              <div style="display:flex; align-items:center; gap:14px">
+                <img src="assets/pcsrd-logo.jpg" alt="شعار PCSRD" style="width:44px; height:44px; object-fit:contain" />
+                <div style="font-size:16px; font-weight:600; color:#14213F">[الاسم القانوني للمؤسسة]</div>
+              </div>
+              <a href="#" style="font-size:14.5px; font-weight:600; color:#FBFAF6; background:#254284; border-radius:6px; padding:10px 18px; text-decoration:none">كن شريكاً معنا</a>
+            </div>
+            <div style="padding:34px 48px 48px; display:grid; grid-template-columns:220px minmax(0,1fr); gap:44px; align-items:start">
+              <aside style="position:sticky; top:20px">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#8A8272" dir="ltr">LEGAL</div>
+                <div style="margin-top:12px; border-top:2px solid #14213F">
+                  <a href="#" style="display:block; padding:12px 0; border-bottom:1px solid #D8D3C7; font-size:16px; font-weight:600; color:#14213F; text-decoration:none; border-inline-start:3px solid #DD991C; padding-inline-start:12px">سياسة الخصوصية</a>
+                  <a href="#" style="display:block; padding:12px 0; border-bottom:1px solid #D8D3C7; font-size:16px; color:#5A6478; text-decoration:none; padding-inline-start:15px">إمكانية الوصول</a>
+                  <a href="#" style="display:block; padding:12px 0; font-size:16px; color:#5A6478; text-decoration:none; padding-inline-start:15px">شروط الاستخدام</a>
+                </div>
+                <div style="margin-top:20px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; color:#8A8272" dir="ltr">UPDATED [DD MMM YYYY]</div>
+              </aside>
+              <article style="max-width:62ch">
+                <h1 style="margin:0; font-size:38px; line-height:1.3; font-weight:600; color:#14213F">سياسة الخصوصية</h1>
+                <p style="margin:16px 0 0; font-size:17.5px; line-height:1.9">[مقدمة قصيرة توضح ما تغطيه هذه السياسة.]</p>
+                <h2 style="margin:32px 0 0; font-size:24px; font-weight:600; color:#14213F">ما نجمعه</h2>
+                <p style="margin:10px 0 0; font-size:17px; line-height:1.9">[نص منسّق من لوحة التحكم.]</p>
+                <div style="margin-top:20px; border:1px solid #D8D3C7; background:#F2EFE7; padding:20px 22px">
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:#8A8272" dir="ltr">DATA WE DO NOT KEEP</div>
+                  <div style="margin-top:12px; display:flex; flex-direction:column; gap:9px; font-size:16px; line-height:1.75">
+                    <div style="display:flex; gap:10px"><span style="color:#1F6B54">◆</span><span>لا نخزّن عنوان الشبكة الخاص بك — نخزّن بصمة مشفّرة فقط.</span></div>
+                    <div style="display:flex; gap:10px"><span style="color:#1F6B54">◆</span><span>لا نستخدم ملفات تعريف للتتبّع، ولا يوجد بانر موافقة على هذا الموقع.</span></div>
+                    <div style="display:flex; gap:10px"><span style="color:#1F6B54">◆</span><span>للشكاوى السرّية: لا عنوان شبكة ولا بيانات متصفح على الإطلاق.</span></div>
+                  </div>
+                </div>
+                <h2 style="margin:32px 0 0; font-size:24px; font-weight:600; color:#14213F">مدد الحفظ</h2>
+                <div style="margin-top:14px; border-top:1px solid #D8D3C7">
+                  <div style="display:flex; justify-content:space-between; gap:20px; padding:11px 0; border-bottom:1px solid #E3DED2"><span style="font-size:16px">استفسارات الشراكة</span><span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478" dir="ltr">24 months</span></div>
+                  <div style="display:flex; justify-content:space-between; gap:20px; padding:11px 0; border-bottom:1px solid #E3DED2"><span style="font-size:16px">رسائل التواصل والتطوع</span><span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478" dir="ltr">12 months</span></div>
+                  <div style="display:flex; justify-content:space-between; gap:20px; padding:11px 0; border-bottom:1px solid #E3DED2"><span style="font-size:16px">طلبات التوظيف والسير الذاتية</span><span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478" dir="ltr">12 months</span></div>
+                  <div style="display:flex; justify-content:space-between; gap:20px; padding:11px 0"><span style="font-size:16px">بلاغات الانتحال</span><span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5A6478" dir="ltr">24 months</span></div>
+                </div>
+                <h2 style="margin:32px 0 0; font-size:24px; font-weight:600; color:#14213F">حقوقك</h2>
+                <p style="margin:10px 0 0; font-size:17px; line-height:1.9">[نص منسّق — كيف يطلب الشخص حذف بياناته ومن يراسل.]</p>
+                <div style="margin-top:26px; border-top:2px solid #14213F; padding-top:18px; font-size:16px; line-height:1.8">
+                  للاستفسار عن بياناتك: <bdi dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:15px; color:#254284">privacy@[domain]</bdi>
+                </div>
+              </article>
+            </div>
+            <div style="background:#14213F; padding:24px 48px; display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; font-size:13px; color:#8FA0C4">
+              <a href="#" style="color:#8FA0C4; text-decoration:none">القنوات الرسمية</a>
+              <div dir="ltr" style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:.1em">© [YEAR] PCSRD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000}}"></script>
+</body>
+</html>
