@@ -290,6 +290,55 @@ export const en: Dictionary = {
     rights: 'All rights reserved',
   },
 
+  enums: {
+    governorate: {
+      north_gaza: 'North Gaza',
+      gaza: 'Gaza',
+      middle: 'Middle Area',
+      khan_younis: 'Khan Younis',
+      rafah: 'Rafah',
+    },
+    theme: {
+      women: 'Women',
+      children: 'Children',
+      youth_adolescents: 'Youth and adolescents',
+      psychosocial_health: 'Psychosocial health',
+      relief: 'Relief',
+    },
+    program: {
+      protection: 'Protection',
+      humanitarian_response: 'Humanitarian response',
+      early_recovery: 'Early recovery',
+    },
+    targetGroup: {
+      children: 'Children',
+      youth: 'Youth',
+      women: 'Women',
+      poor_families: 'Families living in poverty',
+      elderly: 'Older people',
+      pwd: 'People with disabilities',
+    },
+    partnerType: {
+      implementing: 'Implementing partner',
+      donor: 'Donor',
+      network: 'Network',
+      membership: 'Membership',
+    },
+    personCategory: {
+      board: 'Board',
+      executive: 'Executive team',
+      staff: 'Staff',
+    },
+    publicationType: {
+      report: 'Report',
+      policy: 'Policy',
+      profile: 'Profile',
+      strategy: 'Strategy',
+      evaluation: 'Evaluation',
+      other: 'Other',
+    },
+  },
+
   a11y: {
     mainNav: 'Main navigation',
     footerNav: 'Footer links',

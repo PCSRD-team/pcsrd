@@ -91,9 +91,16 @@ const eslintConfig = defineConfig([
   },
 
   // Scripts and tests run outside the app; console output is the point.
+  //
+  // `react-hooks/rules-of-hooks` is off here because it matches on the `use`
+  // prefix alone: `useTestDb()` is a Vitest fixture that registers beforeAll,
+  // not a React hook, and there is no React in this directory at all.
   {
     files: ["scripts/**/*.ts", "tests/**/*.ts"],
-    rules: { "no-console": "off" },
+    rules: {
+      "no-console": "off",
+      "react-hooks/rules-of-hooks": "off",
+    },
   },
 ]);
 
