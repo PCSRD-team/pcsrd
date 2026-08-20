@@ -1,4 +1,4 @@
-import { and, eq, lt, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { Db, Tx } from '@/db';
 import { rowsOf } from '@/db/session';
 import { formSubmissions } from '@/db/schema';

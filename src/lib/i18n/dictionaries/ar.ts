@@ -291,6 +291,60 @@ export const ar = {
     rights: 'جميع الحقوق محفوظة',
   },
 
+  /**
+   * Enum labels. These are content, not code, so they live here rather than in
+   * the component that renders a facet — rule 5. The keys match the pg enum
+   * values exactly.
+   */
+  enums: {
+    governorate: {
+      north_gaza: 'شمال غزة',
+      gaza: 'غزة',
+      middle: 'الوسطى',
+      khan_younis: 'خان يونس',
+      rafah: 'رفح',
+    },
+    theme: {
+      women: 'النساء',
+      children: 'الأطفال',
+      youth_adolescents: 'الشباب واليافعون',
+      psychosocial_health: 'الصحة النفسية',
+      relief: 'الإغاثة',
+    },
+    program: {
+      protection: 'الحماية',
+      humanitarian_response: 'الاستجابة الإنسانية',
+      early_recovery: 'التعافي المبكر',
+    },
+    targetGroup: {
+      children: 'الأطفال',
+      youth: 'الشباب',
+      women: 'النساء',
+      poor_families: 'الأسر الفقيرة',
+      elderly: 'كبار السن',
+      pwd: 'ذوو الإعاقة',
+    },
+    partnerType: {
+      implementing: 'شريك تنفيذ',
+      donor: 'جهة مموّلة',
+      network: 'شبكة',
+      membership: 'عضوية',
+    },
+    personCategory: {
+      board: 'مجلس الإدارة',
+      executive: 'الإدارة التنفيذية',
+      staff: 'الطاقم',
+    },
+    publicationType: {
+      report: 'تقرير',
+      policy: 'سياسة',
+      profile: 'ملف تعريفي',
+      strategy: 'خطة استراتيجية',
+      evaluation: 'تقييم',
+      other: 'أخرى',
+    },
+  },
+
   a11y: {
     mainNav: 'التنقّل الرئيسي',
     footerNav: 'روابط التذييل',
