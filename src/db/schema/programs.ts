@@ -1,10 +1,10 @@
 import { sql } from 'drizzle-orm';
 import {
   index,
-  integer,
   jsonb,
   pgTable,
   primaryKey,
+  smallint,
   text,
   uniqueIndex,
   uuid,
@@ -67,7 +67,7 @@ export const programs = pgTable(
 
     targetGroups: targetGroup().array().notNull().default(sql`'{}'`),
     heroMediaId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
-    displayOrder: integer().notNull().default(0),
+    displayOrder: smallint().notNull().default(0),
 
     ...blockC(),
   },
@@ -87,7 +87,7 @@ export const programMedia = pgTable(
     mediaId: uuid()
       .notNull()
       .references(() => mediaAssets.id, { onDelete: 'cascade' }),
-    displayOrder: integer().notNull().default(0),
+    displayOrder: smallint().notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.programId, t.mediaId] })],
 );

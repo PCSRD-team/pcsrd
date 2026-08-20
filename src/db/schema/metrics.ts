@@ -4,9 +4,9 @@ import {
   check,
   date,
   index,
-  integer,
   numeric,
   pgTable,
+  smallint,
   text,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -48,7 +48,7 @@ export const impactMetrics = pgTable(
     /** Opt-in. A metric is internal until someone decides otherwise. */
     isPublic: boolean().notNull().default(false),
     isFeatured: boolean().notNull().default(false),
-    displayOrder: integer().notNull().default(0),
+    displayOrder: smallint().notNull().default(0),
     ...timestamps(),
   },
   (t) => [

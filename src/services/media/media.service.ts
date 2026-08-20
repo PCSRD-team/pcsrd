@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { Db } from '@/db';
+import { withActor } from '@/db/session';
 import { mediaAssets } from '@/db/schema';
 import type { ConsentStatus, MediaKind } from '@/db/schema/enums';
 import { AppError, notFound } from '@/lib/errors';
@@ -61,7 +62,7 @@ export async function registerMedia(
     });
   }
 
-  return db.transaction(async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const [row] = await tx
       .insert(mediaAssets)
       .values({
@@ -118,7 +119,7 @@ export async function updateMedia(
 ): Promise<void> {
   assertCan(actor, 'media.upload');
 
-  await db.transaction(async (tx) => {
+  await withActor(db, actor, async (tx) => {
     const [existing] = await tx
       .select()
       .from(mediaAssets)
@@ -162,7 +163,7 @@ export async function deleteMedia(
 ): Promise<{ bucket: string; path: string }> {
   assertCan(actor, 'media.delete');
 
-  return db.transaction(async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const [existing] = await tx
       .select()
       .from(mediaAssets)

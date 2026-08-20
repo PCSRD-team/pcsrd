@@ -4,10 +4,10 @@ import {
   check,
   date,
   index,
-  integer,
   jsonb,
   pgTable,
   primaryKey,
+  smallint,
   text,
   uniqueIndex,
   uuid,
@@ -108,7 +108,7 @@ export const projectMedia = pgTable(
     mediaId: uuid()
       .notNull()
       .references(() => mediaAssets.id, { onDelete: 'cascade' }),
-    displayOrder: integer().notNull().default(0),
+    displayOrder: smallint().notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.projectId, t.mediaId] })],
 );

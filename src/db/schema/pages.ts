@@ -1,4 +1,8 @@
-import { jsonb, pgTable, text } from 'drizzle-orm/pg-core';
+import {
+  jsonb,
+  pgTable,
+  text,
+} from 'drizzle-orm/pg-core';
 import { blockA, blockB, blockC, type RichText } from './_shared';
 
 /**

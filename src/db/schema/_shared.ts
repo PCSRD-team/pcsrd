@@ -1,4 +1,9 @@
-import { boolean, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { contentStatus, translationStatus } from './enums';
 import { mediaAssets } from './media';
 import { profiles } from './profiles';

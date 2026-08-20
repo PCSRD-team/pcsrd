@@ -1,9 +1,9 @@
-import { randomBytes } from 'node:crypto';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, lt, sql } from 'drizzle-orm';
 import type { Db, Tx } from '@/db';
+import { rowsOf } from '@/db/session';
 import { formSubmissions } from '@/db/schema';
 import type { LocaleCode, SubmissionState, SubmissionType } from '@/db/schema/enums';
-import { AppError, notFound } from '@/lib/errors';
+import { notFound } from '@/lib/errors';
 import { decryptPayload, encryptPayload } from '@/lib/security/crypto';
 import { hashIp } from '@/lib/security/ip';
 import { addMonths, toDateString } from '@/lib/utils';
@@ -45,12 +45,6 @@ const RETENTION_MONTHS: Record<SubmissionType, number> = {
 export const isSensitiveType = (type: SubmissionType) => SENSITIVE[type];
 export const retentionMonthsFor = (type: SubmissionType) => RETENTION_MONTHS[type];
 
-/** `PCS-XXXXXX`. Generated here rather than left to the database trigger so the
- * same code path works on a test database that has no triggers installed. */
-function generateReference(): string {
-  return `PCS-${randomBytes(4).toString('hex').slice(0, 6).toUpperCase()}`;
-}
-
 export type CreateSubmissionInput = {
   type: SubmissionType;
   locale: LocaleCode;
@@ -59,8 +53,6 @@ export type CreateSubmissionInput = {
   /** Raw address. Hashed or discarded here — never stored as given. */
   ip?: string | null;
   userAgent?: string | null;
-  /** Injected so the retention deadline is deterministic in tests. */
-  now?: Date;
 };
 
 export type CreatedSubmission = {
@@ -75,51 +67,58 @@ export async function createSubmission(
   input: CreateSubmissionInput,
 ): Promise<CreatedSubmission> {
   const isSensitive = SENSITIVE[input.type];
-  const now = input.now ?? new Date();
-  const purgeAfter = toDateString(addMonths(now, RETENTION_MONTHS[input.type]));
+  // Computed only as a fallback for the return value. The authoritative
+  // deadline is set by `app.submit_form`, which owns the retention table.
+  const purgeAfter = toDateString(addMonths(new Date(), RETENTION_MONTHS[input.type]));
 
   // DNH-8. A complainant must not be re-identifiable from what we keep, so the
   // two fields that could identify them are dropped before they reach the row.
   // `hashIp` is never called for a sensitive type, so the salt never touches a
   // complainant's address at all.
+  //
+  // The database enforces this again inside `app.submit_form`, and again in the
+  // `submissions_sensitive_unlinkable` CHECK constraint. Three layers for one
+  // rule is not redundancy — it is the one rule where a single missed branch is
+  // a safeguarding incident rather than a bug.
   const ipHash = isSensitive ? null : hashIp(input.ip);
   const userAgent = isSensitive ? null : (input.userAgent?.slice(0, 255) ?? null);
 
+  // A sensitive payload is encrypted here, in the application. The database
+  // refuses it otherwise:
+  //   PCSRD_SENSITIVE_PLAINTEXT: a sensitive submission must be encrypted
+  //   by the application before insert
   const encrypted = isSensitive ? encryptPayload(input.payload) : null;
 
-  // Six hex characters is 16.7 million references; a collision is unlikely and
-  // not impossible, and the column is unique, so the insert is retried rather
-  // than failing a submission the visitor cannot resend.
-  for (let attempt = 0; attempt < 5; attempt++) {
-    try {
-      const [row] = await db
-        .insert(formSubmissions)
-        .values({
-          reference: generateReference(),
-          type: input.type,
-          isSensitive,
-          locale: input.locale,
-          payload: encrypted ? null : input.payload,
-          payloadEncrypted: encrypted?.data ?? null,
-          payloadKeyId: encrypted?.keyId ?? null,
-          attachmentPath: input.attachmentPath ?? null,
-          ipHash,
-          userAgent,
-          purgeAfter,
-        })
-        .returning({ id: formSubmissions.id, reference: formSubmissions.reference });
+  // `app.submit_form` is SECURITY DEFINER and owns the retention table, the
+  // sensitivity decision and the DNH-8 blanking. Calling it rather than
+  // inserting directly keeps one source of truth: a cron job, a seed script or
+  // a psql session gets the same policy without importing this file.
+  const [row] = rowsOf<{ reference: string }>(await db.execute(sql`
+    select app.submit_form(
+      ${input.type}::submission_type,
+      ${input.locale}::locale_code,
+      ${encrypted ? null : JSON.stringify(input.payload)}::jsonb,
+      ${encrypted?.data ?? null}::bytea,
+      ${encrypted?.keyId ?? null}::text,
+      ${input.attachmentPath ?? null}::text,
+      ${ipHash}::text,
+      ${userAgent}::text,
+      ${isSensitive}::boolean
+    ) as reference
+  `));
 
-      return { id: row.id, reference: row.reference, isSensitive, purgeAfter };
-    } catch (error) {
-      const code = (error as { code?: string }).code;
-      if (code === '23505' && attempt < 4) continue;
-      throw error;
-    }
-  }
+  const [stored] = await db
+    .select({ id: formSubmissions.id, purgeAfter: formSubmissions.purgeAfter })
+    .from(formSubmissions)
+    .where(eq(formSubmissions.reference, row.reference))
+    .limit(1);
 
-  throw new AppError('internal', 'errors.unexpected', {
-    meta: { reason: 'reference generation exhausted' },
-  });
+  return {
+    id: stored?.id ?? '',
+    reference: row.reference,
+    isSensitive,
+    purgeAfter: stored?.purgeAfter ?? purgeAfter,
+  };
 }
 
 // ── Admin-side reads ─────────────────────────────────────────────────────
@@ -238,15 +237,33 @@ export async function setSubmissionState(
  * Called by the daily cron. Returns the count only — never the rows, because a
  * purge log listing what was purged defeats the purge.
  */
-export async function purgeExpiredSubmissions(
-  db: Db | Tx,
-  now: Date = new Date(),
-): Promise<number> {
-  const deleted = await db
-    .delete(formSubmissions)
-    .where(lt(formSubmissions.purgeAfter, toDateString(now)))
-    .returning({ id: formSubmissions.id });
-  return deleted.length;
+export type PurgeResult = {
+  deleted: number;
+  /** Object paths in the private `applications` bucket, for the caller to remove. */
+  attachments: string[];
+};
+
+/**
+ * Retention purge.
+ *
+ * Delegates to `app.purge_expired_submissions()` for two reasons, and the
+ * second is the one that matters:
+ *
+ * 1. The function is `SECURITY DEFINER`. A plain `delete` runs as the runtime
+ *    role under `FORCE ROW LEVEL SECURITY`, and a cron job has no actor, so the
+ *    delete policy refuses every row and the purge silently removes nothing.
+ * 2. It returns the **attachment paths** it deleted. Destroying the row while
+ *    leaving the applicant's CV in storage is not retention — the file is the
+ *    part that carries a name, a phone number and an address.
+ */
+export async function purgeExpiredSubmissions(db: Db | Tx): Promise<PurgeResult> {
+  const [row] = rowsOf<{ result: PurgeResult }>(
+    await db.execute(sql`select app.purge_expired_submissions() as result`),
+  );
+  return {
+    deleted: row?.result?.deleted ?? 0,
+    attachments: row?.result?.attachments ?? [],
+  };
 }
 
 /** Counts unhandled submissions for the admin dashboard badge. */

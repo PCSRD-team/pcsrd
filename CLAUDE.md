@@ -85,7 +85,8 @@ are globally available after `next dev` / `next build` — use them instead of h
   from here in one line. **Do not "fix" this back.**
 - **`organization_settings.values` is named `core_values`** — `VALUES` is a fully reserved
   Postgres keyword and any raw `db.execute(sql\`…\`)` touching it would fail permanently.
-- **Upload cap is 4 MB**, not the spec's 5/10 MB — Vercel's serverless request body limit
+- **Upload cap is 4 MB in code**, not the spec's 5/10 MB, and the buckets keep
+  their 10/20/5 MB limits as a second wall behind it — Vercel's serverless request body limit
   is 4.5 MB, so a larger file is rejected with an opaque 413 before validation ever runs.
   Enforced in the Zod schema, the route handler, and the bucket `file_size_limit`.
 - **CSP: nonce on `(admin)` only.** Reading `headers()` for a nonce opts a subtree out of
@@ -94,6 +95,58 @@ are globally available after `next dev` / `next build` — use them instead of h
   closed by the no-`dangerouslySetInnerHTML` rule and the no-third-party-scripts rule.
 - **Confidential attachments are refused, not gated.** `02-API §6.5` and `05-ADMIN §7`
   contradict each other; the stricter one wins.
+
+## The database is smarter than the spec — read this before touching a service
+
+`01-DATABASE §6` says "NO POLICIES. Intentional." **That is out of date.** The
+live database carries a full authorisation layer that the spec does not
+describe, and it was verified against the running project, not inferred:
+
+| What exists | Where |
+|---|---|
+| `app_runtime` login role, **no `BYPASSRLS`** | the connection `DATABASE_URL` uses |
+| `FORCE ROW LEVEL SECURITY` on all 21 tables | so even the owner is subject |
+| 85 policies | `anon` reads `status='published'`; staff read everything |
+| 11 gate functions | `app.actor_id()`, `app.actor_role()`, `app.can_publish()`, `app.can_view_sensitive()`, `app.is_admin()`, `app.is_staff()` … |
+| 9 trigger functions | consent gates, status-transition guard, append-only audit, privilege guard |
+| 31 CHECK constraints | including `submissions_sensitive_unlinkable` — DNH-8 as a constraint |
+
+**Consequences that are easy to get wrong:**
+
+1. **`DATABASE_URL` connects as `app_runtime`, `DIRECT_URL` as `postgres`.**
+   Runtime is subject to RLS; DDL needs the owner. Pointing runtime at
+   `postgres` silently disables all 85 policies, because `postgres` has
+   `BYPASSRLS` — the site keeps working and the second line of defence is gone.
+
+2. **Every service mutation goes through `withActor()`** (`src/db/session.ts`),
+   which sets `app.actor_id` / `app.actor_role` **transaction-locally**. On a
+   pooled connection a session-level setting would leak one user's permissions
+   into the next user's query. The `true` third argument to `set_config` is not
+   an optimisation.
+
+3. **Public queries deliberately do not set an actor.** `anon` is the correct
+   identity for a visitor, and the policies already restrict them to published
+   rows. The `eq(status, 'published')` in the query layer stays as well — it is
+   the same rule stated twice on purpose.
+
+4. **Submissions go through `app.submit_form()`**, not a direct insert. It is
+   `SECURITY DEFINER` and owns the retention table, the sensitivity decision and
+   the DNH-8 blanking. It **rejects an unencrypted sensitive payload** with
+   `PCSRD_SENSITIVE_PLAINTEXT`, which is why `SUBMISSION_ENC_KEY` is required
+   rather than optional.
+
+5. **The retention purge calls `app.purge_expired_submissions()`.** A plain
+   `delete` runs as the runtime role with no actor, so the policy refuses every
+   row and the purge silently removes nothing. The function also returns the
+   attachment paths — the CV must be deleted from storage with the row.
+
+6. **`drizzle/0001_app_runtime_layer.sql` is extracted from the live database,
+   not hand-authored.** It exists so PGlite reproduces production semantics.
+   Regenerate it rather than editing it by hand.
+
+> **In PGlite the policies do not bite**: the tests connect as `postgres`, which
+> matches the `pcsrd_owner_all` policy. Integration tests therefore exercise the
+> *service* rules, not the RLS ones. Verifying RLS needs the real database.
 
 ## Database ownership — do not cross the line
 

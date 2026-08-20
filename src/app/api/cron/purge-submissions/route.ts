@@ -17,5 +17,17 @@ export async function GET(request: Request) {
   }
 
   const purged = await purgeExpiredSubmissions(db);
-  return Response.json({ purged });
+
+  // The row is gone; the applicant's CV must go with it. A retention policy
+  // that deletes the record and keeps the file has deleted the index, not the
+  // data.
+  if (purged.attachments.length) {
+    const { createSupabaseAdminClient } = await import('@/lib/auth/supabase-server');
+    const { error } = await createSupabaseAdminClient()
+      .storage.from('applications')
+      .remove(purged.attachments);
+    if (error) console.error('[purge] attachments left in storage', error);
+  }
+
+  return Response.json({ purged: purged.deleted, attachments: purged.attachments.length });
 }

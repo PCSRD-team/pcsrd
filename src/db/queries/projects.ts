@@ -11,6 +11,7 @@ import {
 import type { Governorate, ProjectStatus, ThemeTag } from '@/db/schema/enums';
 import { TAGS } from '@/lib/cache/tags';
 import type { Locale } from '@/lib/i18n/config';
+import { rowsOf } from '@/db/session';
 import { cached } from './_cache';
 import { hasLocale, pickCol, slugCol } from './_localize';
 
@@ -240,15 +241,15 @@ export async function _getProjectFacets() {
       .where(eq(projects.status, 'published'))
       .groupBy(programs.key),
 
-    db.execute<{ key: string; count: number }>(sql`
+    db.execute(sql`
       select unnest(governorates)::text as key, count(*)::int as count
       from ${projects} where status = 'published' group by 1 order by 2 desc`),
 
-    db.execute<{ key: string; count: number }>(sql`
+    db.execute(sql`
       select unnest(themes)::text as key, count(*)::int as count
       from ${projects} where status = 'published' group by 1 order by 2 desc`),
 
-    db.execute<{ key: number; count: number }>(sql`
+    db.execute(sql`
       select extract(year from start_date)::int as key, count(*)::int as count
       from ${projects}
       where status = 'published' and start_date is not null
@@ -257,9 +258,9 @@ export async function _getProjectFacets() {
 
   return {
     byProgram,
-    byGovernorate: [...byGovernorate],
-    byTheme: [...byTheme],
-    byYear: [...byYear],
+    byGovernorate: rowsOf<{ key: string; count: number }>(byGovernorate),
+    byTheme: rowsOf<{ key: string; count: number }>(byTheme),
+    byYear: rowsOf<{ key: number; count: number }>(byYear),
   };
 }
 
