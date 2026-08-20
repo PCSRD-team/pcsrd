@@ -1,4 +1,6 @@
-import { pgEnum } from 'drizzle-orm/pg-core';
+import {
+  pgEnum,
+} from 'drizzle-orm/pg-core';
 
 /**
  * Every enum in `public`, mirroring the live database (01-DATABASE §2).

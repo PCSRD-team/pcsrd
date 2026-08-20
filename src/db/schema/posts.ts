@@ -2,10 +2,10 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   index,
-  integer,
   jsonb,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -66,7 +66,7 @@ export const postMedia = pgTable(
     mediaId: uuid()
       .notNull()
       .references(() => mediaAssets.id, { onDelete: 'cascade' }),
-    displayOrder: integer().notNull().default(0),
+    displayOrder: smallint().notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.postId, t.mediaId] })],
 );

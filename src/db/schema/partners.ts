@@ -1,5 +1,12 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  pgTable,
+  smallint,
+  text,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { timestamps } from './_shared';
 import { contentStatus, logoPermission, membershipLevel, partnerType } from './enums';
 import { mediaAssets } from './media';
@@ -29,7 +36,7 @@ export const partners = pgTable(
     logoMediaId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
     logoPermission: logoPermission().notNull().default('pending'),
     isFeatured: boolean().notNull().default(false),
-    displayOrder: integer().notNull().default(0),
+    displayOrder: smallint().notNull().default(0),
     status: contentStatus().notNull().default('draft'),
     ...timestamps(),
   },

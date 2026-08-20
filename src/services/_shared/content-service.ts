@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import type { Db, Tx } from '@/db';
+import { withActor } from '@/db/session';
 import type { ContentStatus } from '@/db/schema/enums';
 import { AppError, notFound } from '@/lib/errors';
 import type { Actor } from './actor';
@@ -98,7 +99,7 @@ export function createContentService<TInput extends ContentInputBase>(
     async upsert(db, actor, input) {
       assertCan(actor, 'content.write');
 
-      return db.transaction(async (tx) => {
+      return withActor(db, actor, async (tx) => {
         const existing = input.id ? await loadRow(tx, input.id) : null;
         if (input.id && !existing) throw notFound(entityType);
 
@@ -148,7 +149,7 @@ export function createContentService<TInput extends ContentInputBase>(
     },
 
     async setStatus(db, actor, id, status) {
-      return db.transaction(async (tx) => {
+      return withActor(db, actor, async (tx) => {
         const existing = await loadRow(tx, id);
         if (!existing) throw notFound(entityType);
 
@@ -182,7 +183,7 @@ export function createContentService<TInput extends ContentInputBase>(
     async remove(db, actor, id) {
       assertCan(actor, 'content.delete');
 
-      return db.transaction(async (tx) => {
+      return withActor(db, actor, async (tx) => {
         const existing = await loadRow(tx, id);
         if (!existing) throw notFound(entityType);
 

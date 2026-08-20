@@ -1,5 +1,12 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  pgTable,
+  smallint,
+  text,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { timestamps } from './_shared';
 import { personCategory } from './enums';
 import { mediaAssets } from './media';
@@ -24,7 +31,7 @@ export const people = pgTable(
     bioEn: text(),
     photoMediaId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
     isPublic: boolean().notNull().default(false),
-    displayOrder: integer().notNull().default(0),
+    displayOrder: smallint().notNull().default(0),
     ...timestamps(),
   },
   (t) => [

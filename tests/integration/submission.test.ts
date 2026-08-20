@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { formSubmissions, profiles } from '@/db/schema';
 import type { Db } from '@/db';
@@ -11,6 +11,7 @@ import {
   purgeExpiredSubmissions,
   setSubmissionState,
 } from '@/services/submission/submission.service';
+import { rowsOf } from '@/db/session';
 import { resetTables, useTestDb } from '../setup/pglite';
 
 const getDb = useTestDb();
@@ -65,7 +66,7 @@ describe('createSubmission', () => {
     expect(row.ipHash).toMatch(/^[0-9a-f]{64}$/);
     expect(row.ipHash).not.toContain('203.0.113.9');
     expect(row.userAgent).toBe('Mozilla/5.0');
-    expect(row.reference).toMatch(/^PCS-[0-9A-F]{6}$/);
+    expect(row.reference).toMatch(/^PCS-[0-9A-F]{8}$/);
   });
 
   it('DNH-8: a complaint stores no IP hash, no user agent and no plaintext', async () => {
@@ -95,24 +96,22 @@ describe('createSubmission', () => {
   });
 
   it('applies the retention table per type', async () => {
-    const now = new Date('2026-08-19T00:00:00Z');
+    // 24 months for a partnership, 12 for a contact enquiry (01-DATABASE §10).
+    // The deadline is computed by app.submit_form from the database clock, so
+    // the expectation is derived from the same clock rather than from Date.now
+    // in the test process — the two can straddle midnight.
+    const [{ in12, in24 }] = await getDb().execute(
+      sql`select (current_date + interval '12 months')::date::text as in12,
+                 (current_date + interval '24 months')::date::text as in24`,
+    ).then((r) => rowsOf<{ in12: string; in24: string }>(r));
 
-    const contact = await createSubmission(db(), {
-      type: 'contact',
-      locale: 'ar',
-      payload: {},
-      now,
-    });
+    const contact = await createSubmission(db(), { type: 'contact', locale: 'ar', payload: {} });
     const partnership = await createSubmission(db(), {
-      type: 'partnership',
-      locale: 'ar',
-      payload: {},
-      now,
+      type: 'partnership', locale: 'ar', payload: {},
     });
 
-    // contact = 12 months, partnership = 24.
-    expect(contact.purgeAfter).toBe('2027-08-19');
-    expect(partnership.purgeAfter).toBe('2028-08-19');
+    expect(contact.purgeAfter).toBe(in12);
+    expect(partnership.purgeAfter).toBe(in24);
   });
 });
 
@@ -185,13 +184,24 @@ describe('setSubmissionState', () => {
 });
 
 describe('purgeExpiredSubmissions', () => {
-  it('deletes only rows past their retention deadline', async () => {
-    const old = new Date('2020-01-01T00:00:00Z');
-    await createSubmission(db(), { type: 'contact', locale: 'ar', payload: {}, now: old });
+  it('deletes only rows past their deadline and reports their attachments', async () => {
+    const expired = await createSubmission(db(), {
+      type: 'job', locale: 'ar', payload: {}, attachmentPath: 'cv/expired.pdf',
+    });
     const fresh = await createSubmission(db(), { type: 'contact', locale: 'ar', payload: {} });
 
-    const deleted = await purgeExpiredSubmissions(db(), new Date('2026-08-19T00:00:00Z'));
-    expect(deleted).toBe(1);
+    // The deadline is the database's to set, so the test moves it rather than
+    // asking the service to lie about the date.
+    await getDb()
+      .update(formSubmissions)
+      .set({ purgeAfter: '2020-01-01' })
+      .where(eq(formSubmissions.id, expired.id));
+
+    const purged = await purgeExpiredSubmissions(db());
+    expect(purged.deleted).toBe(1);
+    // The CV must be named so the caller can remove it from storage; deleting
+    // the row and keeping the file is not retention.
+    expect(purged.attachments).toEqual(['cv/expired.pdf']);
 
     const remaining = await getDb().select().from(formSubmissions);
     expect(remaining).toHaveLength(1);

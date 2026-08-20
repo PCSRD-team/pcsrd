@@ -1,4 +1,12 @@
-import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { consentStatus, mediaKind } from './enums';
 import { profiles } from './profiles';
 

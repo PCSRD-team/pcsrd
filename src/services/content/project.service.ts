@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { Db, Tx } from '@/db';
+import { withActor } from '@/db/session';
 import { projectMedia, projectPartners, projects } from '@/db/schema';
 import type {
   ContentStatus,
@@ -168,7 +169,7 @@ export async function upsertProject(
 ): Promise<ContentMutationResult> {
   assertCan(actor, 'content.write');
 
-  return db.transaction(async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const existing = input.id
       ? ((
           await tx.select().from(projects).where(eq(projects.id, input.id)).limit(1)
@@ -246,7 +247,7 @@ export async function setProjectStatus(
   id: string,
   status: ContentStatus,
 ): Promise<ContentMutationResult> {
-  return db.transaction(async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const [existing] = await tx.select().from(projects).where(eq(projects.id, id)).limit(1);
     if (!existing) throw notFound('project');
 
@@ -297,7 +298,7 @@ export async function deleteProject(
 ): Promise<ContentMutationResult> {
   assertCan(actor, 'content.delete');
 
-  return db.transaction(async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const [existing] = await tx.select().from(projects).where(eq(projects.id, id)).limit(1);
     if (!existing) throw notFound('project');
 

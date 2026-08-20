@@ -1,4 +1,12 @@
-import { bigserial, index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  bigserial,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { profiles } from './profiles';
 
 /** A single field's before/after, as written by `services/_shared/diff.ts`. */

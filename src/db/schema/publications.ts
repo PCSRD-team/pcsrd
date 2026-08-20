@@ -1,4 +1,11 @@
-import { boolean, integer, pgTable, smallint, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  pgTable,
+  smallint,
+  text,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { blockA, blockB } from './_shared';
 import { publicationType } from './enums';
 import { mediaAssets } from './media';
@@ -27,7 +34,7 @@ export const publications = pgTable(
 
     publishedYear: smallint(),
     isFeatured: boolean().notNull().default(false),
-    displayOrder: integer().notNull().default(0),
+    displayOrder: smallint().notNull().default(0),
   },
   (t) => [
     uniqueIndex('publications_slug_ar_idx').on(t.slugAr),

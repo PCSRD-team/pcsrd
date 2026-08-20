@@ -1,4 +1,10 @@
-import { pgTable, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  smallint,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 /**
  * Legacy-path redirects, read at **build time** by `next.config.ts`

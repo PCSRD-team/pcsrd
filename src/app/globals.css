@@ -1,26 +1,162 @@
+/* PCSRD — design tokens (docs/design_handoff/design/globals.css, verbatim).
+   Tailwind v4 @theme. Navy and gold ramps per 04-DESIGN-SYSTEM; paper, rule
+   and programme tokens added during design. Radius is 0 by system. */
+
 @import "tailwindcss";
 
-:root {
-  --background: #fff;
-  --foreground: #171717;
+@theme {
+  /* ink */
+  --color-ink:            #14213F;
+  --color-ink-70:         #3B4560;
+  --color-ink-55:         #5A6478;
+
+  /* navy */
+  --color-navy-900:       #182E5D;
+  --color-navy-700:       #254284;
+  --color-navy-100:       #E7EBF4;
+
+  /* gold — marking colour only; gold-600 never carries text on paper */
+  --color-gold-700:       #B87B12;
+  --color-gold-600:       #DD991C;
+  --color-gold-050:       #FEF7E7;
+
+  /* paper */
+  --color-paper:          #FBFAF6;
+  --color-paper-alt:      #F2EFE7;
+  --color-paper-ground:   #E5E2DA;
+
+  /* rules */
+  --color-rule:           #D8D3C7;
+  --color-rule-strong:    #C9C3B4;
+  --color-hairline:       #E3DED2;
+
+  /* labels */
+  --color-mono-muted:     #8A8272;
+
+  /* programme identity */
+  --color-prog-protection: #254284;
+  --color-prog-response:   #B3591B;
+  --color-prog-recovery:   #1F6B54;
+
+  /* type — families are bound to the next/font variables set in layout.tsx,
+     which self-hosts both faces at build time. No runtime request leaves the
+     origin, which is also what keeps the CSP free of a font host. */
+  --font-sans: var(--font-plex-arabic), "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+
+  --text-display:    4rem;      --text-display--line-height:   1.06;
+  --text-display-ar: 2.375rem;  --text-display-ar--line-height:1.30;
+  --text-h1:         2.5rem;    --text-h1--line-height:        1.20;
+  --text-h2:         1.75rem;   --text-h2--line-height:        1.30;
+  --text-h3:         1.25rem;   --text-h3--line-height:        1.40;
+  --text-lead:       1.125rem;  --text-lead--line-height:      1.65;
+  --text-body:       1rem;      --text-body--line-height:      1.80;
+  --text-small:      0.9375rem; --text-small--line-height:     1.60;
+  --text-caption:    0.90625rem;--text-caption--line-height:   1.60;
+  --text-eyebrow:    0.75rem;   --text-eyebrow--line-height:   1.40;
+
+  /* layout */
+  --container-content: 1180px;
+  --radius-none: 0;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  :root { color-scheme: light; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background: var(--color-paper-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Arabic runs looser than Latin at the same size.
+     `lining-nums` pins Western Arabic numerals: some Arabic system fonts
+     substitute Eastern digits, and a licence number then stops matching the
+     one printed on the certificate. */
+  :lang(ar) {
+    line-height: 1.8;
+    font-variant-numeric: lining-nums;
+  }
+
+  :lang(en) { line-height: 1.65; }
+
+  a {
+    color: var(--color-navy-700);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  a:hover { color: var(--color-gold-700); }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-600);
+    outline-offset: 2px;
+  }
+
+  p, li { text-wrap: pretty; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* The three rule weights. Fixed meanings — do not add a fourth.
+   1px rule        = container edge / list separator
+   2px ink         = section boundary
+   2px x 88px gold = heading mark */
+@utility rule-edge { border: 1px solid var(--color-rule); }
+
+@utility rule-section { border-block-start: 2px solid var(--color-ink); }
+
+@utility rule-mark {
+  inline-size: 88px; block-size: 2px;
+  background: var(--color-gold-600);
+}
+
+/* The content column. 1180px, 64px desktop padding, 20px mobile.
+   The breakpoint lives inside the utility: `@utility` cannot be nested in a
+   media query, only the other way round. */
+@utility container-content {
+  margin-inline: auto;
+  inline-size: 100%;
+  max-inline-size: var(--container-content);
+  padding-inline: 1.25rem;
+}
+
+@media (width >= 768px) {
+  .container-content { padding-inline: 4rem; }
+}
+
+/* Prose measure — 52–78ch, never the full column width. */
+@utility measure { max-inline-size: 68ch; }
+
+@utility measure-lead { max-inline-size: 52ch; }
+
+/* Section rhythm: 110px desktop, 64px mobile. */
+@utility section-gap { padding-block: 4rem; }
+
+@media (width >= 768px) {
+  .section-gap { padding-block: 6.875rem; }
+}
+
+/* Mono eyebrow label. Never below 11px, always uppercase for Latin. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-eyebrow);
+  line-height: var(--text-eyebrow--line-height);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-mono-muted);
+}
+
+/* Skip link — visible only when focused, positioned logically so it lands on
+   the correct side in both directions. */
+@utility skip-link {
+  position: absolute;
+  inset-inline-start: -9999px;
+  inset-block-start: 0;
+  z-index: 100;
 }

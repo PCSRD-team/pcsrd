@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { Db } from '@/db';
+import { withActor } from '@/db/session';
 import { impactMetrics, organizationSettings, partners, people } from '@/db/schema';
 import type {
   ContentStatus,
@@ -63,7 +64,7 @@ export async function upsertPartner(
   assertCan(actor, 'content.write');
   if ((input.status ?? 'draft') === 'published') assertCan(actor, 'content.publish');
 
-  return db.transaction(async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const [existing] = input.id
       ? await tx.select().from(partners).where(eq(partners.id, input.id)).limit(1)
       : [];
@@ -116,7 +117,7 @@ export async function upsertPartner(
 
 export async function deletePartner(db: Db, actor: Actor, id: string): Promise<void> {
   assertCan(actor, 'content.delete');
-  await db.transaction(async (tx) => {
+  await withActor(db, actor, async (tx) => {
     const [existing] = await tx.select().from(partners).where(eq(partners.id, id)).limit(1);
     if (!existing) throw notFound('partner');
 
@@ -155,7 +156,7 @@ export async function upsertPerson(
   assertCan(actor, 'content.write');
   if (input.isPublic) assertCan(actor, 'content.publish');
 
-  return db.transaction(async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const [existing] = input.id
       ? await tx.select().from(people).where(eq(people.id, input.id)).limit(1)
       : [];
@@ -197,7 +198,7 @@ export async function upsertPerson(
 
 export async function deletePerson(db: Db, actor: Actor, id: string): Promise<void> {
   assertCan(actor, 'content.delete');
-  await db.transaction(async (tx) => {
+  await withActor(db, actor, async (tx) => {
     const [existing] = await tx.select().from(people).where(eq(people.id, id)).limit(1);
     if (!existing) throw notFound('person');
     await writeAudit(tx, actor, {
@@ -259,7 +260,7 @@ export async function upsertMetric(
   // No published figure without its period and verification status.
   assertMetricPublishable(values);
 
-  return db.transaction(async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const [existing] = input.id
       ? await tx.select().from(impactMetrics).where(eq(impactMetrics.id, input.id)).limit(1)
       : [];
@@ -286,7 +287,7 @@ export async function upsertMetric(
 
 export async function deleteMetric(db: Db, actor: Actor, id: string): Promise<void> {
   assertCan(actor, 'content.delete');
-  await db.transaction(async (tx) => {
+  await withActor(db, actor, async (tx) => {
     const [existing] = await tx
       .select()
       .from(impactMetrics)
@@ -371,7 +372,7 @@ export async function updateOrganization(
   if (touchesRestricted) assertCan(actor, 'org.settings');
   else assertCan(actor, 'org.settings.contact');
 
-  await db.transaction(async (tx) => {
+  await withActor(db, actor, async (tx) => {
     const [existing] = await tx
       .select()
       .from(organizationSettings)
