@@ -339,6 +339,38 @@ export const en: Dictionary = {
     },
   },
 
+  formOptions: {
+    un: 'United Nations', ingo: 'International NGO', foundation: 'Foundation',
+    government: 'Government body', local_ngo: 'Local NGO',
+    private: 'Private sector', other: 'Other',
+
+    funding: 'Funding', consortium: 'Consortium', implementation: 'Implementation',
+    technical: 'Technical support',
+
+    general: 'General enquiry', partnership: 'Partnership', media: 'Media',
+    complaint: 'Complaint',
+
+    under_18: 'Under 18', '18_24': '18–24', '25_34': '25–34',
+    '35_49': '35–49', '50_plus': '50 and over',
+
+    psychosocial: 'Psychosocial support', education: 'Education',
+    relief_distribution: 'Relief distribution', logistics: 'Logistics',
+    administration: 'Administration',
+
+    weekdays: 'Weekdays', weekends: 'Weekends',
+    evenings: 'Evenings', flexible: 'Flexible',
+
+    service_quality: 'Quality of service', staff_conduct: 'Conduct of a staff member',
+    selection_process: 'Selection process', safeguarding: 'Safeguarding',
+    corruption: 'Corruption or misuse',
+
+    none: 'I do not want to be contacted', email: 'By email', phone: 'By phone',
+
+    facebook: 'Facebook', instagram: 'Instagram', whatsapp: 'WhatsApp',
+    telegram: 'Telegram', x: 'X', website: 'Website',
+    phone_call: 'Phone call', sms: 'SMS', in_person: 'In person',
+  },
+
   a11y: {
     mainNav: 'Main navigation',
     footerNav: 'Footer links',

@@ -68,9 +68,14 @@ async function submit<TSchema extends z.ZodType>(
     const rate = await checkRateLimit(limiter, ip);
     if (!rate.success) return err('rate_limited', 'errors.rateLimited');
 
-    const parsed = pipeline.schema.safeParse(
-      formDataToObject(formData, pipeline.multi ?? []),
-    );
+    const fields = formDataToObject(formData, pipeline.multi ?? []);
+
+    // Cloudflare's widget injects its hidden input as `cf-turnstile-response`.
+    // The schema names the field `turnstileToken`, so without this rename every
+    // one of the six forms fails validation on a field the visitor cannot see.
+    fields.turnstileToken = formData.get('cf-turnstile-response') ?? '';
+
+    const parsed = pipeline.schema.safeParse(fields);
     if (!parsed.success) {
       return err('validation', 'errors.validation', fieldErrorsFrom(parsed.error));
     }

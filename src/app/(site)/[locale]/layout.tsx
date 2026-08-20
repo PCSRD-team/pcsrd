@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { ChannelsBar, SiteFooter, SiteHeader } from '@/components/layout/chrome';
+import { OrganizationJsonLd } from '@/components/seo/json-ld';
 import { getOrganization } from '@/db/queries/content';
 import { DIR, HTML_LANG, LOCALES, isLocale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
@@ -38,6 +39,8 @@ export default async function LocaleLayout({
       <a href="#main" className="skip-link focus:inset-inline-start-4 focus:bg-paper focus:p-4">
         {dict.common.skipToContent}
       </a>
+
+      <OrganizationJsonLd org={org} locale={locale} />
 
       <ChannelsBar locale={locale} dict={dict} />
       <SiteHeader locale={locale} dict={dict} org={org} />

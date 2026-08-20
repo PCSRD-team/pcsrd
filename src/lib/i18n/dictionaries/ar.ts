@@ -345,6 +345,39 @@ export const ar = {
     },
   },
 
+  /** Option labels for the six public forms. Keys are the schema's values. */
+  formOptions: {
+    un: 'أمم متحدة', ingo: 'منظمة دولية', foundation: 'مؤسسة مانحة',
+    government: 'جهة حكومية', local_ngo: 'منظمة أهلية محلية',
+    private: 'قطاع خاص', other: 'أخرى',
+
+    funding: 'تمويل', consortium: 'ائتلاف', implementation: 'تنفيذ',
+    technical: 'دعم فني',
+
+    general: 'استفسار عام', partnership: 'شراكة', media: 'إعلام',
+    complaint: 'شكوى',
+
+    under_18: 'أقل من 18', '18_24': '18–24', '25_34': '25–34',
+    '35_49': '35–49', '50_plus': '50 فأكثر',
+
+    psychosocial: 'الدعم النفسي الاجتماعي', education: 'التعليم',
+    relief_distribution: 'توزيع المساعدات', logistics: 'اللوجستيات',
+    administration: 'الشؤون الإدارية',
+
+    weekdays: 'أيام الأسبوع', weekends: 'نهاية الأسبوع',
+    evenings: 'المساء', flexible: 'مرن',
+
+    service_quality: 'جودة الخدمة', staff_conduct: 'سلوك أحد العاملين',
+    selection_process: 'آلية الاختيار', safeguarding: 'الحماية والصون',
+    corruption: 'فساد أو سوء استخدام',
+
+    none: 'لا أرغب بالتواصل', email: 'بالبريد الإلكتروني', phone: 'بالهاتف',
+
+    facebook: 'فيسبوك', instagram: 'إنستغرام', whatsapp: 'واتساب',
+    telegram: 'تيليغرام', x: 'إكس', website: 'موقع إلكتروني',
+    phone_call: 'مكالمة هاتفية', sms: 'رسالة نصية', in_person: 'مقابلة مباشرة',
+  },
+
   a11y: {
     mainNav: 'التنقّل الرئيسي',
     footerNav: 'روابط التذييل',
