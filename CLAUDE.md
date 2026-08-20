@@ -165,8 +165,10 @@ local file makes `supabase migration list` report a phantom remote-only version 
 ## Infrastructure notes
 
 - Supabase project `ouyivpcvowkpcfiqduyx` is in **ap-northeast-1 (Tokyo)**. Vercel
-  functions must be pinned to **`hnd1`** to co-locate with it, or every uncached query
-  pays a cross-Pacific round trip.
+  functions are pinned to **`hnd1`** in `vercel.json` to co-locate with it — without
+  that, every uncached query pays a cross-Pacific round trip.
+- **Vercel Hobby allows two cron jobs**, which is exactly what `vercel.json` declares.
+  The hourly archive job needs that hourly slot; a third job needs a plan change.
 - `DATABASE_URL` is the pooler on **:6543** and `postgres-js` must be created with
   `{ prepare: false }`. `DIRECT_URL` is **:5432** and is for DDL only. Getting this wrong
   fails intermittently with an error that does not point at the cause.
