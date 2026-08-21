@@ -62,6 +62,28 @@ export async function registerMedia(
     });
   }
 
+  // ...and "obtained" has to point at the document that was obtained.
+  //
+  // `app.media_consent_violations` gates publishing on `consent <> 'obtained'`
+  // and nothing else, so a claim of consent with no reference passes every
+  // check in the system. The rule is *documented* consent; without a reference
+  // there is nothing to produce when a donor, a regulator or a parent asks
+  // which form was signed, and an unverifiable claim is the state the rule
+  // exists to prevent.
+  //
+  // 'pending' deliberately stays legal here. Uploading while the form is being
+  // collected is a real workflow, and the database already refuses to publish
+  // it — this blocks the false claim, not the honest intermediate state.
+  if (
+    input.hasIdentifiableMinors &&
+    input.consent === 'obtained' &&
+    !input.consentReference?.trim()
+  ) {
+    throw new AppError('validation', 'errors.media.consentReferenceRequired', {
+      fieldErrors: { consentReference: ['errors.media.consentReferenceRequired'] },
+    });
+  }
+
   return withActor(db, actor, async (tx) => {
     const [row] = await tx
       .insert(mediaAssets)

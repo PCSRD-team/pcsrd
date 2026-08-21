@@ -276,6 +276,44 @@ export const en: Dictionary = {
       unreadable: 'The file could not be read.',
       failed: 'The upload failed. Please try again.',
     },
+
+    // Thrown by the service layer. These twelve keys were referenced in code
+    // and defined in neither dictionary, and `resolveKey` returns the key
+    // itself when it does not resolve — so an editor who tripped the
+    // safeguarding gate saw the literal string `errors.media.minorConsentState`.
+    invalidEmail: 'Enter a valid email address.',
+
+    slug: {
+      taken: 'That path is already in use. Choose another.',
+    },
+
+    content: {
+      unpublishFirst: 'Unpublish this item before doing that.',
+    },
+
+    media: {
+      altRequired: 'Arabic alt text is required for every asset.',
+      minorConsentState:
+        'A photograph showing an identifiable child cannot be stored as "consent not required".',
+      minorConsentRequired:
+        'Cannot publish: media showing identifiable children without documented consent.',
+      consentReferenceRequired:
+        'Enter the consent reference. Claiming consent without a document is not accepted.',
+    },
+
+    metric: {
+      periodOrder: 'The period start must come before the period end.',
+      sourceRequired: 'A source is required for this figure.',
+      mustBeVerified: 'An impact figure cannot be published before it is verified.',
+    },
+
+    story: {
+      consentRequired: 'A beneficiary story needs documented consent before publishing.',
+    },
+
+    attachment: {
+      sensitiveRefused: 'An attachment on a confidential report cannot be downloaded.',
+    },
   },
 
   footer: {
