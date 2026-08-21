@@ -20,7 +20,7 @@ import {
   translationStatus,
   vacancyType,
 } from '@/db/schema/enums';
-import { optionalText, shortText, slugSchema } from './common';
+import { emailSchema, optionalText, phoneSchema, shortText, slugSchema } from './common';
 
 /**
  * Admin input schemas.
@@ -173,7 +173,21 @@ export const programSchema = z.object({
   key: enumOf(programKey.enumValues),
   taglineAr: optionalText(200).nullable(),
   taglineEn: optionalText(200).nullable(),
-  accentToken: z.string().trim().max(60).optional(),
+  // An enum, not free text. This value is interpolated into `var(...)` in an
+  // inline style on the programme card and the programme page, so free text let
+  // a content manager point it at **any** CSS variable — including
+  // `--color-gold-600`, which renders the 88x2 mark as a gold *fill*. Gold is a
+  // marking colour and never a fill; that rule is absolute in the design system
+  // and it was reachable from the CMS. A typo was the quieter failure: an
+  // unknown variable resolves to nothing and the programme's identity mark
+  // silently disappears.
+  //
+  // Not a script-injection vector — React writes through CSSOM, which will not
+  // accept a second declaration inside a value — so this is design integrity,
+  // not XSS.
+  accentToken: z
+    .enum(['--color-prog-protection', '--color-prog-response', '--color-prog-recovery'])
+    .optional(),
   introductionAr: richText,
   introductionEn: richText,
   rationaleAr: richText,
@@ -320,3 +334,100 @@ export const mediaMetadataSchema = z.object({
   consentReference: optionalText(120).nullable(),
   hasIdentifiableMinors: z.coerce.boolean().default(false),
 });
+
+// ── Organisation settings ────────────────────────────────────────────────
+
+/**
+ * The singleton that holds every organisational fact the site renders.
+ *
+ * `saveOrganization` had **no schema at all**. It cast its input to
+ * `Record<string, never>` and spread it straight into `.set()`, which is a
+ * mass-assignment sink: any column of `organization_settings` could be written
+ * with a value of any type or length, from a Server Action that is a live POST
+ * endpoint. The cast did not merely skip validation — being assignable to
+ * `Partial<OrganizationInput>`, it *suppressed* the type error that would have
+ * pointed at the missing schema.
+ *
+ * This is the table that carries the licence number, the legal name and the
+ * official channels — the facts `/verify` exists so a reader can check the
+ * organisation is real. It is the last table in the schema that should accept
+ * unvalidated input.
+ *
+ * `.strict()` matters as much as the field types: an unknown key is rejected
+ * rather than ignored, so a typo in a form field name fails loudly instead of
+ * silently not saving, and a crafted key cannot reach a column that no form
+ * offers.
+ *
+ * Every field is optional because the settings form posts a partial record —
+ * that part of the original comment was correct. Which fields a given role may
+ * touch stays in the service, where the permission rules live.
+ */
+const titledBlockSchema = z.object({
+  title_ar: shortText(1, 200),
+  title_en: optionalText(200).nullable(),
+  body_ar: optionalText(2000).nullable(),
+  body_en: optionalText(2000).nullable(),
+});
+
+const bilingualLineSchema = z.object({
+  text_ar: shortText(1, 500),
+  text_en: optionalText(500).nullable(),
+});
+
+const socialLinkSchema = z.object({
+  platform: shortText(1, 40),
+  url: z.url({ message: 'errors.field.url' }).max(300),
+  is_official: z.coerce.boolean().default(true),
+});
+
+const officialChannelSchema = z.object({
+  platform: shortText(1, 40),
+  handle: shortText(1, 120),
+  url: z.url({ message: 'errors.field.url' }).max(300),
+  is_official: z.coerce.boolean().default(true),
+  note_ar: optionalText(300).nullable(),
+  note_en: optionalText(300).nullable(),
+});
+
+export const organizationSchema = z
+  .object({
+    legalNameAr: shortText(2, 200),
+    legalNameEn: shortText(2, 200),
+    shortNameAr: shortText(2, 120),
+    shortNameEn: shortText(2, 120),
+    acronym: shortText(1, 24),
+    alternateNames: z.array(shortText(1, 200)).max(20),
+    foundedYear: z.coerce.number().int().min(1900).max(2100),
+    licenseNumber: shortText(1, 80),
+    licenseAuthorityAr: optionalText(200).nullable(),
+    licenseAuthorityEn: optionalText(200).nullable(),
+    legalFormAr: optionalText(120).nullable(),
+    legalFormEn: optionalText(120).nullable(),
+    visionAr: optionalText(2000).nullable(),
+    visionEn: optionalText(2000).nullable(),
+    missionAr: optionalText(2000).nullable(),
+    missionEn: optionalText(2000).nullable(),
+    coreValues: z.array(titledBlockSchema).max(20),
+    principles: z.array(titledBlockSchema).max(20),
+    strategicObjectives: z.array(bilingualLineSchema).max(20),
+    primaryPhone: z.union([phoneSchema, z.literal('')]).nullable(),
+    additionalPhones: z.array(phoneSchema).max(10),
+    // Digits only, no leading `+` — this is the `wa.me` path format, and the
+    // same shape `NEXT_PUBLIC_WHATSAPP_NUMBER` is checked against.
+    whatsappNumber: z
+      .union([z.string().trim().regex(/^\d{8,15}$/, { message: 'errors.field.phone' }), z.literal('')])
+      .nullable(),
+    email: z.union([emailSchema, z.literal('')]).nullable(),
+    addressAr: optionalText(300).nullable(),
+    addressEn: optionalText(300).nullable(),
+    addressIsPublic: z.coerce.boolean(),
+    officeHoursAr: optionalText(200).nullable(),
+    officeHoursEn: optionalText(200).nullable(),
+    socials: z.array(socialLinkSchema).max(20),
+    officialChannels: z.array(officialChannelSchema).max(30),
+    logoPrimaryId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
+    logoMonoId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
+    defaultOgId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
+  })
+  .partial()
+  .strict();
