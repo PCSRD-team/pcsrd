@@ -105,6 +105,18 @@ export function DataTable<T extends { id: string | number }>({
               {columns.map((column, index) => (
                 <td
                   key={column.key}
+                  // The admin is unconditionally `dir="rtl"`, so a Latin or
+                  // numeric run in a cell — a reference, a slug, a date, a
+                  // phone number — is reordered by the bidi algorithm and its
+                  // trailing punctuation jumps to the front. `PCS-2026-0041.`
+                  // renders as `.PCS-2026-0041`, and a complainant's callback
+                  // number comes out with the country code at the wrong end.
+                  //
+                  // `dir` on an element is sufficient isolation: the UA
+                  // stylesheet applies `unicode-bidi: isolate` to `[dir]`. The
+                  // `numeric` column type already promised "Mono, LTR and
+                  // narrow" and delivered only the first and the third.
+                  dir={column.numeric ? 'ltr' : undefined}
                   className={cn(
                     'p-3 text-small text-ink align-top',
                     column.numeric && 'font-mono text-caption whitespace-nowrap',
