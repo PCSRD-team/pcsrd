@@ -72,7 +72,7 @@ export function RichTextEditor({
         dir,
         lang: dir === 'rtl' ? 'ar' : 'en',
         class:
-          'min-h-40 rule-edge bg-paper p-4 text-body text-ink focus:outline-none focus:border-navy-700',
+          'min-h-40 rule-control bg-paper p-4 text-body text-ink focus:border-navy-700',
       },
     },
     onUpdate: ({ editor: instance }) => setDoc(instance.getJSON() as RichText),

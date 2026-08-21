@@ -63,7 +63,7 @@ export default async function ImpactPage({ params }: PageProps<'/[locale]/impact
                   </Link>
                 </h3>
                 {story.quote ? (
-                  <blockquote className="border-is-2 border-gold-600 pis-4 text-lead text-ink">
+                  <blockquote className="border-s-2 border-gold-600 ps-4 text-lead text-ink">
                     {story.quote}
                   </blockquote>
                 ) : null}

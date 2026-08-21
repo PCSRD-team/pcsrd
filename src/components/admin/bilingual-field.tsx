@@ -23,7 +23,7 @@ import { useId, useState } from 'react';
  */
 
 const controlClass =
-  'block w-full rule-edge bg-paper px-3 py-2 text-small text-ink focus:border-navy-700 focus:outline-none';
+  'block w-full rule-control bg-paper px-3 py-2 text-small text-ink focus:border-navy-700';
 
 function Meta({
   length,
@@ -94,11 +94,11 @@ export function BilingualField({
       <legend className="mbe-2 text-small font-medium text-ink">
         {label}
         {required ? (
-          <span className="mis-1 text-gold-700" aria-hidden="true">
+          <span className="ms-1 text-gold-700" aria-hidden="true">
             *
           </span>
         ) : null}
-        {hint ? <span className="mis-3 text-caption text-ink-55">{hint}</span> : null}
+        {hint ? <span className="ms-3 text-caption text-ink-55">{hint}</span> : null}
       </legend>
 
       <div>

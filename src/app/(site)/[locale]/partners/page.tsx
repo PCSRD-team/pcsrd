@@ -66,7 +66,7 @@ export default async function PartnersPage({ params }: PageProps<'/[locale]/part
                         alt={partner.logoAlt ?? partner.name ?? ''}
                         fill
                         sizes="200px"
-                        className="object-contain object-start"
+                        className="object-contain object-left rtl:object-right"
                       />
                     </div>
                   ) : null}

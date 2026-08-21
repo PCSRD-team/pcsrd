@@ -115,7 +115,7 @@ const buttonBase =
 
 const buttonTones = {
   primary: 'bg-navy-700 text-paper hover:bg-navy-900',
-  secondary: 'rule-edge bg-paper text-ink hover:bg-paper-alt',
+  secondary: 'rule-control bg-paper text-ink hover:bg-paper-alt',
   // Gold as a marking colour: the rule, not the fill. Text stays ink.
   marked: 'border-b-2 border-gold-600 bg-transparent text-ink hover:bg-gold-050',
 };

@@ -86,16 +86,17 @@ additions made during design. `design/globals.css` is ready to drop into the rep
 | `navy-900` | `#182E5D` | Dark surfaces |
 | `navy-700` | `#254284` | Links, primary button, protection programme |
 | `navy-100` | `#E7EBF4` | Tinted panel on navy |
-| `gold-700` | `#B87B12` | Gold text on paper (AA-safe), link hover |
-| `gold-600` | `#DD991C` | Marking rule, attested stamp, focus ring |
+| `gold-700` | `#875A0F` | Gold text on paper (5.75:1, AA), link hover |
+| `gold-600` | `#DD991C` | Marking rule, attested stamp, focus halo. **Never text.** |
 | `gold-050` | `#FEF7E7` | Attestation panel ground |
 | `paper` | `#FBFAF6` | Card / panel surface |
 | `paper-alt` | `#F2EFE7` | Alternating band |
 | `paper-ground` | `#E5E2DA` | Page background |
-| `rule` | `#D8D3C7` | Default 1px border |
+| `rule` | `#D8D3C7` | Default 1px border — decorative edges only |
+| `rule-control` | `#97907F` | 1px border on inputs, selects, textareas (3.1:1, SC 1.4.11) |
 | `rule-strong` | `#C9C3B4` | Emphasised hairline |
 | `hairline` | `#E3DED2` | List separators inside panels |
-| `mono-muted` | `#8A8272` | Mono eyebrow labels |
+| `mono-muted` | `#6A6353` | Mono eyebrow labels (4.61:1 on page ground, AA) |
 | `prog-protection` | `#254284` | Programme identity |
 | `prog-response` | `#B3591B` | Programme identity |
 | `prog-recovery` | `#1F6B54` | Programme identity |

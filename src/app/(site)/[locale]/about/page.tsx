@@ -106,7 +106,7 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
         <Section labelledBy="about-strategy">
           <SectionHeading id="about-strategy" title={dict.about.strategy} />
           <Prose>
-            <ol className="list-decimal space-y-3 pis-6">
+            <ol className="list-decimal space-y-3 ps-6">
               {org.strategicObjectives.map((objective) => (
                 <li key={objective.text_ar}>
                   {locale === 'ar' ? objective.text_ar : (objective.text_en ?? objective.text_ar)}

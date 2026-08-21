@@ -36,7 +36,7 @@ export default async function LocaleLayout({
       dir={DIR[locale]}
       className="flex min-h-screen flex-col bg-paper-ground"
     >
-      <a href="#main" className="skip-link focus:inset-inline-start-4 focus:bg-paper focus:p-4">
+      <a href="#main" className="skip-link focus:start-4 focus:bg-paper focus:p-4">
         {dict.common.skipToContent}
       </a>
 

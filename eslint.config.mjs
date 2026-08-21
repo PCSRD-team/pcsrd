@@ -45,6 +45,32 @@ const eslintConfig = defineConfig([
         },
       ],
       "better-tailwindcss/no-conflicting-classes": "error",
+      // A class that does not exist compiles to nothing and looks fine in a
+      // diff. Eleven did, across 18 call sites: `mis-1/2/3`, `mie-4`,
+      // `pis-4/5/6`, `border-is-2`, `border-ie`, `object-start` and
+      // `focus:inset-inline-start-4` — all generalised from Tailwind's real
+      // *block*-axis names (`mbs`, `pbe`, `border-be`), which do exist, to an
+      // inline-axis set that does not. Tailwind names that axis
+      // `ms`/`me`/`ps`/`pe`/`border-s`/`border-e`/`start`/`end`.
+      //
+      // Nothing caught them. They read as logical properties, so
+      // `enforce-logical-properties` was satisfied; they are syntactically
+      // valid class strings, so the type checker and the build were too. The
+      // cost was invisible: blockquotes with no rule, lists with no indent, an
+      // admin sidebar with no boundary, and a skip link that stayed 9999px
+      // off-screen while focused.
+      //
+      // This is the rule that makes that a build failure rather than a visual
+      // regression nobody reading LTR would notice.
+      "better-tailwindcss/no-unknown-classes": [
+        "error",
+        {
+          // Turnstile's own hook. Cloudflare's script queries for
+          // `.cf-turnstile` to find its mount point, so it is a third-party API
+          // surface that happens to be spelled as a class, not a utility.
+          ignore: ["^cf-turnstile$"],
+        },
+      ],
     },
   },
 
