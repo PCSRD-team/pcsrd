@@ -50,11 +50,13 @@ export default async function NewsPage({ params, searchParams }: PageProps<'/[lo
           body={category ? dict.states.emptyFiltered : dict.states.emptyBody}
         />
       ) : (
-        <div className="grid gap-4">
+        <ul className="grid gap-4">
           {result.items.map((post) => (
-            <PostCard key={post.id} post={post} locale={locale} dict={dict} />
+            <li key={post.id}>
+              <PostCard post={post} locale={locale} dict={dict} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

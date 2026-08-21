@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { ContentStatus } from '@/db/schema/enums';
 import { formatDate } from '@/lib/format';
+import { paginationRange } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 /**
@@ -167,20 +168,30 @@ export function Pagination({
   return (
     <nav aria-label="ترقيم الصفحات" className="mbs-6">
       <ul className="flex flex-wrap gap-2">
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-          <li key={n}>
-            <Link
-              href={hrefFor(n)}
-              aria-current={n === page ? 'page' : undefined}
-              className={cn(
-                'rule-edge px-3 py-1 font-mono text-caption no-underline',
-                n === page ? 'border-ink bg-ink text-paper' : 'text-ink hover:bg-paper-alt',
-              )}
+        {paginationRange(page, totalPages).map((token, index) =>
+          token === 'gap' ? (
+            <li
+              key={`gap-${index}`}
+              aria-hidden="true"
+              className="px-2 py-1 font-mono text-caption text-mono-muted"
             >
-              {n}
-            </Link>
-          </li>
-        ))}
+              …
+            </li>
+          ) : (
+            <li key={token}>
+              <Link
+                href={hrefFor(token)}
+                aria-current={token === page ? 'page' : undefined}
+                className={cn(
+                  'rule-edge px-3 py-1 font-mono text-caption no-underline',
+                  token === page ? 'border-ink bg-ink text-paper' : 'text-ink hover:bg-paper-alt',
+                )}
+              >
+                {token}
+              </Link>
+            </li>
+          ),
+        )}
       </ul>
     </nav>
   );

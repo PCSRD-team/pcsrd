@@ -89,10 +89,16 @@ export function SiteHeader({
 }) {
   return (
     <header className="border-be-2 border-ink bg-paper">
-      <div className="container-content flex items-center justify-between gap-6 py-5">
+      {/* `flex-wrap` so the nav drops to its own line on a narrow viewport
+          instead of squeezing the logo out. The logo gets `min-w-0` and
+          `truncate` because it renders `organization_settings.short_name_ar`,
+          which is real content of unknown length — at `text-h3` semibold a
+          two-word name alone can exceed a 320px viewport, and without
+          `min-w-0` a flex item refuses to shrink below its min-content width. */}
+      <div className="container-content flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-5">
         <Link
           href={localePath(locale, '/')}
-          className="text-h3 font-semibold text-ink no-underline"
+          className="min-w-0 truncate text-h3 font-semibold text-ink no-underline"
         >
           {org?.shortName ?? org?.acronym ?? 'PCSRD'}
         </Link>
@@ -103,10 +109,20 @@ export function SiteHeader({
           button is the one piece of chrome that stops working when JS fails,
           and rule 7 says every page must work without it.
         */}
-        <nav aria-label={dict.a11y.mainNav} className="min-w-0 flex-1">
-          <ul className="flex items-center gap-5 overflow-x-auto py-1 text-small">
+        {/* `order-last` below `sm:` puts the nav on its own row under the logo
+            and the language switcher, rather than competing with them for the
+            same 280px. The scroller keeps a `scroll-snap` and an end-edge fade
+            so there is a visual cue that more navigation exists — an
+            `overflow-x-auto` list on a touch device shows no scrollbar at rest,
+            so items 4 to 8 were simply invisible with nothing to suggest
+            otherwise. */}
+        <nav
+          aria-label={dict.a11y.mainNav}
+          className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1"
+        >
+          <ul className="scroll-fade flex snap-x items-center gap-5 overflow-x-auto py-1 text-small">
             {NAV.map((item) => (
-              <li key={item.path} className="shrink-0">
+              <li key={item.path} className="shrink-0 snap-start">
                 <Link
                   href={localePath(locale, item.path)}
                   className="whitespace-nowrap text-ink no-underline hover:text-gold-700"

@@ -118,8 +118,18 @@ export function AdminShell({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-paper-ground">
-      <aside className="w-64 shrink-0 border-e border-rule bg-paper">
+    // Column below `md:`, row above it. The shell had no responsive treatment
+    // whatsoever: a `w-64 shrink-0` sidebar plus `p-8` on main is 256 + 64 =
+    // 320px, so at a 320px viewport the content area was **zero pixels wide**
+    // and at 375px it was 55. Nothing anywhere said the CMS was desktop-only,
+    // and the staff who use it work in Gaza, where a phone is often the only
+    // reliable device.
+    //
+    // The mobile sidebar is a `<details>` disclosure, not a JavaScript toggle —
+    // same reasoning as the public header: a menu that needs JS is a menu that
+    // stops working exactly when the network is worst.
+    <div className="flex min-h-screen flex-col bg-paper-ground md:flex-row">
+      <aside className="shrink-0 border-be border-rule bg-paper md:w-64 md:border-be-0 md:border-e">
         <div className="border-be-2 border-ink p-5">
           <p className="text-h3 font-semibold text-ink">لوحة التحكم</p>
           <p className="mbs-1 text-caption text-ink-55">
@@ -127,7 +137,33 @@ export function AdminShell({
           </p>
         </div>
 
-        <nav aria-label="التنقّل الرئيسي" className="p-4">
+        <details className="md:hidden">
+          <summary className="cursor-pointer border-be border-rule p-4 text-small font-medium text-ink">
+            القائمة
+          </summary>
+          <AdminNav nav={nav} />
+        </details>
+
+        <div className="hidden md:block">
+          <AdminNav nav={nav} />
+        </div>
+
+        <form action={signOut} className="border-bs border-rule p-4">
+          <button type="submit" className="text-small text-ink-55 hover:text-gold-700">
+            تسجيل الخروج
+          </button>
+        </form>
+      </aside>
+
+      <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
+    </div>
+  );
+}
+
+function AdminNav({ nav }: { nav: NavGroup[] }) {
+  return (
+    <>
+      <nav aria-label="التنقّل الرئيسي" className="p-4">
           {nav.map((group) => (
             <div key={group.title} className="mbe-6">
               <p className="eyebrow mbe-2">{group.title}</p>
@@ -155,17 +191,8 @@ export function AdminShell({
               </ul>
             </div>
           ))}
-        </nav>
-
-        <form action={signOut} className="border-bs border-rule p-4">
-          <button type="submit" className="text-small text-ink-55 hover:text-gold-700">
-            تسجيل الخروج
-          </button>
-        </form>
-      </aside>
-
-      <main className="min-w-0 flex-1 p-8">{children}</main>
-    </div>
+      </nav>
+    </>
   );
 }
 

@@ -143,6 +143,21 @@
 
 @utility rule-section { border-block-start: 2px solid var(--color-ink); }
 
+/* A horizontal scroller with a fade at both inline edges.
+   An `overflow-x-auto` list shows no scrollbar at rest on a touch device, so
+   nav items past the fold are invisible with nothing to suggest they exist.
+   The fade is the affordance; `scroll-snap` on the items does the rest.
+   Logical, so it works in both directions without a mirrored variant. */
+@utility scroll-fade {
+  mask-image: linear-gradient(
+    to left,
+    transparent 0,
+    #000 1.5rem,
+    #000 calc(100% - 1.5rem),
+    transparent 100%
+  );
+}
+
 @utility rule-mark {
   inline-size: 88px; block-size: 2px;
   background: var(--color-gold-600);
