@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
+import { readAsSelf } from '@/db/session';
 import { profiles } from '@/db/schema';
 import { createSupabaseServerClient } from '@/lib/auth/supabase-server';
 import { type ActionResult, err, ok, runAction } from '@/lib/errors';
@@ -37,21 +38,39 @@ export async function signIn(_prev: AuthResult | null, formData: FormData): Prom
     // account at an organisation working in Gaza.
     if (error || !data.user) return err('unauthorized', 'admin.auth.invalid');
 
-    const [profile] = await db
-      .select({ isActive: profiles.isActive })
-      .from(profiles)
-      .where(eq(profiles.id, data.user.id))
-      .limit(1);
+    // Both statements bind the caller's id. `profiles` is FORCE ROW LEVEL
+    // SECURITY and the runtime has no BYPASSRLS, so on the bare `db` handle
+    // this select was `anon`, matched neither branch of `profiles.rt_select`
+    // and returned zero rows. `profile` was then `undefined`, so
+    // `!profile?.isActive` was **true** — and every correct password was
+    // rejected with "your account has been deactivated", which is the one
+    // message guaranteed to send a real user to an administrator rather than
+    // to a retry.
+    //
+    // `readAsSelf` binds only `app.actor_id`, never a role. Both branches the
+    // policies need — `id = app.actor_id()` on select and on update — are
+    // satisfied by that alone, and nothing else becomes visible.
+    const profile = await readAsSelf(db, data.user.id, async (tx) => {
+      const [row] = await tx
+        .select({ isActive: profiles.isActive })
+        .from(profiles)
+        .where(eq(profiles.id, data.user.id))
+        .limit(1);
+
+      if (!row?.isActive) return row ?? null;
+
+      await tx
+        .update(profiles)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(profiles.id, data.user.id));
+
+      return row;
+    });
 
     if (!profile?.isActive) {
       await supabase.auth.signOut();
       return err('forbidden', 'admin.auth.deactivated');
     }
-
-    await db
-      .update(profiles)
-      .set({ lastLoginAt: new Date() })
-      .where(eq(profiles.id, data.user.id));
 
     return ok(null);
   });

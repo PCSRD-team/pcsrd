@@ -66,9 +66,9 @@ export async function readAsActor<T>(
 }
 
 /**
- * Reads on behalf of a user whose role is not known yet.
+ * Runs on behalf of a user whose role is not known yet.
  *
- * This exists for exactly one caller: the identity bootstrap. Resolving a
+ * This exists for the identity bootstrap and for sign-in. Resolving a
  * profile is a chicken-and-egg problem — `withActor` wants a role, and the role
  * is the thing being read. Binding a guessed role here would be a privilege
  * escalation with a plausible excuse, so this binds **only** `app.actor_id` and
@@ -79,6 +79,10 @@ export async function readAsActor<T>(
  * case. It is also safe: with the role unset, `app.is_staff()` is false, so the
  * statement can see the caller's own row and nothing else. Verified against a
  * real Postgres as `app_runtime`: one row returned, zero other profiles visible.
+ *
+ * `profiles.rt_update` carries the same `id = app.actor_id()` branch, so a
+ * caller may also write to its **own** row here — which is what recording a
+ * last-login timestamp is. It cannot touch anyone else's.
  */
 export async function readAsSelf<T>(
   db: Db,
