@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm';
 import { db } from '@/db';
+import { isAuthorisedCron } from '@/lib/security/cron-auth';
 import { rowsOf } from '@/db/session';
 import { revalidateEntity } from '@/lib/cache/revalidate';
-import { serverEnv } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +29,7 @@ export const dynamic = 'force-dynamic';
  * the database is asked to trust the application.
  */
 export async function GET(request: Request) {
-  if (request.headers.get('authorization') !== `Bearer ${serverEnv.CRON_SECRET}`) {
+  if (!(await isAuthorisedCron(request))) {
     return new Response('Unauthorized', { status: 401 });
   }
 

@@ -9,6 +9,7 @@ import { fieldErrorsFrom } from '@/lib/validation/common';
 import {
   mediaMetadataSchema,
   metricSchema,
+  organizationSchema,
   partnerSchema,
   personSchema,
 } from '@/lib/validation/admin';
@@ -139,10 +140,25 @@ export async function removeMedia(id: string): Promise<Mutation> {
 export async function saveOrganization(input: unknown): Promise<ActionResult<null>> {
   return runAction(async () => {
     const actor = await requireActor();
-    // No schema here: the settings form posts a partial record and every field
-    // is already typed by the service, which also decides which of them the
-    // actor's role permits.
-    await updateOrganization(db, actor, input as Record<string, never>);
+    // `organizationSchema` is `.partial().strict()`: the settings form posts a
+    // partial record, and an unknown key is rejected rather than ignored.
+    //
+    // This previously read `input as Record<string, never>` with a comment
+    // saying no schema was needed because the service types every field. A cast
+    // is not a check, and `Record<string, never>` is assignable to
+    // `Partial<OrganizationInput>`, so it also suppressed the type error that
+    // would have pointed here. The service spreads its input straight into
+    // `.set()`, which made this a mass-assignment sink on the one table holding
+    // the licence number, the legal name and the official channels — the facts
+    // /verify exists so a reader can check the organisation is real.
+    //
+    // Which fields a role may touch stays in the service. That is a permission
+    // rule, not an HTTP concern.
+    const parsed = organizationSchema.safeParse(input);
+    if (!parsed.success) {
+      return err('validation', 'errors.validation', fieldErrorsFrom(parsed.error));
+    }
+    await updateOrganization(db, actor, parsed.data);
     revalidateEntity('orgSettings');
     return ok(null, 'admin.saved');
   });

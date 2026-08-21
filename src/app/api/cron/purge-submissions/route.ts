@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { serverEnv } from '@/lib/env';
+import { isAuthorisedCron } from '@/lib/security/cron-auth';
 import { purgeExpiredSubmissions } from '@/services/submission/submission.service';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * purge exists to destroy.
  */
 export async function GET(request: Request) {
-  if (request.headers.get('authorization') !== `Bearer ${serverEnv.CRON_SECRET}`) {
+  if (!(await isAuthorisedCron(request))) {
     return new Response('Unauthorized', { status: 401 });
   }
 
