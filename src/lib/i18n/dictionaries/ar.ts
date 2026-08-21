@@ -277,6 +277,45 @@ export const ar = {
       unreadable: 'تعذّرت قراءة الملف.',
       failed: 'تعذّر رفع الملف. حاول مجدداً.',
     },
+
+    // Thrown by the service layer. These twelve keys were referenced in code
+    // and defined in neither dictionary, and `resolveKey` returns the key
+    // itself when it does not resolve — so an editor who tripped the
+    // safeguarding gate saw the Latin string `errors.media.minorConsentState`
+    // inside a right-to-left Arabic screen.
+    invalidEmail: 'أدخل بريداً إلكترونياً صحيحاً.',
+
+    slug: {
+      taken: 'هذا المسار مستخدم بالفعل. اختر مساراً آخر.',
+    },
+
+    content: {
+      unpublishFirst: 'أوقف نشر العنصر قبل هذا الإجراء.',
+    },
+
+    media: {
+      altRequired: 'النص البديل بالعربية مطلوب لكل وسيط.',
+      minorConsentState:
+        'صورة تُظهر طفلاً يمكن التعرّف عليه لا يمكن حفظها بحالة «لا يلزم إذن».',
+      minorConsentRequired:
+        'لا يمكن النشر: وسيط يُظهر أطفالاً يمكن التعرّف عليهم دون إذن موثّق.',
+      consentReferenceRequired:
+        'أدخل مرجع الإذن الموثّق. الإقرار بالحصول على إذن دون مرجع لا يُقبل.',
+    },
+
+    metric: {
+      periodOrder: 'تاريخ بداية الفترة يجب أن يسبق تاريخ نهايتها.',
+      sourceRequired: 'مصدر الرقم مطلوب.',
+      mustBeVerified: 'لا يمكن نشر رقم أثر قبل التحقّق منه.',
+    },
+
+    story: {
+      consentRequired: 'قصة المستفيد تحتاج إلى إذن موثّق قبل النشر.',
+    },
+
+    attachment: {
+      sensitiveRefused: 'لا يمكن تنزيل مرفق مرتبط ببلاغ سرّي.',
+    },
   },
 
   footer: {
