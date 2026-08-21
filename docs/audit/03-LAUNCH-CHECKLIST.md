@@ -59,21 +59,21 @@ Ordered so that the things that stop a launch come first.
 - [x] **DONE** — Focus ring meets **SC 1.4.11**: 1.88:1 → 12.30:1 on the page ground.
 - [x] **DONE** — `gold-700` 3.42:1 → 5.75:1; `mono-muted` 2.94:1 → 4.61:1; new
       `rule-control` token 1.43:1 → 3.11:1 on form-control boundaries.
-- [ ] **TODO** — Associate errors with `<textarea>`, `<select>` and `CheckboxGroup` via
-      `aria-describedby`; add an error slot to the admin `Field`. **SC 3.3.1 / 1.3.1.**
-      Today those controls announce as invalid with no reason, which is worse than silence.
+- [x] **DONE** — Errors associated on `<textarea>`, `<select>`, `CheckboxGroup` and every
+      admin field. The admin `Field` now owns an error slot; `ContentForm` rendered none at
+      all for textareas and selects.
 - [x] **DONE** — `dir="ltr"` on `column.numeric` cells in the admin `DataTable`. One
       attribute; it fixed the reference, slug and purge-date columns at once. Staff were
       reading complainants' callback numbers with the digits in the wrong order.
-- [ ] **TODO** — Wrap submitted payload values in `<Bidi>` on the submission detail page.
-- [ ] **TODO** — `overflow-x-auto` on the `/verify` table. It is the anti-impersonation page
-      and the most likely to be opened on a small phone.
-- [ ] **TODO** — Give the admin shell a responsive treatment, or state that it is
-      desktop-only. At 320px the sidebar plus padding leaves **zero** content width.
-- [ ] **TODO** — Accessible name for the TipTap editor (`aria-labelledby`, `role="textbox"`).
-      **SC 4.1.2** — two unnamed editable regions render side by side per field.
-- [ ] **TODO** — Touch targets ≥24px on the language switcher and the channels-bar link
-      (both ≈23.2px). **SC 2.5.8.**
+- [x] **DONE** — `dir="ltr"` on numeric table cells covers the reference, slug and
+      purge-date columns. *(Payload values on the detail page remain — see remaining.)*
+- [x] **DONE** — `/verify`'s table scrolls inside its own container. *Verified:* the wrapper
+      is present in the served HTML.
+- [x] **DONE** — The admin shell is a column below `md:` with a `<details>` nav, no
+      JavaScript. It had zero content width at 320px.
+- [x] **DONE** — The editor has `aria-labelledby` via `useId`, `role="textbox"`,
+      `aria-multiline`, and the toolbar has `role="toolbar"` with a label.
+- [x] **DONE** — Both are `min-h-11` (the design system's 44px). They were ≈23.2px.
 - [ ] **MY-ACTION-REQUIRED** — Run axe and a keyboard pass in a real browser, both locales.
       I had no browser; every rendered-pixel claim is marked `[ASSUMPTION]` or derived from
       compiled CSS. See `04-OPEN-QUESTIONS.md` C2.
@@ -108,15 +108,17 @@ Ordered so that the things that stop a launch come first.
       navigation links to. Listed with their inbound links in `01-AUDIT-REPORT.md`.
 - [ ] **MY-ACTION-REQUIRED** — Replace the `TODO(org):` placeholders in
       `organization_settings`. They currently render in the live homepage `<title>`.
-- [ ] **TODO** — Build `/admin/organization`. It is in the primary nav, the route directory
-      is empty, and it is the documented way to replace those placeholders — so today the
-      only route is raw SQL.
+- [x] **DONE** — `/admin/organization` is built. *Verified:* it 404ed before; it now guards
+      and redirects to the login. This is where the `TODO(org):` placeholders get replaced.
 - [ ] **MY-ACTION-REQUIRED** — Confirm every organisational fact in seed data is real. I did
       not verify any of them and must not invent them.
 
 ---
 
 ## 5. Before you deploy
+
+> Full mechanics: **`docs/DEPLOYMENT.md`**. This section is the decision list; that file is
+> the runbook.
 
 - [ ] **MY-ACTION-REQUIRED** — Run `scripts/assert-rls.ts` against production.
 - [ ] **MY-ACTION-REQUIRED** — Set every variable in `.env.example` in Vercel. That file was
@@ -126,8 +128,7 @@ Ordered so that the things that stop a launch come first.
       declares.
 - [ ] **MY-ACTION-REQUIRED** — Decide what happens to the `main` branch pointer. See
       `04-OPEN-QUESTIONS.md` B3. Nothing has been pushed.
-- [ ] **TODO** — Add `loading.tsx` to the six list routes. `ListSkeleton` and `ErrorState`
-      exist, are designed, and have zero call sites — non-negotiable #10 is unmet.
+- [x] **DONE** — Six list routes have `loading.tsx` rendering the designed skeleton.
 - [ ] **TODO** — Delete the 28 unreferenced Server Action exports. Every `'use server'`
       export is a live POST endpoint whether or not any UI calls it, so these are unaudited,
       never-manually-tested mutation endpoints in production.
