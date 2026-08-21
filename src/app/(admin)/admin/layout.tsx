@@ -1,4 +1,4 @@
-import { IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { fontVariables } from '@/app/fonts';
 import { AdminShell, buildNav } from '@/components/admin/shell';
 import { getDashboard } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
@@ -15,7 +15,11 @@ import '../../globals.css';
  *
  * This is a **root layout** — the `(admin)` group renders its own `<html>` so
  * it can be `lang="ar" dir="rtl"` unconditionally, without inheriting the
- * public site's locale machinery.
+ * public site's locale machinery. That is true now: `src/app/layout.tsx` has
+ * been removed, so this layout has nothing above it. While that file existed
+ * the comment was aspirational and this `<html>` was nested inside another
+ * one, which the HTML parser discards along with the `lang` and `dir` it
+ * carried — an Arabic-only CMS rendering left-to-right.
  *
  * The login page is **not** in this group. It lives in `(admin-auth)` with its
  * own root layout, because a guard here that redirects to a page inside itself
@@ -28,20 +32,6 @@ export const metadata = {
   title: { default: 'لوحة التحكم', template: '%s — لوحة التحكم' },
   robots: { index: false, follow: false },
 };
-
-const plexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic', 'latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-plex-arabic',
-  display: 'swap',
-});
-
-const plexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-plex-mono',
-  display: 'swap',
-});
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const actor = await requireAuth();
@@ -57,7 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${plexArabic.variable} ${plexMono.variable}`}>
+      <body className={`${fontVariables} bg-paper-ground antialiased`}>
         <AdminShell actor={{ ...actor, fullName: profile?.fullName }} nav={nav}>
           {children}
         </AdminShell>
