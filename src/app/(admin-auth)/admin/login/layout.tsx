@@ -1,4 +1,4 @@
-import { IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { fontVariables } from '@/app/fonts';
 import '../../../globals.css';
 
 /**
@@ -14,24 +14,10 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const plexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic', 'latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-plex-arabic',
-  display: 'swap',
-});
-
-const plexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  variable: '--font-plex-mono',
-  display: 'swap',
-});
-
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${plexArabic.variable} ${plexMono.variable} bg-paper-ground`}>
+      <body className={`${fontVariables} bg-paper-ground antialiased`}>
         {children}
       </body>
     </html>
