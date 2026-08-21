@@ -190,7 +190,15 @@ select id from profiles (as app_runtime, no actor): rows=0
 app.actor_role(): "anon"    app.is_staff(): false
 ```
 
-**Fix** `readAsSelf`, binding only `app.actor_id`. See FIX-01. **Effort** S · **Risk** low.
+**Fix** `readAsSelf`, binding only `app.actor_id`. See FIX-01.
+
+> **This finding had a second half I missed on the first pass.** `signIn` performs its own,
+> separate unbound read of `profiles` to check `isActive`, so after FIX-01 login was *still*
+> broken — and failing with "your account has been deactivated" rather than anything that
+> reads like a bug. Found while re-examining the login path for a deployment question, fixed
+> in FIX-09, and the whole tree then swept for the same class. See ARCH-004.
+
+**Effort** S · **Risk** low.
 
 ---
 

@@ -15,6 +15,9 @@ Ordered so that the things that stop a launch come first.
 
 - [x] **DONE** — Bind `app.actor_id` on the identity read so anyone can sign in to the CMS.
       *Verified:* real Postgres as `app_runtime` returns the caller's own row and zero others.
+- [x] **DONE** — Bind it in `signIn` too. The first fix missed a **second** unbound read of
+      `profiles`, so every correct password was still rejected with "your account has been
+      deactivated". *Verified:* before `rows=0` → rejects, after `rows=1` → allows.
 - [x] **DONE** — Bind `app.can_view_sensitive` in `withActor` so the confidential complaints
       inbox is not permanently empty. *Verified:* same harness, before 0 rows / after 1 row.
 - [x] **DONE** — Bind an actor on every statement the submission service and the attachment

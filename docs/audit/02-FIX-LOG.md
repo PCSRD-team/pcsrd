@@ -391,3 +391,55 @@ column is `relforcerowsecurity`, not `relforcerowlevelsecurity`. All five querie
 against a real Postgres with this repository's migrations applied and returned **21 tables,
 85 policies, 0 unforced** — independently reproducing the figures in `CLAUDE.md`. The full
 build then completed with placeholder values and no database.
+
+---
+
+## FIX-09 · Bind the caller's id in `signIn` — which still rejected every login
+
+**Findings:** ARCH-004, and the unfinished half of DATA-001
+**Commit:** `95b1c61` — *fix(auth): bind the caller's id in signIn, which still rejected every login*
+**Severity:** P0 · **Effort:** S
+
+**A correction to FIX-01.** FIX-01 fixed `getCurrentProfile` and I reported sign-in as
+working. It was not. `signIn` performs its **own, separate** read of `profiles` on the bare
+`db` handle to check `isActive`, and I did not notice it until re-examining the login path
+while answering a question about whether the site could be deployed.
+
+**Root cause.** The same one as DATA-001 — an unbound statement against a `FORCE ROW LEVEL
+SECURITY` table — in a second place, because the permission rule lives in the action layer
+rather than in a service (which is ARCH-004's point, and why the duplicate existed at all).
+
+**Files:** `src/actions/admin/auth.ts`, `src/db/session.ts`
+
+**What was wrong.** The select ran as `anon`, matched neither branch of
+`profiles.rt_select`, and returned zero rows. `profile` was then `undefined`, so
+`!profile?.isActive` evaluated to **true**, and every correct password was rejected with
+`admin.auth.deactivated` — *"your account has been deactivated"*.
+
+Of the available wrong answers that is the worst one. It is the message that sends a real
+user to an administrator rather than to a retry, and it would have been read as an account
+problem rather than as a bug — possibly for a long time.
+
+The `lastLoginAt` write was unbound too, so it silently updated nothing while
+`/admin/users` renders that column as though it were real.
+
+**Reproduced**, as `app_runtime`:
+
+```
+unbound : rows=0 -> !profile?.isActive = true  -> REJECTS LOGIN ("deactivated")
+bound   : rows=1 -> !profile?.isActive = false -> ALLOWS LOGIN
+update lastLoginAt: unbound rows=0 · bound rows=1
+```
+
+**Fix.** Both statements now run inside one `readAsSelf` transaction. `profiles.rt_update`
+carries the same `id = app.actor_id()` branch as `rt_select`, so binding the id alone is
+exactly enough for both, and nothing else becomes reachable. `readAsSelf`'s docstring is
+widened to say so.
+
+**What I did differently after finding it.** I swept the whole tree for the same class rather
+than fixing the instance and moving on. Every remaining bare-handle statement is correct by
+design: `app.submit_form`, `app.archive_expired_content` and `app.purge_expired_submissions`
+are all `SECURITY DEFINER`, and the health check is `select 1`. The class is closed.
+
+**Verification.** `[VERIFIED-EXEC]` — the before/after above; typecheck, eslint, stylelint
+clean; 27/27 integration tests.
