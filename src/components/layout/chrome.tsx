@@ -45,7 +45,7 @@ export function ChannelsBar({ locale, dict }: { locale: Locale; dict: Dictionary
           <span className="font-mono text-eyebrow tracking-[0.16em] text-gold-600 uppercase">
             {dict.channels.barLabel}
           </span>
-          <span className="mis-3">{dict.channels.barText}</span>
+          <span className="ms-3">{dict.channels.barText}</span>
         </p>
         <Link
           href={localePath(locale, '/verify')}

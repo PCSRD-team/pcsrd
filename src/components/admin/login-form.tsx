@@ -18,7 +18,7 @@ const MESSAGES: Record<string, string> = {
 };
 
 const controlClass =
-  'block w-full rule-edge bg-paper px-4 py-3 text-small text-ink focus:border-navy-700 focus:outline-none';
+  'block w-full rule-control bg-paper px-4 py-3 text-small text-ink focus:border-navy-700';
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState<AuthResult | null, FormData>(signIn, null);

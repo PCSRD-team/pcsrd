@@ -119,7 +119,7 @@ export function AdminShell({
 }) {
   return (
     <div className="flex min-h-screen bg-paper-ground">
-      <aside className="w-64 shrink-0 border-ie border-rule bg-paper">
+      <aside className="w-64 shrink-0 border-e border-rule bg-paper">
         <div className="border-be-2 border-ink p-5">
           <p className="text-h3 font-semibold text-ink">لوحة التحكم</p>
           <p className="mbs-1 text-caption text-ink-55">

@@ -83,14 +83,14 @@ function renderNode(node: RichTextNode, key: string): ReactNode {
 
     case 'bulletList':
       return (
-        <ul key={key} className="list-disc space-y-2 pis-6 text-body text-ink-70">
+        <ul key={key} className="list-disc space-y-2 ps-6 text-body text-ink-70">
           {children}
         </ul>
       );
 
     case 'orderedList':
       return (
-        <ol key={key} className="list-decimal space-y-2 pis-6 text-body text-ink-70">
+        <ol key={key} className="list-decimal space-y-2 ps-6 text-body text-ink-70">
           {children}
         </ol>
       );
@@ -102,7 +102,7 @@ function renderNode(node: RichTextNode, key: string): ReactNode {
       // A quote is marked by the gold rule on its leading edge — logical, so it
       // lands on the right side in both directions.
       return (
-        <blockquote key={key} className="border-is-2 border-gold-600 pis-5 text-lead text-ink">
+        <blockquote key={key} className="border-s-2 border-gold-600 ps-5 text-lead text-ink">
           {children}
         </blockquote>
       );

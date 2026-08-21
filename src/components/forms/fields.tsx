@@ -60,11 +60,11 @@ function FieldShell({
       <label htmlFor={name} className="block text-small font-medium text-ink">
         {label}
         {required ? (
-          <span className="mis-1 text-gold-700" aria-hidden="true">
+          <span className="ms-1 text-gold-700" aria-hidden="true">
             *
           </span>
         ) : (
-          <span className="mis-2 font-mono text-eyebrow text-mono-muted">
+          <span className="ms-2 font-mono text-eyebrow text-mono-muted">
             {dict.common.optional}
           </span>
         )}
@@ -88,8 +88,8 @@ function FieldShell({
 }
 
 const controlClass =
-  'block w-full rule-edge bg-paper px-4 py-3 text-small text-ink ' +
-  'focus:border-navy-700 focus:outline-none';
+  'block w-full rule-control bg-paper px-4 py-3 text-small text-ink ' +
+  'focus:border-navy-700';
 
 export function TextField({
   name,
@@ -236,7 +236,7 @@ export function CheckboxGroup({
       <legend className="text-small font-medium text-ink">
         {legend}
         {required ? (
-          <span className="mis-1 text-gold-700" aria-hidden="true">
+          <span className="ms-1 text-gold-700" aria-hidden="true">
             *
           </span>
         ) : null}
@@ -296,7 +296,7 @@ export function FileField({
             .filter(Boolean)
             .join(' ') || undefined
         }
-        className="block w-full text-small text-ink file:mie-4 file:rule-edge file:bg-paper-alt file:px-4 file:py-2 file:text-small file:text-ink"
+        className="block w-full text-small text-ink file:me-4 file:rule-edge file:bg-paper-alt file:px-4 file:py-2 file:text-small file:text-ink"
       />
     </FieldShell>
   );
