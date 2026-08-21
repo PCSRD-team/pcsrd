@@ -13,6 +13,7 @@ import {
 } from '@/services/submission/submission.service';
 import { rowsOf } from '@/db/session';
 import { resetTables, useTestDb } from '../setup/pglite';
+import { row1 } from '../setup/rows';
 
 const getDb = useTestDb();
 /** The service signature asks for the app `Db`; PGlite's handle is structurally
@@ -73,10 +74,12 @@ describe('createSubmission', () => {
       userAgent: 'Mozilla/5.0',
     });
 
-    const [row] = await getDb()
-      .select()
-      .from(formSubmissions)
-      .where(eq(formSubmissions.id, (await idOf(created.reference))));
+    const row = row1(
+      await getDb()
+        .select()
+        .from(formSubmissions)
+        .where(eq(formSubmissions.id, (await idOf(created.reference)))),
+    );
 
     expect(row.isSensitive).toBe(false);
     expect(row.payload).toEqual({ organizationName: 'Example', email: 'x@example.org' });
@@ -97,10 +100,12 @@ describe('createSubmission', () => {
       userAgent: 'Mozilla/5.0',
     });
 
-    const [row] = await getDb()
-      .select()
-      .from(formSubmissions)
-      .where(eq(formSubmissions.id, (await idOf(created.reference))));
+    const row = row1(
+      await getDb()
+        .select()
+        .from(formSubmissions)
+        .where(eq(formSubmissions.id, (await idOf(created.reference)))),
+    );
 
     expect(row.isSensitive).toBe(true);
     expect(row.ipHash).toBeNull();
@@ -118,10 +123,14 @@ describe('createSubmission', () => {
     // The deadline is computed by app.submit_form from the database clock, so
     // the expectation is derived from the same clock rather than from Date.now
     // in the test process — the two can straddle midnight.
-    const [{ in12, in24 }] = await getDb().execute(
-      sql`select (current_date + interval '12 months')::date::text as in12,
-                 (current_date + interval '24 months')::date::text as in24`,
-    ).then((r) => rowsOf<{ in12: string; in24: string }>(r));
+    const { in12, in24 } = row1(
+      await getDb()
+        .execute(
+          sql`select (current_date + interval '12 months')::date::text as in12,
+                     (current_date + interval '24 months')::date::text as in24`,
+        )
+        .then((r) => rowsOf<{ in12: string; in24: string }>(r)),
+    );
 
     const contact = await createSubmission(db(), { type: 'contact', locale: 'ar', payload: {} });
     const partnership = await createSubmission(db(), {
@@ -146,10 +155,10 @@ describe('getSubmission', () => {
 
     const audit = await getDb().query.auditLogs.findMany();
     expect(audit).toHaveLength(1);
-    expect(audit[0].action).toBe('view_sensitive');
-    expect(audit[0].actorId).toBe(SAFEGUARDING.id);
+    expect(row1(audit).action).toBe('view_sensitive');
+    expect(row1(audit).actorId).toBe(SAFEGUARDING.id);
     // The audit entry records that it was read, never what was read.
-    expect(JSON.stringify(audit[0].diff)).not.toContain('corruption');
+    expect(JSON.stringify(row1(audit).diff)).not.toContain('corruption');
   });
 
   it('refuses an admin who is not on the sensitive-access list', async () => {
@@ -188,10 +197,12 @@ describe('setSubmissionState', () => {
       internalNote: 'called the sender back',
     });
 
-    const [row] = await getDb()
-      .select()
-      .from(formSubmissions)
-      .where(eq(formSubmissions.id, (await idOf(created.reference))));
+    const row = row1(
+      await getDb()
+        .select()
+        .from(formSubmissions)
+        .where(eq(formSubmissions.id, (await idOf(created.reference)))),
+    );
     expect(row.state).toBe('handled');
     expect(row.handledBy).toBe(ADMIN.id);
     expect(row.handledAt).toBeInstanceOf(Date);
@@ -223,7 +234,7 @@ describe('purgeExpiredSubmissions', () => {
 
     const remaining = await getDb().select().from(formSubmissions);
     expect(remaining).toHaveLength(1);
-    expect(remaining[0].id).toBe((await idOf(fresh.reference)));
+    expect(row1(remaining).id).toBe(await idOf(fresh.reference));
   });
 });
 

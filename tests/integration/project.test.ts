@@ -9,6 +9,7 @@ import {
   upsertProject,
 } from '@/services/content/project.service';
 import { resetTables, useTestDb } from '../setup/pglite';
+import { row1, rowAt } from '../setup/rows';
 
 const getDb = useTestDb();
 const db = () => getDb() as unknown as Db;
@@ -38,16 +39,18 @@ beforeEach(async () => {
       { id: EDITOR.id, email: 'e@example.org', fullName: 'Editor', role: 'editor' },
     ]);
 
-  [{ id: programId }] = await getDb()
-    .insert(programs)
-    .values({
-      key: 'protection',
-      titleAr: 'الحماية',
-      slugAr: 'الحماية',
-      slugEn: 'protection',
-      status: 'published',
-    })
-    .returning({ id: programs.id });
+  programId = row1(
+    await getDb()
+      .insert(programs)
+      .values({
+        key: 'protection',
+        titleAr: 'الحماية',
+        slugAr: 'الحماية',
+        slugEn: 'protection',
+        status: 'published',
+      })
+      .returning({ id: programs.id }),
+  ).id;
 
   const media = await getDb()
     .insert(mediaAssets)
@@ -70,13 +73,15 @@ beforeEach(async () => {
       },
     ])
     .returning({ id: mediaAssets.id });
-  safeMediaId = media[0].id;
-  minorMediaId = media[1].id;
+  safeMediaId = rowAt(media, 0).id;
+  minorMediaId = rowAt(media, 1).id;
 
-  [{ id: partnerId }] = await getDb()
-    .insert(partners)
-    .values({ nameAr: 'شريك', type: 'implementing', status: 'published' })
-    .returning({ id: partners.id });
+  partnerId = row1(
+    await getDb()
+      .insert(partners)
+      .values({ nameAr: 'شريك', type: 'implementing', status: 'published' })
+      .returning({ id: partners.id }),
+  ).id;
 });
 
 const base = () => ({
@@ -213,7 +218,7 @@ describe('upsertProject', () => {
     const audit = await getDb().query.auditLogs.findMany();
     expect(audit.map((a) => a.action)).toEqual(['create', 'update']);
 
-    const diff = audit[1].diff!;
+    const diff = rowAt(audit, 1).diff!;
     expect(Object.keys(diff)).toEqual(['summaryAr']);
     expect(diff.summaryAr).toEqual({ from: null, to: 'ملخص جديد' });
   });
@@ -237,13 +242,17 @@ describe('setProjectStatus', () => {
     const created = await upsertProject(db(), EDITOR, base());
     await setProjectStatus(db(), MANAGER, created.id, 'published');
 
-    const [first] = await getDb().select().from(projects).where(eq(projects.id, created.id));
+    const first = row1(
+      await getDb().select().from(projects).where(eq(projects.id, created.id)),
+    );
     expect(first.publishedAt).toBeInstanceOf(Date);
 
     await setProjectStatus(db(), MANAGER, created.id, 'archived');
     await setProjectStatus(db(), MANAGER, created.id, 'published');
 
-    const [again] = await getDb().select().from(projects).where(eq(projects.id, created.id));
+    const again = row1(
+      await getDb().select().from(projects).where(eq(projects.id, created.id)),
+    );
     expect(again.publishedAt?.getTime()).toBe(first.publishedAt?.getTime());
   });
 

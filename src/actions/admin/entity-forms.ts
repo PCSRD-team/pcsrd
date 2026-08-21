@@ -47,7 +47,13 @@ export type EntityResult = ActionResult<{ id: string }>;
 const SEO_JSON: readonly string[] = [];
 const SEO_BOOLEANS = ['noIndex'] as const;
 
-const SHAPES: Record<string, FormShape> = {
+// `satisfies` rather than `: Record<string, FormShape>`. The annotation checked
+// the values and then widened the *keys* to `string`, so `keyof typeof SHAPES`
+// was `string` and `SHAPES[shapeKey]` was `FormShape | undefined` — a lookup
+// that could miss with nothing to catch it. `satisfies` keeps both: the values
+// are still checked against `FormShape`, and the keys stay literal, so
+// `shapeKey` can only be one of the entities that actually exists.
+const SHAPES = {
   project: {
     multi: ['governorates', 'themes', 'localities', 'implementingPartners', 'donors', 'gallery'],
     json: ['objectiveAr', 'objectiveEn', 'activitiesAr', 'activitiesEn', 'outcomesAr', 'outcomesEn'],
@@ -102,7 +108,7 @@ const SHAPES: Record<string, FormShape> = {
     booleans: ['isPublic', 'isFeatured'],
     nullable: ['programId', 'projectId', 'displayPrefix', 'verificationSource', 'id'],
   },
-};
+} satisfies Record<string, FormShape>;
 
 /**
  * `partners` and `donors` arrive as two lists but the service takes one list of

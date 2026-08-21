@@ -14,6 +14,7 @@ import type { RichText } from '@/db/schema/_shared';
 import { AppError, notFound } from '@/lib/errors';
 import type { Actor } from '../_shared/actor';
 import { writeAudit } from '../_shared/audit';
+import { one } from '../_shared/one';
 import { computeDiff } from '../_shared/diff';
 import { assertCan } from '../_shared/permissions';
 import { assertCanTransition, assertMediaConsent } from '../_shared/publish';
@@ -202,19 +203,19 @@ export async function upsertProject(
       await assertMediaConsent(tx, mediaIds);
     }
 
-    let row;
-    if (existing) {
-      [row] = await tx
-        .update(projects)
-        .set({ ...values, updatedBy: actor.id, updatedAt: new Date() })
-        .where(eq(projects.id, existing.id))
-        .returning();
-    } else {
-      [row] = await tx
-        .insert(projects)
-        .values({ ...values, createdBy: actor.id, updatedBy: actor.id })
-        .returning();
-    }
+    const row = one(
+      existing
+        ? await tx
+            .update(projects)
+            .set({ ...values, updatedBy: actor.id, updatedAt: new Date() })
+            .where(eq(projects.id, existing.id))
+            .returning()
+        : await tx
+            .insert(projects)
+            .values({ ...values, createdBy: actor.id, updatedBy: actor.id })
+            .returning(),
+      'project',
+    );
 
     await replaceProjectLinks(tx, row.id, input);
 
@@ -266,11 +267,14 @@ export async function setProjectStatus(
       ]);
     }
 
-    const [row] = await tx
-      .update(projects)
-      .set({ status, updatedBy: actor.id, updatedAt: new Date() })
-      .where(eq(projects.id, id))
-      .returning();
+    const row = one(
+      await tx
+        .update(projects)
+        .set({ status, updatedBy: actor.id, updatedAt: new Date() })
+        .where(eq(projects.id, id))
+        .returning(),
+      'project',
+    );
 
     await writeAudit(tx, actor, {
       action:

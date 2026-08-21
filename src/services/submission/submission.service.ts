@@ -9,6 +9,7 @@ import { hashIp } from '@/lib/security/ip';
 import { addMonths, toDateString } from '@/lib/utils';
 import type { Actor } from '../_shared/actor';
 import { writeAudit } from '../_shared/audit';
+import { one } from '../_shared/one';
 import { assertCan, assertCanViewSensitive } from '../_shared/permissions';
 
 /**
@@ -104,7 +105,12 @@ export async function createSubmission(
   // sensitivity decision and the DNH-8 blanking. Calling it rather than
   // inserting directly keeps one source of truth: a cron job, a seed script or
   // a psql session gets the same policy without importing this file.
-  const [row] = rowsOf<{ reference: string }>(await db.execute(sql`
+  // `app.submit_form` returns exactly one row or raises. `one` turns "it
+  // returned nothing" — which would previously have thrown a
+  // `TypeError: Cannot read properties of undefined` inside a form submission —
+  // into the same refusal every other missing row produces.
+  const row = one(
+    rowsOf<{ reference: string }>(await db.execute(sql`
     select app.submit_form(
       ${input.type}::submission_type,
       ${input.locale}::locale_code,
@@ -116,7 +122,9 @@ export async function createSubmission(
       ${userAgent}::text,
       ${isSensitive}::boolean
     ) as reference
-  `));
+  `)),
+    'form_submission',
+  );
 
   return { reference: row.reference, isSensitive, purgeAfter };
 }
