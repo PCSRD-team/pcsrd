@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { RichText } from '@/components/content/rich-text';
 import { ArticleJsonLd } from '@/components/seo/json-ld';
-import { Bidi } from '@/components/ui/bidi';
+import { DateText } from '@/components/ui/bidi';
 import { Prose } from '@/components/ui/primitives';
 import { UntranslatedNotice } from '@/components/ui/states';
 import { getPostBySlug } from '@/db/queries/content';
@@ -77,7 +77,7 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
             dateTime={post.publishedAt.toISOString()}
             className="font-mono text-caption text-mono-muted"
           >
-            <Bidi>{formatDate(post.publishedAt, locale)}</Bidi>
+            <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
           </time>
         ) : null}
       </div>

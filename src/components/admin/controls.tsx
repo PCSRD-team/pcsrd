@@ -191,16 +191,34 @@ export function Pagination({
 export const inputClass =
   'block w-full rule-control bg-paper px-3 py-2 text-small text-ink focus:border-navy-700';
 
+/**
+ * The ids `Field` renders, joined for `aria-describedby`.
+ *
+ * The public forms have `describedBy` in `components/forms/fields.tsx`; this is
+ * the admin's half of the same contract. They are deliberately not shared —
+ * that module is a Client Component boundary for the public site and importing
+ * across would drag it into the admin bundle for four lines.
+ */
+export function fieldDescribedBy(name: string, hint?: string, error?: string) {
+  return (
+    [hint ? `${name}-hint` : null, error ? `${name}-error` : null].filter(Boolean).join(' ') ||
+    undefined
+  );
+}
+
 export function Field({
   name,
   label,
   hint,
+  error,
   required,
   children,
 }: {
   name: string;
   label: string;
   hint?: string;
+  /** Rendered with a stable id so the control can reference it. */
+  error?: string;
   required?: boolean;
   children: ReactNode;
 }) {
@@ -214,8 +232,22 @@ export function Field({
           </span>
         ) : null}
       </label>
-      {hint ? <p className="text-caption text-ink-55">{hint}</p> : null}
+      {hint ? (
+        <p id={`${name}-hint`} className="text-caption text-ink-55">
+          {hint}
+        </p>
+      ) : null}
       {children}
+      {/* `Field` rendered no error at all, so `ContentForm` rendered one itself
+          for text inputs and nothing whatsoever for textareas and selects — an
+          editor got a rejected save with no indication which field was wrong.
+          Owning it here means every branch gets it, and gets the id that makes
+          `aria-describedby` possible. */}
+      {error ? (
+        <p id={`${name}-error`} className="text-caption text-gold-700" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

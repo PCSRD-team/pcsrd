@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge, Panel } from '@/components/ui/primitives';
-import { Bidi } from '@/components/ui/bidi';
+import { Bidi, DateText } from '@/components/ui/bidi';
 import { publicEnv } from '@/lib/env.public';
 import { formatDate, formatNumber, formatPeriod, storageUrl } from '@/lib/format';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
@@ -167,7 +167,7 @@ export function PostCard({
               dateTime={post.publishedAt.toISOString()}
               className="font-mono text-caption text-mono-muted"
             >
-              <Bidi>{formatDate(post.publishedAt, locale)}</Bidi>
+              <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
             </time>
           ) : null}
         </div>
@@ -234,7 +234,7 @@ export function MetricCard({
         <div className="flex gap-2">
           <dt className="eyebrow">{dict.impact.period}</dt>
           <dd className="font-mono text-caption text-ink-70">
-            <Bidi>{formatPeriod(metric.periodStart, metric.periodEnd, locale)}</Bidi>
+            <DateText locale={locale}>{formatPeriod(metric.periodStart, metric.periodEnd, locale)}</DateText>
           </dd>
         </div>
         <div className="flex gap-2">
@@ -286,7 +286,7 @@ export function VacancyCard({
         ) : null}
       </div>
       <p className="font-mono text-caption text-mono-muted">
-        {dict.careers.deadline}: <Bidi>{formatDate(vacancy.deadline, locale)}</Bidi>
+        {dict.careers.deadline}: <DateText locale={locale}>{formatDate(vacancy.deadline, locale)}</DateText>
       </p>
     </Panel>
   );

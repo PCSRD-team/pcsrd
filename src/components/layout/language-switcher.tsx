@@ -34,7 +34,11 @@ export function LanguageSwitcher({ locale, label }: { locale: Locale; label: str
       // The other locale is a different render of a page most visitors never
       // open; prefetching it doubles the work for no benefit.
       prefetch={false}
-      className="font-mono text-caption text-ink-55 no-underline hover:text-gold-700"
+      // `inline-flex` + `min-h-11` rather than padding alone: WCAG 2.2 SC 2.5.8
+      // wants 24x24 and the design system asks for 44px, and this link sits
+      // `gap-4` from its neighbour — under the 24px offset that would let the
+      // spacing exception rescue a smaller target. It was ~23.2px.
+      className="inline-flex min-h-11 items-center font-mono text-caption text-ink-55 no-underline hover:text-gold-700"
     >
       {label}
     </Link>

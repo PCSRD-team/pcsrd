@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { RichText } from '@/components/content/rich-text';
-import { Bidi } from '@/components/ui/bidi';
+import { DateText } from '@/components/ui/bidi';
 import { Badge, DefinitionList, Panel, Prose, Section, SectionHeading } from '@/components/ui/primitives';
 import { UntranslatedNotice } from '@/components/ui/states';
 import { getProjectBySlug, listProjectSlugs } from '@/db/queries/projects';
@@ -117,7 +117,7 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
               {
                 term: dict.projects.period,
                 value: formatPeriod(project.startDate, project.endDate, locale) ? (
-                  <Bidi>{formatPeriod(project.startDate, project.endDate, locale)}</Bidi>
+                  <DateText locale={locale}>{formatPeriod(project.startDate, project.endDate, locale)}</DateText>
                 ) : null,
               },
               {

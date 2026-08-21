@@ -49,7 +49,14 @@ export function ChannelsBar({ locale, dict }: { locale: Locale; dict: Dictionary
         </p>
         <Link
           href={localePath(locale, '/verify')}
-          className="border-be border-gold-600 text-caption text-paper no-underline hover:text-gold-600"
+          // Was ~23.2px tall with no padding — under SC 2.5.8's 24px floor, on
+          // the only route to /verify, which is the page a beneficiary opens to
+          // check an account against the real one.
+          //
+          // `border-be-2` rather than 1px: a 1px gold rule was a fourth weight
+          // in a system that documents exactly three, and this is the marked-CTA
+          // treatment the header link already uses.
+          className="inline-flex min-h-11 items-center border-be-2 border-gold-600 text-caption text-paper no-underline hover:text-gold-600"
         >
           {dict.channels.barCta}
         </Link>

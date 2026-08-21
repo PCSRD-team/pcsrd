@@ -54,7 +54,14 @@ export default async function VerifyPage({ params }: PageProps<'/[locale]/verify
         <EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} />
       ) : (
         <Panel tone="gold" className="p-0">
-          <table className="w-full text-start">
+          {/* The admin's DataTable has this wrapper and this three-column table
+              did not, so a long handle or URL widened the whole document and
+              /ar/verify scrolled sideways in its entirety. That is the worst
+              page for it to happen on: it exists so a beneficiary can compare a
+              handle character by character against a suspicious account, and it
+              is the one most likely to be opened on a cheap phone. */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-start">
             <caption className="sr-only">{dict.verify.title}</caption>
             <thead>
               <tr className="border-be-2 border-ink">
@@ -84,7 +91,8 @@ export default async function VerifyPage({ params }: PageProps<'/[locale]/verify
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </Panel>
       )}
 

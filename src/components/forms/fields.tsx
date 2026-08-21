@@ -36,6 +36,28 @@ export function resolveKey(dict: FormDict, key: string): string {
   return typeof value === 'string' ? value : key;
 }
 
+/**
+ * The ids `FieldShell` renders, joined for `aria-describedby`.
+ *
+ * `FieldShell` centralised the *rendering* of hints and errors and left the
+ * *association* to each control — so only `TextField` and `FileField` ever wired
+ * it. `<textarea>` and `<select>` set `aria-invalid` and no `aria-describedby`,
+ * which announces a field as invalid while giving no reason: worse than
+ * silence. That covered `message`, `description`, `experience`, `motivation`,
+ * `coverNote` and every enquiry, category and governorate select on the six
+ * public forms — WCAG 2.2 SC 3.3.1 and SC 1.3.1.
+ *
+ * One helper rather than a repeated expression, because the repeated expression
+ * is exactly what went missing.
+ */
+export function describedBy(name: string, hint: string | undefined, errors?: FieldErrors) {
+  return (
+    [hint ? `${name}-hint` : null, errors?.[name] ? `${name}-error` : null]
+      .filter(Boolean)
+      .join(' ') || undefined
+  );
+}
+
 function FieldShell({
   name,
   label,
@@ -125,11 +147,7 @@ export function TextField({
         autoComplete={autoComplete}
         inputMode={inputMode}
         aria-invalid={errors?.[name] ? true : undefined}
-        aria-describedby={
-          [hint ? `${name}-hint` : null, errors?.[name] ? `${name}-error` : null]
-            .filter(Boolean)
-            .join(' ') || undefined
-        }
+        aria-describedby={describedBy(name, hint, errors)}
         // Latin text in an otherwise-RTL form: an email or a URL typed into a
         // right-aligned field is unreadable while being typed.
         dir={type === 'email' || type === 'url' || type === 'tel' ? 'ltr' : undefined}
@@ -167,6 +185,7 @@ export function TextArea({
         required={required}
         defaultValue={defaultValue}
         aria-invalid={errors?.[name] ? true : undefined}
+        aria-describedby={describedBy(name, hint, errors)}
         className={controlClass}
       />
     </FieldShell>
@@ -200,6 +219,7 @@ export function SelectField({
         required={required}
         defaultValue={defaultValue ?? ''}
         aria-invalid={errors?.[name] ? true : undefined}
+        aria-describedby={describedBy(name, hint, errors)}
         className={controlClass}
       >
         <option value="" disabled>
@@ -232,7 +252,10 @@ export function CheckboxGroup({
 }) {
   const messages = errors?.[name] ?? [];
   return (
-    <fieldset>
+    <fieldset
+      aria-invalid={messages.length ? true : undefined}
+      aria-describedby={messages.length ? `${name}-error` : undefined}
+    >
       <legend className="text-small font-medium text-ink">
         {legend}
         {required ? (
@@ -257,7 +280,7 @@ export function CheckboxGroup({
         ))}
       </ul>
       {messages.length ? (
-        <p className="mbs-2 text-caption text-gold-700" role="alert">
+        <p id={`${name}-error`} className="mbs-2 text-caption text-gold-700" role="alert">
           {messages.map((key) => resolveKey(dict, key)).join(' ')}
         </p>
       ) : null}
