@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { RichText } from '@/components/content/rich-text';
 import { JobApplicationForm } from '@/components/forms/public-forms';
 import { JobPostingJsonLd } from '@/components/seo/json-ld';
-import { Bidi } from '@/components/ui/bidi';
+import { Bidi, DateText } from '@/components/ui/bidi';
 import { Badge, DefinitionList, Panel, Prose, Section, SectionHeading } from '@/components/ui/primitives';
 import { UntranslatedNotice } from '@/components/ui/states';
 import { getVacancyBySlug } from '@/db/queries/content';
@@ -75,14 +75,14 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
               term: dict.careers.deadline,
               value: (
                 <span className="flex flex-wrap items-center gap-3">
-                  <Bidi>{formatDate(vacancy.deadline, locale)}</Bidi>
+                  <DateText locale={locale}>{formatDate(vacancy.deadline, locale)}</DateText>
                   {vacancy.isClosed ? <Badge tone="warning">{dict.careers.closed}</Badge> : null}
                 </span>
               ),
             },
             {
               term: dict.careers.postedOn,
-              value: <Bidi>{formatDate(vacancy.postedAt, locale)}</Bidi>,
+              value: <DateText locale={locale}>{formatDate(vacancy.postedAt, locale)}</DateText>,
             },
           ]}
         />

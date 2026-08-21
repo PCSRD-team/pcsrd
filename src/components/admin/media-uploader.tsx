@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 /**
@@ -17,6 +18,7 @@ import { useState } from 'react';
  */
 export function MediaUploader() {
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
 
   async function upload(formData: FormData) {
@@ -42,9 +44,13 @@ export function MediaUploader() {
       }
 
       setMessage('تم الرفع.');
-      // A full reload rather than a client-side refetch: the library is a
-      // Server Component and this is the only place its data changes.
-      window.location.reload();
+      // `router.refresh()`, not `window.location.reload()`. The library is a
+      // Server Component and does need re-fetching, but a full reload tears the
+      // document down immediately — including the `role="status"` region set on
+      // the line above, before any assistive technology has had a chance to
+      // announce it. `refresh()` re-renders the server tree in place and leaves
+      // the confirmation standing.
+      router.refresh();
     } finally {
       setBusy(false);
     }
@@ -54,14 +60,17 @@ export function MediaUploader() {
     <form action={upload} className="rule-edge bg-paper p-5">
       <p className="text-small font-medium text-ink">رفع ملف</p>
 
-      {message ? (
-        <p
-          className="rule-edge mbs-3 border-gold-600 bg-gold-050 p-3 text-caption text-ink"
-          role="status"
-        >
-          {message}
-        </p>
-      ) : null}
+      {/* Always present, contents swapped — see the note in form-shell.tsx.
+          It matters more here: this is a polite region, and a polite region
+          inserted at the moment its content arrives is the case that most often
+          goes unannounced. */}
+      <div aria-live="polite" role="status">
+        {message ? (
+          <p className="rule-edge mbs-3 border-gold-600 bg-gold-050 p-3 text-caption text-ink">
+            {message}
+          </p>
+        ) : null}
+      </div>
 
       <div className="mbs-4 grid gap-4 md:grid-cols-2">
         <div>

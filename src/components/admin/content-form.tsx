@@ -8,6 +8,7 @@ import {
   EnumSelect,
   Field,
   PublishBar,
+  fieldDescribedBy,
   inputClass,
 } from '@/components/admin/controls';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
@@ -112,6 +113,7 @@ export function ContentForm({
                 name={field.name}
                 label={field.label}
                 hint={field.hint}
+                error={firstError(field.name)}
                 required={field.required}
               >
                 <input
@@ -120,24 +122,29 @@ export function ContentForm({
                   type={field.type ?? 'text'}
                   required={field.required}
                   defaultValue={str(field.name)}
+                  aria-invalid={firstError(field.name) ? true : undefined}
+                  aria-describedby={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
                   className={inputClass}
                 />
-                {firstError(field.name) ? (
-                  <p className="text-caption text-gold-700" role="alert">
-                    {firstError(field.name)}
-                  </p>
-                ) : null}
               </Field>
             );
 
           case 'textarea':
             return (
-              <Field key={field.name} name={field.name} label={field.label} hint={field.hint}>
+              <Field
+                key={field.name}
+                name={field.name}
+                label={field.label}
+                hint={field.hint}
+                error={firstError(field.name)}
+              >
                 <textarea
                   id={field.name}
                   name={field.name}
                   rows={3}
                   defaultValue={str(field.name)}
+                  aria-invalid={firstError(field.name) ? true : undefined}
+                  aria-describedby={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
                   className={inputClass}
                 />
               </Field>
@@ -174,12 +181,20 @@ export function ContentForm({
 
           case 'media':
             return (
-              <Field key={field.name} name={field.name} label={field.label} hint={field.hint}>
+              <Field
+                key={field.name}
+                name={field.name}
+                label={field.label}
+                hint={field.hint}
+                error={firstError(field.name)}
+              >
                 <input
                   id={field.name}
                   name={field.name}
                   defaultValue={str(field.name)}
                   dir="ltr"
+                  aria-invalid={firstError(field.name) ? true : undefined}
+                  aria-describedby={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
                   className={`${inputClass} text-start font-mono text-caption`}
                 />
               </Field>

@@ -52,11 +52,19 @@ export function FormShell({
           reads the inbox. */}
       <input type="hidden" name="locale" value={locale} />
 
-      {state && !state.ok ? (
-        <div className="rule-edge border-gold-600 bg-gold-050 p-4" role="alert">
-          <p className="text-small text-ink">{resolveKey(dict, state.messageKey)}</p>
-        </div>
-      ) : null}
+      {/* The region itself is always in the DOM; only its contents change.
+          A live region that does not exist when its content arrives is
+          unreliable — assistive technology has nothing to observe until the
+          node appears, and for a polite region it frequently never announces.
+          This one is assertive and usually survives insertion, but "usually" is
+          not what a form-level failure message should depend on. */}
+      <div aria-live="assertive" role="alert">
+        {state && !state.ok ? (
+          <div className="rule-edge border-gold-600 bg-gold-050 p-4">
+            <p className="text-small text-ink">{resolveKey(dict, state.messageKey)}</p>
+          </div>
+        ) : null}
+      </div>
 
       {children(errors)}
 

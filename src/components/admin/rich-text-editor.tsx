@@ -3,7 +3,7 @@
 import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { RichText } from '@/db/schema/_shared';
 
 /**
@@ -44,6 +44,7 @@ export function RichTextEditor({
   defaultValue?: RichText | null;
 }) {
   const [doc, setDoc] = useState<RichText | null>(defaultValue ?? null);
+  const labelId = useId();
 
   const editor = useEditor({
     // Server-rendering a contenteditable produces a hydration mismatch; the
@@ -71,6 +72,14 @@ export function RichTextEditor({
       attributes: {
         dir,
         lang: dir === 'rtl' ? 'ar' : 'en',
+        // The contenteditable had `dir`, `lang` and a class, and no accessible
+        // name at all — its label was an unassociated `<p>`. Two of these
+        // render side by side per rich-text field, so a screen-reader user
+        // heard two identical unnamed editable regions and could not tell the
+        // Arabic body from the English one. WCAG 2.2 SC 4.1.2.
+        'aria-labelledby': labelId,
+        role: 'textbox',
+        'aria-multiline': 'true',
         class:
           'min-h-40 rule-control bg-paper p-4 text-body text-ink focus:border-navy-700',
       },
@@ -94,10 +103,16 @@ export function RichTextEditor({
 
   return (
     <div className="space-y-2">
-      <p className="text-small font-medium text-ink">{label}</p>
+      <p id={labelId} className="text-small font-medium text-ink">
+        {label}
+      </p>
 
       {editor ? (
-        <div className="rule-edge flex flex-wrap divide-x divide-rule bg-paper-alt">
+        <div
+          role="toolbar"
+          aria-label={`${label} — أدوات التنسيق`}
+          className="rule-edge flex flex-wrap divide-x divide-rule bg-paper-alt"
+        >
           {button('bold', editor.isActive('bold'), () =>
             editor.chain().focus().toggleBold().run(),
           )}
