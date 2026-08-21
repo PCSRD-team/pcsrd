@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { buildSiteCsp } from './src/lib/security/csp';
 
 /**
  * Static security headers.
@@ -23,31 +24,14 @@ const securityHeaders = [
 ];
 
 /**
- * CSP for the public `(site)` routes — no nonce, deliberately.
+ * The site CSP is built in `src/lib/security/csp.ts`, next to the admin one, so
+ * the two cannot drift and both can be unit-tested. `tests/unit/csp.test.ts`
+ * asserts that neither carries `'unsafe-eval'` or a websocket in production.
  *
- * A nonce has to be read from `headers()`, which opts the whole subtree out of
- * static generation, and `(site)` is static + ISR by design
- * (`docs/spec/00-ARCHITECTURE.md` §0.5). `'unsafe-inline'` is what Next's inline
- * RSC bootstrap requires. The injection vector this would otherwise defend
- * against is already closed by the no-`dangerouslySetInnerHTML` rule and the
- * no-third-party-scripts rule.
- *
- * `(admin)` is `force-dynamic` and gets the strict nonce CSP from `src/proxy.ts`.
+ * `headers()` is evaluated once at build time, and `next build` sets NODE_ENV to
+ * `production` — so what a deployment serves is the production string.
  */
-const siteCsp = [
-  `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com`,
-  `style-src 'self' 'unsafe-inline'`,
-  `img-src 'self' data: blob: https://*.supabase.co`,
-  `font-src 'self'`,
-  `connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com`,
-  `frame-src https://challenges.cloudflare.com`,
-  `frame-ancestors 'none'`,
-  `base-uri 'self'`,
-  `form-action 'self'`,
-  `object-src 'none'`,
-  `upgrade-insecure-requests`,
-].join('; ');
+const siteCsp = buildSiteCsp(process.env.NODE_ENV !== 'production');
 
 const config: NextConfig = {
   reactStrictMode: true,

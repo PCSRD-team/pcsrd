@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES, isLocale, negotiateLocale } from '@/lib/i18n/config';
+import { buildAdminCsp } from '@/lib/security/csp';
 
 /**
  * `proxy.ts`, not `middleware.ts` — the file was renamed in Next 16 and the old
@@ -32,24 +33,12 @@ const EXCLUDED = [
   '/opensearch.xml',
 ];
 
-function buildAdminCsp(nonce: string): string {
-  return [
-    `default-src 'self'`,
-    // 'strict-dynamic' lets Next's bootstrap load its own chunks without each
-    // one needing the nonce, while still refusing anything a page injects.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    // Next inlines critical CSS; there is no nonce-based alternative for it.
-    `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data: blob: https://*.supabase.co`,
-    `font-src 'self'`,
-    `connect-src 'self' https://*.supabase.co`,
-    `frame-ancestors 'none'`,
-    `base-uri 'self'`,
-    `form-action 'self'`,
-    `object-src 'none'`,
-    `upgrade-insecure-requests`,
-  ].join('; ');
-}
+/**
+ * Built in `src/lib/security/csp.ts`, next to the site policy — see the note
+ * there. This runs per request in the Node runtime, so `NODE_ENV` is whatever
+ * the deployment sets, which on Vercel is always `production`.
+ */
+const isDev = process.env.NODE_ENV !== 'production';
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -60,7 +49,7 @@ export function proxy(request: NextRequest) {
     requestHeaders.set('x-nonce', nonce);
 
     const response = NextResponse.next({ request: { headers: requestHeaders } });
-    response.headers.set('Content-Security-Policy', buildAdminCsp(nonce));
+    response.headers.set('Content-Security-Policy', buildAdminCsp(nonce, isDev));
     return response;
   }
 
