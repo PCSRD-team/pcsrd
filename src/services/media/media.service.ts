@@ -6,6 +6,7 @@ import type { ConsentStatus, MediaKind } from '@/db/schema/enums';
 import { AppError, notFound } from '@/lib/errors';
 import type { Actor } from '../_shared/actor';
 import { writeAudit } from '../_shared/audit';
+import { one } from '../_shared/one';
 import { computeDiff } from '../_shared/diff';
 import { assertCan } from '../_shared/permissions';
 
@@ -85,7 +86,8 @@ export async function registerMedia(
   }
 
   return withActor(db, actor, async (tx) => {
-    const [row] = await tx
+    const row = one(
+      await tx
       .insert(mediaAssets)
       .values({
         kind: input.kind ?? 'image',
@@ -107,7 +109,9 @@ export async function registerMedia(
         exifStripped: input.exifStripped ?? false,
         createdBy: actor.id,
       })
-      .returning({ id: mediaAssets.id, path: mediaAssets.path });
+      .returning({ id: mediaAssets.id, path: mediaAssets.path }),
+      'media_asset',
+    );
 
     await writeAudit(tx, actor, {
       action: 'create',
@@ -156,11 +160,14 @@ export async function updateMedia(
       });
     }
 
-    const [row] = await tx
-      .update(mediaAssets)
-      .set({ ...input, altAr: altAr.trim() })
-      .where(eq(mediaAssets.id, id))
-      .returning();
+    const row = one(
+      await tx
+        .update(mediaAssets)
+        .set({ ...input, altAr: altAr.trim() })
+        .where(eq(mediaAssets.id, id))
+        .returning(),
+      'media_asset',
+    );
 
     await writeAudit(tx, actor, {
       action: 'update',

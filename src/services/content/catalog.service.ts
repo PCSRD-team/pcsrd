@@ -19,6 +19,7 @@ import type {
 import { notFound } from '@/lib/errors';
 import type { Actor } from '../_shared/actor';
 import { writeAudit } from '../_shared/audit';
+import { one } from '../_shared/one';
 import { computeDiff } from '../_shared/diff';
 import { assertCan } from '../_shared/permissions';
 import {
@@ -96,13 +97,16 @@ export async function upsertPartner(
       await assertMediaConsent(tx, [values.logoMediaId]);
     }
 
-    const [row] = existing
-      ? await tx
-          .update(partners)
-          .set({ ...values, updatedAt: new Date() })
-          .where(eq(partners.id, existing.id))
-          .returning()
-      : await tx.insert(partners).values(values).returning();
+    const row = one(
+      existing
+        ? await tx
+            .update(partners)
+            .set({ ...values, updatedAt: new Date() })
+            .where(eq(partners.id, existing.id))
+            .returning()
+        : await tx.insert(partners).values(values).returning(),
+      'partner',
+    );
 
     await writeAudit(tx, actor, {
       action: existing ? 'update' : 'create',
@@ -177,13 +181,16 @@ export async function upsertPerson(
 
     await assertPersonPublishable(tx, values);
 
-    const [row] = existing
-      ? await tx
-          .update(people)
-          .set({ ...values, updatedAt: new Date() })
-          .where(eq(people.id, existing.id))
-          .returning()
-      : await tx.insert(people).values(values).returning();
+    const row = one(
+      existing
+        ? await tx
+            .update(people)
+            .set({ ...values, updatedAt: new Date() })
+            .where(eq(people.id, existing.id))
+            .returning()
+        : await tx.insert(people).values(values).returning(),
+      'person',
+    );
 
     await writeAudit(tx, actor, {
       action: existing ? 'update' : 'create',
@@ -266,13 +273,16 @@ export async function upsertMetric(
       : [];
     if (input.id && !existing) throw notFound('metric');
 
-    const [row] = existing
-      ? await tx
-          .update(impactMetrics)
-          .set({ ...values, updatedAt: new Date() })
-          .where(eq(impactMetrics.id, existing.id))
-          .returning()
-      : await tx.insert(impactMetrics).values(values).returning();
+    const row = one(
+      existing
+        ? await tx
+            .update(impactMetrics)
+            .set({ ...values, updatedAt: new Date() })
+            .where(eq(impactMetrics.id, existing.id))
+            .returning()
+        : await tx.insert(impactMetrics).values(values).returning(),
+      'impact_metric',
+    );
 
     await writeAudit(tx, actor, {
       action: existing ? 'update' : 'create',
@@ -380,11 +390,14 @@ export async function updateOrganization(
       .limit(1);
     if (!existing) throw notFound('organization_settings');
 
-    const [row] = await tx
-      .update(organizationSettings)
-      .set({ ...input, updatedBy: actor.id, updatedAt: new Date() })
-      .where(eq(organizationSettings.id, true))
-      .returning();
+    const row = one(
+      await tx
+        .update(organizationSettings)
+        .set({ ...input, updatedBy: actor.id, updatedAt: new Date() })
+        .where(eq(organizationSettings.id, true))
+        .returning(),
+      'organization_settings',
+    );
 
     await writeAudit(tx, actor, {
       action: 'update',

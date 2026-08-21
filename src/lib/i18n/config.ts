@@ -55,7 +55,10 @@ export function negotiateLocale(acceptLanguage: string | null): Locale {
     .split(',')
     .map((part) => {
       const [tag, q] = part.trim().split(';q=');
-      return { tag: tag.trim().toLowerCase(), q: q ? Number(q) : 1 };
+      // `split` is typed as possibly-empty, and an `Accept-Language` of `",,"`
+      // really does produce empty parts. An empty tag matches no locale and
+      // falls through to the default, which is the correct outcome.
+      return { tag: (tag ?? '').trim().toLowerCase(), q: q ? Number(q) : 1 };
     })
     .sort((a, b) => b.q - a.q);
 

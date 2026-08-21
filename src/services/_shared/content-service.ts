@@ -6,6 +6,7 @@ import type { ContentStatus } from '@/db/schema/enums';
 import { AppError, notFound } from '@/lib/errors';
 import type { Actor } from './actor';
 import { writeAudit } from './audit';
+import { one } from './one';
 import { computeDiff } from './diff';
 import { assertCan } from './permissions';
 import { assertCanTransition, assertMediaConsent } from './publish';
@@ -162,11 +163,14 @@ export function createContentService<TInput extends ContentInputBase>(
           await assertMediaConsent(tx, ids);
         }
 
-        const [row] = (await tx
-          .update(table)
-          .set({ status, updatedBy: actor.id, updatedAt: new Date() })
-          .where(eq(table.id, id))
-          .returning()) as ContentRow[];
+        const row = one(
+          (await tx
+            .update(table)
+            .set({ status, updatedBy: actor.id, updatedAt: new Date() })
+            .where(eq(table.id, id))
+            .returning()) as ContentRow[],
+          entityType,
+        );
 
         await writeAudit(tx, actor, {
           action:
