@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db, Tx } from '@/db';
-import { rowsOf } from '@/db/session';
+import { readAsActor, rowsOf, withActor } from '@/db/session';
 import { formSubmissions } from '@/db/schema';
 import type { LocaleCode, SubmissionState, SubmissionType } from '@/db/schema/enums';
 import { notFound } from '@/lib/errors';
@@ -55,8 +55,17 @@ export type CreateSubmissionInput = {
   userAgent?: string | null;
 };
 
+/**
+ * What the submitter is allowed to learn about their own submission.
+ *
+ * No `id`. `form_submissions.rt_select` is
+ * `CASE WHEN is_sensitive THEN app.can_view_sensitive() ELSE app.can_publish() END`,
+ * so a public visitor can never read the row back — the id would have to be
+ * fetched by a statement that is guaranteed to return nothing. The reference is
+ * the handle a person uses to follow up, and it comes straight out of
+ * `app.submit_form`.
+ */
 export type CreatedSubmission = {
-  id: string;
   reference: string;
   isSensitive: boolean;
   purgeAfter: string;
@@ -67,8 +76,10 @@ export async function createSubmission(
   input: CreateSubmissionInput,
 ): Promise<CreatedSubmission> {
   const isSensitive = SENSITIVE[input.type];
-  // Computed only as a fallback for the return value. The authoritative
-  // deadline is set by `app.submit_form`, which owns the retention table.
+  // `app.submit_form` sets the authoritative deadline from its own retention
+  // table; this is the same policy restated for the caller, which cannot read
+  // the stored row back. `RETENTION_MONTHS` and that table must agree — the
+  // duplication is deliberate and load-bearing, not incidental.
   const purgeAfter = toDateString(addMonths(new Date(), RETENTION_MONTHS[input.type]));
 
   // DNH-8. A complainant must not be re-identifiable from what we keep, so the
@@ -107,18 +118,7 @@ export async function createSubmission(
     ) as reference
   `));
 
-  const [stored] = await db
-    .select({ id: formSubmissions.id, purgeAfter: formSubmissions.purgeAfter })
-    .from(formSubmissions)
-    .where(eq(formSubmissions.reference, row.reference))
-    .limit(1);
-
-  return {
-    id: stored?.id ?? '',
-    reference: row.reference,
-    isSensitive,
-    purgeAfter: stored?.purgeAfter ?? purgeAfter,
-  };
+  return { reference: row.reference, isSensitive, purgeAfter };
 }
 
 // ── Admin-side reads ─────────────────────────────────────────────────────
@@ -143,10 +143,15 @@ export type SubmissionDetail = {
  * Reads one submission, decrypting the payload only for an actor who is
  * permitted to see it.
  *
- * Reading a confidential complaint is itself an auditable event — the audit
- * entry is written by the caller that has a transaction, or here when reading
- * standalone, because "who opened this complaint" is a question the
- * organisation must be able to answer.
+ * Reading a confidential complaint is itself an auditable event — the read and
+ * its audit entry share one transaction, because "who opened this complaint" is
+ * a question the organisation must be able to answer, and an entry that could
+ * commit without its read would not answer it.
+ *
+ * The whole body runs inside `withActor`. `form_submissions` is FORCE ROW LEVEL
+ * SECURITY and the runtime has no BYPASSRLS, so a statement issued on the bare
+ * `db` handle is `anon`: the select matched nothing and this threw `notFound`
+ * for every submission in the inbox, including non-sensitive ones.
  */
 export async function getSubmission(
   db: Db,
@@ -155,40 +160,42 @@ export async function getSubmission(
 ): Promise<SubmissionDetail> {
   assertCan(actor, 'submissions.read');
 
-  const [row] = await db
-    .select()
-    .from(formSubmissions)
-    .where(eq(formSubmissions.id, id))
-    .limit(1);
+  return withActor(db, actor, async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, id))
+      .limit(1);
 
-  if (!row) throw notFound('submission');
-  if (row.isSensitive) assertCanViewSensitive(actor);
+    if (!row) throw notFound('submission');
+    if (row.isSensitive) assertCanViewSensitive(actor);
 
-  const payload = row.payloadEncrypted ? decryptPayload(row.payloadEncrypted) : row.payload;
+    const payload = row.payloadEncrypted ? decryptPayload(row.payloadEncrypted) : row.payload;
 
-  if (row.isSensitive) {
-    await writeAudit(db, actor, {
-      action: 'view_sensitive',
-      entityType: 'form_submission',
-      entityId: row.id,
-    });
-  }
+    if (row.isSensitive) {
+      await writeAudit(tx, actor, {
+        action: 'view_sensitive',
+        entityType: 'form_submission',
+        entityId: row.id,
+      });
+    }
 
-  return {
-    id: row.id,
-    reference: row.reference,
-    type: row.type,
-    isSensitive: row.isSensitive,
-    locale: row.locale,
-    state: row.state,
-    payload,
-    attachmentPath: row.attachmentPath,
-    internalNote: row.internalNote,
-    handledBy: row.handledBy,
-    handledAt: row.handledAt,
-    createdAt: row.createdAt,
-    purgeAfter: row.purgeAfter,
-  };
+    return {
+      id: row.id,
+      reference: row.reference,
+      type: row.type,
+      isSensitive: row.isSensitive,
+      locale: row.locale,
+      state: row.state,
+      payload,
+      attachmentPath: row.attachmentPath,
+      internalNote: row.internalNote,
+      handledBy: row.handledBy,
+      handledAt: row.handledAt,
+      createdAt: row.createdAt,
+      purgeAfter: row.purgeAfter,
+    };
+  });
 }
 
 export async function setSubmissionState(
@@ -199,16 +206,20 @@ export async function setSubmissionState(
 ): Promise<void> {
   assertCan(actor, 'submissions.handle');
 
-  const [existing] = await db
-    .select({ id: formSubmissions.id, isSensitive: formSubmissions.isSensitive })
-    .from(formSubmissions)
-    .where(eq(formSubmissions.id, id))
-    .limit(1);
+  // One transaction for the read, the check and the write. `db.transaction`
+  // opens a transaction but binds no actor, so the previous split — an unbound
+  // pre-read followed by an unbound transaction — saw nothing and audited
+  // nothing.
+  await withActor(db, actor, async (tx) => {
+    const [existing] = await tx
+      .select({ id: formSubmissions.id, isSensitive: formSubmissions.isSensitive })
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, id))
+      .limit(1);
 
-  if (!existing) throw notFound('submission');
-  if (existing.isSensitive) assertCanViewSensitive(actor);
+    if (!existing) throw notFound('submission');
+    if (existing.isSensitive) assertCanViewSensitive(actor);
 
-  await db.transaction(async (tx) => {
     await tx
       .update(formSubmissions)
       .set({
@@ -269,14 +280,16 @@ export async function purgeExpiredSubmissions(db: Db | Tx): Promise<PurgeResult>
 /** Counts unhandled submissions for the admin dashboard badge. */
 export async function countNewSubmissions(db: Db, actor: Actor): Promise<number> {
   assertCan(actor, 'submissions.read');
-  const rows = await db
-    .select({ id: formSubmissions.id })
-    .from(formSubmissions)
-    .where(
-      and(
-        eq(formSubmissions.state, 'new'),
-        actor.canViewSensitive ? undefined : eq(formSubmissions.isSensitive, false),
+  const rows = await readAsActor(db, actor, (tx) =>
+    tx
+      .select({ id: formSubmissions.id })
+      .from(formSubmissions)
+      .where(
+        and(
+          eq(formSubmissions.state, 'new'),
+          actor.canViewSensitive ? undefined : eq(formSubmissions.isSensitive, false),
+        ),
       ),
-    );
+  );
   return rows.length;
 }
