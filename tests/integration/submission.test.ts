@@ -19,6 +19,24 @@ const getDb = useTestDb();
  *  the same Drizzle instance over a different driver. */
 const db = () => getDb() as unknown as Db;
 
+/**
+ * Resolves a submission id from its reference.
+ *
+ * `createSubmission` no longer returns an id. It used to read the row back
+ * after inserting it, which works here and nowhere else: these tests connect as
+ * `postgres` and match `pcsrd_owner_all`, while a real submitter is `anon` and
+ * `form_submissions.rt_select` never admits them — so the returned id was the
+ * empty string in production and correct in the suite. The inbox looks a
+ * submission up by reference; so does this.
+ */
+const idOf = async (reference: string) => {
+  const [row] = await getDb()
+    .select({ id: formSubmissions.id })
+    .from(formSubmissions)
+    .where(eq(formSubmissions.reference, reference));
+  return row!.id;
+};
+
 const ADMIN: Actor = {
   id: '11111111-1111-1111-1111-111111111111',
   role: 'admin',
@@ -58,7 +76,7 @@ describe('createSubmission', () => {
     const [row] = await getDb()
       .select()
       .from(formSubmissions)
-      .where(eq(formSubmissions.id, created.id));
+      .where(eq(formSubmissions.id, (await idOf(created.reference))));
 
     expect(row.isSensitive).toBe(false);
     expect(row.payload).toEqual({ organizationName: 'Example', email: 'x@example.org' });
@@ -82,7 +100,7 @@ describe('createSubmission', () => {
     const [row] = await getDb()
       .select()
       .from(formSubmissions)
-      .where(eq(formSubmissions.id, created.id));
+      .where(eq(formSubmissions.id, (await idOf(created.reference))));
 
     expect(row.isSensitive).toBe(true);
     expect(row.ipHash).toBeNull();
@@ -123,7 +141,7 @@ describe('getSubmission', () => {
       payload: { category: 'corruption', description: 'the details' },
     });
 
-    const detail = await getSubmission(db(), SAFEGUARDING, created.id);
+    const detail = await getSubmission(db(), SAFEGUARDING, (await idOf(created.reference)));
     expect(detail.payload).toEqual({ category: 'corruption', description: 'the details' });
 
     const audit = await getDb().query.auditLogs.findMany();
@@ -141,7 +159,7 @@ describe('getSubmission', () => {
       payload: { category: 'corruption' },
     });
 
-    await expect(getSubmission(db(), ADMIN, created.id)).rejects.toMatchObject({
+    await expect(getSubmission(db(), ADMIN, (await idOf(created.reference)))).rejects.toMatchObject({
       code: 'forbidden',
     });
   });
@@ -153,7 +171,7 @@ describe('getSubmission', () => {
       payload: {},
     });
 
-    await expect(getSubmission(db(), EDITOR, created.id)).rejects.toBeInstanceOf(AppError);
+    await expect(getSubmission(db(), EDITOR, (await idOf(created.reference)))).rejects.toBeInstanceOf(AppError);
   });
 });
 
@@ -165,7 +183,7 @@ describe('setSubmissionState', () => {
       payload: {},
     });
 
-    await setSubmissionState(db(), ADMIN, created.id, {
+    await setSubmissionState(db(), ADMIN, (await idOf(created.reference)), {
       state: 'handled',
       internalNote: 'called the sender back',
     });
@@ -173,7 +191,7 @@ describe('setSubmissionState', () => {
     const [row] = await getDb()
       .select()
       .from(formSubmissions)
-      .where(eq(formSubmissions.id, created.id));
+      .where(eq(formSubmissions.id, (await idOf(created.reference))));
     expect(row.state).toBe('handled');
     expect(row.handledBy).toBe(ADMIN.id);
     expect(row.handledAt).toBeInstanceOf(Date);
@@ -195,7 +213,7 @@ describe('purgeExpiredSubmissions', () => {
     await getDb()
       .update(formSubmissions)
       .set({ purgeAfter: '2020-01-01' })
-      .where(eq(formSubmissions.id, expired.id));
+      .where(eq(formSubmissions.id, (await idOf(expired.reference))));
 
     const purged = await purgeExpiredSubmissions(db());
     expect(purged.deleted).toBe(1);
@@ -205,7 +223,7 @@ describe('purgeExpiredSubmissions', () => {
 
     const remaining = await getDb().select().from(formSubmissions);
     expect(remaining).toHaveLength(1);
-    expect(remaining[0].id).toBe(fresh.id);
+    expect(remaining[0].id).toBe((await idOf(fresh.reference)));
   });
 });
 

@@ -1,5 +1,5 @@
 import { auditLogs, type AuditDiff } from '@/db/schema';
-import type { Db, Tx } from '@/db';
+import type { Tx } from '@/db';
 import { type Actor, isSystem } from './actor';
 
 export type AuditAction =
@@ -20,12 +20,20 @@ export type AuditAction =
  * were later rolled back is worse than no audit log: it is a record that is
  * confidently wrong.
  *
+ * The parameter is `Tx` and not `Db | Tx` deliberately. The wider type made an
+ * unbound call typecheck, and two call sites took it — both writing the
+ * `view_sensitive` and `download_attachment` entries that exist to answer "who
+ * opened this complaint". Those statements ran with no actor bound, so
+ * `audit_logs.rt_insert` (`app.is_staff() AND actor_id = app.actor_id()`)
+ * refused them: the highest-value audit events were the ones guaranteed to be
+ * missing. Narrowing the type makes that unrepresentable rather than fixed.
+ *
  * `actorId` is null for system work — a cron job did not have a person behind
  * it, and inventing one would be a lie in the one table that exists to be
  * trusted.
  */
 export async function writeAudit(
-  tx: Db | Tx,
+  tx: Tx,
   actor: Actor,
   entry: {
     action: AuditAction;
