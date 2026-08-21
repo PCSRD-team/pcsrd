@@ -13,7 +13,21 @@
       "idx": 1,
       "version": "7",
       "when": 1787170080068,
-      "tag": "0001_triggers_rls",
+      "tag": "0001_app_runtime_layer",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787170080069,
+      "tag": "0002_runtime_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787170080070,
+      "tag": "0003_audit_log_sequence_grant",
       "breakpoints": true
     }
   ]
