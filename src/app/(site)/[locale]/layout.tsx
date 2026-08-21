@@ -5,6 +5,7 @@ import { ChannelsBar, SiteFooter, SiteHeader } from '@/components/layout/chrome'
 import { OrganizationJsonLd } from '@/components/seo/json-ld';
 import { getOrganization } from '@/db/queries/content';
 import { DIR, HTML_LANG, LOCALES, isLocale } from '@/lib/i18n/config';
+import { publicEnv } from '@/lib/env.public';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import '../../globals.css';
 
@@ -32,6 +33,13 @@ import '../../globals.css';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
+  // Without `metadataBase`, Next resolves every relative Open Graph and
+  // canonical URL against `localhost:3000` and warns once per build. A social
+  // card whose image URL points at localhost renders as a broken preview on
+  // every platform that fetches it, which for an organisation whose /verify
+  // page exists to counter impersonation is worse than having no card.
+  metadataBase: new URL(publicEnv.NEXT_PUBLIC_SITE_URL),
+
   // Every organisational fact — including the name — comes from
   // organization_settings, so the real title is set per-locale downstream.
   title: { default: 'PCSRD', template: '%s — PCSRD' },
