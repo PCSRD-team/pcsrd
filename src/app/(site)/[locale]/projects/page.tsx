@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { paginationRange } from '@/lib/utils';
 import { ProjectCard } from '@/components/content/cards';
 import { ProjectFilterPanel } from '@/components/content/project-filters';
 import { SectionHeading } from '@/components/ui/primitives';
@@ -127,26 +128,36 @@ export default async function ProjectsPage({
               {result.totalPages > 1 ? (
                 <nav aria-label={dict.a11y.pagination} className="mbs-10">
                   <ul className="flex flex-wrap items-center gap-2">
-                    {Array.from({ length: result.totalPages }, (_, i) => i + 1).map((page) => (
-                      <li key={page}>
-                        <Link
-                          href={pageHref(locale, filters, page)}
-                          aria-current={page === result.page ? 'page' : undefined}
-                          aria-label={
-                            page === result.page
-                              ? `${dict.a11y.currentPage} ${page}`
-                              : `${dict.common.page} ${page}`
-                          }
-                          className={
-                            page === result.page
-                              ? 'rule-edge border-ink bg-ink px-3 py-1 font-mono text-caption text-paper no-underline'
-                              : 'rule-edge px-3 py-1 font-mono text-caption text-ink no-underline hover:bg-paper-alt'
-                          }
+                    {paginationRange(result.page, result.totalPages).map((token, index) =>
+                      token === 'gap' ? (
+                        <li
+                          key={`gap-${index}`}
+                          aria-hidden="true"
+                          className="px-2 py-1 font-mono text-caption text-mono-muted"
                         >
-                          {page}
-                        </Link>
-                      </li>
-                    ))}
+                          …
+                        </li>
+                      ) : (
+                        <li key={token}>
+                          <Link
+                            href={pageHref(locale, filters, token)}
+                            aria-current={token === result.page ? 'page' : undefined}
+                            aria-label={
+                              token === result.page
+                                ? `${dict.a11y.currentPage} ${token}`
+                                : `${dict.common.page} ${token}`
+                            }
+                            className={
+                              token === result.page
+                                ? 'rule-edge border-ink bg-ink px-3 py-1 font-mono text-caption text-paper no-underline'
+                                : 'rule-edge px-3 py-1 font-mono text-caption text-ink no-underline hover:bg-paper-alt'
+                            }
+                          >
+                            {token}
+                          </Link>
+                        </li>
+                      ),
+                    )}
                   </ul>
                 </nav>
               ) : null}

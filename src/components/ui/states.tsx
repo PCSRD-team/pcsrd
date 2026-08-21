@@ -83,3 +83,35 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
     </ul>
   );
 }
+
+/**
+ * The whole-route loading state for a list page.
+ *
+ * `ListSkeleton` existed, was designed, and had **zero call sites** — there was
+ * no `loading.tsx` anywhere in the app, so non-negotiable #10 ("every list has
+ * designed loading, empty, error and untranslated states") was three-quarters
+ * met. Empty and untranslated were wired; loading and error were not.
+ *
+ * It went unnoticed because every route carries `revalidate = 3600`, so a
+ * developer on a warm cache never sees a slow render. On a filtered or
+ * congested connection — the audience this codebase's own comments cite — a
+ * navigation to `/ar/news` showed the *previous* page until the server
+ * answered, with nothing to indicate anything was happening.
+ *
+ * The heading block is a skeleton too, not real text: the title comes from the
+ * dictionary and `loading.tsx` cannot read `params` to know the locale, so
+ * rendering an Arabic heading on an English route would be worse than
+ * rendering none.
+ */
+export function ListPageSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="container-content section-gap" aria-busy="true">
+      <div className="mbe-8" aria-hidden="true">
+        <div className="rule-mark" />
+        <div className="mbs-4 h-8 w-2/5 bg-rule-strong" />
+        <div className="mbs-4 h-4 w-3/5 bg-rule" />
+      </div>
+      <ListSkeleton rows={rows} />
+    </div>
+  );
+}
