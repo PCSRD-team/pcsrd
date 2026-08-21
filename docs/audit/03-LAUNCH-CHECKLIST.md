@@ -62,9 +62,9 @@ Ordered so that the things that stop a launch come first.
 - [ ] **TODO** — Associate errors with `<textarea>`, `<select>` and `CheckboxGroup` via
       `aria-describedby`; add an error slot to the admin `Field`. **SC 3.3.1 / 1.3.1.**
       Today those controls announce as invalid with no reason, which is worse than silence.
-- [ ] **TODO** — `dir="ltr"` on `column.numeric` cells in the admin `DataTable`. One line;
-      it fixes the reference, slug and purge-date columns at once. Staff currently read
-      complainants' callback numbers with the digits in the wrong order.
+- [x] **DONE** — `dir="ltr"` on `column.numeric` cells in the admin `DataTable`. One
+      attribute; it fixed the reference, slug and purge-date columns at once. Staff were
+      reading complainants' callback numbers with the digits in the wrong order.
 - [ ] **TODO** — Wrap submitted payload values in `<Bidi>` on the submission detail page.
 - [ ] **TODO** — `overflow-x-auto` on the `/verify` table. It is the anti-impersonation page
       and the most likely to be opened on a small phone.
@@ -131,8 +131,8 @@ Ordered so that the things that stop a launch come first.
 - [ ] **TODO** — Delete the 28 unreferenced Server Action exports. Every `'use server'`
       export is a live POST endpoint whether or not any UI calls it, so these are unaudited,
       never-manually-tested mutation endpoints in production.
-- [ ] **TODO** — Add a `global-error.tsx`. With three root layouts and none above them,
-      there is nothing to catch a root-layout error.
+- [x] **DONE** — `global-error.tsx` added. With three root layouts and nothing above them,
+      a failure in any one of them had nothing to catch it.
 - [ ] **MY-ACTION-REQUIRED** — Smoke-test the CMS end to end after applying `0003`: sign in,
       publish a post, upload an image, open a complaint, download a CV. Every one of those
       paths was broken by a finding in this audit; each is now fixed in code, and none has
