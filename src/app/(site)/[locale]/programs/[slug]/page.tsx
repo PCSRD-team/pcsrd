@@ -8,6 +8,7 @@ import { getProgramBySlug, listPrograms } from '@/db/queries/content';
 import { listProjects } from '@/db/queries/projects';
 import { LOCALES, isLocale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { prerenderData } from '@/lib/build-time';
 
 export const revalidate = 3600;
 
@@ -19,7 +20,8 @@ export const revalidate = 3600;
 export async function generateStaticParams() {
   const params: { locale: string; slug: string }[] = [];
   for (const locale of LOCALES) {
-    for (const program of await listPrograms(locale)) {
+    const programs = await prerenderData(`programmes (${locale})`, () => listPrograms(locale), []);
+    for (const program of programs) {
       if (program.slug) params.push({ locale, slug: program.slug });
     }
   }

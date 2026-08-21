@@ -1,5 +1,6 @@
 import { listFeedPosts, getOrganization } from '@/db/queries/content';
 import { publicEnv } from '@/lib/env.public';
+import { prerenderData } from '@/lib/build-time';
 
 /**
  * The news feed. Arabic, latest twenty published posts.
@@ -23,7 +24,10 @@ function escapeXml(value: string): string {
 }
 
 export async function GET() {
-  const [posts, org] = await Promise.all([listFeedPosts(20), getOrganization('ar')]);
+  const [posts, org] = await Promise.all([
+    prerenderData('feed posts', () => listFeedPosts(20), []),
+    prerenderData('feed organisation', () => getOrganization('ar'), null),
+  ]);
 
   const items = posts
     .map((post) => {
