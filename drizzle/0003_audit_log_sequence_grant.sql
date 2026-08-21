@@ -1,0 +1,29 @@
+-- Grants the runtime role USAGE on the sequence behind `audit_logs.id`.
+--
+-- `0002_runtime_grants.sql` granted INSERT on `audit_logs` and stopped there.
+-- That is not enough. `audit_logs.id` is `bigserial`, so every insert calls
+-- `nextval('public.audit_logs_id_seq')` in the column default, and Postgres
+-- checks USAGE on the **sequence** as a separate privilege from INSERT on the
+-- table. Without it the insert fails with:
+--
+--   permission denied for sequence audit_logs_id_seq
+--
+-- Reproduced against a real Postgres as `app_runtime` before writing this.
+--
+-- The consequence is not a missing audit entry — it is a failed mutation.
+-- Every service writes its audit entry inside the same transaction as the
+-- change it records (deliberately: an unaudited mutation must not be able to
+-- commit), so the error rolls the whole transaction back. Publishing a post,
+-- saving a project, uploading media: all of them abort.
+--
+-- This is the only sequence in the schema. `audit_logs.id` is the sole
+-- `bigserial` column across all twenty-one tables; every other primary key is a
+-- `uuid` generated client-side or by `gen_random_uuid()`, neither of which
+-- touches a sequence. So this grant closes the class, not just the instance.
+--
+-- USAGE, not ALL: USAGE permits `nextval` and `currval`. It does not permit
+-- `setval`, which would let the runtime rewind the counter and overwrite
+-- existing audit rows — in an append-only table that is the one thing worth
+-- denying.
+
+grant usage on sequence public.audit_logs_id_seq to app_runtime;
