@@ -5,11 +5,77 @@ on:
     branches: [main]
   pull_request:
 
+# Placeholder values, not secrets. They exist so `next build` exercises the
+# **real** environment contract instead of being waved through.
+#
+# The build step used to set `SKIP_ENV_VALIDATION: '1'` with nothing else. That
+# makes both env modules return raw `process.env` cast to a type that promises
+# values, so `publicEnv.NEXT_PUBLIC_SITE_URL` was `undefined` and
+# `src/app/robots.ts:4` — which calls `.replace()` on it at module scope —
+# threw `TypeError: Cannot read properties of undefined (reading 'replace')`
+# during prerender. Reproduced directly before this change.
+#
+# The consequence was not a missing build artefact. `Assert no service-role key
+# in the client bundle` runs after `Build` and greps `.next/static/`, so a
+# failed build meant the one check `00-ARCHITECTURE §0.9 rule 10` calls a total
+# compromise had **never executed once**.
+#
+# Fixing that exposed the second reason the build could not run in CI: this is a
+# CMS-backed site, so prerendering `/ar/news` reads `organization_settings`, and
+# a build with no database fails at export. That is not a defect to code around
+# — a static export of database-backed pages needs the database. CI gets a real
+# Postgres below and applies this repository's own migrations to it, which also
+# means `scripts/assert-rls.ts` can run on every pull request instead of only on
+# push with production credentials.
+#
+# Every value below is shaped to satisfy the Zod schemas in `src/lib/env.ts` and
+# `src/lib/env.public.ts`: the salt clears its 32-character minimum, the
+# encryption key is 64 hex characters, the cron secret clears 16, and the
+# WhatsApp number is digits only.
+env:
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+  DIRECT_URL: postgresql://postgres:postgres@localhost:5432/postgres
+  SUPABASE_SERVICE_ROLE_KEY: ci-canary-service-role-3f8a1c94d6b27e05
+  RESEND_API_KEY: re_ci_placeholder
+  MAIL_FROM: ci@example.invalid
+  MAIL_TO_GENERAL: ci@example.invalid
+  MAIL_TO_PARTNERSHIP: ci@example.invalid
+  MAIL_TO_HR: ci@example.invalid
+  MAIL_TO_SENSITIVE: ci@example.invalid
+  TURNSTILE_SECRET_KEY: ci-placeholder-turnstile-secret
+  UPSTASH_REDIS_REST_URL: https://placeholder.upstash.invalid
+  UPSTASH_REDIS_REST_TOKEN: ci-placeholder-upstash-token
+  IP_HASH_SALT: ci-placeholder-ip-hash-salt-at-least-32-chars
+  SUBMISSION_ENC_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+  SUBMISSION_ENC_KEY_ID: ci
+  CRON_SECRET: ci-placeholder-cron-secret
+  NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.invalid
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+  NEXT_PUBLIC_SITE_URL: https://example.invalid
+  NEXT_PUBLIC_DEFAULT_LOCALE: ar
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+  NEXT_PUBLIC_WHATSAPP_NUMBER: '970000000000'
+
 jobs:
   # Everything that can run without a single secret. This is deliberately the
   # bigger job — see docs/spec/06-BUILD-PLAN.md §10.
   verify:
     runs-on: ubuntu-latest
+
+    # Postgres 17 to match Supabase. The build needs data-shaped queries to
+    # succeed; it does not need data, so an empty schema is enough.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,7 +88,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Lint (incl. logical-properties rule)
+      - name: Lint (incl. logical-properties and unknown-class rules)
         run: npm run lint
 
       - name: Lint CSS
@@ -36,25 +102,68 @@ jobs:
 
       - name: Drizzle schema/migration consistency
         run: npx drizzle-kit check
-        env:
-          # drizzle-kit check reads migration files, not the database, but the
-          # config still parses the URL.
-          DIRECT_URL: postgresql://placeholder:placeholder@localhost:5432/postgres
+
+      # Every entry in `drizzle/meta/_journal.json` must name a file that
+      # exists. `drizzle-kit check` validates the snapshot chain and not this,
+      # which is how the journal came to name `0001_triggers_rls` (the file is
+      # `0001_app_runtime_layer.sql`) and omit `0002` entirely — leaving no
+      # working path from an empty database to this schema.
+      - name: Migration journal resolves to real files
+        run: |
+          node -e '
+            const j = require("./drizzle/meta/_journal.json");
+            const fs = require("fs");
+            let bad = 0;
+            for (const e of j.entries) {
+              const p = "drizzle/" + e.tag + ".sql";
+              if (!fs.existsSync(p)) { console.error("::error::journal entry " + e.idx + " names a missing file: " + p); bad++; }
+            }
+            if (bad) process.exit(1);
+            console.log("OK — all " + j.entries.length + " journal entries resolve");
+          '
+
+      # Applied in filename order with psql rather than through drizzle-kit, so
+      # this step tests the SQL itself and stays independent of the journal —
+      # which the previous step has already checked separately.
+      - name: Apply migrations to the CI database
+        run: |
+          for f in drizzle/*.sql; do
+            echo "  applying $f"
+            psql "$DIRECT_URL" -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+          echo "OK — all migrations applied to an empty Postgres 17"
+
+      # Runs here, on every pull request, against the database built from this
+      # branch's own migrations. The `db-verify` job below runs the same script
+      # against production on push to main.
+      - name: Database authorisation layer (CI database)
+        run: npx tsx scripts/assert-rls.ts
 
       - name: Build
         run: npm run build
-        env:
-          SKIP_ENV_VALIDATION: '1'
 
       # 00-ARCHITECTURE §0.9 rule 10 — a service-role key in the client bundle
       # is a total compromise, so the build fails rather than warns.
+      #
+      # This greps for the **canary value** injected above, not just for the
+      # words "service_role". Grepping for the variable name proves only that
+      # the name is absent; grepping for the value proves the value did not
+      # travel. Both are checked.
       - name: Assert no service-role key in the client bundle
         run: |
-          if grep -rl "SUPABASE_SERVICE_ROLE\|service_role" .next/static/ 2>/dev/null; then
-            echo "::error::Service role key leaked into the client bundle"
+          if [ ! -d .next/static ]; then
+            echo "::error::.next/static does not exist — the build did not produce a client bundle, so this check proves nothing"
             exit 1
           fi
-          echo "OK — no service_role reference in .next/static/"
+          if grep -rl "ci-canary-service-role-3f8a1c94d6b27e05" .next/static/ 2>/dev/null; then
+            echo "::error::The service-role key VALUE reached the client bundle"
+            exit 1
+          fi
+          if grep -rl "SUPABASE_SERVICE_ROLE\|service_role" .next/static/ 2>/dev/null; then
+            echo "::error::A service-role reference reached the client bundle"
+            exit 1
+          fi
+          echo "OK — neither the service-role key name nor its value appears in .next/static/"
 
   # Needs real credentials, so it only runs on push to main.
   db-verify:
@@ -69,9 +178,15 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # 01-DATABASE §6 — every table must have RLS on and zero policies.
-      # If this ever returns a row, the tripwire is off on that table.
-      - name: RLS assertion
+      # Asserts the authorisation layer the live database actually carries.
+      #
+      # This step previously ran `scripts/assert-rls.ts`, which does not exist
+      # in the repository — so the job failed on every push to main, and a
+      # permanently red pipeline is a pipeline nobody reads. It also asserted
+      # "RLS on and **zero policies**" per `01-DATABASE §6`, which `CLAUDE.md`
+      # records as out of date: the live database carries 85 policies on
+      # purpose. The check was wrong in both directions at once.
+      - name: Database authorisation layer
         env:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
         run: npx tsx scripts/assert-rls.ts

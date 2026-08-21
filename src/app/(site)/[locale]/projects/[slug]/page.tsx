@@ -11,11 +11,12 @@ import { publicEnv } from '@/lib/env.public';
 import { formatPeriod, storageUrl } from '@/lib/format';
 import { LOCALES, isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { prerenderData } from '@/lib/build-time';
 
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const slugs = await listProjectSlugs();
+  const slugs = await prerenderData('project slugs', () => listProjectSlugs(), []);
   return LOCALES.flatMap((locale) =>
     slugs.map((row) => ({ locale, slug: locale === 'ar' ? row.slugAr : row.slugEn })),
   );

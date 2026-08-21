@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { listPrograms, listPublications } from '@/db/queries/content';
 import { listProjectSlugs } from '@/db/queries/projects';
 import { publicEnv } from '@/lib/env.public';
+import { prerenderData } from '@/lib/build-time';
 import { LOCALES } from '@/lib/i18n/config';
 
 /**
@@ -51,9 +52,9 @@ function entry(path: string, lastModified?: Date): MetadataRoute.Sitemap[number]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [programs, projects, publications] = await Promise.all([
-    listPrograms('ar'),
-    listProjectSlugs(),
-    listPublications('ar'),
+    prerenderData('sitemap programmes', () => listPrograms('ar'), []),
+    prerenderData('sitemap projects', () => listProjectSlugs(), []),
+    prerenderData('sitemap publications', () => listPublications('ar'), []),
   ]);
 
   return [
