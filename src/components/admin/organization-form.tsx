@@ -35,6 +35,7 @@ export function OrganizationForm({ values }: { values: Values }) {
 
   const errors = state && !state.ok ? state.fieldErrors : undefined;
   const firstError = (name: string) => errors?.[name]?.[0];
+  const formValues = state && !state.ok ? (state.values ?? values) : values;
 
   const text = (
     name: string,
@@ -53,7 +54,7 @@ export function OrganizationForm({ values }: { values: Values }) {
         name={name}
         type={options.type ?? 'text'}
         required={options.required}
-        defaultValue={str(values, name)}
+        defaultValue={str(formValues, name)}
         dir={options.dir}
         aria-invalid={firstError(name) ? true : undefined}
         aria-describedby={fieldDescribedBy(name, options.hint, firstError(name))}
@@ -68,7 +69,7 @@ export function OrganizationForm({ values }: { values: Values }) {
         id={name}
         name={name}
         rows={4}
-        defaultValue={str(values, name)}
+        defaultValue={str(formValues, name)}
         aria-invalid={firstError(name) ? true : undefined}
         aria-describedby={fieldDescribedBy(name, hint, firstError(name))}
         className={inputClass}
@@ -82,7 +83,7 @@ export function OrganizationForm({ values }: { values: Values }) {
         id={name}
         name={name}
         rows={8}
-        defaultValue={json(values, name)}
+        defaultValue={json(formValues, name)}
         dir="ltr"
         aria-invalid={firstError(name) ? true : undefined}
         aria-describedby={fieldDescribedBy(name, hint, firstError(name))}
@@ -92,7 +93,7 @@ export function OrganizationForm({ values }: { values: Values }) {
   );
 
   return (
-    <form action={action} className="space-y-10">
+    <form action={action} className="space-y-10" key={state && !state.ok ? state.formKey : 'persisted'}>
       {/* Always in the DOM, contents swapped — a live region that appears at the
           same moment as its content is frequently never announced. */}
       <div aria-live="polite" role="status">
@@ -126,12 +127,18 @@ export function OrganizationForm({ values }: { values: Values }) {
           {text('shortNameAr', 'الاسم المختصر (عربي)', { required: true })}
           {text('shortNameEn', 'الاسم المختصر (إنجليزي)', { required: true, dir: 'ltr' })}
           {text('acronym', 'الاختصار', { required: true, dir: 'ltr' })}
+          {area('shortDescriptionAr', 'وصف مختصر للمؤسسة (عربي)', 'يستخدم لاحقاً في التذييل وشريط التعريف.')}
+          {area('shortDescriptionEn', 'Short organization description (English)', 'Used later in the footer and top header bar.')}
           {text('foundedYear', 'سنة التأسيس', { type: 'number' })}
           {text('licenseNumber', 'رقم الترخيص', { required: true, dir: 'ltr' })}
           {text('licenseAuthorityAr', 'جهة الترخيص (عربي)')}
           {text('licenseAuthorityEn', 'جهة الترخيص (إنجليزي)', { dir: 'ltr' })}
           {text('legalFormAr', 'الشكل القانوني (عربي)')}
           {text('legalFormEn', 'الشكل القانوني (إنجليزي)', { dir: 'ltr' })}
+          {text('logoPrimaryId', 'معرّف الشعار الأساسي', { dir: 'ltr', hint: 'معرّف ملف من مكتبة الوسائط.' })}
+          {text('footerLogoId', 'معرّف شعار التذييل', { dir: 'ltr', hint: 'يستخدم في تذييل الموقع، وإن ترك فارغاً يستخدم الشعار الأساسي.' })}
+          {text('logoMonoId', 'معرّف الشعار أحادي اللون', { dir: 'ltr', hint: 'اختياري للتصاميم الداكنة أو المختصرة.' })}
+          {text('defaultOgId', 'معرّف صورة المشاركة الافتراضية', { dir: 'ltr', hint: 'تستخدمها الصفحات التي لا تملك صورة خاصة.' })}
         </div>
       </section>
 
@@ -158,6 +165,7 @@ export function OrganizationForm({ values }: { values: Values }) {
             hint: 'أرقام فقط دون علامة +، لأنّه مسار wa.me.',
           })}
           {text('email', 'البريد الإلكتروني', { dir: 'ltr', type: 'email' })}
+          {text('secondaryEmail', 'بريد إلكتروني إضافي', { dir: 'ltr', type: 'email' })}
           {text('officeHoursAr', 'ساعات العمل (عربي)')}
           {text('officeHoursEn', 'ساعات العمل (إنجليزي)', { dir: 'ltr' })}
           {text('addressAr', 'العنوان (عربي)')}
@@ -167,7 +175,52 @@ export function OrganizationForm({ values }: { values: Values }) {
           name="addressIsPublic"
           label="إظهار العنوان على الموقع"
           hint="اترك الخيار مغلقاً إن كان إظهار موقع المكتب يعرّض أحداً للخطر."
-          defaultChecked={Boolean(values.addressIsPublic)}
+          defaultChecked={Boolean(formValues.addressIsPublic)}
+        />
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="border-be-2 border-ink pbe-2 text-h3 font-semibold text-ink">
+          Social Media
+        </h2>
+        <p className="text-small text-ink-55">
+          Keep social and official-channel links here as one source of truth for the future top bar and footer.
+        </p>
+        <div className="space-y-6">
+          {jsonArea(
+            'socials',
+            'حسابات التواصل الاجتماعي',
+            '[{"platform": "facebook", "url": "https://...", "is_official": true}]',
+          )}
+          {jsonArea(
+            'officialChannels',
+            'القنوات الرسمية والتحقق',
+            '[{"platform": "...", "handle": "...", "url": "https://...", "is_official": true, "note_ar": null, "note_en": null}]',
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <h2 className="border-be-2 border-ink pbe-2 text-h3 font-semibold text-ink">
+          Footer CTA
+        </h2>
+        <p className="text-small text-ink-55">
+          Content for the future footer call-to-action. Core footer navigation links remain route-driven in code.
+        </p>
+        <div className="grid gap-6 md:grid-cols-2">
+          {text('footerCtaTitleAr', 'عنوان الدعوة إلى الإجراء (عربي)')}
+          {text('footerCtaTitleEn', 'CTA title (English)', { dir: 'ltr' })}
+          {area('footerCtaDescriptionAr', 'وصف الدعوة إلى الإجراء (عربي)')}
+          {area('footerCtaDescriptionEn', 'CTA description (English)')}
+          {text('footerCtaButtonLabelAr', 'نص الزر (عربي)')}
+          {text('footerCtaButtonLabelEn', 'Button label (English)', { dir: 'ltr' })}
+          {text('footerCtaUrl', 'رابط الزر', { dir: 'ltr', hint: 'رابط داخلي مثل /contact أو رابط كامل.' })}
+        </div>
+        <CheckboxField
+          name="footerCtaEnabled"
+          label="تفعيل دعوة التذييل"
+          hint="عند إيقافها لن تعرض الواجهة المستقبلية هذه الدعوة."
+          defaultChecked={Boolean(formValues.footerCtaEnabled)}
         />
       </section>
 
@@ -195,16 +248,7 @@ export function OrganizationForm({ values }: { values: Values }) {
             'الأهداف الاستراتيجية',
             '[{"text_ar": "...", "text_en": "..."}]',
           )}
-          {jsonArea(
-            'socials',
-            'حسابات التواصل',
-            '[{"platform": "facebook", "url": "https://...", "is_official": true}]',
-          )}
-          {jsonArea(
-            'officialChannels',
-            'القنوات الرسمية',
-            '[{"platform": "...", "handle": "...", "url": "https://...", "is_official": true, "note_ar": null, "note_en": null}] — is_official: false يعني حساب منتحل موثّق، وهذا هو الغرض من صفحة التحقّق.',
-          )}
+
         </div>
       </section>
 

@@ -1,10 +1,9 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { signOut } from '@/actions/admin/auth';
 import type { UserRole } from '@/db/schema/enums';
-import { cn } from '@/lib/utils';
 import type { Actor } from '@/services/_shared/actor';
 import { can } from '@/services/_shared/permissions';
+import { AdminNav } from './nav';
 
 /**
  * The admin shell.
@@ -18,7 +17,7 @@ import { can } from '@/services/_shared/permissions';
  * this person can do. The actions guard again regardless.
  */
 
-type NavItem = {
+export type NavItem = {
   href: string;
   label: string;
   /** Rendered only when the actor holds this capability. */
@@ -27,7 +26,7 @@ type NavItem = {
   badge?: number;
 };
 
-type NavGroup = { title: string; items: NavItem[] };
+export type NavGroup = { title: string; items: NavItem[] };
 
 export function buildNav(
   actor: Actor,
@@ -112,10 +111,12 @@ export function AdminShell({
   actor,
   nav,
   children,
+  footer,
 }: {
-  actor: Actor & { fullName?: string };
+  actor: Actor;
   nav: NavGroup[];
   children: ReactNode;
+  footer?: ReactNode;
 }) {
   return (
     // Column below `md:`, row above it. The shell had no responsive treatment
@@ -148,51 +149,17 @@ export function AdminShell({
           <AdminNav nav={nav} />
         </div>
 
-        <form action={signOut} className="border-bs border-rule p-4">
-          <button type="submit" className="text-small text-ink-55 hover:text-gold-700">
-            تسجيل الخروج
-          </button>
-        </form>
+        {footer ?? (
+          <form action={signOut} className="border-bs border-rule p-4">
+            <button type="submit" className="text-small text-ink-55 hover:text-gold-700">
+              تسجيل الخروج
+            </button>
+          </form>
+        )}
       </aside>
 
       <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
     </div>
-  );
-}
-
-function AdminNav({ nav }: { nav: NavGroup[] }) {
-  return (
-    <>
-      <nav aria-label="التنقّل الرئيسي" className="p-4">
-          {nav.map((group) => (
-            <div key={group.title} className="mbe-6">
-              <p className="eyebrow mbe-2">{group.title}</p>
-              <ul className="space-y-1">
-                {group.items.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="flex items-center justify-between px-2 py-1.5 text-small text-ink no-underline hover:bg-paper-alt"
-                    >
-                      <span>{item.label}</span>
-                      {item.badge ? (
-                        <span
-                          className={cn(
-                            'rounded-full px-2 py-0.5 font-mono text-eyebrow',
-                            'bg-gold-050 text-gold-700',
-                          )}
-                        >
-                          {item.badge}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-      </nav>
-    </>
   );
 }
 

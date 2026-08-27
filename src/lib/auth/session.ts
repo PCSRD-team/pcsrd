@@ -33,6 +33,7 @@ export const getCurrentProfile = cache(async (): Promise<Actor | null> => {
     tx
       .select({
         id: profiles.id,
+        fullName: profiles.fullName,
         role: profiles.role,
         canViewSensitive: profiles.canViewSensitive,
         isActive: profiles.isActive,
@@ -46,16 +47,4 @@ export const getCurrentProfile = cache(async (): Promise<Actor | null> => {
 });
 
 /** Profile plus the display fields the admin chrome needs. */
-export const getCurrentProfileDetail = cache(async () => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const [profile] = await readAsSelf(db, user.id, (tx) =>
-    tx.select().from(profiles).where(eq(profiles.id, user.id)).limit(1),
-  );
-
-  return profile ?? null;
-});
+export const getCurrentProfileDetail = getCurrentProfile;

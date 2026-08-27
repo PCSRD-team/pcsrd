@@ -53,6 +53,11 @@ export const organizationSettingsRelations = relations(
       references: [mediaAssets.id],
       relationName: 'org_logo_primary',
     }),
+    footerLogo: one(mediaAssets, {
+      fields: [organizationSettings.footerLogoId],
+      references: [mediaAssets.id],
+      relationName: 'org_footer_logo',
+    }),
     logoMono: one(mediaAssets, {
       fields: [organizationSettings.logoMonoId],
       references: [mediaAssets.id],
