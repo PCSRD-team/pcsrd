@@ -1,5 +1,6 @@
 'use server';
 
+import { refresh, revalidatePath } from 'next/cache';
 import { db } from '@/db';
 import { requireActor } from '@/lib/auth/guard';
 import { revalidateEntity } from '@/lib/cache/revalidate';
@@ -9,7 +10,10 @@ import { fieldErrorsFrom } from '@/lib/validation/common';
 import { parseAdminForm, type FormShape } from '@/lib/validation/form-data';
 import { updateOrganization } from '@/services/content/catalog.service';
 
-export type OrganizationResult = ActionResult<null>;
+export type OrganizationResult = ActionResult<null> & {
+  values?: Record<string, unknown>;
+  formKey?: string;
+};
 
 /**
  * The organisation settings form.
@@ -36,7 +40,6 @@ const SHAPE: FormShape = {
     'socials',
     'officialChannels',
   ],
-  booleans: ['addressIsPublic'],
   nullable: [
     'licenseAuthorityAr',
     'licenseAuthorityEn',
@@ -49,14 +52,26 @@ const SHAPE: FormShape = {
     'primaryPhone',
     'whatsappNumber',
     'email',
+    'secondaryEmail',
     'addressAr',
     'addressEn',
     'officeHoursAr',
     'officeHoursEn',
     'logoPrimaryId',
+    'footerLogoId',
     'logoMonoId',
     'defaultOgId',
+    'shortDescriptionAr',
+    'shortDescriptionEn',
+    'footerCtaTitleAr',
+    'footerCtaTitleEn',
+    'footerCtaDescriptionAr',
+    'footerCtaDescriptionEn',
+    'footerCtaButtonLabelAr',
+    'footerCtaButtonLabelEn',
+    'footerCtaUrl',
   ],
+  booleans: ['addressIsPublic', 'footerCtaEnabled'],
 };
 
 export async function saveOrganizationForm(
@@ -79,7 +94,11 @@ export async function saveOrganizationForm(
 
     const parsed = organizationSchema.safeParse(raw);
     if (!parsed.success) {
-      return err('validation', 'errors.validation', fieldErrorsFrom(parsed.error));
+      return {
+        ...err('validation', 'errors.validation', fieldErrorsFrom(parsed.error)),
+        values: raw,
+        formKey: String(Date.now()),
+      };
     }
 
     await updateOrganization(db, actor, parsed.data);
@@ -87,6 +106,8 @@ export async function saveOrganizationForm(
     // Every page renders the organisation's name, channels and licence number
     // through the chrome, so this tag is on more or less everything.
     revalidateEntity('orgSettings');
+    revalidatePath('/admin/organization');
+    refresh();
     return ok(null, 'admin.saved');
   });
 }

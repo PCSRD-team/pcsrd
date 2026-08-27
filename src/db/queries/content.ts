@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
 import {
   impactMetrics,
@@ -18,6 +19,11 @@ import type { PostCategory, VacancyType } from '@/db/schema/enums';
 import { TAGS } from '@/lib/cache/tags';
 import type { Locale } from '@/lib/i18n/config';
 import { cached } from './_cache';
+import {
+  developmentOrganization,
+  shouldUseDevelopmentDatabaseFallback,
+  shouldUseDevelopmentPlaceholderData,
+} from './_dev-fallback';
 import { hasLocale, pickCol, slugCol } from './_localize';
 
 /**
@@ -34,15 +40,83 @@ const hero = {
   heroPath: mediaAssets.path,
   heroBlur: mediaAssets.blurDataUrl,
 };
+const footerLogoMedia = alias(mediaAssets, 'footer_logo_media');
 
 // ── Organisation ─────────────────────────────────────────────────────────
 
 export async function _getOrganization(locale: Locale) {
-  const [row] = await db
-    .select()
-    .from(organizationSettings)
-    .where(eq(organizationSettings.id, true))
-    .limit(1);
+  if (shouldUseDevelopmentPlaceholderData()) return developmentOrganization(locale);
+
+  let row;
+  try {
+    [row] = await db
+      .select({
+        id: organizationSettings.id,
+        legalNameAr: organizationSettings.legalNameAr,
+        legalNameEn: organizationSettings.legalNameEn,
+        shortNameAr: organizationSettings.shortNameAr,
+        shortNameEn: organizationSettings.shortNameEn,
+        acronym: organizationSettings.acronym,
+        shortDescriptionAr: organizationSettings.shortDescriptionAr,
+        shortDescriptionEn: organizationSettings.shortDescriptionEn,
+        alternateNames: organizationSettings.alternateNames,
+        foundedYear: organizationSettings.foundedYear,
+        licenseNumber: organizationSettings.licenseNumber,
+        licenseAuthorityAr: organizationSettings.licenseAuthorityAr,
+        licenseAuthorityEn: organizationSettings.licenseAuthorityEn,
+        legalFormAr: organizationSettings.legalFormAr,
+        legalFormEn: organizationSettings.legalFormEn,
+        visionAr: organizationSettings.visionAr,
+        visionEn: organizationSettings.visionEn,
+        missionAr: organizationSettings.missionAr,
+        missionEn: organizationSettings.missionEn,
+        coreValues: organizationSettings.coreValues,
+        principles: organizationSettings.principles,
+        strategicObjectives: organizationSettings.strategicObjectives,
+        primaryPhone: organizationSettings.primaryPhone,
+        additionalPhones: organizationSettings.additionalPhones,
+        whatsappNumber: organizationSettings.whatsappNumber,
+        email: organizationSettings.email,
+        secondaryEmail: organizationSettings.secondaryEmail,
+        addressAr: organizationSettings.addressAr,
+        addressEn: organizationSettings.addressEn,
+        addressIsPublic: organizationSettings.addressIsPublic,
+        officeHoursAr: organizationSettings.officeHoursAr,
+        officeHoursEn: organizationSettings.officeHoursEn,
+        socials: organizationSettings.socials,
+        officialChannels: organizationSettings.officialChannels,
+        footerCtaTitleAr: organizationSettings.footerCtaTitleAr,
+        footerCtaTitleEn: organizationSettings.footerCtaTitleEn,
+        footerCtaDescriptionAr: organizationSettings.footerCtaDescriptionAr,
+        footerCtaDescriptionEn: organizationSettings.footerCtaDescriptionEn,
+        footerCtaButtonLabelAr: organizationSettings.footerCtaButtonLabelAr,
+        footerCtaButtonLabelEn: organizationSettings.footerCtaButtonLabelEn,
+        footerCtaUrl: organizationSettings.footerCtaUrl,
+        footerCtaEnabled: organizationSettings.footerCtaEnabled,
+        footerCtaFieldsAvailable: sql<boolean>`true`,
+        logoPrimaryId: organizationSettings.logoPrimaryId,
+        footerLogoId: organizationSettings.footerLogoId,
+        logoMonoId: organizationSettings.logoMonoId,
+        defaultOgId: organizationSettings.defaultOgId,
+        logoPrimaryBucket: mediaAssets.bucket,
+        logoPrimaryPath: mediaAssets.path,
+        logoPrimaryAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+        footerLogoBucket: footerLogoMedia.bucket,
+        footerLogoPath: footerLogoMedia.path,
+        footerLogoAltAr: footerLogoMedia.altAr,
+        footerLogoAltEn: footerLogoMedia.altEn,
+        updatedAt: organizationSettings.updatedAt,
+        updatedBy: organizationSettings.updatedBy,
+      })
+      .from(organizationSettings)
+      .leftJoin(mediaAssets, eq(mediaAssets.id, organizationSettings.logoPrimaryId))
+      .leftJoin(footerLogoMedia, eq(footerLogoMedia.id, organizationSettings.footerLogoId))
+      .where(eq(organizationSettings.id, true))
+      .limit(1);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) return developmentOrganization(locale);
+    throw error;
+  }
   if (!row) return null;
 
   const en = locale === 'en';
@@ -50,6 +124,9 @@ export async function _getOrganization(locale: Locale) {
     ...row,
     legalName: en ? row.legalNameEn : row.legalNameAr,
     shortName: en ? row.shortNameEn : row.shortNameAr,
+    shortDescription: en
+      ? (row.shortDescriptionEn ?? row.shortDescriptionAr)
+      : row.shortDescriptionAr,
     vision: en ? (row.visionEn ?? row.visionAr) : row.visionAr,
     mission: en ? (row.missionEn ?? row.missionAr) : row.missionAr,
     licenseAuthority: en
@@ -57,6 +134,23 @@ export async function _getOrganization(locale: Locale) {
       : row.licenseAuthorityAr,
     legalForm: en ? (row.legalFormEn ?? row.legalFormAr) : row.legalFormAr,
     officeHours: en ? (row.officeHoursEn ?? row.officeHoursAr) : row.officeHoursAr,
+    footerCta: {
+      enabled: row.footerCtaEnabled,
+      fieldsAvailable: row.footerCtaFieldsAvailable,
+      title: en ? (row.footerCtaTitleEn ?? row.footerCtaTitleAr) : row.footerCtaTitleAr,
+      description: en
+        ? (row.footerCtaDescriptionEn ?? row.footerCtaDescriptionAr)
+        : row.footerCtaDescriptionAr,
+      buttonLabel: en
+        ? (row.footerCtaButtonLabelEn ?? row.footerCtaButtonLabelAr)
+        : row.footerCtaButtonLabelAr,
+      url: row.footerCtaUrl,
+    },
+    footerLogoBucket: row.footerLogoBucket ?? row.logoPrimaryBucket,
+    footerLogoPath: row.footerLogoPath ?? row.logoPrimaryPath,
+    footerLogoAlt: en
+      ? (row.footerLogoAltEn ?? row.footerLogoAltAr ?? row.logoPrimaryAlt)
+      : (row.footerLogoAltAr ?? row.logoPrimaryAlt),
     // DNH-6: the address is rendered only when the organisation opted in.
     address: row.addressIsPublic ? (en ? (row.addressEn ?? row.addressAr) : row.addressAr) : null,
   };
@@ -69,22 +163,29 @@ export const getOrganization = cached(_getOrganization, ['org:settings'], {
 // ── Programmes ───────────────────────────────────────────────────────────
 
 export async function _listPrograms(locale: Locale) {
-  return db
-    .select({
-      id: programs.id,
-      key: programs.key,
-      slug: slugCol(programs.slugAr, programs.slugEn, locale),
-      title: pickCol(programs.titleAr, programs.titleEn, locale),
-      tagline: pickCol(programs.taglineAr, programs.taglineEn, locale),
-      accentToken: programs.accentToken,
-      targetGroups: programs.targetGroups,
-      ...hero,
-      heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-    })
-    .from(programs)
-    .leftJoin(mediaAssets, eq(mediaAssets.id, programs.heroMediaId))
-    .where(eq(programs.status, 'published'))
-    .orderBy(asc(programs.displayOrder));
+  if (shouldUseDevelopmentPlaceholderData()) return [];
+
+  try {
+    return await db
+      .select({
+        id: programs.id,
+        key: programs.key,
+        slug: slugCol(programs.slugAr, programs.slugEn, locale),
+        title: pickCol(programs.titleAr, programs.titleEn, locale),
+        tagline: pickCol(programs.taglineAr, programs.taglineEn, locale),
+        accentToken: programs.accentToken,
+        targetGroups: programs.targetGroups,
+        ...hero,
+        heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+      })
+      .from(programs)
+      .leftJoin(mediaAssets, eq(mediaAssets.id, programs.heroMediaId))
+      .where(eq(programs.status, 'published'))
+      .orderBy(asc(programs.displayOrder));
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) return [];
+    throw error;
+  }
 }
 
 export const listPrograms = cached(_listPrograms, ['programs:list'], {
@@ -160,31 +261,44 @@ export async function _listPosts(
 ) {
   const page = Math.max(1, options.page ?? 1);
   const perPage = options.limit ?? POSTS_PER_PAGE;
+  if (shouldUseDevelopmentPlaceholderData()) {
+    return { items: [], total: 0, page, perPage, totalPages: 1 };
+  }
+
   const where = and(
     eq(posts.status, 'published'),
     options.category ? eq(posts.category, options.category) : undefined,
   );
 
-  const [rows, counted] = await Promise.all([
-    db
-      .select({
-        id: posts.id,
-        slug: slugCol(posts.slugAr, posts.slugEn, locale),
-        category: posts.category,
-        title: pickCol(posts.titleAr, posts.titleEn, locale),
-        excerpt: pickCol(posts.excerptAr, posts.excerptEn, locale),
-        publishedAt: posts.publishedAt,
-        ...hero,
-        heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-      })
-      .from(posts)
-      .leftJoin(mediaAssets, eq(mediaAssets.id, posts.heroMediaId))
-      .where(where)
-      .orderBy(desc(posts.publishedAt))
-      .limit(perPage)
-      .offset((page - 1) * perPage),
-    db.select({ count: sql<number>`count(*)::int` }).from(posts).where(where),
-  ]);
+  let rows;
+  let counted;
+  try {
+    [rows, counted] = await Promise.all([
+      db
+        .select({
+          id: posts.id,
+          slug: slugCol(posts.slugAr, posts.slugEn, locale),
+          category: posts.category,
+          title: pickCol(posts.titleAr, posts.titleEn, locale),
+          excerpt: pickCol(posts.excerptAr, posts.excerptEn, locale),
+          publishedAt: posts.publishedAt,
+          ...hero,
+          heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+        })
+        .from(posts)
+        .leftJoin(mediaAssets, eq(mediaAssets.id, posts.heroMediaId))
+        .where(where)
+        .orderBy(desc(posts.publishedAt))
+        .limit(perPage)
+        .offset((page - 1) * perPage),
+      db.select({ count: sql<number>`count(*)::int` }).from(posts).where(where),
+    ]);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) {
+      return { items: [], total: 0, page, perPage, totalPages: 1 };
+    }
+    throw error;
+  }
 
   const total = counted[0]?.count ?? 0;
   return { items: rows, total, page, perPage, totalPages: Math.max(1, Math.ceil(total / perPage)) };
@@ -382,26 +496,33 @@ export const listPublications = cached(_listPublications, ['publications:list'],
 // ── Partners ─────────────────────────────────────────────────────────────
 
 export async function _listPartners(locale: Locale) {
-  return db
-    .select({
-      id: partners.id,
-      name: pickCol(partners.nameAr, partners.nameEn, locale),
-      type: partners.type,
-      membershipLevel: partners.membershipLevel,
-      sector: pickCol(partners.sectorAr, partners.sectorEn, locale),
-      description: pickCol(partners.descriptionAr, partners.descriptionEn, locale),
-      website: partners.website,
-      isFeatured: partners.isFeatured,
-      // The logo gate lives in the query, not the component (02-API §4.5).
-      logoPath: sql<
-        string | null
-      >`case when ${partners.logoPermission} = 'granted' then ${mediaAssets.path} else null end`,
-      logoAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-    })
-    .from(partners)
-    .leftJoin(mediaAssets, eq(mediaAssets.id, partners.logoMediaId))
-    .where(eq(partners.status, 'published'))
-    .orderBy(asc(partners.displayOrder));
+  if (shouldUseDevelopmentPlaceholderData()) return [];
+
+  try {
+    return await db
+      .select({
+        id: partners.id,
+        name: pickCol(partners.nameAr, partners.nameEn, locale),
+        type: partners.type,
+        membershipLevel: partners.membershipLevel,
+        sector: pickCol(partners.sectorAr, partners.sectorEn, locale),
+        description: pickCol(partners.descriptionAr, partners.descriptionEn, locale),
+        website: partners.website,
+        isFeatured: partners.isFeatured,
+        // The logo gate lives in the query, not the component (02-API §4.5).
+        logoPath: sql<
+          string | null
+        >`case when ${partners.logoPermission} = 'granted' then ${mediaAssets.path} else null end`,
+        logoAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+      })
+      .from(partners)
+      .leftJoin(mediaAssets, eq(mediaAssets.id, partners.logoMediaId))
+      .where(eq(partners.status, 'published'))
+      .orderBy(asc(partners.displayOrder));
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) return [];
+    throw error;
+  }
 }
 
 export const listPartners = cached(_listPartners, ['partners:list'], {
@@ -414,30 +535,37 @@ export async function _listMetrics(
   locale: Locale,
   options: { status?: 'verified' | 'target'; programKey?: string; featuredOnly?: boolean } = {},
 ) {
-  return db
-    .select({
-      id: impactMetrics.id,
-      label: pickCol(impactMetrics.labelAr, impactMetrics.labelEn, locale),
-      value: impactMetrics.value,
-      unit: impactMetrics.unit,
-      displayPrefix: impactMetrics.displayPrefix,
-      periodStart: impactMetrics.periodStart,
-      periodEnd: impactMetrics.periodEnd,
-      status: impactMetrics.status,
-      verificationSource: impactMetrics.verificationSource,
-      programKey: programs.key,
-    })
-    .from(impactMetrics)
-    .leftJoin(programs, eq(programs.id, impactMetrics.programId))
-    .where(
-      and(
-        eq(impactMetrics.isPublic, true),
-        eq(impactMetrics.status, options.status ?? 'verified'),
-        options.featuredOnly ? eq(impactMetrics.isFeatured, true) : undefined,
-        options.programKey ? eq(programs.key, options.programKey as never) : undefined,
-      ),
-    )
-    .orderBy(asc(impactMetrics.displayOrder));
+  if (shouldUseDevelopmentPlaceholderData()) return [];
+
+  try {
+    return await db
+      .select({
+        id: impactMetrics.id,
+        label: pickCol(impactMetrics.labelAr, impactMetrics.labelEn, locale),
+        value: impactMetrics.value,
+        unit: impactMetrics.unit,
+        displayPrefix: impactMetrics.displayPrefix,
+        periodStart: impactMetrics.periodStart,
+        periodEnd: impactMetrics.periodEnd,
+        status: impactMetrics.status,
+        verificationSource: impactMetrics.verificationSource,
+        programKey: programs.key,
+      })
+      .from(impactMetrics)
+      .leftJoin(programs, eq(programs.id, impactMetrics.programId))
+      .where(
+        and(
+          eq(impactMetrics.isPublic, true),
+          eq(impactMetrics.status, options.status ?? 'verified'),
+          options.featuredOnly ? eq(impactMetrics.isFeatured, true) : undefined,
+          options.programKey ? eq(programs.key, options.programKey as never) : undefined,
+        ),
+      )
+      .orderBy(asc(impactMetrics.displayOrder));
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) return [];
+    throw error;
+  }
 }
 
 export const listMetrics = cached(_listMetrics, ['metrics:list'], { tags: [TAGS.metricList] });
