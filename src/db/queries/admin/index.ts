@@ -1,7 +1,7 @@
 import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
-import { readAsActor } from '@/db/session';
+import { readAsActor, rowsOf } from '@/db/session';
 import {
   auditLogs,
   formSubmissions,
@@ -65,6 +65,31 @@ const TABLES = {
 
 export type AdminEntity = keyof typeof TABLES;
 
+export async function getAdminNavCounts(actor: Actor) {
+  return readAsActor(db, actor, async (tx) => {
+    const [counts] = rowsOf<{ submissions: number; sensitive: number }>(
+      await tx.execute(sql`
+        select
+          count(*) filter (
+            where ${formSubmissions.state} = 'new'
+              and ${formSubmissions.isSensitive} = false
+          )::int as submissions,
+          ${
+            actor.canViewSensitive
+              ? sql`count(*) filter (
+                  where ${formSubmissions.state} = 'new'
+                    and ${formSubmissions.isSensitive} = true
+                )::int`
+              : sql`0::int`
+          } as sensitive
+        from ${formSubmissions}
+      `),
+    );
+
+    return { submissions: counts?.submissions ?? 0, sensitive: counts?.sensitive ?? 0 };
+  });
+}
+
 export async function listAdminRows(
   actor: Actor,
   entity: AdminEntity,
@@ -84,26 +109,37 @@ export async function listAdminRows(
         : undefined,
     );
 
-    const [rows, counted] = await Promise.all([
-      tx
+    const rows = rowsOf<AdminRow & { __total: number }>(
+      await tx
         .select({
           id: table.id,
           title: table.titleAr,
           slugAr: table.slugAr,
           status: table.status,
           updatedAt: table.updatedAt,
+          __total: sql<number>`count(*) over()::int`,
         })
         .from(table)
         .where(where)
         .orderBy(desc(table.updatedAt))
         .limit(ADMIN_PAGE_SIZE)
         .offset((page - 1) * ADMIN_PAGE_SIZE),
-      tx.select({ count: sql<number>`count(*)::int` }).from(table).where(where),
-    ]);
+    );
 
-    const total = counted[0]?.count ?? 0;
+    let total = rows[0]?.__total ?? 0;
+    if (total === 0 && page > 1) {
+      const [counted] = await tx.select({ count: sql<number>`count(*)::int` }).from(table).where(where);
+      total = counted?.count ?? 0;
+    }
+
     return {
-      items: rows as AdminRow[],
+      items: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        slugAr: row.slugAr,
+        status: row.status,
+        updatedAt: row.updatedAt,
+      })),
       total,
       page,
       totalPages: Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE)),
@@ -210,14 +246,61 @@ export async function listAdminRedirects(actor: Actor) {
 }
 
 export async function getAdminOrganization(actor: Actor) {
-  const { organizationSettings } = await import('@/db/schema');
   return readAsActor(db, actor, async (tx) => {
-    const [row] = await tx
-      .select()
-      .from(organizationSettings)
-      .where(eq(organizationSettings.id, true))
-      .limit(1);
-    return row ?? null;
+    const [row] = rowsOf<Record<string, unknown>>(
+      await tx.execute(sql`select * from public.organization_settings where id = true limit 1`),
+    );
+    if (!row) return null;
+    return {
+      id: row.id,
+      legalNameAr: row.legal_name_ar,
+      legalNameEn: row.legal_name_en,
+      shortNameAr: row.short_name_ar,
+      shortNameEn: row.short_name_en,
+      acronym: row.acronym,
+      shortDescriptionAr: row.short_description_ar ?? null,
+      shortDescriptionEn: row.short_description_en ?? null,
+      alternateNames: row.alternate_names,
+      foundedYear: row.founded_year,
+      licenseNumber: row.license_number,
+      licenseAuthorityAr: row.license_authority_ar,
+      licenseAuthorityEn: row.license_authority_en,
+      legalFormAr: row.legal_form_ar,
+      legalFormEn: row.legal_form_en,
+      visionAr: row.vision_ar,
+      visionEn: row.vision_en,
+      missionAr: row.mission_ar,
+      missionEn: row.mission_en,
+      coreValues: row.core_values,
+      principles: row.principles,
+      strategicObjectives: row.strategic_objectives,
+      primaryPhone: row.primary_phone,
+      additionalPhones: row.additional_phones,
+      whatsappNumber: row.whatsapp_number,
+      email: row.email,
+      secondaryEmail: row.secondary_email ?? null,
+      addressAr: row.address_ar,
+      addressEn: row.address_en,
+      addressIsPublic: row.address_is_public,
+      officeHoursAr: row.office_hours_ar,
+      officeHoursEn: row.office_hours_en,
+      socials: row.socials,
+      officialChannels: row.official_channels,
+      footerCtaTitleAr: row.footer_cta_title_ar ?? null,
+      footerCtaTitleEn: row.footer_cta_title_en ?? null,
+      footerCtaDescriptionAr: row.footer_cta_description_ar ?? null,
+      footerCtaDescriptionEn: row.footer_cta_description_en ?? null,
+      footerCtaButtonLabelAr: row.footer_cta_button_label_ar ?? null,
+      footerCtaButtonLabelEn: row.footer_cta_button_label_en ?? null,
+      footerCtaUrl: row.footer_cta_url ?? null,
+      footerCtaEnabled: row.footer_cta_enabled ?? false,
+      logoPrimaryId: row.logo_primary_id,
+      footerLogoId: row.footer_logo_id ?? null,
+      logoMonoId: row.logo_mono_id,
+      defaultOgId: row.default_og_id,
+      updatedAt: row.updated_at,
+      updatedBy: row.updated_by,
+    };
   });
 }
 

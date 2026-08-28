@@ -13,6 +13,7 @@ import { TAGS } from '@/lib/cache/tags';
 import type { Locale } from '@/lib/i18n/config';
 import { rowsOf } from '@/db/session';
 import { cached } from './_cache';
+import { shouldUseDevelopmentDatabaseFallback, shouldUseDevelopmentPlaceholderData } from './_dev-fallback';
 import { hasLocale, pickCol, slugCol } from './_localize';
 
 export const PROJECTS_PER_PAGE = 12;
@@ -71,40 +72,65 @@ function whereFor(filters: ProjectFilters) {
 
 export async function _listProjects(locale: Locale, filters: ProjectFilters) {
   const page = Math.max(1, filters.page ?? 1);
+  if (shouldUseDevelopmentPlaceholderData()) {
+    return {
+      items: [],
+      total: 0,
+      page,
+      perPage: PROJECTS_PER_PAGE,
+      totalPages: 1,
+    };
+  }
+
   const where = whereFor(filters);
 
-  const [rows, counted] = await Promise.all([
-    db
-      .select({
-        id: projects.id,
-        slug: slugCol(projects.slugAr, projects.slugEn, locale),
-        title: pickCol(projects.titleAr, projects.titleEn, locale),
-        summary: pickCol(projects.summaryAr, projects.summaryEn, locale),
-        state: projects.projectState,
-        startDate: projects.startDate,
-        endDate: projects.endDate,
-        governorates: projects.governorates,
-        themes: projects.themes,
-        programKey: programs.key,
-        programTitle: pickCol(programs.titleAr, programs.titleEn, locale),
-        heroPath: mediaAssets.path,
-        heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-        heroBlur: mediaAssets.blurDataUrl,
-      })
-      .from(projects)
-      .innerJoin(programs, eq(programs.id, projects.programId))
-      .leftJoin(mediaAssets, eq(mediaAssets.id, projects.heroMediaId))
-      .where(where)
-      .orderBy(desc(projects.publishedAt))
-      .limit(PROJECTS_PER_PAGE)
-      .offset((page - 1) * PROJECTS_PER_PAGE),
+  let rows;
+  let counted;
+  try {
+    [rows, counted] = await Promise.all([
+      db
+        .select({
+          id: projects.id,
+          slug: slugCol(projects.slugAr, projects.slugEn, locale),
+          title: pickCol(projects.titleAr, projects.titleEn, locale),
+          summary: pickCol(projects.summaryAr, projects.summaryEn, locale),
+          state: projects.projectState,
+          startDate: projects.startDate,
+          endDate: projects.endDate,
+          governorates: projects.governorates,
+          themes: projects.themes,
+          programKey: programs.key,
+          programTitle: pickCol(programs.titleAr, programs.titleEn, locale),
+          heroPath: mediaAssets.path,
+          heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+          heroBlur: mediaAssets.blurDataUrl,
+        })
+        .from(projects)
+        .innerJoin(programs, eq(programs.id, projects.programId))
+        .leftJoin(mediaAssets, eq(mediaAssets.id, projects.heroMediaId))
+        .where(where)
+        .orderBy(desc(projects.publishedAt))
+        .limit(PROJECTS_PER_PAGE)
+        .offset((page - 1) * PROJECTS_PER_PAGE),
 
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(projects)
-      .innerJoin(programs, eq(programs.id, projects.programId))
-      .where(where),
-  ]);
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(projects)
+        .innerJoin(programs, eq(programs.id, projects.programId))
+        .where(where),
+    ]);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) {
+      return {
+        items: [],
+        total: 0,
+        page,
+        perPage: PROJECTS_PER_PAGE,
+        totalPages: 1,
+      };
+    }
+    throw error;
+  }
 
   const total = counted[0]?.count ?? 0;
   return {
@@ -233,28 +259,43 @@ export const getProjectBySlug = cached(_getProjectBySlug, ['projects:detail'], {
  * single aggregate instead of five and five.
  */
 export async function _getProjectFacets() {
-  const [byProgram, byGovernorate, byTheme, byYear] = await Promise.all([
-    db
-      .select({ key: programs.key, count: sql<number>`count(*)::int` })
-      .from(projects)
-      .innerJoin(programs, eq(programs.id, projects.programId))
-      .where(eq(projects.status, 'published'))
-      .groupBy(programs.key),
+  if (shouldUseDevelopmentPlaceholderData()) {
+    return { byProgram: [], byGovernorate: [], byTheme: [], byYear: [] };
+  }
 
-    db.execute(sql`
-      select unnest(governorates)::text as key, count(*)::int as count
-      from ${projects} where status = 'published' group by 1 order by 2 desc`),
+  let byProgram;
+  let byGovernorate;
+  let byTheme;
+  let byYear;
+  try {
+    [byProgram, byGovernorate, byTheme, byYear] = await Promise.all([
+      db
+        .select({ key: programs.key, count: sql<number>`count(*)::int` })
+        .from(projects)
+        .innerJoin(programs, eq(programs.id, projects.programId))
+        .where(eq(projects.status, 'published'))
+        .groupBy(programs.key),
 
-    db.execute(sql`
-      select unnest(themes)::text as key, count(*)::int as count
-      from ${projects} where status = 'published' group by 1 order by 2 desc`),
+      db.execute(sql`
+        select unnest(governorates)::text as key, count(*)::int as count
+        from ${projects} where status = 'published' group by 1 order by 2 desc`),
 
-    db.execute(sql`
-      select extract(year from start_date)::int as key, count(*)::int as count
-      from ${projects}
-      where status = 'published' and start_date is not null
-      group by 1 order by 1 desc`),
-  ]);
+      db.execute(sql`
+        select unnest(themes)::text as key, count(*)::int as count
+        from ${projects} where status = 'published' group by 1 order by 2 desc`),
+
+      db.execute(sql`
+        select extract(year from start_date)::int as key, count(*)::int as count
+        from ${projects}
+        where status = 'published' and start_date is not null
+        group by 1 order by 1 desc`),
+    ]);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) {
+      return { byProgram: [], byGovernorate: [], byTheme: [], byYear: [] };
+    }
+    throw error;
+  }
 
   return {
     byProgram,
