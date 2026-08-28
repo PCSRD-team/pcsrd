@@ -322,6 +322,8 @@ export type OrganizationInput = Partial<{
   shortNameAr: string;
   shortNameEn: string;
   acronym: string;
+  shortDescriptionAr: string | null;
+  shortDescriptionEn: string | null;
   alternateNames: string[];
   foundedYear: number;
   licenseNumber: string;
@@ -340,6 +342,7 @@ export type OrganizationInput = Partial<{
   additionalPhones: string[];
   whatsappNumber: string | null;
   email: string | null;
+  secondaryEmail: string | null;
   addressAr: string | null;
   addressEn: string | null;
   addressIsPublic: boolean;
@@ -347,7 +350,16 @@ export type OrganizationInput = Partial<{
   officeHoursEn: string | null;
   socials: SocialLink[];
   officialChannels: OfficialChannel[];
+  footerCtaTitleAr: string | null;
+  footerCtaTitleEn: string | null;
+  footerCtaDescriptionAr: string | null;
+  footerCtaDescriptionEn: string | null;
+  footerCtaButtonLabelAr: string | null;
+  footerCtaButtonLabelEn: string | null;
+  footerCtaUrl: string | null;
+  footerCtaEnabled: boolean;
   logoPrimaryId: string | null;
+  footerLogoId: string | null;
   logoMonoId: string | null;
   defaultOgId: string | null;
 }>;
@@ -362,6 +374,7 @@ const CONTACT_FIELDS = new Set<keyof OrganizationInput>([
   'additionalPhones',
   'whatsappNumber',
   'email',
+  'secondaryEmail',
   'addressAr',
   'addressEn',
   'addressIsPublic',
@@ -369,6 +382,14 @@ const CONTACT_FIELDS = new Set<keyof OrganizationInput>([
   'officeHoursEn',
   'socials',
   'officialChannels',
+  'footerCtaTitleAr',
+  'footerCtaTitleEn',
+  'footerCtaDescriptionAr',
+  'footerCtaDescriptionEn',
+  'footerCtaButtonLabelAr',
+  'footerCtaButtonLabelEn',
+  'footerCtaUrl',
+  'footerCtaEnabled',
 ]);
 
 export async function updateOrganization(

@@ -58,6 +58,8 @@ export const organizationSettings = pgTable(
     shortNameAr: text().notNull(),
     shortNameEn: text().notNull(),
     acronym: text().notNull(),
+    shortDescriptionAr: text(),
+    shortDescriptionEn: text(),
     /** schema.org `alternateName` — spellings the org is also searched by. */
     alternateNames: text().array().notNull().default(sql`'{}'`),
     foundedYear: smallint().notNull(),
@@ -89,6 +91,7 @@ export const organizationSettings = pgTable(
     /** Digits only, no leading `+` — this is the `wa.me` link format. */
     whatsappNumber: text(),
     email: text(),
+    secondaryEmail: text(),
     addressAr: text(),
     addressEn: text(),
     /** DNH-6: the office address is published only on an explicit decision. */
@@ -101,7 +104,17 @@ export const organizationSettings = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
 
+    footerCtaTitleAr: text(),
+    footerCtaTitleEn: text(),
+    footerCtaDescriptionAr: text(),
+    footerCtaDescriptionEn: text(),
+    footerCtaButtonLabelAr: text(),
+    footerCtaButtonLabelEn: text(),
+    footerCtaUrl: text(),
+    footerCtaEnabled: boolean().notNull().default(false),
+
     logoPrimaryId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
+    footerLogoId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
     logoMonoId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
     defaultOgId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
 
