@@ -6,14 +6,14 @@
 
 @theme {
   /* ink */
-  --color-ink:            #14213F;
-  --color-ink-70:         #3B4560;
-  --color-ink-55:         #5A6478;
+  --color-ink: #14213f;
+  --color-ink-70: #3b4560;
+  --color-ink-55: #5a6478;
 
   /* navy */
-  --color-navy-900:       #182E5D;
-  --color-navy-700:       #254284;
-  --color-navy-100:       #E7EBF4;
+  --color-navy-900: #182e5d;
+  --color-navy-700: #254284;
+  --color-navy-100: #e7ebf4;
 
   /* gold — marking colour only; gold-600 never carries text on paper.
      gold-700 is the text-carrying gold, and it was #B87B12: 3.42:1 on paper,
@@ -23,54 +23,65 @@
      hover state — which needs 4.5:1. #875A0F clears it on all four grounds
      (5.75 / 5.22 / 4.64 / 5.62). gold-600 is unchanged: it is a rule, a stamp
      and a focus halo, never text. */
-  --color-gold-700:       #875A0F;
-  --color-gold-600:       #DD991C;
-  --color-gold-050:       #FEF7E7;
+  --color-gold-700: #875a0f;
+  --color-gold-600: #dd991c;
+  --color-gold-050: #fef7e7;
 
   /* paper */
-  --color-paper:          #FBFAF6;
-  --color-paper-alt:      #F2EFE7;
-  --color-paper-ground:   #E5E2DA;
+  --color-paper: #fbfaf6;
+  --color-paper-alt: #f2efe7;
+  --color-paper-ground: #e5e2da;
 
   /* rules */
-  --color-rule:           #D8D3C7;
-  --color-rule-strong:    #C9C3B4;
-  --color-hairline:       #E3DED2;
+  --color-rule: #d8d3c7;
+  --color-rule-strong: #c9c3b4;
+  --color-hairline: #e3ded2;
 
   /* rule-control — the boundary that *identifies* a form control, as opposed
      to `rule`, which draws a decorative panel edge. SC 1.4.11 applies to the
      first and not the second, and `rule` is 1.43:1 on paper, so one token
      could not serve both. The weight is unchanged at 1px, so the three-weight
      vocabulary is intact; only the colour differs, and only on controls. */
-  --color-rule-control:   #97907F;
+  --color-rule-control: #97907f;
 
   /* labels — was #8A8272: 3.64:1 on paper and 2.94:1 on the page ground, at
      12px, on 41 eyebrows, 14 mono captions and every admin form label. The
      page-ground cases failed even the 3:1 large-text floor. #6A6353 is
      5.71 / 5.19 / 4.61 / 5.58 across the four grounds. */
-  --color-mono-muted:     #6A6353;
+  --color-mono-muted: #6a6353;
 
   /* programme identity */
   --color-prog-protection: #254284;
-  --color-prog-response:   #B3591B;
-  --color-prog-recovery:   #1F6B54;
+  --color-prog-response: #b3591b;
+  --color-prog-recovery: #1f6b54;
 
   /* type — families are bound to the next/font variables set in layout.tsx,
      which self-hosts both faces at build time. No runtime request leaves the
      origin, which is also what keeps the CSP free of a font host. */
-  --font-sans: var(--font-plex-arabic), "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-sans:
+    var(--font-plex-arabic), "IBM Plex Sans Arabic", system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
 
-  --text-display:    4rem;      --text-display--line-height:   1.06;
-  --text-display-ar: 2.375rem;  --text-display-ar--line-height:1.30;
-  --text-h1:         2.5rem;    --text-h1--line-height:        1.20;
-  --text-h2:         1.75rem;   --text-h2--line-height:        1.30;
-  --text-h3:         1.25rem;   --text-h3--line-height:        1.40;
-  --text-lead:       1.125rem;  --text-lead--line-height:      1.65;
-  --text-body:       1rem;      --text-body--line-height:      1.80;
-  --text-small:      0.9375rem; --text-small--line-height:     1.60;
-  --text-caption:    0.90625rem;--text-caption--line-height:   1.60;
-  --text-eyebrow:    0.75rem;   --text-eyebrow--line-height:   1.40;
+  --text-display: 4rem;
+  --text-display--line-height: 1.06;
+  --text-display-ar: 2.375rem;
+  --text-display-ar--line-height: 1.3;
+  --text-h1: 2.5rem;
+  --text-h1--line-height: 1.2;
+  --text-h2: 1.75rem;
+  --text-h2--line-height: 1.3;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.4;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.65;
+  --text-body: 1rem;
+  --text-body--line-height: 1.8;
+  --text-small: 0.9375rem;
+  --text-small--line-height: 1.6;
+  --text-caption: 0.90625rem;
+  --text-caption--line-height: 1.6;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1.4;
 
   /* layout */
   --container-content: 1180px;
@@ -78,10 +89,12 @@
 }
 
 @layer base {
-  :root { color-scheme: light; }
+  :root {
+    color-scheme: light;
+  }
 
   body {
-    background: var(--color-paper-ground);
+    background: #ffffff !important;
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -96,14 +109,18 @@
     font-variant-numeric: lining-nums;
   }
 
-  :lang(en) { line-height: 1.65; }
+  :lang(en) {
+    line-height: 1.65;
+  }
 
   a {
     color: var(--color-navy-700);
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
   }
-  a:hover { color: var(--color-gold-700); }
+  a:hover {
+    color: var(--color-gold-700);
+  }
 
   /* Two-tone, because one tone cannot work on both grounds this site uses.
      `gold-600` alone is 2.33:1 against paper and 1.88:1 against the page
@@ -120,10 +137,15 @@
     box-shadow: 0 0 0 4px var(--color-gold-600);
   }
 
-  p, li { text-wrap: pretty; }
+  p,
+  li {
+    text-wrap: pretty;
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
@@ -134,14 +156,20 @@
    1px rule        = container edge / list separator
    2px ink         = section boundary
    2px x 88px gold = heading mark */
-@utility rule-edge { border: 1px solid var(--color-rule); }
+@utility rule-edge {
+  border: 1px solid var(--color-rule);
+}
 
 /* Same weight, darker colour, one job: the boundary that tells a user where a
    text field begins. `rule-edge` is decorative and exempt from SC 1.4.11;
    this is not, and at 1.43:1 the shared token could not carry it. */
-@utility rule-control { border: 1px solid var(--color-rule-control); }
+@utility rule-control {
+  border: 1px solid var(--color-rule-control);
+}
 
-@utility rule-section { border-block-start: 2px solid var(--color-ink); }
+@utility rule-section {
+  border-block-start: 2px solid var(--color-ink);
+}
 
 /* A horizontal scroller with a fade at both inline edges.
    An `overflow-x-auto` list shows no scrollbar at rest on a touch device, so
@@ -159,7 +187,8 @@
 }
 
 @utility rule-mark {
-  inline-size: 88px; block-size: 2px;
+  inline-size: 88px;
+  block-size: 2px;
   background: var(--color-gold-600);
 }
 
@@ -174,19 +203,29 @@
 }
 
 @media (width >= 768px) {
-  .container-content { padding-inline: 4rem; }
+  .container-content {
+    padding-inline: 4rem;
+  }
 }
 
 /* Prose measure — 52–78ch, never the full column width. */
-@utility measure { max-inline-size: 68ch; }
+@utility measure {
+  max-inline-size: 68ch;
+}
 
-@utility measure-lead { max-inline-size: 52ch; }
+@utility measure-lead {
+  max-inline-size: 52ch;
+}
 
 /* Section rhythm: 110px desktop, 64px mobile. */
-@utility section-gap { padding-block: 4rem; }
+@utility section-gap {
+  padding-block: 4rem;
+}
 
 @media (width >= 768px) {
-  .section-gap { padding-block: 6.875rem; }
+  .section-gap {
+    padding-block: 6.875rem;
+  }
 }
 
 /* Mono eyebrow label. Never below 11px, always uppercase for Latin. */
