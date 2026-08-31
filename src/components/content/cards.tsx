@@ -1,11 +1,16 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { Badge, Panel } from '@/components/ui/primitives';
-import { Bidi, DateText } from '@/components/ui/bidi';
-import { publicEnv } from '@/lib/env.public';
-import { formatDate, formatNumber, formatPeriod, storageUrl } from '@/lib/format';
-import type { Dictionary } from '@/lib/i18n/get-dictionary';
-import { type Locale, localePath } from '@/lib/i18n/config';
+import Image from "next/image";
+import Link from "next/link";
+import { Badge, Panel } from "@/components/ui/primitives";
+import { Bidi, DateText } from "@/components/ui/bidi";
+import { publicEnv } from "@/lib/env.public";
+import {
+  formatDate,
+  formatNumber,
+  formatPeriod,
+  storageUrl,
+} from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { type Locale, localePath } from "@/lib/i18n/config";
 
 /**
  * Cards.
@@ -16,7 +21,7 @@ import { type Locale, localePath } from '@/lib/i18n/config';
  * degraded one.
  */
 
-function Cover({
+export function Cover({
   path,
   alt,
   blur,
@@ -28,18 +33,21 @@ function Cover({
   className?: string;
 }) {
   if (!path) {
-    // Not a grey box with a broken-image icon: a ruled frame, which is what the
-    // design uses and which reads as "no photograph" rather than "failed".
-    return <div className={`rule-edge bg-paper-alt ${className ?? ''}`} aria-hidden="true" />;
+    return (
+      <div
+        className={`rule-edge bg-paper-alt ${className ?? ""}`}
+        aria-hidden="true"
+      />
+    );
   }
   return (
-    <div className={`relative overflow-hidden bg-paper-alt ${className ?? ''}`}>
+    <div className={`relative overflow-hidden bg-paper-alt ${className ?? ""}`}>
       <Image
-        src={storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, 'media', path)}
-        alt={alt ?? ''}
+        src={storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, "media", path)}
+        alt={alt ?? ""}
         fill
         sizes="(min-width: 768px) 380px, 100vw"
-        placeholder={blur ? 'blur' : 'empty'}
+        placeholder={blur ? "blur" : "empty"}
         blurDataURL={blur ?? undefined}
         className="object-cover"
       />
@@ -50,13 +58,13 @@ function Cover({
 // ── Project ──────────────────────────────────────────────────────────────
 
 const PROJECT_STATE_TONE = {
-  active: 'active',
-  completed: 'complete',
-  planned: 'planned',
+  active: "active",
+  completed: "complete",
+  planned: "planned",
 } as const;
 
 const projectStateLabel = (
-  state: 'planned' | 'active' | 'completed',
+  state: "planned" | "active" | "completed",
   dict: Dictionary,
 ): string =>
   ({
@@ -75,7 +83,7 @@ export function ProjectCard({
     slug: string;
     title: string | null;
     summary: string | null;
-    state: 'planned' | 'active' | 'completed';
+    state: "planned" | "active" | "completed";
     startDate: string | null;
     endDate: string | null;
     programTitle: string | null;
@@ -107,7 +115,9 @@ export function ProjectCard({
           </Link>
         </h3>
         {project.summary ? (
-          <p className="line-clamp-3 text-small text-ink-70">{project.summary}</p>
+          <p className="line-clamp-3 text-small text-ink-70">
+            {project.summary}
+          </p>
         ) : null}
         <div className="mbs-auto flex flex-wrap items-center gap-3 pbs-2">
           <Badge tone={PROJECT_STATE_TONE[project.state]}>
@@ -134,7 +144,7 @@ export function PostCard({
   post: {
     id: string;
     slug: string;
-    category: 'news' | 'statement' | 'announcement';
+    category: "news" | "statement" | "announcement";
     title: string | null;
     excerpt: string | null;
     publishedAt: Date | null;
@@ -167,7 +177,9 @@ export function PostCard({
               dateTime={post.publishedAt.toISOString()}
               className="font-mono text-caption text-mono-muted"
             >
-              <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
+              <DateText locale={locale}>
+                {formatDate(post.publishedAt, locale)}
+              </DateText>
             </time>
           ) : null}
         </div>
@@ -207,7 +219,7 @@ export function MetricCard({
     displayPrefix: string | null;
     periodStart: string;
     periodEnd: string;
-    status: 'target' | 'reported' | 'verified';
+    status: "target" | "reported" | "verified";
     verificationSource: string | null;
   };
   locale: Locale;
@@ -220,12 +232,16 @@ export function MetricCard({
   }[metric.status];
 
   return (
-    <Panel as="li" tone={metric.status === 'verified' ? 'gold' : 'paper'} className="flex flex-col gap-2">
+    <Panel
+      as="li"
+      tone={metric.status === "verified" ? "gold" : "paper"}
+      className="flex flex-col gap-2"
+    >
       <p className="text-h1 font-semibold text-ink">
         <Bidi>
-          {metric.displayPrefix ?? ''}
+          {metric.displayPrefix ?? ""}
           {formatNumber(metric.value, locale)}
-        </Bidi>{' '}
+        </Bidi>{" "}
         <span className="text-h3 font-normal text-ink-70">{metric.unit}</span>
       </p>
       <p className="text-small text-ink">{metric.label}</p>
@@ -234,7 +250,9 @@ export function MetricCard({
         <div className="flex gap-2">
           <dt className="eyebrow">{dict.impact.period}</dt>
           <dd className="font-mono text-caption text-ink-70">
-            <DateText locale={locale}>{formatPeriod(metric.periodStart, metric.periodEnd, locale)}</DateText>
+            <DateText locale={locale}>
+              {formatPeriod(metric.periodStart, metric.periodEnd, locale)}
+            </DateText>
           </dd>
         </div>
         <div className="flex gap-2">
@@ -244,7 +262,9 @@ export function MetricCard({
         {metric.verificationSource ? (
           <div className="flex gap-2">
             <dt className="eyebrow">{dict.impact.source}</dt>
-            <dd className="text-caption text-ink-70">{metric.verificationSource}</dd>
+            <dd className="text-caption text-ink-70">
+              {metric.verificationSource}
+            </dd>
           </div>
         ) : null}
       </dl>
@@ -262,7 +282,7 @@ export function VacancyCard({
   vacancy: {
     id: string;
     slug: string;
-    type: 'job' | 'volunteer';
+    type: "job" | "volunteer";
     title: string | null;
     location: string | null;
     deadline: string;
@@ -271,7 +291,10 @@ export function VacancyCard({
   dict: Dictionary;
 }) {
   return (
-    <Panel as="li" className="flex flex-wrap items-baseline justify-between gap-4">
+    <Panel
+      as="li"
+      className="flex flex-wrap items-baseline justify-between gap-4"
+    >
       <div>
         <h3 className="text-h3 font-semibold">
           <Link
@@ -286,7 +309,10 @@ export function VacancyCard({
         ) : null}
       </div>
       <p className="font-mono text-caption text-mono-muted">
-        {dict.careers.deadline}: <DateText locale={locale}>{formatDate(vacancy.deadline, locale)}</DateText>
+        {dict.careers.deadline}:{" "}
+        <DateText locale={locale}>
+          {formatDate(vacancy.deadline, locale)}
+        </DateText>
       </p>
     </Panel>
   );
@@ -326,7 +352,7 @@ export function ProgramCard({
           rule rather than a fill — the same discipline as the gold mark.
         */}
         <span
-          className="block h-[2px] w-[88px]"
+          className="block h-[2] w-[88]"
           style={{ background: `var(${program.accentToken})` }}
           aria-hidden="true"
         />
@@ -338,7 +364,9 @@ export function ProgramCard({
             {program.title}
           </Link>
         </h3>
-        {program.tagline ? <p className="text-small text-ink-70">{program.tagline}</p> : null}
+        {program.tagline ? (
+          <p className="text-small text-ink-70">{program.tagline}</p>
+        ) : null}
       </div>
     </Panel>
   );

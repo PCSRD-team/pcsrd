@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 /**
  * The core visual vocabulary.
@@ -25,32 +25,56 @@ export function SectionHeading({
   eyebrow,
   title,
   lead,
-  as: Tag = 'h2',
+  as: Tag = "h2",
   id,
   className,
 }: {
   eyebrow?: string;
   title: string;
   lead?: string | null;
-  as?: 'h1' | 'h2' | 'h3';
-  /** Target for a section's `aria-labelledby`. */
+  as?: "h1" | "h2" | "h3";
   id?: string;
   className?: string;
 }) {
   return (
-    <div className={cn('mbe-8', className)}>
+    <div className={cn("mbe-8", className)}>
       {eyebrow ? <p className="eyebrow mbe-3">{eyebrow}</p> : null}
-      <Tag
-        id={id}
-        className={cn(
-          'font-semibold text-ink',
-          Tag === 'h1' ? 'text-h1' : Tag === 'h2' ? 'text-h2' : 'text-h3',
-        )}
-      >
-        {title}
-      </Tag>
-      <span className="rule-mark mbs-4 block" aria-hidden="true" />
-      {lead ? <p className="measure-lead mbs-5 text-lead text-ink-70">{lead}</p> : null}
+
+      {/* الحاوية تكون inline-block ليُحسب عرض الكلمة/الكلمتين بدقة */}
+      <div className="group relative inline-block">
+        <Tag
+          id={id}
+          className={cn(
+            "font-semibold text-ink",
+            Tag === "h1" ? "text-h1" : Tag === "h2" ? "text-h2" : "text-h3",
+          )}
+        >
+          {title}
+        </Tag>
+
+        {/* 
+          - العرض المبدئي الثابت: w-12 (يمكنكِ تغييره لـ w-16 حسب ما كان عاجبك)
+          - عند الهوفر: group-hover:w-full يتمدد ليكون بطول الكلام تماماً
+        */}
+        <span
+          className="
+            mbs-3 
+            block 
+            h-[3]
+            w-12 
+            bg-[#c9a16f] 
+            transition-all 
+            duration-300 
+            ease-in-out 
+            group-hover:w-full
+          "
+          aria-hidden="true"
+        />
+      </div>
+
+      {lead ? (
+        <p className="measure-lead mbs-5 text-lead text-ink-70">{lead}</p>
+      ) : null}
     </div>
   );
 }
@@ -61,22 +85,24 @@ export function SectionHeading({
 export function Panel({
   children,
   className,
-  tone = 'paper',
-  as: Tag = 'div',
+  tone = "paper",
+  as: Tag = "div",
 }: {
   children: ReactNode;
   className?: string;
-  tone?: 'paper' | 'alt' | 'gold' | 'navy';
-  as?: 'div' | 'article' | 'section' | 'aside' | 'li';
+  tone?: "paper" | "alt" | "gold" | "navy";
+  as?: "div" | "article" | "section" | "aside" | "li";
 }) {
   const tones = {
-    paper: 'bg-paper text-ink',
-    alt: 'bg-paper-alt text-ink',
-    gold: 'bg-gold-050 text-ink',
-    navy: 'bg-navy-900 text-paper',
+    paper: "bg-paper text-ink",
+    alt: "bg-paper-alt text-ink",
+    gold: "bg-gold-050 text-ink",
+    navy: "bg-navy-900 text-paper",
   };
   return (
-    <Tag className={cn('rule-edge p-6 md:p-8', tones[tone], className)}>{children}</Tag>
+    <Tag className={cn("rule-edge p-6 md:p-8", tones[tone], className)}>
+      {children}
+    </Tag>
   );
 }
 
@@ -100,7 +126,7 @@ export function Section({
     <section
       id={id}
       aria-labelledby={labelledBy}
-      className={cn('section-gap', bounded && 'rule-section', className)}
+      className={cn("section-gap", bounded && "rule-section", className)}
     >
       {children}
     </section>
@@ -110,22 +136,23 @@ export function Section({
 // ── Buttons and links ────────────────────────────────────────────────────
 
 const buttonBase =
-  'inline-flex items-center justify-center gap-2 px-6 py-3 text-small font-medium ' +
-  'transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
+  "inline-flex items-center justify-center gap-2 px-6 py-3 text-small font-medium " +
+  "transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
 
 const buttonTones = {
-  primary: 'bg-navy-700 text-paper hover:bg-navy-900',
-  secondary: 'rule-control bg-paper text-ink hover:bg-paper-alt',
+  primary: "bg-navy-700 text-paper hover:bg-navy-900",
+  secondary: "rule-control bg-paper text-ink hover:bg-paper-alt",
   // Gold as a marking colour: the rule, not the fill. Text stays ink.
-  marked: 'border-b-2 border-gold-600 bg-transparent text-ink hover:bg-gold-050',
+  marked:
+    "border-b-2 border-gold-600 bg-transparent text-ink hover:bg-gold-050",
 };
 
 export type ButtonTone = keyof typeof buttonTones;
 
 export function Button({
   children,
-  tone = 'primary',
-  type = 'button',
+  tone = "primary",
+  type = "button",
   className,
   disabled,
   name,
@@ -133,7 +160,7 @@ export function Button({
 }: {
   children: ReactNode;
   tone?: ButtonTone;
-  type?: 'button' | 'submit' | 'reset';
+  type?: "button" | "submit" | "reset";
   className?: string;
   disabled?: boolean;
   name?: string;
@@ -155,7 +182,7 @@ export function Button({
 export function ButtonLink({
   children,
   href,
-  tone = 'primary',
+  tone = "primary",
   className,
   external,
 }: {
@@ -165,10 +192,15 @@ export function ButtonLink({
   className?: string;
   external?: boolean;
 }) {
-  const classes = cn(buttonBase, buttonTones[tone], 'no-underline', className);
+  const classes = cn(buttonBase, buttonTones[tone], "no-underline", className);
   if (external) {
     return (
-      <a href={href} className={classes} rel="noopener noreferrer" target="_blank">
+      <a
+        href={href}
+        className={classes}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
         {children}
       </a>
     );
@@ -188,23 +220,23 @@ export function ButtonLink({
  */
 export function Badge({
   children,
-  tone = 'neutral',
+  tone = "neutral",
 }: {
   children: ReactNode;
-  tone?: 'neutral' | 'active' | 'complete' | 'planned' | 'verified' | 'warning';
+  tone?: "neutral" | "active" | "complete" | "planned" | "verified" | "warning";
 }) {
   const tones = {
-    neutral: 'bg-paper-alt text-ink-70 border-rule',
-    active: 'bg-navy-100 text-navy-900 border-navy-700/30',
-    complete: 'bg-paper-alt text-ink-55 border-rule-strong',
-    planned: 'bg-paper text-ink-55 border-rule',
-    verified: 'bg-gold-050 text-gold-700 border-gold-600',
-    warning: 'bg-gold-050 text-gold-700 border-gold-600',
+    neutral: "bg-paper-alt text-ink-70 border-rule",
+    active: "bg-navy-100 text-navy-900 border-navy-700/30",
+    complete: "bg-paper-alt text-ink-55 border-rule-strong",
+    planned: "bg-paper text-ink-55 border-rule",
+    verified: "bg-gold-050 text-gold-700 border-gold-600",
+    warning: "bg-gold-050 text-gold-700 border-gold-600",
   };
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-3 py-1 font-mono text-eyebrow tracking-wide uppercase',
+        "inline-flex items-center rounded-full border px-3 py-1 font-mono text-eyebrow tracking-wide uppercase",
         tones[tone],
       )}
     >
@@ -226,11 +258,19 @@ export function DefinitionList({
   items: { term: string; value: ReactNode }[];
   className?: string;
 }) {
-  const shown = items.filter((item) => item.value !== null && item.value !== undefined && item.value !== '');
+  const shown = items.filter(
+    (item) =>
+      item.value !== null && item.value !== undefined && item.value !== "",
+  );
   if (shown.length === 0) return null;
 
   return (
-    <dl className={cn('grid gap-x-8 gap-y-4 sm:grid-cols-[max-content_1fr]', className)}>
+    <dl
+      className={cn(
+        "grid gap-x-8 gap-y-4 sm:grid-cols-[max-content_1fr]",
+        className,
+      )}
+    >
       {shown.map((item) => (
         <div key={item.term} className="contents">
           <dt className="eyebrow pbs-1">{item.term}</dt>
@@ -244,6 +284,16 @@ export function DefinitionList({
 // ── Prose ────────────────────────────────────────────────────────────────
 
 /** Constrains a text column to the 52–78ch measure. */
-export function Prose({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('measure space-y-4 text-body text-ink-70', className)}>{children}</div>;
+export function Prose({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("measure space-y-4 text-body text-ink-70", className)}>
+      {children}
+    </div>
+  );
 }
