@@ -1,31 +1,47 @@
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import { Bidi } from '@/components/ui/bidi';
-import { DefinitionList, Panel, Prose, Section, SectionHeading } from '@/components/ui/primitives';
-import { getOrganization, listMetrics, listPeople } from '@/db/queries/content';
-import type { PersonCategory } from '@/db/schema/enums';
-import { publicEnv } from '@/lib/env.public';
-import { storageUrl } from '@/lib/format';
-import { isLocale } from '@/lib/i18n/config';
-import { getDictionary } from '@/lib/i18n/get-dictionary';
+import type { Metadata } from "next";
+import Image from "next/image";
+import { notFound } from "next/navigation";
+import { Bidi } from "@/components/ui/bidi";
+import {
+  DefinitionList,
+  Panel,
+  Prose,
+  Section,
+  SectionHeading,
+} from "@/components/ui/primitives";
+import { getOrganization, listMetrics, listPeople } from "@/db/queries/content";
+import type { PersonCategory } from "@/db/schema/enums";
+import { publicEnv } from "@/lib/env.public";
+import { storageUrl } from "@/lib/format";
+import { isLocale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 
 export const revalidate = 3600;
 
-export async function generateMetadata({ params }: PageProps<'/[locale]/about'>): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<"/[locale]/about">): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  const [dict, org] = await Promise.all([getDictionary(locale), getOrganization(locale)]);
+  const [dict, org] = await Promise.all([
+    getDictionary(locale),
+    getOrganization(locale),
+  ]);
   return {
     title: dict.about.title,
     description: org?.mission ?? undefined,
-    alternates: { canonical: `/${locale}/about`, languages: { ar: '/ar/about', en: '/en/about' } },
+    alternates: {
+      canonical: `/${locale}/about`,
+      languages: { ar: "/ar/about", en: "/en/about" },
+    },
   };
 }
 
-const CATEGORIES: PersonCategory[] = ['board', 'executive', 'staff'];
+const CATEGORIES: PersonCategory[] = ["board", "executive", "staff"];
 
-export default async function AboutPage({ params }: PageProps<'/[locale]/about'>) {
+export default async function AboutPage({
+  params,
+}: PageProps<"/[locale]/about">) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
@@ -35,11 +51,11 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
     listPeople(locale),
     // Targets, not verified figures. On this page the reader is looking at what
     // the organisation intends, and the label on each card says so.
-    listMetrics(locale, { status: 'target' }),
+    listMetrics(locale, { status: "target" }),
   ]);
 
   return (
-    <div className="container-content section-gap">
+    <div className="container-content section-gap ">
       <SectionHeading as="h1" title={dict.about.title} />
 
       {/* The identity record — the single most-reused due-diligence element on
@@ -52,13 +68,17 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
             { term: dict.about.legalName, value: org?.legalName },
             {
               term: dict.about.licenseNumber,
-              value: org?.licenseNumber ? <Bidi>{org.licenseNumber}</Bidi> : null,
+              value: org?.licenseNumber ? (
+                <Bidi>{org.licenseNumber}</Bidi>
+              ) : null,
             },
             { term: dict.about.licenseAuthority, value: org?.licenseAuthority },
             { term: dict.about.legalForm, value: org?.legalForm },
             {
               term: dict.about.foundedYear,
-              value: org?.foundedYear ? <Bidi>{String(org.foundedYear)}</Bidi> : null,
+              value: org?.foundedYear ? (
+                <Bidi>{String(org.foundedYear)}</Bidi>
+              ) : null,
             },
           ]}
         />
@@ -91,10 +111,14 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
             {org.coreValues.map((value) => (
               <Panel as="li" key={value.title_ar}>
                 <h3 className="text-h3 font-semibold">
-                  {locale === 'ar' ? value.title_ar : (value.title_en ?? value.title_ar)}
+                  {locale === "ar"
+                    ? value.title_ar
+                    : (value.title_en ?? value.title_ar)}
                 </h3>
                 <p className="mbs-3 text-small text-ink-70">
-                  {locale === 'ar' ? value.body_ar : (value.body_en ?? value.body_ar)}
+                  {locale === "ar"
+                    ? value.body_ar
+                    : (value.body_en ?? value.body_ar)}
                 </p>
               </Panel>
             ))}
@@ -109,7 +133,9 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
             <ol className="list-decimal space-y-3 ps-6">
               {org.strategicObjectives.map((objective) => (
                 <li key={objective.text_ar}>
-                  {locale === 'ar' ? objective.text_ar : (objective.text_en ?? objective.text_ar)}
+                  {locale === "ar"
+                    ? objective.text_ar
+                    : (objective.text_en ?? objective.text_ar)}
                 </li>
               ))}
             </ol>
@@ -121,10 +147,12 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
                 <Panel as="li" key={target.id}>
                   <p className="text-h3 font-semibold text-ink">
                     <Bidi>
-                      {target.displayPrefix ?? ''}
+                      {target.displayPrefix ?? ""}
                       {target.value}
-                    </Bidi>{' '}
-                    <span className="text-small font-normal text-ink-70">{target.unit}</span>
+                    </Bidi>{" "}
+                    <span className="text-small font-normal text-ink-70">
+                      {target.unit}
+                    </span>
                   </p>
                   <p className="mbs-2 text-small text-ink-70">{target.label}</p>
                   <p className="mbs-2 font-mono text-caption text-mono-muted">
@@ -144,12 +172,16 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
         <Section labelledBy="about-governance">
           <SectionHeading id="about-governance" title={dict.about.governance} />
           {CATEGORIES.map((category) => {
-            const group = people.filter((person) => person.category === category);
+            const group = people.filter(
+              (person) => person.category === category,
+            );
             if (group.length === 0) return null;
 
             return (
               <div key={category} className="mbe-10">
-                <h3 className="eyebrow mbe-4">{dict.enums.personCategory[category]}</h3>
+                <h3 className="eyebrow mbe-4">
+                  {dict.enums.personCategory[category]}
+                </h3>
                 <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                   {group.map((person) => (
                     <Panel as="li" key={person.id} className="flex gap-4">
@@ -158,10 +190,10 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
                           <Image
                             src={storageUrl(
                               publicEnv.NEXT_PUBLIC_SUPABASE_URL,
-                              'media',
+                              "media",
                               person.photoPath,
                             )}
-                            alt={person.photoAlt ?? person.name ?? ''}
+                            alt={person.photoAlt ?? person.name ?? ""}
                             fill
                             sizes="64px"
                             className="object-cover"
@@ -169,8 +201,12 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
                         </div>
                       ) : null}
                       <div>
-                        <p className="text-small font-medium text-ink">{person.name}</p>
-                        <p className="mbs-1 text-caption text-ink-55">{person.role}</p>
+                        <p className="text-small font-medium text-ink">
+                          {person.name}
+                        </p>
+                        <p className="mbs-1 text-caption text-ink-55">
+                          {person.role}
+                        </p>
                       </div>
                     </Panel>
                   ))}
