@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { signOut } from '@/actions/admin/auth';
+import { getAdminNavCounts } from '@/db/queries/admin';
 import type { UserRole } from '@/db/schema/enums';
 import type { Actor } from '@/services/_shared/actor';
 import { can } from '@/services/_shared/permissions';
@@ -30,7 +31,7 @@ export type NavGroup = { title: string; items: NavItem[] };
 
 export function buildNav(
   actor: Actor,
-  counts: { submissions: number; sensitive: number },
+  counts: { submissions?: number; sensitive?: number } = {},
 ): NavGroup[] {
   const groups: NavGroup[] = [
     { title: 'نظرة عامة', items: [{ href: '/admin', label: 'لوحة التحكم' }] },
@@ -109,15 +110,15 @@ const ROLE_LABEL: Record<UserRole, string> = {
 
 export function AdminShell({
   actor,
-  nav,
   children,
   footer,
 }: {
   actor: Actor;
-  nav: NavGroup[];
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const fallbackNav = <AdminNav nav={buildNav(actor)} countsPending />;
+
   return (
     // Column below `md:`, row above it. The shell had no responsive treatment
     // whatsoever: a `w-64 shrink-0` sidebar plus `p-8` on main is 256 + 64 =
@@ -142,11 +143,15 @@ export function AdminShell({
           <summary className="cursor-pointer border-be border-rule p-4 text-small font-medium text-ink">
             القائمة
           </summary>
-          <AdminNav nav={nav} />
+          <Suspense fallback={fallbackNav}>
+            <AdminNavWithCounts actor={actor} />
+          </Suspense>
         </details>
 
         <div className="hidden md:block">
-          <AdminNav nav={nav} />
+          <Suspense fallback={fallbackNav}>
+            <AdminNavWithCounts actor={actor} />
+          </Suspense>
         </div>
 
         {footer ?? (
@@ -161,6 +166,12 @@ export function AdminShell({
       <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
     </div>
   );
+}
+
+async function AdminNavWithCounts({ actor }: { actor: Actor }) {
+  const counts = await getAdminNavCounts(actor);
+
+  return <AdminNav nav={buildNav(actor, counts)} />;
 }
 
 /** Page header with a title, optional description and an action slot. */

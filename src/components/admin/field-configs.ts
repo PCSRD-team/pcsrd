@@ -163,7 +163,13 @@ export const PROGRAM_FIELDS: FieldSpec[] = [
   },
   { kind: 'bilingual', name: 'title', label: 'الاسم', required: true, max: 200 },
   SLUG,
-  { kind: 'bilingual', name: 'tagline', label: 'الجملة التعريفية', max: 200 },
+  {
+    kind: 'bilingual',
+    name: 'tagline',
+    label: 'وصف السلايدر / الجملة التعريفية',
+    max: 200,
+    hint: 'يظهر كوصف قصير داخل بطاقة البرنامج في الصفحة الرئيسية وصفحة البرنامج.',
+  },
   {
     kind: 'select',
     name: 'targetGroups',
@@ -192,6 +198,17 @@ export const PROGRAM_FIELDS: FieldSpec[] = [
     labelEn: 'Impact statement (English)',
   },
   { kind: 'bilingual', name: 'strategicObjective', label: 'الهدف الاستراتيجي', multiline: true, max: 600 },
-  { kind: 'media', name: 'heroMediaId', label: 'معرّف الصورة الرئيسية' },
-  { kind: 'text', name: 'displayOrder', label: 'الترتيب', type: 'number' },
+  {
+    kind: 'media',
+    name: 'heroMediaId',
+    label: 'صورة السلايدر الرئيسية',
+    hint: 'اختر معرّف صورة من مكتبة الوسائط. تظهر في سلايدر البرامج في الصفحة الرئيسية.',
+  },
+  {
+    kind: 'text',
+    name: 'displayOrder',
+    label: 'ترتيب الظهور في الصفحة الرئيسية',
+    type: 'number',
+    hint: 'تستخدم الصفحة الرئيسية هذا الرقم لترتيب البرامج المنشورة في السلايدر.',
+  },
 ];

@@ -33,7 +33,7 @@ export function StatusBadge({ status }: { status: ContentStatus }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-3 py-0.5 font-mono text-eyebrow',
+        'inline-flex items-center rounded-full border px-3 py-0.5 font-mono text-eyebrow shadow-[0_8px_20px_rgb(20_33_63/0.06)]',
         STATUS_TONE[status],
       )}
     >
@@ -82,14 +82,14 @@ export function DataTable<T extends { id: string | number }>({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="rule-edge bg-paper-alt p-10 text-center">
+      <div className="rule-edge rounded-lg bg-paper-alt p-10 text-center">
         <p className="text-small text-ink-55">{empty}</p>
       </div>
     );
   }
 
   return (
-    <div className="rule-edge overflow-x-auto bg-paper">
+    <div className="rule-edge overflow-x-auto rounded-lg bg-paper shadow-[0_14px_36px_rgb(20_33_63/0.06)]">
       <table className="w-full">
         <thead>
           <tr className="border-be-2 border-ink">
@@ -102,7 +102,7 @@ export function DataTable<T extends { id: string | number }>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-be border-hairline hover:bg-paper-alt">
+            <tr key={row.id} className="border-be border-hairline transition-colors hover:bg-gold-050/45">
               {columns.map((column, index) => (
                 <td
                   key={column.key}
@@ -200,7 +200,7 @@ export function Pagination({
 // ── Form scaffolding ─────────────────────────────────────────────────────
 
 export const inputClass =
-  'block w-full rule-control bg-paper px-3 py-2 text-small text-ink focus:border-navy-700';
+  'block min-h-11 w-full rounded-md rule-control bg-paper px-3 py-2 text-small text-ink motion-standard transition-colors focus:border-navy-700 disabled:cursor-not-allowed disabled:bg-paper-alt disabled:text-ink-55';
 
 /**
  * The ids `Field` renders, joined for `aria-describedby`.
@@ -234,7 +234,7 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 rounded-lg bg-white/45 p-3">
       <label htmlFor={name} className="block text-small font-medium text-ink">
         {label}
         {required ? (
@@ -321,7 +321,7 @@ export function CheckboxField({
           name={name}
           type="checkbox"
           defaultChecked={defaultChecked}
-          className="size-4 accent-navy-700"
+          className="size-4 rounded accent-navy-700"
         />
         {label}
       </label>
@@ -349,7 +349,7 @@ export function PublishBar({
   children?: ReactNode;
 }) {
   return (
-    <div className="sticky inset-be-0 mbs-10 flex flex-wrap items-center gap-3 border-bs-2 border-ink bg-paper p-4">
+    <div className="sticky inset-be-0 mbs-10 flex flex-wrap items-center gap-3 rounded-lg border border-ink/20 bg-paper/95 p-4 shadow-[0_-16px_45px_rgb(20_33_63/0.10)] backdrop-blur">
       <StatusBadge status={status} />
       <div className="flex-1" />
       {children}
@@ -357,7 +357,7 @@ export function PublishBar({
         type="submit"
         name="status"
         value="draft"
-        className="rule-edge px-5 py-2 text-small text-ink hover:bg-paper-alt"
+        className="rule-edge rounded-md px-5 py-2 text-small text-ink hover:bg-paper-alt"
       >
         حفظ كمسودة
       </button>
@@ -365,7 +365,7 @@ export function PublishBar({
         type="submit"
         name="status"
         value="in_review"
-        className="rule-edge px-5 py-2 text-small text-ink hover:bg-paper-alt"
+        className="rule-edge rounded-md px-5 py-2 text-small text-ink hover:bg-paper-alt"
       >
         إرسال للمراجعة
       </button>
@@ -374,7 +374,7 @@ export function PublishBar({
           type="submit"
           name="status"
           value="published"
-          className="bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900"
+          className="rounded-md bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900"
         >
           نشر
         </button>
@@ -384,7 +384,7 @@ export function PublishBar({
           type="submit"
           name="status"
           value="archived"
-          className="rule-edge border-gold-600 px-5 py-2 text-small text-gold-700 hover:bg-gold-050"
+          className="rule-edge rounded-md border-gold-600 px-5 py-2 text-small text-gold-700 hover:bg-gold-050"
         >
           أرشفة
         </button>

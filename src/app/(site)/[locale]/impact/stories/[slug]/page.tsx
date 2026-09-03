@@ -3,11 +3,19 @@ import { notFound } from 'next/navigation';
 import { RichText } from '@/components/content/rich-text';
 import { Panel, Prose } from '@/components/ui/primitives';
 import { UntranslatedNotice } from '@/components/ui/states';
-import { getStoryBySlug } from '@/db/queries/content';
-import { isLocale } from '@/lib/i18n/config';
+import { getStoryBySlug, listStorySlugs } from '@/db/queries/content';
+import { prerenderData } from '@/lib/build-time';
+import { LOCALES, isLocale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 
 export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const slugs = await prerenderData('story slugs', () => listStorySlugs(), []);
+  return LOCALES.flatMap((locale) =>
+    slugs.map((row) => ({ locale, slug: locale === 'ar' ? row.slugAr : row.slugEn })),
+  );
+}
 
 export async function generateMetadata({
   params,

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 import { Panel } from './primitives';
 
 /**
@@ -84,6 +85,62 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 
+export function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={cn('loading-surface', className)} aria-hidden="true" />;
+}
+
+export function PageHeaderSkeleton() {
+  return (
+    <div className="mbe-8" aria-hidden="true">
+      <SkeletonBlock className="h-3 w-24" />
+      <SkeletonBlock className="mbs-4 h-8 w-2/5 min-w-48" />
+      <SkeletonBlock className="mbs-4 h-4 w-3/5 max-w-xl" />
+    </div>
+  );
+}
+
+export function DetailPageSkeleton() {
+  return (
+    <article className="container-content section-gap" aria-busy="true">
+      <PageHeaderSkeleton />
+      <SkeletonBlock className="mbs-10 aspect-[16/9] w-full" />
+      <div className="measure mbs-10 space-y-3" aria-hidden="true">
+        <SkeletonBlock className="h-4 w-full" />
+        <SkeletonBlock className="h-4 w-11/12" />
+        <SkeletonBlock className="h-4 w-4/5" />
+        <SkeletonBlock className="mbs-6 h-4 w-full" />
+        <SkeletonBlock className="h-4 w-2/3" />
+      </div>
+    </article>
+  );
+}
+
+export function AdminPageSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div className="space-y-6" aria-busy="true">
+      <PageHeaderSkeleton />
+      <div className="grid gap-4 md:grid-cols-3" aria-hidden="true">
+        {Array.from({ length: 3 }, (_, index) => (
+          <div key={index} className="rule-edge bg-paper p-6">
+            <SkeletonBlock className="h-3 w-20" />
+            <SkeletonBlock className="mbs-4 h-8 w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="rule-edge bg-paper" aria-hidden="true">
+        {Array.from({ length: rows }, (_, index) => (
+          <div key={index} className="grid gap-4 border-be border-hairline p-4 md:grid-cols-4">
+            <SkeletonBlock className="h-4 w-2/3" />
+            <SkeletonBlock className="h-4 w-1/2" />
+            <SkeletonBlock className="h-4 w-3/4" />
+            <SkeletonBlock className="h-4 w-1/3" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * The whole-route loading state for a list page.
  *
@@ -108,8 +165,8 @@ export function ListPageSkeleton({ rows = 3 }: { rows?: number }) {
     <div className="container-content section-gap" aria-busy="true">
       <div className="mbe-8" aria-hidden="true">
         <div className="rule-mark" />
-        <div className="mbs-4 h-8 w-2/5 bg-rule-strong" />
-        <div className="mbs-4 h-4 w-3/5 bg-rule" />
+        <SkeletonBlock className="mbs-4 h-8 w-2/5 min-w-48" />
+        <SkeletonBlock className="mbs-4 h-4 w-3/5 max-w-xl" />
       </div>
       <ListSkeleton rows={rows} />
     </div>

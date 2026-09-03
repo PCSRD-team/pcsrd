@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
@@ -65,7 +66,7 @@ const TABLES = {
 
 export type AdminEntity = keyof typeof TABLES;
 
-export async function getAdminNavCounts(actor: Actor) {
+export const getAdminNavCounts = cache(async function getAdminNavCounts(actor: Actor) {
   return readAsActor(db, actor, async (tx) => {
     const [counts] = rowsOf<{ submissions: number; sensitive: number }>(
       await tx.execute(sql`
@@ -88,7 +89,7 @@ export async function getAdminNavCounts(actor: Actor) {
 
     return { submissions: counts?.submissions ?? 0, sensitive: counts?.sensitive ?? 0 };
   });
-}
+});
 
 export async function listAdminRows(
   actor: Actor,

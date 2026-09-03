@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { type Locale, otherLocale } from '@/lib/i18n/config';
+import { cn } from '@/lib/utils';
 
 /**
  * **A client component, deliberately.**
@@ -16,7 +17,7 @@ import { type Locale, otherLocale } from '@/lib/i18n/config';
  * So: `usePathname` and `useSearchParams`, and everything else in the chrome
  * stays a Server Component.
  */
-export function LanguageSwitcher({ locale, label }: { locale: Locale; label: string }) {
+export function LanguageSwitcher({ locale, label, className }: { locale: Locale; label: string; className?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const target = otherLocale(locale);
@@ -38,7 +39,10 @@ export function LanguageSwitcher({ locale, label }: { locale: Locale; label: str
       // wants 24x24 and the design system asks for 44px, and this link sits
       // `gap-4` from its neighbour — under the 24px offset that would let the
       // spacing exception rescue a smaller target. It was ~23.2px.
-      className="inline-flex min-h-11 items-center font-mono text-caption text-ink-55 no-underline hover:text-gold-700"
+      className={cn(
+        'inline-flex min-h-11 items-center font-mono text-caption text-ink-55 no-underline hover:text-gold-700',
+        className,
+      )}
     >
       {label}
     </Link>

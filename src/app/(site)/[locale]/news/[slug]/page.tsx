@@ -6,13 +6,21 @@ import { ArticleJsonLd } from '@/components/seo/json-ld';
 import { DateText } from '@/components/ui/bidi';
 import { Prose } from '@/components/ui/primitives';
 import { UntranslatedNotice } from '@/components/ui/states';
-import { getPostBySlug } from '@/db/queries/content';
+import { getPostBySlug, listPostSlugs } from '@/db/queries/content';
+import { prerenderData } from '@/lib/build-time';
 import { publicEnv } from '@/lib/env.public';
 import { formatDate, storageUrl } from '@/lib/format';
-import { isLocale } from '@/lib/i18n/config';
+import { LOCALES, isLocale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 
 export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const slugs = await prerenderData('post slugs', () => listPostSlugs(), []);
+  return LOCALES.flatMap((locale) =>
+    slugs.map((row) => ({ locale, slug: locale === 'ar' ? row.slugAr : row.slugEn })),
+  );
+}
 
 export async function generateMetadata({
   params,

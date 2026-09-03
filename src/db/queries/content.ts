@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
 import {
@@ -282,11 +282,9 @@ export async function _listPosts(
           title: pickCol(posts.titleAr, posts.titleEn, locale),
           excerpt: pickCol(posts.excerptAr, posts.excerptEn, locale),
           publishedAt: posts.publishedAt,
-          ...hero,
-          heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+          heroMediaId: posts.heroMediaId,
         })
         .from(posts)
-        .leftJoin(mediaAssets, eq(mediaAssets.id, posts.heroMediaId))
         .where(where)
         .orderBy(desc(posts.publishedAt))
         .limit(perPage)
@@ -301,10 +299,52 @@ export async function _listPosts(
   }
 
   const total = counted[0]?.count ?? 0;
-  return { items: rows, total, page, perPage, totalPages: Math.max(1, Math.ceil(total / perPage)) };
+  const heroIds = Array.from(
+    new Set(rows.map((row) => row.heroMediaId).filter((id): id is string => Boolean(id))),
+  );
+  const heroRows =
+    heroIds.length > 0
+      ? await db
+          .select({
+            id: mediaAssets.id,
+            heroPath: mediaAssets.path,
+            heroBlur: mediaAssets.blurDataUrl,
+            heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+          })
+          .from(mediaAssets)
+          .where(inArray(mediaAssets.id, heroIds))
+      : [];
+  const mediaById = new Map(heroRows.map((row) => [row.id, row]));
+  const items = rows.map(({ heroMediaId, ...row }) => {
+    const media = heroMediaId ? mediaById.get(heroMediaId) : null;
+    return {
+      ...row,
+      heroPath: media?.heroPath ?? null,
+      heroBlur: media?.heroBlur ?? null,
+      heroAlt: media?.heroAlt ?? null,
+    };
+  });
+
+  return { items, total, page, perPage, totalPages: Math.max(1, Math.ceil(total / perPage)) };
 }
 
 export const listPosts = cached(_listPosts, ['posts:list'], { tags: [TAGS.postList] });
+
+/** Slugs for `generateStaticParams`. Both locales, published only. */
+export async function _listPostSlugs() {
+  return db
+    .select({
+      slugAr: posts.slugAr,
+      slugEn: posts.slugEn,
+      updatedAt: posts.updatedAt,
+    })
+    .from(posts)
+    .where(eq(posts.status, 'published'));
+}
+
+export const listPostSlugs = cached(_listPostSlugs, ['posts:slugs'], {
+  tags: [TAGS.postList],
+});
 
 export async function _getPostBySlug(slug: string, locale: Locale) {
   const [row] = await db
@@ -343,31 +383,60 @@ export const getPostBySlug = cached(_getPostBySlug, ['posts:detail'], { tags: [T
 
 // ── Stories ──────────────────────────────────────────────────────────────
 
-export async function _listStories(locale: Locale, options: { limit?: number } = {}) {
-  return db
-    .select({
-      id: stories.id,
-      slug: slugCol(stories.slugAr, stories.slugEn, locale),
-      title: pickCol(stories.titleAr, stories.titleEn, locale),
-      summary: pickCol(stories.summaryAr, stories.summaryEn, locale),
-      quote: pickCol(stories.quoteTextAr, stories.quoteTextEn, locale),
-      quoteAttribution: pickCol(
-        stories.quoteAttributionAr,
-        stories.quoteAttributionEn,
-        locale,
-      ),
-      publishedAt: stories.publishedAt,
-      ...hero,
-      heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-    })
-    .from(stories)
-    .leftJoin(mediaAssets, eq(mediaAssets.id, stories.heroMediaId))
-    .where(eq(stories.status, 'published'))
-    .orderBy(desc(stories.publishedAt))
-    .limit(options.limit ?? 24);
+export async function _listStories(
+  locale: Locale,
+  options: { limit?: number; featuredOnly?: boolean } = {},
+) {
+  try {
+    return await db
+      .select({
+        id: stories.id,
+        slug: slugCol(stories.slugAr, stories.slugEn, locale),
+        title: pickCol(stories.titleAr, stories.titleEn, locale),
+        summary: pickCol(stories.summaryAr, stories.summaryEn, locale),
+        quote: pickCol(stories.quoteTextAr, stories.quoteTextEn, locale),
+        quoteAttribution: pickCol(
+          stories.quoteAttributionAr,
+          stories.quoteAttributionEn,
+          locale,
+        ),
+        publishedAt: stories.publishedAt,
+        ...hero,
+        heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+      })
+      .from(stories)
+      .leftJoin(mediaAssets, eq(mediaAssets.id, stories.heroMediaId))
+      .where(
+        and(
+          eq(stories.status, 'published'),
+          options.featuredOnly ? eq(stories.isFeatured, true) : undefined,
+        ),
+      )
+      .orderBy(desc(stories.publishedAt))
+      .limit(options.limit ?? 24);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) return [];
+    throw error;
+  }
 }
 
 export const listStories = cached(_listStories, ['stories:list'], { tags: [TAGS.storyList] });
+
+/** Slugs for `generateStaticParams`. Both locales, published only. */
+export async function _listStorySlugs() {
+  return db
+    .select({
+      slugAr: stories.slugAr,
+      slugEn: stories.slugEn,
+      updatedAt: stories.updatedAt,
+    })
+    .from(stories)
+    .where(eq(stories.status, 'published'));
+}
+
+export const listStorySlugs = cached(_listStorySlugs, ['stories:slugs'], {
+  tags: [TAGS.storyList],
+});
 
 export async function _getStoryBySlug(slug: string, locale: Locale) {
   const [row] = await db
@@ -431,6 +500,22 @@ export async function _listOpenVacancies(locale: Locale, options: { type?: Vacan
 }
 
 export const listOpenVacancies = cached(_listOpenVacancies, ['vacancies:open'], {
+  tags: [TAGS.vacancyList],
+});
+
+/** Slugs for `generateStaticParams`. Closed vacancies stay reachable. */
+export async function _listVacancySlugs() {
+  return db
+    .select({
+      slugAr: vacancies.slugAr,
+      slugEn: vacancies.slugEn,
+      updatedAt: vacancies.updatedAt,
+    })
+    .from(vacancies)
+    .where(eq(vacancies.status, 'published'));
+}
+
+export const listVacancySlugs = cached(_listVacancySlugs, ['vacancies:slugs'], {
   tags: [TAGS.vacancyList],
 });
 
