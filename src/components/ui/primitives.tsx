@@ -41,7 +41,7 @@ export function SectionHeading({
       {eyebrow ? <p className="eyebrow mbe-3">{eyebrow}</p> : null}
 
       {/* الحاوية تكون inline-block ليُحسب عرض الكلمة/الكلمتين بدقة */}
-      <div className="group relative inline-block">
+      <div className="inline-block">
         <Tag
           id={id}
           className={cn(
@@ -56,20 +56,7 @@ export function SectionHeading({
           - العرض المبدئي الثابت: w-12 (يمكنكِ تغييره لـ w-16 حسب ما كان عاجبك)
           - عند الهوفر: group-hover:w-full يتمدد ليكون بطول الكلام تماماً
         */}
-        <span
-          className="
-            mbs-3 
-            block 
-            h-[3]
-            w-12 
-            bg-[#c9a16f] 
-            transition-all 
-            duration-300 
-            ease-in-out 
-            group-hover:w-full
-          "
-          aria-hidden="true"
-        />
+        <span className="rule-mark mbs-3 block" aria-hidden="true" />
       </div>
 
       {lead ? (
@@ -136,12 +123,15 @@ export function Section({
 // ── Buttons and links ────────────────────────────────────────────────────
 
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 px-6 py-3 text-small font-medium " +
-  "transition-colors disabled:opacity-60 disabled:cursor-not-allowed";
+  "inline-flex min-h-11 items-center justify-center gap-2 px-6 py-3 text-small font-medium " +
+  "motion-standard transition-colors active:translate-y-px disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60";
 
 const buttonTones = {
   primary: "bg-navy-700 text-paper hover:bg-navy-900",
   secondary: "rule-control bg-paper text-ink hover:bg-paper-alt",
+  outline: "rule-control bg-transparent text-ink hover:bg-paper-alt",
+  ghost: "bg-transparent text-ink hover:bg-paper-alt",
+  destructive: "rule-control border-gold-600 bg-gold-050 text-gold-700 hover:bg-paper",
   // Gold as a marking colour: the rule, not the fill. Text stays ink.
   marked:
     "border-b-2 border-gold-600 bg-transparent text-ink hover:bg-gold-050",
@@ -155,6 +145,7 @@ export function Button({
   type = "button",
   className,
   disabled,
+  loading,
   name,
   value,
 }: {
@@ -163,16 +154,52 @@ export function Button({
   type?: "button" | "submit" | "reset";
   className?: string;
   disabled?: boolean;
+  loading?: boolean;
   name?: string;
   value?: string;
 }) {
+  const isDisabled = disabled || loading;
   return (
     <button
       type={type}
       name={name}
       value={value}
-      disabled={disabled}
+      disabled={isDisabled}
+      aria-busy={loading || undefined}
       className={cn(buttonBase, buttonTones[tone], className)}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function IconSlot({ children }: { children: ReactNode }) {
+  return (
+    <span className="icon-20 inline-flex shrink-0 items-center justify-center" aria-hidden="true">
+      {children}
+    </span>
+  );
+}
+
+export function IconButton({
+  children,
+  label,
+  type = "button",
+  className,
+  disabled,
+}: {
+  children: ReactNode;
+  label: string;
+  type?: "button" | "submit" | "reset";
+  className?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type={type}
+      aria-label={label}
+      disabled={disabled}
+      className={cn("icon-button disabled:cursor-not-allowed disabled:opacity-60", className)}
     >
       {children}
     </button>
@@ -230,8 +257,8 @@ export function Badge({
     active: "bg-navy-100 text-navy-900 border-navy-700/30",
     complete: "bg-paper-alt text-ink-55 border-rule-strong",
     planned: "bg-paper text-ink-55 border-rule",
-    verified: "bg-gold-050 text-gold-700 border-gold-600",
-    warning: "bg-gold-050 text-gold-700 border-gold-600",
+    verified: "bg-success-soft text-success border-success",
+    warning: "bg-warning-soft text-warning border-warning",
   };
   return (
     <span

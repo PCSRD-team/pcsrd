@@ -23,8 +23,14 @@ export type TitledBlock = {
 /** `[{ text_ar, text_en }]` */
 export type BilingualLine = { text_ar: string; text_en?: string | null };
 
-/** `[{ platform, url, is_official }]` */
-export type SocialLink = { platform: string; url: string; is_official: boolean };
+/** `[{ platform, url, is_official, visible, display_order }]` */
+export type SocialLink = {
+  platform: string;
+  url: string;
+  is_official: boolean;
+  visible?: boolean;
+  display_order?: number | null;
+};
 
 /**
  * The channels the organisation actually owns, rendered on `/verify` so a
@@ -36,6 +42,8 @@ export type OfficialChannel = {
   handle: string;
   url: string;
   is_official: boolean;
+  visible?: boolean;
+  display_order?: number | null;
   note_ar?: string | null;
   note_en?: string | null;
 };

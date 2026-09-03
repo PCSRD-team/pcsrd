@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LinkPendingMark } from '@/components/ui/link-pending';
 import { cn } from '@/lib/utils';
 import type { NavGroup, NavItem } from './shell';
 
@@ -23,7 +24,13 @@ function activeHrefFor(pathname: string, nav: NavGroup[]) {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 }
 
-export function AdminNav({ nav }: { nav: NavGroup[] }) {
+export function AdminNav({
+  nav,
+  countsPending = false,
+}: {
+  nav: NavGroup[];
+  countsPending?: boolean;
+}) {
   const pathname = usePathname();
   const activeHref = activeHrefFor(pathname, nav);
 
@@ -34,7 +41,12 @@ export function AdminNav({ nav }: { nav: NavGroup[] }) {
           <p className="eyebrow mbe-2">{group.title}</p>
           <ul className="space-y-1">
             {group.items.map((item) => (
-              <AdminNavItem key={item.href} item={item} active={item.href === activeHref} />
+              <AdminNavItem
+                key={item.href}
+                item={item}
+                active={item.href === activeHref}
+                countsPending={countsPending}
+              />
             ))}
           </ul>
         </div>
@@ -43,29 +55,42 @@ export function AdminNav({ nav }: { nav: NavGroup[] }) {
   );
 }
 
-function AdminNavItem({ item, active }: { item: NavItem; active: boolean }) {
+function AdminNavItem({
+  item,
+  active,
+  countsPending,
+}: {
+  item: NavItem;
+  active: boolean;
+  countsPending: boolean;
+}) {
   return (
     <li>
       <Link
         href={item.href}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'flex items-center justify-between px-2 py-1.5 text-small text-ink no-underline hover:bg-paper-alt',
+          'motion-standard flex min-h-10 items-center justify-between gap-3 px-2 py-1.5 text-small text-ink no-underline transition-colors hover:bg-paper-alt',
           active && 'bg-gold-050 font-medium text-gold-700',
         )}
       >
-        <span>{item.label}</span>
-        {item.badge ? (
-          <span
-            className={cn(
-              'rounded-full px-2 py-0.5 font-mono text-eyebrow',
-              'bg-gold-050 text-gold-700',
-              active && 'bg-paper text-gold-700',
-            )}
-          >
-            {item.badge}
-          </span>
-        ) : null}
+        <span className="min-w-0 truncate">{item.label}</span>
+        <span className="flex shrink-0 items-center gap-2">
+          <LinkPendingMark />
+          {item.badge ? (
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 font-mono text-eyebrow',
+                'bg-gold-050 text-gold-700',
+                active && 'bg-paper text-gold-700',
+              )}
+            >
+              {item.badge}
+            </span>
+          ) : countsPending && item.href.startsWith('/admin/submissions') ? (
+            <span className="loading-surface h-5 w-7 rounded-full" aria-hidden="true" />
+          ) : null}
+        </span>
       </Link>
     </li>
   );

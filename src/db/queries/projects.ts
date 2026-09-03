@@ -1,4 +1,4 @@
-import { and, arrayOverlaps, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, arrayOverlaps, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   mediaAssets,
@@ -101,13 +101,10 @@ export async function _listProjects(locale: Locale, filters: ProjectFilters) {
           themes: projects.themes,
           programKey: programs.key,
           programTitle: pickCol(programs.titleAr, programs.titleEn, locale),
-          heroPath: mediaAssets.path,
-          heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-          heroBlur: mediaAssets.blurDataUrl,
+          heroMediaId: projects.heroMediaId,
         })
         .from(projects)
         .innerJoin(programs, eq(programs.id, projects.programId))
-        .leftJoin(mediaAssets, eq(mediaAssets.id, projects.heroMediaId))
         .where(where)
         .orderBy(desc(projects.publishedAt))
         .limit(PROJECTS_PER_PAGE)
@@ -133,8 +130,34 @@ export async function _listProjects(locale: Locale, filters: ProjectFilters) {
   }
 
   const total = counted[0]?.count ?? 0;
+  const heroIds = Array.from(
+    new Set(rows.map((row) => row.heroMediaId).filter((id): id is string => Boolean(id))),
+  );
+  const heroRows =
+    heroIds.length > 0
+      ? await db
+          .select({
+            id: mediaAssets.id,
+            heroPath: mediaAssets.path,
+            heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+            heroBlur: mediaAssets.blurDataUrl,
+          })
+          .from(mediaAssets)
+          .where(inArray(mediaAssets.id, heroIds))
+      : [];
+  const mediaById = new Map(heroRows.map((row) => [row.id, row]));
+  const items = rows.map(({ heroMediaId, ...row }) => {
+    const media = heroMediaId ? mediaById.get(heroMediaId) : null;
+    return {
+      ...row,
+      heroPath: media?.heroPath ?? null,
+      heroAlt: media?.heroAlt ?? null,
+      heroBlur: media?.heroBlur ?? null,
+    };
+  });
+
   return {
-    items: rows as ProjectCard[],
+    items: items as ProjectCard[],
     total,
     page,
     perPage: PROJECTS_PER_PAGE,
@@ -143,6 +166,68 @@ export async function _listProjects(locale: Locale, filters: ProjectFilters) {
 }
 
 export const listProjects = cached(_listProjects, ['projects:list'], {
+  tags: [TAGS.projectList],
+});
+
+export async function _listFeaturedProjects(locale: Locale, limit = 2) {
+  if (shouldUseDevelopmentPlaceholderData()) return [];
+
+  let rows;
+  try {
+    rows = await db
+      .select({
+        id: projects.id,
+        slug: slugCol(projects.slugAr, projects.slugEn, locale),
+        title: pickCol(projects.titleAr, projects.titleEn, locale),
+        summary: pickCol(projects.summaryAr, projects.summaryEn, locale),
+        state: projects.projectState,
+        startDate: projects.startDate,
+        endDate: projects.endDate,
+        governorates: projects.governorates,
+        themes: projects.themes,
+        programKey: programs.key,
+        programTitle: pickCol(programs.titleAr, programs.titleEn, locale),
+        heroMediaId: projects.heroMediaId,
+      })
+      .from(projects)
+      .innerJoin(programs, eq(programs.id, projects.programId))
+      .where(and(eq(projects.status, 'published'), eq(projects.isFeatured, true)))
+      .orderBy(desc(projects.publishedAt))
+      .limit(limit);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) return [];
+    throw error;
+  }
+
+  const heroIds = Array.from(
+    new Set(rows.map((row) => row.heroMediaId).filter((id): id is string => Boolean(id))),
+  );
+  const heroRows =
+    heroIds.length > 0
+      ? await db
+          .select({
+            id: mediaAssets.id,
+            heroPath: mediaAssets.path,
+            heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+            heroBlur: mediaAssets.blurDataUrl,
+          })
+          .from(mediaAssets)
+          .where(inArray(mediaAssets.id, heroIds))
+      : [];
+  const mediaById = new Map(heroRows.map((row) => [row.id, row]));
+
+  return rows.map(({ heroMediaId, ...row }) => {
+    const media = heroMediaId ? mediaById.get(heroMediaId) : null;
+    return {
+      ...row,
+      heroPath: media?.heroPath ?? null,
+      heroAlt: media?.heroAlt ?? null,
+      heroBlur: media?.heroBlur ?? null,
+    };
+  }) as ProjectCard[];
+}
+
+export const listFeaturedProjects = cached(_listFeaturedProjects, ['projects:featured'], {
   tags: [TAGS.projectList],
 });
 

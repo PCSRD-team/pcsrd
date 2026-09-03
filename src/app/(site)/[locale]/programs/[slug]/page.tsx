@@ -94,24 +94,24 @@ export default async function ProgramPage({
         path={program.hero?.path ?? null}
         alt={program.hero?.alt ?? null}
         blur={program.hero?.blur}
-        className="h-64 w-full mb-10"
+        className="mbe-10 h-64 w-full"
       />
       {/*
         Programme identity is a 2px rule in the programme's own colour — the
         only colour outside ink/gold/paper on the page, and a mark rather than
         a fill.
       */}
-      <h1 className="text-3xl block text-center text-[#0F1B33] font-semibold leading-[1.1] md:text-4xl lg:text-5xl xl:text-6xl mb-5">
+      <h1 className="mbe-5 block text-center text-3xl font-semibold leading-[1.1] text-[#0F1B33] md:text-4xl lg:text-5xl xl:text-6xl">
         {program.title}
       </h1>
       {program.tagline ? (
-        <p className="mb-6 text-lead text-ink text-center w-full ">
+        <p className="mbe-6 w-full text-center text-lead text-ink">
           {program.tagline}
         </p>
       ) : null}{" "}
       {program.introduction ? (
         <div className="w-full bg-white p-7 border border-stone-300 border-s-2 border-s-[#c9a16f] transition-all duration-200 hover:bg-gray-50 mbs-10 mbe-25">
-          <Prose className="max-w-none w-full !max-w-full">
+          <Prose className="w-full max-w-none">
             <RichText doc={program.introduction} />
           </Prose>
         </div>
@@ -139,7 +139,7 @@ export default async function ProgramPage({
               </Panel>
             ) : null}
             {program.howToAccess ? (
-              <Panel className="hover:bg-[#f5efe2]" tone="gold">
+              <Panel className="motion-standard transition-colors hover:bg-gold-050" tone="gold">
                 <h3 className="text-h3 font-semibold">
                   {dict.programs.howToAccess}
                 </h3>

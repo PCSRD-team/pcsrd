@@ -91,7 +91,7 @@ export function ProjectForm({
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
       {state && !state.ok ? (
-        <div className="rule-edge border-gold-600 bg-gold-050 p-4" role="alert">
+        <div className="rule-edge rounded-lg border-gold-600 bg-gold-050 p-4" role="alert">
           <p className="text-small text-ink">تحقّق من الحقول المميّزة.</p>
         </div>
       ) : null}
@@ -259,7 +259,7 @@ export function ProjectForm({
         />
       </Field>
 
-      <details className="rule-edge bg-paper p-5">
+      <details className="rule-edge rounded-lg bg-paper p-5 shadow-[0_10px_28px_rgb(20_33_63/0.04)]">
         <summary className="cursor-pointer text-small font-medium text-ink">
           تحسين محركات البحث
         </summary>

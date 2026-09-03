@@ -378,6 +378,8 @@ const socialLinkSchema = z.object({
   platform: shortText(1, 40),
   url: z.url({ message: 'errors.field.url' }).max(300),
   is_official: z.coerce.boolean().default(true),
+  visible: z.coerce.boolean().default(true),
+  display_order: z.coerce.number().int().min(0).max(999).optional().nullable(),
 });
 
 const officialChannelSchema = z.object({
@@ -385,6 +387,8 @@ const officialChannelSchema = z.object({
   handle: shortText(1, 120),
   url: z.url({ message: 'errors.field.url' }).max(300),
   is_official: z.coerce.boolean().default(true),
+  visible: z.coerce.boolean().default(true),
+  display_order: z.coerce.number().int().min(0).max(999).optional().nullable(),
   note_ar: optionalText(300).nullable(),
   note_en: optionalText(300).nullable(),
 });
