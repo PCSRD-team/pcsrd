@@ -169,7 +169,7 @@ export function PublicNavigation({
 
   return (
     <>
-      <nav ref={navRef} aria-label={ariaLabel} className="hidden items-center gap-5 xl:flex">
+      <nav ref={navRef} aria-label={ariaLabel} className="hidden items-center gap-5 min-[1180px]:flex">
         <Link
           href={home.href}
           aria-current={isActive(pathname, home.href, home.exact) ? 'page' : undefined}
@@ -189,20 +189,24 @@ export function PublicNavigation({
             return (
               <li key={group.label} className="relative">
                 <div
-                  onMouseEnter={() => setOpenGroup(group.label)}
-                  onMouseLeave={() => setOpenGroup((current) => (current === group.label ? null : current))}
                   className={cn(
                     'motion-standard inline-flex min-h-10 items-center text-ink transition-colors hover:text-gold-700',
                     active && 'text-navy-700',
                   )}
                 >
-                  <Link
-                    href={group.href}
+                  <button
+                    type="button"
+                    id={`nav-trigger-${group.label}`}
                     aria-current={active ? 'page' : undefined}
-                    onClick={() => setOpenGroup(null)}
-                    className="motion-standard relative inline-flex min-h-10 items-center px-2 text-small text-current no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
+                    aria-expanded={openGroup === group.label}
+                    aria-controls={`nav-menu-${group.label}`}
+                    onClick={() => setOpenGroup((current) => (current === group.label ? null : group.label))}
+                    className="motion-standard relative inline-flex min-h-10 cursor-pointer items-center gap-1.5 px-2 text-small text-current focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
                   >
                     <span>{group.label}</span>
+                    <span className={cn('motion-standard transition-transform duration-200', openGroup === group.label && 'rotate-180')}>
+                      <ChevronIcon />
+                    </span>
                     <span
                       aria-hidden="true"
                       className={cn(
@@ -210,30 +214,13 @@ export function PublicNavigation({
                         active ? 'w-full' : 'w-0',
                       )}
                     />
-                    <LinkPendingMark />
-                  </Link>
-                  <button
-                    type="button"
-                    id={`nav-trigger-${group.label}`}
-                    aria-expanded={openGroup === group.label}
-                    aria-controls={`nav-menu-${group.label}`}
-                    aria-label={group.label}
-                    onClick={() => setOpenGroup((current) => (current === group.label ? null : group.label))}
-                    className={cn(
-                      'motion-standard flex min-h-10 min-w-8 cursor-pointer items-center justify-center text-current transition-colors hover:text-gold-700',
-                      'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink',
-                    )}
-                  >
-                    <span className={cn('motion-standard transition-transform duration-200', openGroup === group.label && 'rotate-180')}>
-                      <ChevronIcon />
-                    </span>
                   </button>
                   {openGroup === group.label ? (
                     <div
                       id={`nav-menu-${group.label}`}
                       role="menu"
                       aria-labelledby={`nav-trigger-${group.label}`}
-                      className="animate-dropdown-in absolute end-0 z-[60] mbs-3 min-w-56 rounded-md border border-rule bg-paper p-2 text-start shadow-[0_18px_45px_rgb(20_33_63/0.12)]"
+                      className="animate-dropdown-in absolute inset-bs-full end-0 z-[70] mbs-2 min-w-64 rounded-xl border border-rule bg-paper p-2 text-start shadow-[0_22px_55px_rgb(20_33_63/0.18)]"
                     >
                       <ul className="grid gap-1">
                         {group.items.map((item) => (
@@ -263,7 +250,7 @@ export function PublicNavigation({
         </Link>
       </nav>
 
-      <div className="flex items-center gap-2 xl:hidden">
+      <div className="flex items-center gap-2 min-[1180px]:hidden">
         <Link
           href={verify.href}
           className="motion-standard hidden min-h-11 items-center border-be-2 border-gold-600 text-caption font-medium text-ink no-underline transition-colors hover:bg-gold-050 sm:inline-flex"
@@ -275,7 +262,7 @@ export function PublicNavigation({
           aria-controls={drawerId}
           aria-expanded={open}
           aria-label={openLabel}
-          className="icon-button rule-control bg-paper text-ink hover:bg-paper-alt"
+          className="motion-standard inline-flex size-11 cursor-pointer items-center justify-center rounded-xl border border-navy-700/20 bg-navy-700 text-paper shadow-[0_8px_20px_rgb(20_33_63/0.16)] transition hover:-translate-y-0.5 hover:bg-navy-900 hover:text-paper"
           onClick={() => setOpen(true)}
         >
           <MenuIcon />
@@ -284,17 +271,21 @@ export function PublicNavigation({
       </div>
 
       {open ? (
-        <div className="fixed inset-0 z-50 xl:hidden" role="presentation">
+        <div dir="ltr" className="fixed inset-0 z-[80] min-[1180px]:hidden" role="presentation">
           <button
             type="button"
             aria-label={closeLabel}
-            className="absolute inset-0 bg-ink/45"
+            className="animate-menu-backdrop absolute inset-0 cursor-default bg-ink/65 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
           />
           <aside
             id={drawerId}
             aria-label={ariaLabel}
-            className="inset-block-fill rule-inline-start-strong absolute end-0 flex w-[min(100%,24rem)] flex-col overflow-y-auto bg-paper text-ink"
+            aria-modal="true"
+            role="dialog"
+            dir={pathname.startsWith('/ar') ? 'rtl' : 'ltr'}
+            style={{ right: 0 }}
+            className="animate-menu-drawer inset-block-fill rule-inline-start-strong absolute flex w-[min(90%,24rem)] flex-col overflow-y-auto bg-paper text-ink shadow-[-24px_0_70px_rgb(20_33_63/0.24)]"
           >
             <div className="flex min-h-16 items-center justify-between gap-4 border-be border-rule px-5">
               <p className="font-mono text-caption text-mono-muted">{menuLabel}</p>

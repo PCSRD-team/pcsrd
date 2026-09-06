@@ -12,6 +12,7 @@ import {
   inputClass,
 } from '@/components/admin/controls';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { MediaPicker } from '@/components/admin/media-picker';
 import type { RichText } from '@/db/schema/_shared';
 import type { ContentStatus } from '@/db/schema/enums';
 
@@ -31,7 +32,7 @@ export type FieldSpec =
   | { kind: 'textarea'; name: string; label: string; hint?: string }
   | { kind: 'select'; name: string; label: string; options: { value: string; label: string }[]; required?: boolean; multiple?: boolean; hint?: string }
   | { kind: 'checkbox'; name: string; label: string; hint?: string }
-  | { kind: 'media'; name: string; label: string; hint?: string };
+  | { kind: 'media'; name: string; label: string; hint?: string; assetKind?: 'image' | 'document' };
 
 export type ContentFormValues = Record<string, unknown> & {
   id?: string;
@@ -188,14 +189,12 @@ export function ContentForm({
                 hint={field.hint}
                 error={firstError(field.name)}
               >
-                <input
-                  id={field.name}
+                <MediaPicker
                   name={field.name}
-                  defaultValue={str(field.name)}
-                  dir="ltr"
-                  aria-invalid={firstError(field.name) ? true : undefined}
-                  aria-describedby={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
-                  className={`${inputClass} text-start font-mono text-caption`}
+                  initialValue={str(field.name)}
+                  kind={field.assetKind ?? 'image'}
+                  invalid={Boolean(firstError(field.name))}
+                  describedBy={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
                 />
               </Field>
             );

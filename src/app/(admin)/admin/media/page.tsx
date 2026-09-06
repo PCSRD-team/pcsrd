@@ -35,55 +35,56 @@ export default async function MediaPage({ searchParams }: PageProps<'/admin/medi
 
       <MediaUploader />
 
-      <form method="get" className="mbs-8 mbe-6 flex flex-wrap items-end gap-3">
-        <div>
-          <label htmlFor="q" className="eyebrow">
+      <form method="get" className="mbs-7 mbe-5 grid items-end gap-4 rounded-2xl border border-white bg-white/75 p-4 shadow-[0_10px_28px_rgb(20_33_63/0.05)] md:grid-cols-[minmax(240px,1fr)_auto_auto]">
+        <div className="space-y-2">
+          <label htmlFor="q" className="block text-caption font-medium text-ink">
             بحث في النص البديل
           </label>
           <input
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            className="rule-edge mbs-1 bg-paper px-3 py-2 text-small"
+            placeholder="اكتب وصف الصورة…"
+            className="block min-h-11 w-full rounded-xl border border-rule bg-white px-3 py-2 text-small text-ink outline-none focus:border-navy-700 focus:shadow-[0_0_0_4px_rgb(37_66_132/0.10)]"
           />
         </div>
-        <label className="flex items-center gap-2 text-small">
+        <label className="flex min-h-11 items-center gap-3 rounded-xl border border-rule bg-paper-alt/60 px-4 text-small text-ink">
           <input
             type="checkbox"
             name="needsConsent"
             value="1"
             defaultChecked={needsConsent}
-            className="size-4 accent-navy-700"
+            className="size-5 rounded accent-navy-700"
           />
           تنتظر موافقة فقط
         </label>
-        <button type="submit" className="rule-edge px-4 py-2 text-small hover:bg-paper-alt">
+        <button type="submit" className="min-h-11 rounded-xl bg-navy-700 px-6 text-small font-medium text-paper hover:bg-navy-900">
           تصفية
         </button>
       </form>
 
       {result.items.length === 0 ? (
-        <div className="rule-edge bg-paper-alt p-10 text-center">
+        <div className="rounded-2xl border border-white bg-white/75 p-10 text-center shadow-[0_12px_32px_rgb(20_33_63/0.05)]">
           <p className="text-small text-ink-55">لا وسائط.</p>
         </div>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {result.items.map((asset) => {
             const blocked = asset.hasIdentifiableMinors && asset.consent !== 'obtained';
 
             return (
               <li
                 key={asset.id}
-                className={`rule-edge bg-paper p-3 ${blocked ? 'border-gold-600' : ''}`}
+                className={`group flex min-h-full flex-col overflow-hidden rounded-2xl border bg-white p-3 shadow-[0_10px_28px_rgb(20_33_63/0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgb(20_33_63/0.10)] ${blocked ? 'border-gold-600' : 'border-white'}`}
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-paper-alt">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-paper-alt">
                   {asset.kind === 'image' ? (
                     <Image
                       src={storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, asset.bucket, asset.path)}
                       alt={asset.altAr}
                       fill
                       sizes="240px"
-                      className="object-cover"
+                      className="object-cover transition duration-300 group-hover:scale-[1.02]"
                     />
                   ) : (
                     <div className="flex size-full items-center justify-center font-mono text-caption text-mono-muted">
@@ -92,10 +93,13 @@ export default async function MediaPage({ searchParams }: PageProps<'/admin/medi
                   )}
                 </div>
 
-                <p className="mbs-3 line-clamp-2 text-caption text-ink">{asset.altAr}</p>
-                <p className="mbs-1 font-mono text-eyebrow text-mono-muted" dir="ltr">
-                  {formatFileSize(asset.fileSize, 'ar')}
-                  {asset.width ? ` · ${asset.width}×${asset.height}` : ''}
+                <div className="mbs-3 flex items-center gap-2">
+                  <span className="rounded-full bg-navy-100 px-2.5 py-1 text-eyebrow font-medium text-navy-700">{asset.kind === 'image' ? 'صورة' : 'مستند'}</span>
+                  <span className="text-eyebrow text-ink-55">{formatFileSize(asset.fileSize, 'ar')}</span>
+                </div>
+                <p className="line-clamp-2 min-h-10 text-caption font-medium leading-relaxed text-ink">{asset.altAr}</p>
+                <p className="mbs-2 font-mono text-eyebrow text-mono-muted" dir="ltr">
+                  {asset.width ? `${asset.width}×${asset.height}` : asset.mimeType}
                 </p>
 
                 {/*
@@ -114,7 +118,7 @@ export default async function MediaPage({ searchParams }: PageProps<'/admin/medi
                 ) : null}
 
                 {/* The id is what a content form's media field takes. */}
-                <p className="mbs-2 font-mono text-eyebrow text-mono-muted" dir="ltr">
+                <p className="mbs-auto overflow-hidden text-ellipsis whitespace-nowrap border-bs border-rule pbs-2 font-mono text-eyebrow text-mono-muted" dir="ltr" title={asset.id}>
                   {asset.id}
                 </p>
               </li>

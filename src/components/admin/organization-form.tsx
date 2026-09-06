@@ -3,6 +3,14 @@
 import { useActionState, useMemo, useState } from 'react';
 import { saveOrganizationForm, type OrganizationResult } from '@/actions/admin/organization';
 import { CheckboxField, Field, fieldDescribedBy, inputClass } from '@/components/admin/controls';
+import { MediaPicker } from '@/components/admin/media-picker';
+import {
+  BilingualLinesEditor,
+  StringListEditor,
+  TitledBlocksEditor,
+  type BilingualLine,
+  type TitledBlock,
+} from '@/components/admin/organization-list-editors';
 
 /**
  * The organisation settings editor.
@@ -44,12 +52,6 @@ const PLATFORM_OPTIONS = [
 ] as const;
 
 const str = (values: Values, name: string) => (values[name] as string | null) ?? '';
-const json = (values: Values, name: string) => {
-  const value = values[name];
-  if (value === null || value === undefined) return '';
-  return JSON.stringify(value, null, 2);
-};
-
 function arrayValue<T>(values: Values, name: string): T[] {
   const value = values[name];
   return Array.isArray(value) ? (value as T[]) : [];
@@ -384,17 +386,14 @@ export function OrganizationForm({ values }: { values: Values }) {
     </Field>
   );
 
-  const jsonArea = (name: string, label: string, hint: string) => (
+  const media = (name: string, label: string, hint: string) => (
     <Field name={name} label={label} hint={hint} error={firstError(name)}>
-      <textarea
-        id={name}
+      <MediaPicker
         name={name}
-        rows={8}
-        defaultValue={json(formValues, name)}
-        dir="ltr"
-        aria-invalid={firstError(name) ? true : undefined}
-        aria-describedby={fieldDescribedBy(name, hint, firstError(name))}
-        className={`${inputClass} text-start font-mono text-caption`}
+        initialValue={str(formValues, name)}
+        kind="image"
+        invalid={Boolean(firstError(name))}
+        describedBy={fieldDescribedBy(name, hint, firstError(name))}
       />
     </Field>
   );
@@ -442,10 +441,10 @@ export function OrganizationForm({ values }: { values: Values }) {
           {text('licenseAuthorityEn', 'جهة الترخيص (إنجليزي)', { dir: 'ltr' })}
           {text('legalFormAr', 'الشكل القانوني (عربي)')}
           {text('legalFormEn', 'الشكل القانوني (إنجليزي)', { dir: 'ltr' })}
-          {text('logoPrimaryId', 'معرّف الشعار الأساسي', { dir: 'ltr', hint: 'معرّف ملف من مكتبة الوسائط.' })}
-          {text('footerLogoId', 'معرّف شعار التذييل', { dir: 'ltr', hint: 'يستخدم في تذييل الموقع، وإن ترك فارغاً يستخدم الشعار الأساسي.' })}
-          {text('logoMonoId', 'معرّف الشعار أحادي اللون', { dir: 'ltr', hint: 'اختياري للتصاميم الداكنة أو المختصرة.' })}
-          {text('defaultOgId', 'معرّف صورة المشاركة الافتراضية', { dir: 'ltr', hint: 'تستخدمها الصفحات التي لا تملك صورة خاصة.' })}
+          {media('logoPrimaryId', 'الشعار الأساسي', 'اختر صورة من مكتبة الوسائط.')}
+          {media('footerLogoId', 'شعار التذييل', 'إن تُرك فارغاً يُستخدم الشعار الأساسي.')}
+          {media('logoMonoId', 'الشعار أحادي اللون', 'اختياري للتصاميم الداكنة أو المختصرة.')}
+          {media('defaultOgId', 'صورة المشاركة الافتراضية', 'تستخدمها الصفحات التي لا تملك صورة خاصة.')}
         </div>
       </section>
 
@@ -519,29 +518,18 @@ export function OrganizationForm({ values }: { values: Values }) {
 
       <section className="space-y-6">
         <h2 className="border-be-2 border-ink pbe-2 text-h3 font-semibold text-ink">
-          الحقول المركّبة
+          القيم والأهداف والبيانات الإضافية
         </h2>
         <p className="text-small text-ink-55">
-          تُحرَّر بصيغة JSON. هذا حدّ أدنى مقصود وليس محرّراً نهائياً — البديل المتاح اليوم هو
-          تعديل قاعدة البيانات مباشرة. كل حقل يمرّ على التحقّق قبل الحفظ، فالخطأ يُرفض ولا يُكتب.
-          اترك الحقل فارغاً لإبقائه دون تغيير.
+          أضف كل قيمة أو هدف أو اسم في عنصر مستقل. تُحفظ العناصر تلقائياً بالصيغة المناسبة.
         </p>
 
         <div className="space-y-6">
-          {jsonArea('alternateNames', 'أسماء بديلة', '["اسم", "اسم آخر"]')}
-          {jsonArea('additionalPhones', 'هواتف إضافية', '["+970...", "+970..."]')}
-          {jsonArea(
-            'coreValues',
-            'القيم',
-            '[{"title_ar": "...", "title_en": "...", "body_ar": "...", "body_en": "..."}]',
-          )}
-          {jsonArea('principles', 'المبادئ', 'نفس شكل القيم.')}
-          {jsonArea(
-            'strategicObjectives',
-            'الأهداف الاستراتيجية',
-            '[{"text_ar": "...", "text_en": "..."}]',
-          )}
-
+          <StringListEditor name="alternateNames" label="الأسماء البديلة" initialItems={arrayValue<string>(formValues, 'alternateNames')} placeholder="اسم بديل للمؤسسة" error={firstError('alternateNames')} />
+          <StringListEditor name="additionalPhones" label="الهواتف الإضافية" initialItems={arrayValue<string>(formValues, 'additionalPhones')} placeholder="+970…" dir="ltr" error={firstError('additionalPhones')} />
+          <TitledBlocksEditor name="coreValues" label="القيم" initialItems={arrayValue<TitledBlock>(formValues, 'coreValues')} error={firstError('coreValues')} />
+          <TitledBlocksEditor name="principles" label="المبادئ" initialItems={arrayValue<TitledBlock>(formValues, 'principles')} error={firstError('principles')} />
+          <BilingualLinesEditor name="strategicObjectives" label="الأهداف الاستراتيجية" initialItems={arrayValue<BilingualLine>(formValues, 'strategicObjectives')} error={firstError('strategicObjectives')} />
         </div>
       </section>
 

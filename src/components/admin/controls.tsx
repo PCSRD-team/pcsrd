@@ -82,17 +82,17 @@ export function DataTable<T extends { id: string | number }>({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="rule-edge rounded-lg bg-paper-alt p-10 text-center">
+      <div className="rounded-2xl border border-white bg-white/75 p-10 text-center shadow-[0_12px_32px_rgb(20_33_63/0.05)]">
         <p className="text-small text-ink-55">{empty}</p>
       </div>
     );
   }
 
   return (
-    <div className="rule-edge overflow-x-auto rounded-lg bg-paper shadow-[0_14px_36px_rgb(20_33_63/0.06)]">
+    <div className="overflow-x-auto rounded-2xl border border-white bg-white/90 shadow-[0_14px_36px_rgb(20_33_63/0.07)]">
       <table className="w-full">
         <thead>
-          <tr className="border-be-2 border-ink">
+          <tr className="border-be border-rule bg-navy-100/55">
             {columns.map((column) => (
               <th key={column.key} scope="col" className="eyebrow p-3 text-start whitespace-nowrap">
                 {column.header}
@@ -200,7 +200,7 @@ export function Pagination({
 // ── Form scaffolding ─────────────────────────────────────────────────────
 
 export const inputClass =
-  'block min-h-11 w-full rounded-md rule-control bg-paper px-3 py-2 text-small text-ink motion-standard transition-colors focus:border-navy-700 disabled:cursor-not-allowed disabled:bg-paper-alt disabled:text-ink-55';
+  'block min-h-11 w-full rounded-xl border border-rule bg-white px-3 py-2 text-small text-ink outline-none motion-standard transition-[border-color,box-shadow,background-color] hover:border-navy-700/40 focus:border-navy-700 focus:shadow-[0_0_0_4px_rgb(37_66_132/0.10)] disabled:cursor-not-allowed disabled:bg-paper-alt disabled:text-ink-55';
 
 /**
  * The ids `Field` renders, joined for `aria-describedby`.
@@ -234,7 +234,7 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-2 rounded-lg bg-white/45 p-3">
+    <div className="space-y-2 rounded-xl bg-white/55 p-3">
       <label htmlFor={name} className="block text-small font-medium text-ink">
         {label}
         {required ? (
@@ -349,7 +349,7 @@ export function PublishBar({
   children?: ReactNode;
 }) {
   return (
-    <div className="sticky inset-be-0 mbs-10 flex flex-wrap items-center gap-3 rounded-lg border border-ink/20 bg-paper/95 p-4 shadow-[0_-16px_45px_rgb(20_33_63/0.10)] backdrop-blur">
+    <div className="sticky inset-be-0 z-20 mbs-10 flex flex-wrap items-center gap-3 rounded-2xl border border-white bg-paper/95 p-4 shadow-[0_-16px_45px_rgb(20_33_63/0.10)] backdrop-blur">
       <StatusBadge status={status} />
       <div className="flex-1" />
       {children}

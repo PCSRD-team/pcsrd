@@ -11,6 +11,7 @@ import {
   inputClass,
 } from '@/components/admin/controls';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { MediaPicker } from '@/components/admin/media-picker';
 import type { RichText } from '@/db/schema/_shared';
 import type { ContentStatus } from '@/db/schema/enums';
 
@@ -233,14 +234,8 @@ export function ProjectForm({
         />
       </div>
 
-      <Field name="heroMediaId" label="معرّف الصورة الرئيسية" hint="من مكتبة الوسائط.">
-        <input
-          id="heroMediaId"
-          name="heroMediaId"
-          defaultValue={values.heroMediaId ?? ''}
-          dir="ltr"
-          className={`${inputClass} text-start font-mono text-caption`}
-        />
+      <Field name="heroMediaId" label="الصورة الرئيسية" hint="اختر صورة من مكتبة الوسائط.">
+        <MediaPicker name="heroMediaId" initialValue={values.heroMediaId ?? ''} kind="image" />
       </Field>
 
       <CheckboxField name="isFeatured" label="مميّز" defaultChecked={values.isFeatured} />

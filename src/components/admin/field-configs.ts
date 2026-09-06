@@ -28,7 +28,7 @@ export const POST_FIELDS: FieldSpec[] = [
   },
   { kind: 'bilingual', name: 'excerpt', label: 'مقتطف', multiline: true, max: 400 },
   { kind: 'richtext', name: 'body', labelAr: 'المحتوى (عربي)', labelEn: 'Body (English)' },
-  { kind: 'media', name: 'heroMediaId', label: 'معرّف الصورة الرئيسية' },
+  { kind: 'media', name: 'heroMediaId', label: 'الصورة الرئيسية' },
   {
     kind: 'text',
     name: 'expiresAt',
@@ -62,7 +62,7 @@ export const STORY_FIELDS: FieldSpec[] = [
     label: 'مرجع الموافقة',
     hint: 'رقم أو مسار المستند. مطلوب لأي قصة تكشف هوية صاحبها.',
   },
-  { kind: 'media', name: 'heroMediaId', label: 'معرّف الصورة الرئيسية' },
+  { kind: 'media', name: 'heroMediaId', label: 'الصورة الرئيسية' },
   { kind: 'checkbox', name: 'isFeatured', label: 'مميّزة' },
 ];
 
@@ -128,11 +128,12 @@ export const PUBLICATION_FIELDS: FieldSpec[] = [
     required: true,
   },
   { kind: 'bilingual', name: 'description', label: 'الوصف', multiline: true, max: 800 },
-  { kind: 'media', name: 'fileArId', label: 'معرّف الملف (عربي)' },
+  { kind: 'media', name: 'fileArId', label: 'الملف (عربي)', assetKind: 'document' },
   {
     kind: 'media',
     name: 'fileEnId',
-    label: 'معرّف الملف (إنجليزي)',
+    label: 'الملف (إنجليزي)',
+    assetKind: 'document',
     hint: 'إن تُرك فارغاً، يُعرض الملف العربي للقارئ الإنجليزي.',
   },
   { kind: 'text', name: 'publishedYear', label: 'سنة النشر', type: 'number' },
@@ -202,7 +203,7 @@ export const PROGRAM_FIELDS: FieldSpec[] = [
     kind: 'media',
     name: 'heroMediaId',
     label: 'صورة السلايدر الرئيسية',
-    hint: 'اختر معرّف صورة من مكتبة الوسائط. تظهر في سلايدر البرامج في الصفحة الرئيسية.',
+    hint: 'اختر صورة من مكتبة الوسائط. تظهر في سلايدر البرامج في الصفحة الرئيسية.',
   },
   {
     kind: 'text',

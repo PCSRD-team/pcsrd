@@ -1,8 +1,12 @@
 import { z } from 'zod';
 import { db } from '@/db';
+import { getAdminMedia, listAdminMedia } from '@/db/queries/admin';
+import type { MediaAsset } from '@/db/schema/media';
 import { createSupabaseAdminClient } from '@/lib/auth/supabase-server';
 import { requireActor } from '@/lib/auth/guard';
+import { publicEnv } from '@/lib/env.public';
 import { isAppError, toActionResult } from '@/lib/errors';
+import { storageUrl } from '@/lib/format';
 import { mediaMetadataSchema } from '@/lib/validation/admin';
 import { processImageUpload, storagePath, validateCvUpload } from '@/lib/security/upload';
 import { registerMedia } from '@/services/media/media.service';
@@ -10,6 +14,57 @@ import { registerMedia } from '@/services/media/media.service';
 export const dynamic = 'force-dynamic';
 /** sharp can exceed the default 10 s on a large photograph. */
 export const maxDuration = 30;
+
+const pickerQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  page: z.coerce.number().int().positive().default(1),
+  kind: z.enum(['image', 'document']).optional(),
+  id: z.string().uuid().optional(),
+});
+
+export async function GET(request: Request) {
+  try {
+    const actor = await requireActor();
+    const url = new URL(request.url);
+    const parsed = pickerQuerySchema.safeParse(Object.fromEntries(url.searchParams));
+    if (!parsed.success) {
+      return Response.json({ ok: false, code: 'validation' }, { status: 422 });
+    }
+
+    if (parsed.data.id) {
+      const item = await getAdminMedia(actor, parsed.data.id);
+      return Response.json({ ok: true, data: item ? pickerItem(item) : null });
+    }
+
+    const result = await listAdminMedia(actor, parsed.data);
+    return Response.json({
+      ok: true,
+      data: {
+        ...result,
+        items: result.items.map(pickerItem),
+      },
+    });
+  } catch (error) {
+    const result = toActionResult(error);
+    return Response.json(result, { status: isAppError(error) ? error.status : 500 });
+  }
+}
+
+function pickerItem(item: MediaAsset) {
+  return {
+    id: item.id,
+    kind: item.kind,
+    url: storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, item.bucket, item.path),
+    altAr: item.altAr,
+    altEn: item.altEn,
+    mimeType: item.mimeType,
+    fileSize: item.fileSize,
+    width: item.width,
+    height: item.height,
+    consent: item.consent,
+    hasIdentifiableMinors: item.hasIdentifiableMinors,
+  };
+}
 
 /**
  * Multipart upload.

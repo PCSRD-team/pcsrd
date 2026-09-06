@@ -87,7 +87,6 @@ export function ChannelsBar({
             <LanguageSwitcher
               locale={locale}
               label={dict.common.switchToEnglish}
-              className="gap-1.5 text-paper/82 hover:text-gold-600"
             />
           </Suspense>
           {phone ? (
@@ -178,10 +177,10 @@ export function SiteHeader({
   const logoSrc =
     org?.logoPrimaryBucket && org.logoPrimaryPath
       ? storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, org.logoPrimaryBucket, org.logoPrimaryPath)
-      : null;
+      : '/pcsrd-logo.jpeg';
 
   return (
-    <header className="sticky top-0 z-50 overflow-visible border-be border-rule bg-paper/96 shadow-[0_10px_36px_rgb(20_33_63/0.08)] backdrop-blur">
+    <header className="sticky inset-bs-0 z-50 overflow-visible border-be border-rule bg-paper shadow-[0_10px_36px_rgb(20_33_63/0.08)]">
       <div className="mx-auto flex min-h-[6.25rem] max-w-[1460px] items-center justify-between gap-5 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href={localePath(locale, '/')}
@@ -193,7 +192,7 @@ export function SiteHeader({
               alt={logoAlt}
               width={168}
               height={72}
-              className="max-h-16 w-auto shrink-0 object-contain"
+              className="size-16 shrink-0 rounded-full object-contain shadow-[0_4px_16px_rgb(20_33_63/0.12)]"
               priority
             />
           ) : (
@@ -209,7 +208,7 @@ export function SiteHeader({
           </span>
         </Link>
 
-        <div className="flex min-w-0 flex-1 items-center justify-end xl:justify-center">
+        <div className="flex min-w-0 flex-1 items-center justify-end min-[1180px]:justify-center">
           <PublicNavigation
             ariaLabel={dict.a11y.mainNav}
             closeLabel={dict.a11y.closeMenu}
