@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { inputClass } from '@/components/admin/controls';
 
 /**
  * The uploader.
@@ -20,6 +21,7 @@ export function MediaUploader() {
   const [busy, setBusy] = useState(false);
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
+  const [fileName, setFileName] = useState('');
 
   async function upload(formData: FormData) {
     const alt = String(formData.get('altAr') ?? '').trim();
@@ -27,6 +29,9 @@ export function MediaUploader() {
       setMessage('النص البديل بالعربية مطلوب قبل الرفع.');
       return;
     }
+
+    const file = formData.get('file');
+    if (file instanceof File) formData.set('kind', file.type === 'application/pdf' ? 'document' : 'image');
 
     setBusy(true);
     setMessage(null);
@@ -57,8 +62,16 @@ export function MediaUploader() {
   }
 
   return (
-    <form action={upload} className="rule-edge bg-paper p-5">
-      <p className="text-small font-medium text-ink">رفع ملف</p>
+    <form action={upload} className="rounded-2xl border border-white bg-white/85 p-5 shadow-[0_14px_36px_rgb(20_33_63/0.07)] md:p-6">
+      <div className="flex items-start gap-3 border-be border-rule pbe-4">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-navy-100 text-navy-700" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-5"><path d="M12 16V4m0 0 4 4m-4-4L8 8M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </span>
+        <div>
+          <h2 className="text-h4 font-semibold text-ink">رفع ملف جديد</h2>
+          <p className="mbs-1 text-caption text-ink-55">ارفع صورة أو ملف PDF وأضف البيانات اللازمة لسهولة العثور عليه لاحقًا.</p>
+        </div>
+      </div>
 
       {/* Always present, contents swapped — see the note in form-shell.tsx.
           It matters more here: this is a polite region, and a polite region
@@ -72,45 +85,46 @@ export function MediaUploader() {
         ) : null}
       </div>
 
-      <div className="mbs-4 grid gap-4 md:grid-cols-2">
-        <div>
-          <label htmlFor="file" className="eyebrow">
-            الملف
-          </label>
+      <div className="mbs-5 grid gap-5 md:grid-cols-2">
+        <div className="space-y-2 rounded-xl bg-paper-alt/55 p-3">
+          <label htmlFor="file" className="block text-small font-medium text-ink">الملف <span className="text-gold-700">*</span></label>
           <input
             id="file"
             name="file"
             type="file"
             required
             accept="image/jpeg,image/png,image/webp,image/avif,application/pdf"
-            className="mbs-1 block w-full text-small"
+            onChange={(event) => setFileName(event.currentTarget.files?.[0]?.name ?? '')}
+            className="sr-only"
           />
-          <p className="mbs-1 text-caption text-ink-55">
+          <label htmlFor="file" className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-navy-700/35 bg-white px-4 text-center transition hover:border-navy-700 hover:bg-navy-100/40">
+            <span className="text-small font-medium text-navy-700">{fileName || 'اضغط لاختيار صورة أو PDF'}</span>
+            <span className="mbs-1 text-caption text-ink-55">JPEG، PNG، WebP، AVIF أو PDF</span>
+          </label>
+          <p className="text-caption text-ink-55">
             حد أقصى 4 ميغابايت. تُجرَّد بيانات EXIF من الصور تلقائياً.
           </p>
         </div>
 
-        <div>
-          <label htmlFor="altAr" className="eyebrow">
-            النص البديل (عربي) — مطلوب
-          </label>
+        <div className="space-y-2 rounded-xl bg-paper-alt/55 p-3">
+          <label htmlFor="altAr" className="block text-small font-medium text-ink">النص البديل (عربي) <span className="text-gold-700">*</span></label>
+          <p className="text-caption text-ink-55">وصف مختصر وواضح لمحتوى الصورة أو الملف.</p>
           <input
             id="altAr"
             name="altAr"
             required
             dir="rtl"
-            className="rule-edge mbs-1 block w-full bg-paper px-3 py-2 text-small"
+            placeholder="مثال: توزيع مساعدات إنسانية في غزة"
+            className={inputClass}
           />
         </div>
 
-        <div>
-          <label htmlFor="consent" className="eyebrow">
-            حالة الموافقة
-          </label>
+        <div className="space-y-2 rounded-xl bg-paper-alt/55 p-3">
+          <label htmlFor="consent" className="block text-small font-medium text-ink">حالة الموافقة</label>
           <select
             id="consent"
             name="consent"
-            className="rule-edge mbs-1 block w-full bg-paper px-3 py-2 text-small"
+            className={inputClass}
           >
             <option value="not_required">غير مطلوبة</option>
             <option value="obtained">مُوثَّقة</option>
@@ -118,23 +132,22 @@ export function MediaUploader() {
           </select>
         </div>
 
-        <div>
-          <label htmlFor="consentReference" className="eyebrow">
-            مرجع الموافقة
-          </label>
+        <div className="space-y-2 rounded-xl bg-paper-alt/55 p-3">
+          <label htmlFor="consentReference" className="block text-small font-medium text-ink">مرجع الموافقة</label>
+          <p className="text-caption text-ink-55">اختياري، مثل رقم النموذج أو اسم المستند.</p>
           <input
             id="consentReference"
             name="consentReference"
-            className="rule-edge mbs-1 block w-full bg-paper px-3 py-2 text-small"
+            className={inputClass}
           />
         </div>
 
-        <label className="flex items-center gap-2 text-small md:col-span-2">
+        <label className="flex min-h-12 items-center gap-3 rounded-xl border border-rule bg-gold-050/50 px-4 text-small text-ink md:col-span-2">
           <input
             type="checkbox"
             name="hasIdentifiableMinors"
             value="true"
-            className="size-4 accent-navy-700"
+            className="size-5 rounded accent-navy-700"
           />
           تظهر في الصورة وجوه أطفال يمكن التعرّف عليها
         </label>
@@ -143,7 +156,7 @@ export function MediaUploader() {
       <button
         type="submit"
         disabled={busy}
-        className="mbs-5 bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900 disabled:opacity-60"
+        className="mbs-1 min-h-11 rounded-xl bg-navy-700 px-7 text-small font-medium text-paper shadow-[0_8px_20px_rgb(37_66_132/0.18)] hover:bg-navy-900 disabled:opacity-60"
       >
         {busy ? 'جارٍ الرفع…' : 'رفع'}
       </button>

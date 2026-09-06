@@ -309,12 +309,13 @@ export async function getAdminOrganization(actor: Actor) {
 
 export async function listAdminMedia(
   actor: Actor,
-  options: { search?: string; needsConsent?: boolean; page?: number } = {},
+  options: { search?: string; needsConsent?: boolean; kind?: 'image' | 'document'; page?: number } = {},
 ) {
   const page = Math.max(1, options.page ?? 1);
   return readAsActor(db, actor, async (tx) => {
     const where = and(
       options.search ? ilike(mediaAssets.altAr, `%${options.search}%`) : undefined,
+      options.kind ? eq(mediaAssets.kind, options.kind) : undefined,
       options.needsConsent
         ? and(
             eq(mediaAssets.hasIdentifiableMinors, true),
@@ -336,6 +337,13 @@ export async function listAdminMedia(
 
     const total = counted[0]?.count ?? 0;
     return { items, total, page, totalPages: Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE)) };
+  });
+}
+
+export async function getAdminMedia(actor: Actor, id: string) {
+  return readAsActor(db, actor, async (tx) => {
+    const rows = await tx.select().from(mediaAssets).where(eq(mediaAssets.id, id)).limit(1);
+    return rows[0] ?? null;
   });
 }
 
