@@ -216,7 +216,7 @@ export default async function AboutPage({
 
   return (
     <main>
-      <section className="bg-paper py-8 md:py-12">
+      <section className="bg-paper-ground py-8 md:py-12">
         <div className="container-content grid gap-8 px-5 py-4 md:px-8 md:py-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:px-10 lg:py-8">
           <div className="flex items-center lg:ps-4">
             <div className="max-w-2xl">

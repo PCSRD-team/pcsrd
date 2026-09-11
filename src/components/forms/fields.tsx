@@ -110,8 +110,8 @@ function FieldShell({
 }
 
 const controlClass =
-  'block w-full rule-control bg-paper px-4 py-3 text-small text-ink ' +
-  'focus:border-navy-700';
+  'block min-h-12 w-full rounded-xl border border-rule-control bg-white px-4 py-3 text-small text-ink outline-none motion-standard transition-[border-color,box-shadow,background-color] ' +
+  'hover:border-navy-700/45 focus:border-navy-700 focus:shadow-[0_0_0_4px_rgb(37_66_132/0.10)] aria-invalid:border-gold-600';
 
 export function TextField({
   name,
