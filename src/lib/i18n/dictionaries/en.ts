@@ -235,6 +235,22 @@ export const en: Dictionary = {
     occurredOn: 'Date it happened',
   },
 
+  contactPage: {
+    eyebrow: 'We are here to listen',
+    lead: 'Send your enquiry and our team will follow up using the contact details you provide.',
+    formTitle: 'Send us a message',
+    formLead: 'Fields marked with an asterisk are required. We use your details only to respond to this request.',
+    detailsTitle: 'Contact details',
+    detailsLead: 'Reach us directly or verify the organisation’s official accounts.',
+    responseNote: 'Your message goes directly to the organisation’s team, and you receive a reference number for follow-up.',
+    officialChannels: 'Our official accounts',
+    noContactDetails: 'Contact details will appear here once they are added in the dashboard.',
+    verifyChannels: 'Verify all channels',
+    complaintsEyebrow: 'A safe, independent channel',
+    complaintsLead: 'You can submit a complaint confidentially without providing your name or contact details.',
+    complaintFormTitle: 'Complaint details',
+  },
+
   states: {
     emptyTitle: 'Nothing here yet',
     emptyBody: 'Content will appear here once it is published.',

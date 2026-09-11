@@ -60,7 +60,7 @@ export function ContactForm({
   return (
     <FormShell action={submitContact} dict={dict} locale={locale}>
       {(errors) => (
-        <>
+        <div className="grid gap-5 sm:grid-cols-2">
           <Honeypot />
           <TextField name="name" label={dict.forms.name} dict={dict} required errors={errors} autoComplete="name" />
           <TextField name="email" label={dict.forms.email} dict={dict} type="email" required errors={errors} autoComplete="email" />
@@ -73,9 +73,13 @@ export function ContactForm({
             defaultValue="general"
             errors={errors}
           />
-          <TextField name="subject" label={dict.forms.subject} dict={dict} required errors={errors} />
-          <TextArea name="message" label={dict.forms.message} dict={dict} required errors={errors} />
-        </>
+          <div className="sm:col-span-2">
+            <TextField name="subject" label={dict.forms.subject} dict={dict} required errors={errors} />
+          </div>
+          <div className="sm:col-span-2">
+            <TextArea name="message" label={dict.forms.message} dict={dict} required rows={5} errors={errors} />
+          </div>
+        </div>
       )}
     </FormShell>
   );
@@ -100,9 +104,9 @@ export function ComplaintForm({
   return (
     <FormShell action={submitComplaint} dict={dict} locale={locale}>
       {(errors) => (
-        <>
+        <div className="grid gap-5 sm:grid-cols-2">
           <Honeypot />
-          <div className="rule-edge border-gold-600 bg-gold-050 p-4">
+          <div className="rounded-xl border border-gold-600/45 bg-gold-050 p-4 sm:col-span-2">
             <p className="text-small text-ink">{dict.forms.anonymousNotice}</p>
           </div>
 
@@ -116,8 +120,12 @@ export function ComplaintForm({
           />
           <TextField name="incidentDate" label={dict.forms.incidentDate} dict={dict} type="date" errors={errors} />
           <TextField name="location" label={dict.forms.location} dict={dict} errors={errors} />
-          <TextArea name="description" label={dict.forms.description} dict={dict} required rows={8} errors={errors} />
-          <TextField name="relatedProject" label={dict.forms.relatedProject} dict={dict} errors={errors} />
+          <div className="sm:col-span-2">
+            <TextArea name="description" label={dict.forms.description} dict={dict} required rows={6} errors={errors} />
+          </div>
+          <div className="sm:col-span-2">
+            <TextField name="relatedProject" label={dict.forms.relatedProject} dict={dict} errors={errors} />
+          </div>
 
           <TextField name="name" label={dict.forms.name} dict={dict} errors={errors} autoComplete="off" />
           <TextField name="email" label={dict.forms.email} dict={dict} type="email" errors={errors} autoComplete="off" />
@@ -130,7 +138,7 @@ export function ComplaintForm({
             defaultValue="none"
             errors={errors}
           />
-        </>
+        </div>
       )}
     </FormShell>
   );
