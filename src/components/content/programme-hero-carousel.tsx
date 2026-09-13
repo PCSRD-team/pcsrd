@@ -201,6 +201,12 @@ export function ProgrammeHeroCarousel({
 
   const previousIndex = count > 1 ? wrap(active - 1, count) : active;
   const nextIndex = count > 1 ? wrap(active + 1, count) : active;
+  const visibleIndexes = useMemo(() => {
+    const indexes = new Set([active]);
+    if (count > 1) indexes.add(nextIndex);
+    if (count > 2) indexes.add(previousIndex);
+    return indexes;
+  }, [active, count, nextIndex, previousIndex]);
   const activeItem = programmes[active] ?? null;
   if (!activeItem) return null;
 
@@ -261,6 +267,8 @@ export function ProgrammeHeroCarousel({
         <div className="relative">
           <div className="relative hidden min-h-[29rem] md:block lg:min-h-[31rem]">
             {programmes.map((item, index) => {
+              if (!visibleIndexes.has(index)) return null;
+
               const isActive = index === active;
               const isInlineStart = index === inlineStartIndex;
               const position = isActive
