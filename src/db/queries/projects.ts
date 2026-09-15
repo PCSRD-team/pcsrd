@@ -1,4 +1,4 @@
-import { and, arrayOverlaps, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, arrayOverlaps, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   mediaAssets,
@@ -9,10 +9,11 @@ import {
   projects,
 } from '@/db/schema';
 import type { Governorate, ProjectStatus, ThemeTag } from '@/db/schema/enums';
-import { TAGS } from '@/lib/cache/tags';
+import { TAGS, detailTags } from '@/lib/cache/tags';
 import type { Locale } from '@/lib/i18n/config';
 import { rowsOf } from '@/db/session';
 import { cached } from './_cache';
+import { shouldUseDevelopmentDatabaseFallback, shouldUseDevelopmentPlaceholderData } from './_dev-fallback';
 import { hasLocale, pickCol, slugCol } from './_localize';
 
 export const PROJECTS_PER_PAGE = 12;
@@ -71,10 +72,109 @@ function whereFor(filters: ProjectFilters) {
 
 export async function _listProjects(locale: Locale, filters: ProjectFilters) {
   const page = Math.max(1, filters.page ?? 1);
+  if (shouldUseDevelopmentPlaceholderData()) {
+    return {
+      items: [],
+      total: 0,
+      page,
+      perPage: PROJECTS_PER_PAGE,
+      totalPages: 1,
+    };
+  }
+
   const where = whereFor(filters);
 
-  const [rows, counted] = await Promise.all([
-    db
+  let rows;
+  let counted;
+  try {
+    [rows, counted] = await Promise.all([
+      db
+        .select({
+          id: projects.id,
+          slug: slugCol(projects.slugAr, projects.slugEn, locale),
+          title: pickCol(projects.titleAr, projects.titleEn, locale),
+          summary: pickCol(projects.summaryAr, projects.summaryEn, locale),
+          state: projects.projectState,
+          startDate: projects.startDate,
+          endDate: projects.endDate,
+          governorates: projects.governorates,
+          themes: projects.themes,
+          programKey: programs.key,
+          programTitle: pickCol(programs.titleAr, programs.titleEn, locale),
+          heroMediaId: projects.heroMediaId,
+        })
+        .from(projects)
+        .innerJoin(programs, eq(programs.id, projects.programId))
+        .where(where)
+        .orderBy(desc(projects.publishedAt))
+        .limit(PROJECTS_PER_PAGE)
+        .offset((page - 1) * PROJECTS_PER_PAGE),
+
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(projects)
+        .innerJoin(programs, eq(programs.id, projects.programId))
+        .where(where),
+    ]);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) {
+      return {
+        items: [],
+        total: 0,
+        page,
+        perPage: PROJECTS_PER_PAGE,
+        totalPages: 1,
+      };
+    }
+    throw error;
+  }
+
+  const total = counted[0]?.count ?? 0;
+  const heroIds = Array.from(
+    new Set(rows.map((row) => row.heroMediaId).filter((id): id is string => Boolean(id))),
+  );
+  const heroRows =
+    heroIds.length > 0
+      ? await db
+          .select({
+            id: mediaAssets.id,
+            heroPath: mediaAssets.path,
+            heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+            heroBlur: mediaAssets.blurDataUrl,
+          })
+          .from(mediaAssets)
+          .where(inArray(mediaAssets.id, heroIds))
+      : [];
+  const mediaById = new Map(heroRows.map((row) => [row.id, row]));
+  const items = rows.map(({ heroMediaId, ...row }) => {
+    const media = heroMediaId ? mediaById.get(heroMediaId) : null;
+    return {
+      ...row,
+      heroPath: media?.heroPath ?? null,
+      heroAlt: media?.heroAlt ?? null,
+      heroBlur: media?.heroBlur ?? null,
+    };
+  });
+
+  return {
+    items: items as ProjectCard[],
+    total,
+    page,
+    perPage: PROJECTS_PER_PAGE,
+    totalPages: Math.max(1, Math.ceil(total / PROJECTS_PER_PAGE)),
+  };
+}
+
+export const listProjects = cached(_listProjects, ['projects:list'], {
+  tags: [TAGS.projectList],
+});
+
+export async function _listFeaturedProjects(locale: Locale, limit = 2) {
+  if (shouldUseDevelopmentPlaceholderData()) return [];
+
+  let rows;
+  try {
+    rows = await db
       .select({
         id: projects.id,
         slug: slugCol(projects.slugAr, projects.slugEn, locale),
@@ -87,36 +187,47 @@ export async function _listProjects(locale: Locale, filters: ProjectFilters) {
         themes: projects.themes,
         programKey: programs.key,
         programTitle: pickCol(programs.titleAr, programs.titleEn, locale),
-        heroPath: mediaAssets.path,
-        heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-        heroBlur: mediaAssets.blurDataUrl,
+        heroMediaId: projects.heroMediaId,
       })
       .from(projects)
       .innerJoin(programs, eq(programs.id, projects.programId))
-      .leftJoin(mediaAssets, eq(mediaAssets.id, projects.heroMediaId))
-      .where(where)
+      .where(and(eq(projects.status, 'published'), eq(projects.isFeatured, true)))
       .orderBy(desc(projects.publishedAt))
-      .limit(PROJECTS_PER_PAGE)
-      .offset((page - 1) * PROJECTS_PER_PAGE),
+      .limit(limit);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) return [];
+    throw error;
+  }
 
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(projects)
-      .innerJoin(programs, eq(programs.id, projects.programId))
-      .where(where),
-  ]);
+  const heroIds = Array.from(
+    new Set(rows.map((row) => row.heroMediaId).filter((id): id is string => Boolean(id))),
+  );
+  const heroRows =
+    heroIds.length > 0
+      ? await db
+          .select({
+            id: mediaAssets.id,
+            heroPath: mediaAssets.path,
+            heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+            heroBlur: mediaAssets.blurDataUrl,
+          })
+          .from(mediaAssets)
+          .where(inArray(mediaAssets.id, heroIds))
+      : [];
+  const mediaById = new Map(heroRows.map((row) => [row.id, row]));
 
-  const total = counted[0]?.count ?? 0;
-  return {
-    items: rows as ProjectCard[],
-    total,
-    page,
-    perPage: PROJECTS_PER_PAGE,
-    totalPages: Math.max(1, Math.ceil(total / PROJECTS_PER_PAGE)),
-  };
+  return rows.map(({ heroMediaId, ...row }) => {
+    const media = heroMediaId ? mediaById.get(heroMediaId) : null;
+    return {
+      ...row,
+      heroPath: media?.heroPath ?? null,
+      heroAlt: media?.heroAlt ?? null,
+      heroBlur: media?.heroBlur ?? null,
+    };
+  }) as ProjectCard[];
 }
 
-export const listProjects = cached(_listProjects, ['projects:list'], {
+export const listFeaturedProjects = cached(_listFeaturedProjects, ['projects:featured'], {
   tags: [TAGS.projectList],
 });
 
@@ -223,7 +334,9 @@ export async function _getProjectBySlug(slug: string, locale: Locale) {
 }
 
 export const getProjectBySlug = cached(_getProjectBySlug, ['projects:detail'], {
-  tags: [TAGS.projectList],
+  // The programme list tag as well: the detail page carries its programme's
+  // title and slug, and a programme rename is revalidated with that tag.
+  tags: (slug) => [...detailTags('project', slug), TAGS.programList],
 });
 
 /**
@@ -233,28 +346,43 @@ export const getProjectBySlug = cached(_getProjectBySlug, ['projects:detail'], {
  * single aggregate instead of five and five.
  */
 export async function _getProjectFacets() {
-  const [byProgram, byGovernorate, byTheme, byYear] = await Promise.all([
-    db
-      .select({ key: programs.key, count: sql<number>`count(*)::int` })
-      .from(projects)
-      .innerJoin(programs, eq(programs.id, projects.programId))
-      .where(eq(projects.status, 'published'))
-      .groupBy(programs.key),
+  if (shouldUseDevelopmentPlaceholderData()) {
+    return { byProgram: [], byGovernorate: [], byTheme: [], byYear: [] };
+  }
 
-    db.execute(sql`
-      select unnest(governorates)::text as key, count(*)::int as count
-      from ${projects} where status = 'published' group by 1 order by 2 desc`),
+  let byProgram;
+  let byGovernorate;
+  let byTheme;
+  let byYear;
+  try {
+    [byProgram, byGovernorate, byTheme, byYear] = await Promise.all([
+      db
+        .select({ key: programs.key, count: sql<number>`count(*)::int` })
+        .from(projects)
+        .innerJoin(programs, eq(programs.id, projects.programId))
+        .where(eq(projects.status, 'published'))
+        .groupBy(programs.key),
 
-    db.execute(sql`
-      select unnest(themes)::text as key, count(*)::int as count
-      from ${projects} where status = 'published' group by 1 order by 2 desc`),
+      db.execute(sql`
+        select unnest(governorates)::text as key, count(*)::int as count
+        from ${projects} where status = 'published' group by 1 order by 2 desc`),
 
-    db.execute(sql`
-      select extract(year from start_date)::int as key, count(*)::int as count
-      from ${projects}
-      where status = 'published' and start_date is not null
-      group by 1 order by 1 desc`),
-  ]);
+      db.execute(sql`
+        select unnest(themes)::text as key, count(*)::int as count
+        from ${projects} where status = 'published' group by 1 order by 2 desc`),
+
+      db.execute(sql`
+        select extract(year from start_date)::int as key, count(*)::int as count
+        from ${projects}
+        where status = 'published' and start_date is not null
+        group by 1 order by 1 desc`),
+    ]);
+  } catch (error) {
+    if (shouldUseDevelopmentDatabaseFallback(error)) {
+      return { byProgram: [], byGovernorate: [], byTheme: [], byYear: [] };
+    }
+    throw error;
+  }
 
   return {
     byProgram,
@@ -268,16 +396,19 @@ export const getProjectFacets = cached(_getProjectFacets, ['projects:facets'], {
   tags: [TAGS.projectList],
 });
 
-/** Slugs for `generateStaticParams`. Both locales, published only. */
+/** Slugs for `generateStaticParams` and the sitemap. Both locales, published only. */
 export async function _listProjectSlugs() {
   return db
     .select({
       slugAr: projects.slugAr,
       slugEn: projects.slugEn,
+      translationStatus: projects.translationStatus,
       updatedAt: projects.updatedAt,
+      publishedAt: projects.publishedAt,
     })
     .from(projects)
-    .where(eq(projects.status, 'published'));
+    .where(eq(projects.status, 'published'))
+    .orderBy(desc(projects.publishedAt));
 }
 
 export const listProjectSlugs = cached(_listProjectSlugs, ['projects:slugs'], {
