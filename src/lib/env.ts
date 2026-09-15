@@ -59,7 +59,19 @@ const serverSchema = z.object({
 
   // ── Ops ──────────────────────────────────────────────────────────────
   CRON_SECRET: z.string().min(16),
-  SENTRY_DSN: z.string().optional(),
+  /**
+   * Server-side error reporting. Optional and read by
+   * `sentry.server.config.ts` directly from `process.env` (instrumentation
+   * runs before this module); it is listed here so the contract is in one
+   * place. Unset ⇒ the SDK never initialises. `SENTRY_AUTH_TOKEN` is
+   * build-time only (source-map upload) and deliberately not part of the
+   * runtime contract.
+   */
+  SENTRY_DSN: z
+    .string()
+    .regex(/^https:\/\/\S+$/)
+    .optional()
+    .or(z.literal('')),
 
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });

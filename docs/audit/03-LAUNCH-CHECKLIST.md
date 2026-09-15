@@ -93,9 +93,25 @@ Ordered so that the things that stop a launch come first.
       They are mine, not the organisation's voice. See `04-OPEN-QUESTIONS.md` B2.
 - [ ] **MY-ACTION-REQUIRED** — Point `MAIL_TO_SENSITIVE` at the safeguarding focal point, not
       a shared inbox.
+- [ ] **TODO** — Add a key ring to `src/lib/security/crypto.ts`: `decryptPayload` reads
+      `SUBMISSION_ENC_KEY` only and ignores the row's `payload_key_id`, so the rotation that
+      `DEPLOYMENT.md` §2 describes ("add a key, bump the id") is not yet possible without
+      losing every existing complaint. Until it lands, the key must not be rotated. See
+      `docs/RUNBOOK.md` §4.
 - [ ] **TODO** — Verify DNH-8 end to end once the database grants are applied: submit a
       complaint, confirm `ip_hash` and `user_agent` are null, the payload is ciphertext, and
       no analytics event fired.
+- [x] **DONE** — Mail is rendered from React Email templates (`src/emails/`) with copy in
+      `src/lib/i18n/mail-dict.ts`; no Arabic subject lives in code any more. A confidential
+      notification has **no `fields` prop at all** — the type refuses complaint content, not
+      just the template. *Verified:* `tests/unit/mail-templates.test.ts` renders a complaint
+      and a fraud report from a payload of sentinel strings and asserts none appear in the
+      HTML or the plain-text part.
+- [x] **DONE** — Sentry wired with scrubbing in one file for all three runtimes
+      (`sentry.scrub.config.ts`): no PII, no request bodies/headers/cookies/query strings, no
+      replay, no tracing. Dormant without a DSN. *Verified:* typecheck, lint, and
+      `tests/unit/csp.test.ts` asserting the ingest origin enters `connect-src` only, and
+      only when a DSN is set.
 
 ---
 
@@ -126,6 +142,24 @@ Ordered so that the things that stop a launch come first.
 - [ ] **MY-ACTION-REQUIRED** — Confirm the two cron jobs are registered and that
       `CRON_SECRET` matches. Vercel Hobby allows exactly two, which is what `vercel.json`
       declares.
+- [x] **DONE** — `vercel.json` now schedules `archive-expired` **hourly** (`0 * * * *`), as
+      the spec, `CLAUDE.md` and `DEPLOYMENT.md` §4c all said; it was daily.
+- [x] **DONE** — Storage buckets and policies exist in the repository:
+      `supabase/migrations/20260914120000_storage_buckets.sql`, idempotent. *Verified:* read
+      against the live project — three buckets present with the expected limits and public
+      flags, two `SELECT` policies, none on `applications`. One drift found and corrected by
+      the migration: `media` allowed `image/svg+xml`.
+- [ ] **MY-ACTION-REQUIRED** — Run `supabase link` + `supabase db push` once. The live
+      project has no `supabase_migrations` schema yet; the push creates it and applies the
+      0-byte file (no-op) and the storage file. Then run the two verification queries in
+      `DEPLOYMENT.md` §3d.
+- [ ] **MY-ACTION-REQUIRED** — Decide whether to run Sentry. If yes: create the project, set
+      `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` in Vercel (Production), and optionally
+      `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` for source maps. If no: leave
+      all of them unset; nothing initialises.
+- [x] **DONE** — Repository hygiene: 1,319 tracked files under `.tmp/node-compile-cache/`
+      untracked and `/.tmp/` ignored; `tmp-org-smoke.ts` removed; five create-next-app
+      SVGs removed from `public/`; `.github/PULL_REQUEST_TEMPLATE.md` added.
 - [ ] **MY-ACTION-REQUIRED** — Decide what happens to the `main` branch pointer. See
       `04-OPEN-QUESTIONS.md` B3. Nothing has been pushed.
 - [x] **DONE** — Six list routes have `loading.tsx` rendering the designed skeleton.

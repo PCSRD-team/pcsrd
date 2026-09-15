@@ -33,7 +33,7 @@ npm ci
 npm run typecheck     # 0 errors
 npm run lint          # 0 errors
 npm run lint:css      # 0 errors
-npm run test:unit     # 8 passing
+npm run test:unit     # all passing
 npm run test:int      # 27 passing
 npx drizzle-kit check # "Everything's fine"
 npm run build         # needs a reachable database — see §4
@@ -79,9 +79,11 @@ openssl rand -base64 24   # CRON_SECRET         (min 16 chars — checked)
 unencrypted sensitive payload with `PCSRD_SENSITIVE_PLAINTEXT`, so without it the complaints
 form fails at the database.
 
-⚠️ **Do not rotate `SUBMISSION_ENC_KEY` once complaints exist** — existing ciphertext is
-decrypted with the key named by `SUBMISSION_ENC_KEY_ID`. To rotate, add a new key and bump
-the id; do not replace the old value.
+⚠️ **Do not rotate `SUBMISSION_ENC_KEY` once complaints exist.** Every row records the key
+id that encrypted it, but `decryptPayload` currently reads the single `SUBMISSION_ENC_KEY`
+and nothing else — replacing the value makes every existing complaint unreadable, silently.
+Rotation needs the key ring listed as outstanding in the launch checklist; the procedure and
+the reasoning are in `docs/RUNBOOK.md` §4.
 
 ### The rest
 
@@ -91,6 +93,7 @@ out:
 - `MAIL_TO_SENSITIVE` — receives confidential complaints. Point it at the safeguarding focal
   point, not a shared inbox.
 - `NEXT_PUBLIC_WHATSAPP_NUMBER` — digits only, no leading `+`. It is a `wa.me` path.
+- `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_AUTH_TOKEN` — all optional. See §4e.
 
 ---
 
@@ -146,24 +149,53 @@ render in the live homepage `<title>`.** Replace them in step 6.
 ### 3d. Storage buckets
 
 The Drizzle migrations own tables, functions and policies. Storage buckets and their policies
-are owned by `supabase/migrations/`, applied with the Supabase CLI:
+are owned by `supabase/migrations/20260914120000_storage_buckets.sql`, applied with the
+Supabase CLI:
 
 ```bash
 supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-Three buckets are expected: `media` (10 MB), `documents` (20 MB), `applications` (5 MB,
-private). Uploads are capped at **4 MB in code** regardless — Vercel's serverless request
-body limit is 4.5 MB, so a larger file is rejected with an opaque 413 before validation runs.
+The migration is **idempotent**: every bucket is `insert … on conflict (id) do update`, every
+policy is `drop policy if exists` then `create policy`. Against a project that already has
+the buckets it changes only what drifted. It declares:
+
+| Bucket | Public | Limit | MIME | Policies |
+|---|---|---|---|---|
+| `media` | yes | 10 MB | jpeg, png, webp, avif — **no SVG** | `anon`/`authenticated` select |
+| `documents` | yes | 20 MB | pdf | `anon`/`authenticated` select |
+| `applications` | **no** | 5 MB | pdf, doc, docx (= `CV_MIME` in `src/lib/security/upload.ts`) | **none** |
+
+Every write on every bucket goes through the service-role client, server-side, and the
+service role bypasses RLS — so there is deliberately no insert/update/delete policy anywhere.
+`applications` has no policy at all: RLS on plus no policy is zero rows for the anon key,
+which is the correct state for a bucket of CVs. Reads come through a 60-second signed URL.
+
+Uploads are capped at **4 MB in code** regardless — Vercel's serverless request body limit is
+4.5 MB, so a larger file is rejected with an opaque 413 before validation runs. The bucket
+limits are the second wall; do not align them down.
+
+Verify after `db push`, read-only, as the owner:
+
+```sql
+select id, public, file_size_limit, allowed_mime_types from storage.buckets order by id;
+select policyname, roles, cmd from pg_policies where schemaname = 'storage';
+```
+
+Expected: three buckets as in the table, and exactly two policies, both `SELECT`.
 
 ⚠️ **Never run `supabase db pull` or `supabase db diff` against the `public` schema.** It sees
 Drizzle's tables as untracked drift and writes them into `supabase/migrations/`, producing
 exactly the two-sources-of-truth failure the split exists to prevent.
 
-`supabase/migrations/20260819113741_remote_schema.sql` is **0 bytes on purpose**. Its version
-is recorded in the remote `supabase_migrations.schema_migrations` table; deleting the local
-file makes `supabase migration list` report a phantom remote-only version forever.
+`supabase/migrations/20260819113741_remote_schema.sql` is **0 bytes on purpose** and stays.
+It exists so that a remote which records that version in `supabase_migrations.schema_migrations`
+never shows a phantom remote-only entry in `supabase migration list`. A read-only check of the
+live project on 2026-09-14 found **no `supabase_migrations` schema at all** — the CLI has not
+pushed to it yet — so the first `db push` will create that schema and apply both files in
+order: the 0-byte one as a no-op, then the storage one, which is idempotent against the
+buckets that already exist. Do not delete the 0-byte file to "tidy up" before that push.
 
 ---
 
@@ -198,6 +230,11 @@ So: apply migrations and seed (step 3) **before** the first deploy.
 | `/api/cron/archive-expired` | `0 * * * *` (hourly) | archives expired announcements and closed vacancies |
 | `/api/cron/purge-submissions` | `30 0 * * *` (daily) | deletes submissions past their retention deadline, and their attachments |
 
+The archive job is hourly because an announcement's `expires_at` and a vacancy's
+`closes_at` are timestamps, not dates: a closing time of 14:00 should not stay open until
+midnight. Two jobs is the Vercel Hobby ceiling; the schedules here are what `vercel.json`
+declares and what this table must keep saying.
+
 Both authenticate with `CRON_SECRET` via a constant-time comparison. If `CRON_SECRET` in
 Vercel does not match what the deployment was built with, both return 401 silently — the
 retention purge failing quietly is a data-protection problem, so check the job logs after the
@@ -211,6 +248,33 @@ Set `NEXT_PUBLIC_SITE_URL` to the final public origin **before** the production 
 read at module scope by `robots.ts`, `sitemap.ts`, `feed.xml` and `metadataBase`, so a wrong
 value produces a sitemap and social cards pointing at the wrong host.
 
+### 4e. Error monitoring (optional)
+
+Sentry is wired but dormant until a DSN exists. Three variables, all optional:
+
+| Variable | Where it is read | Effect when unset |
+|---|---|---|
+| `SENTRY_DSN` | `sentry.server.config.ts` / `sentry.edge.config.ts` (server runtimes) | server SDK never initialises |
+| `NEXT_PUBLIC_SENTRY_DSN` | `src/instrumentation-client.ts` (browser) and `src/lib/security/csp.ts` | browser SDK never initialises; the CSP names no ingest origin |
+| `SENTRY_AUTH_TOKEN` (+ `SENTRY_ORG`, `SENTRY_PROJECT`) | `next.config.ts` at build time only | no source-map upload; the build never contacts Sentry |
+
+Set the two DSNs (normally the same value) in Vercel for Production. Preview can stay
+without them. CI has none and builds green.
+
+What reaches Sentry is decided in one file, `sentry.scrub.config.ts`, used by all three
+runtimes: `sendDefaultPii: false`, no user, no request headers/cookies/body/query string, no
+`extra`, breadcrumbs reduced to method + path + status, no session replay, no tracing
+(`tracesSampleRate: 0` on every route, admin included). The SDK is **bundled** into the
+app's own chunks, not loaded as a script tag, so `00-ARCHITECTURE §0.9` rule 4 holds; the only
+outbound contact is the event POST to the DSN's own host, which the CSP admits in
+`connect-src` only when the DSN is set.
+
+**Complaints and fraud reports can never be identified from Sentry.** Both actions run inside
+`runAction()`, which catches every throw, so nothing from them is reported as an event at all.
+If something ever is, the scrubbing reduces it to a message and a stack — no payload, no
+reference, no IP (none is stored to begin with). Do not weaken `sentry.scrub.config.ts` for
+debugging convenience; use the admin audit log and the digest printed on the error page.
+
 ---
 
 ## 5. First deploy
@@ -222,6 +286,10 @@ git push origin main      # or: vercel --prod
 CI runs on the push: typecheck, lint, both test suites, `drizzle-kit check`, a journal
 integrity check, migrations against a throwaway Postgres 17, `assert-rls.ts` against it, the
 build, and the service-role-leak assertion.
+
+Pull requests get `.github/PULL_REQUEST_TEMPLATE.md`, which is the Definition of Done from
+`docs/spec/06-BUILD-PLAN.md` §11 plus this project's privacy and database lines. An unticked
+box with no explanation is a blocked review.
 
 ---
 
@@ -320,7 +388,8 @@ The database does **not** roll back with it. `0003` only adds a grant, so it is 
 in place across an application rollback — and revoking it would re-break the CMS.
 
 ⚠️ There is no undo for `/api/cron/purge-submissions`. If you need to pause retention while
-investigating something, remove the cron entry and redeploy rather than letting it run.
+investigating something, remove the cron entry and redeploy rather than letting it run — the
+exact steps are in `docs/RUNBOOK.md` → "Pause the retention purge".
 
 ---
 
@@ -337,3 +406,6 @@ investigating something, remove the cron entry and redeploy rather than letting 
 After any migration touching policies, grants or the `app` schema, re-run `assert-rls.ts`.
 That is the check that tells you whether the second line of defence is still there — and its
 absence is invisible from the site itself.
+
+Incident procedures — the site is down, restore from backup, add a user, rotate a key, pause
+the purge — are in **`docs/RUNBOOK.md`**.

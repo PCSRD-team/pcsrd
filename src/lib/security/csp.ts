@@ -16,9 +16,40 @@
  * can ask for both without mutating the environment.
  */
 
-/** Cloudflare Turnstile. The only third-party origin the site talks to. */
+/** Cloudflare Turnstile. One of the two third-party origins the site talks to. */
 const TURNSTILE = 'https://challenges.cloudflare.com';
 const SUPABASE = 'https://*.supabase.co';
+
+/**
+ * The other one: Sentry's ingest endpoint, and only when a DSN is configured.
+ *
+ * A DSN is `https://<key>@<host>/<project>`; the browser SDK POSTs events to
+ * `https://<host>/api/<project>/envelope/`. Allowing the host origin — not
+ * `*.sentry.io` — means a deployment without Sentry has a policy that names
+ * no tracker at all, and a deployment with one names exactly its own ingest
+ * host. The SDK itself is bundled into the app's own chunks, so `script-src`
+ * does not change; this is a `connect-src` entry and nothing else.
+ *
+ * `NEXT_PUBLIC_SENTRY_DSN` is the browser's DSN, which is the one the policy
+ * has to admit. It is read here, at module scope, because both policies are
+ * built at different times — the site one at `next build`, the admin one per
+ * request in `src/proxy.ts` — and Next inlines `NEXT_PUBLIC_*` into both.
+ * Tests pass an explicit value instead.
+ */
+export function sentryIngestOrigin(dsn: string | undefined | null): string | null {
+  if (!dsn) return null;
+  try {
+    const url = new URL(dsn);
+    if (url.protocol !== 'https:' || !url.hostname) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+const SENTRY = sentryIngestOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
+
+const sentryConnect = (origin: string | null) => (origin ? ` ${origin}` : '');
 
 /**
  * Development-only additions, shared by both policies.
@@ -43,14 +74,14 @@ const upgrade = (isDev: boolean) => (isDev ? [] : ['upgrade-insecure-requests'])
  * against is already closed by the no-`dangerouslySetInnerHTML` rule and the
  * no-third-party-scripts rule.
  */
-export function buildSiteCsp(isDev: boolean): string {
+export function buildSiteCsp(isDev: boolean, sentryOrigin: string | null = SENTRY): string {
   return [
     `default-src 'self'`,
     `script-src 'self' 'unsafe-inline'${devScript(isDev)} ${TURNSTILE}`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: ${SUPABASE}`,
     `font-src 'self'`,
-    `connect-src 'self'${devConnect(isDev)} ${SUPABASE} ${TURNSTILE}`,
+    `connect-src 'self'${devConnect(isDev)} ${SUPABASE} ${TURNSTILE}${sentryConnect(sentryOrigin)}`,
     `frame-src ${TURNSTILE}`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,
@@ -68,14 +99,18 @@ export function buildSiteCsp(isDev: boolean): string {
  * critical CSS and there is no nonce-based alternative for it, which is why
  * `style-src` still carries `'unsafe-inline'`.
  */
-export function buildAdminCsp(nonce: string, isDev: boolean): string {
+export function buildAdminCsp(
+  nonce: string,
+  isDev: boolean,
+  sentryOrigin: string | null = SENTRY,
+): string {
   return [
     `default-src 'self'`,
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${devScript(isDev)}`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: ${SUPABASE}`,
     `font-src 'self'`,
-    `connect-src 'self'${devConnect(isDev)} ${SUPABASE}`,
+    `connect-src 'self'${devConnect(isDev)} ${SUPABASE}${sentryConnect(sentryOrigin)}`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,

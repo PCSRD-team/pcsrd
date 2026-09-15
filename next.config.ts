@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs/config';
 import type { NextConfig } from 'next';
 import { buildSiteCsp } from './src/lib/security/csp';
 
@@ -85,4 +86,45 @@ const config: NextConfig = {
   typescript: { ignoreBuildErrors: false },
 };
 
-export default config;
+/**
+ * Sentry build integration.
+ *
+ * What it does here: injects the tree-shaking flags that strip the SDK's
+ * debug logging, tracing and replay code from the client bundle (none of
+ * which this project uses — `tracesSampleRate: 0`, no replay), and, only when
+ * a `SENTRY_AUTH_TOKEN` is present, uploads source maps so a stack trace in
+ * Sentry names the source line rather than a minified column.
+ *
+ * What it does not do: it adds no script tag (the SDK is bundled from
+ * `src/instrumentation-client.ts`), no tunnel route, no route manifest in the
+ * client bundle, no Vercel cron monitors, no telemetry to Sentry about the
+ * build. Without a DSN the runtime never initialises; without an auth token
+ * the build never contacts Sentry. CI has neither and builds green.
+ */
+export default withSentryConfig(config, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  telemetry: false,
+  silent: !process.env.CI,
+
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+    deleteSourcemapsAfterUpload: true,
+  },
+  widenClientFileUpload: false,
+  tunnelRoute: undefined,
+  routeManifestInjection: false,
+  // Navigation tracing is off (`tracesSampleRate: 0`), so the client file
+  // deliberately exports no `onRouterTransitionStart`; this silences the
+  // build-time reminder to add one.
+  suppressOnRouterTransitionStartWarning: true,
+
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeTracing: true,
+    excludeReplayShadowDom: true,
+    excludeReplayIframe: true,
+    excludeReplayWorker: true,
+  },
+});

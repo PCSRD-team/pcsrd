@@ -1,8 +1,17 @@
+import { render, toPlainText } from '@react-email/components';
+import { createElement, type ReactElement } from 'react';
 import { Resend } from 'resend';
 import type { SubmissionType } from '@/db/schema/enums';
+import { SubmissionAcknowledgement } from '@/emails/submission-acknowledgement';
+import {
+  type NotificationField,
+  SubmissionNotification,
+} from '@/emails/submission-notification';
 import { serverEnv } from '@/lib/env';
 import { publicEnv } from '@/lib/env.public';
 import type { Locale } from '@/lib/i18n/config';
+import { ar } from '@/lib/i18n/dictionaries/ar';
+import { type MailDict, mailDict } from '@/lib/i18n/mail-dict';
 
 /**
  * Outbound mail.
@@ -17,10 +26,25 @@ import type { Locale } from '@/lib/i18n/config';
  *    else. Mail is forwarded, archived and searched; the admin is access
  *    controlled and audited. Putting the complaint in the email would undo
  *    every protection the rest of the system provides.
+ *
+ * Rule 2 is enforced twice: here, where a sensitive submission's payload is
+ * never turned into fields, and in the template's props, which have no
+ * `fields` slot when `sensitive` is true. Copy comes from
+ * `src/lib/i18n/mail-dict.ts`; the organisation's name comes from
+ * `organization_settings` at send time and never from a literal.
+ *
+ * This module imports nothing from `next/*`. It runs inside `after()`, but it
+ * does not know that, which is what lets a unit test render every template.
  */
 
 let client: Resend | null = null;
 const resend = () => (client ??= new Resend(serverEnv.RESEND_API_KEY));
+
+/**
+ * Staff notifications are written in the admin's language. The visitor's
+ * locale governs only the acknowledgement they receive.
+ */
+const STAFF_LOCALE: Locale = 'ar';
 
 /** Which inbox each form type reaches. */
 function recipientFor(type: SubmissionType, enquiryType?: unknown): string {
@@ -40,41 +64,47 @@ function recipientFor(type: SubmissionType, enquiryType?: unknown): string {
   }
 }
 
-const SUBJECT: Record<SubmissionType, string> = {
-  partnership: 'طلب شراكة جديد',
-  contact: 'رسالة جديدة من نموذج التواصل',
-  volunteer: 'طلب تطوّع جديد',
-  job: 'طلب توظيف جديد',
-  complaint: 'شكوى جديدة عبر آلية تقديم الشكاوى',
-  fraud_report: 'بلاغ انتحال صفة',
+/**
+ * Payload keys the notification never prints. `locale` is transport; the
+ * others are the envelope the action already strips, listed again so a future
+ * schema that forgets to cannot leak a Turnstile token into an inbox.
+ */
+const HIDDEN_KEYS = new Set(['locale', 'turnstileToken', 'website']);
+
+/** Labels for payload keys and enum values, from the page dictionary. */
+const FIELD_LABELS: Record<string, string> = ar.forms;
+const VALUE_LABELS: Record<string, string> = {
+  ...ar.formOptions,
+  ...ar.enums.governorate,
+  ...ar.enums.program,
+  ...ar.enums.theme,
 };
 
-const ACK_SUBJECT: Record<Locale, string> = {
-  ar: 'استلمنا رسالتك',
-  en: 'We have received your message',
-};
-
-/** Escapes text before it enters an HTML email body. */
-function escapeHtml(value: unknown): string {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function labelValue(value: unknown, dict: MailDict): string {
+  if (typeof value === 'boolean') return value ? dict.yes : dict.no;
+  if (Array.isArray(value)) return value.map((v) => labelValue(v, dict)).join(dict.listSeparator);
+  const text = String(value);
+  return VALUE_LABELS[text] ?? text;
 }
 
-function payloadTable(payload: Record<string, unknown>): string {
-  const rows = Object.entries(payload)
-    .filter(([, value]) => value !== null && value !== undefined && value !== '')
-    .map(
+/**
+ * Turns a payload into labelled rows. Empty values are dropped rather than
+ * printed as blank cells. Keys the dictionary does not know keep their
+ * identifier so the row is still readable rather than silently missing.
+ */
+export function payloadToFields(
+  payload: Record<string, unknown>,
+  dict: MailDict = mailDict[STAFF_LOCALE],
+): NotificationField[] {
+  return Object.entries(payload)
+    .filter(
       ([key, value]) =>
-        `<tr><th align="right" style="padding:6px 12px;vertical-align:top;white-space:nowrap">${escapeHtml(key)}</th>` +
-        `<td style="padding:6px 12px">${escapeHtml(
-          Array.isArray(value) ? value.join('، ') : value,
-        )}</td></tr>`,
+        !HIDDEN_KEYS.has(key) && value !== null && value !== undefined && value !== '',
     )
-    .join('');
-  return `<table dir="rtl" style="border-collapse:collapse;font-family:system-ui,sans-serif;font-size:14px">${rows}</table>`;
+    .map(([key, value]) => ({
+      label: FIELD_LABELS[key] ?? key,
+      value: labelValue(value, dict),
+    }));
 }
 
 export type NotifyInput = {
@@ -83,30 +113,121 @@ export type NotifyInput = {
   locale: Locale;
   isSensitive: boolean;
   payload: Record<string, unknown>;
+  /**
+   * The organisation's display name. Optional so the existing caller need
+   * not change; when absent it is read from `organization_settings`, and
+   * only if that read fails does the generic dictionary noun stand in.
+   */
+  organizationName?: string;
 };
+
+export type RenderedMail = { subject: string; html: string; text: string };
+
+async function renderBoth(element: ReactElement): Promise<{ html: string; text: string }> {
+  const html = await render(element);
+  return { html, text: toPlainText(html) };
+}
+
+/**
+ * Renders the staff notification. Exported so a test can assert what a
+ * confidential notification does *not* contain.
+ */
+export async function renderNotification(input: {
+  type: SubmissionType;
+  reference: string;
+  isSensitive: boolean;
+  payload: Record<string, unknown>;
+  organizationName: string;
+  hasAttachment?: boolean;
+}): Promise<RenderedMail> {
+  const dict = mailDict[STAFF_LOCALE];
+  const adminUrl = `${publicEnv.NEXT_PUBLIC_SITE_URL}/admin/submissions?ref=${encodeURIComponent(input.reference)}`;
+  const base = {
+    locale: STAFF_LOCALE,
+    dict,
+    organizationName: input.organizationName,
+    type: input.type,
+    reference: input.reference,
+    adminUrl,
+  };
+
+  // The sensitive branch is built without ever touching `input.payload`.
+  const element = input.isSensitive
+    ? createElement(SubmissionNotification, { ...base, sensitive: true })
+    : createElement(SubmissionNotification, {
+        ...base,
+        sensitive: false,
+        fields: payloadToFields(input.payload, dict),
+        hasAttachment: input.hasAttachment ?? false,
+      });
+
+  return {
+    subject: `${dict.notification.subject[input.type]} — ${input.reference}`,
+    ...(await renderBoth(element)),
+  };
+}
+
+/** Renders the visitor acknowledgement in the visitor's locale. */
+export async function renderAcknowledgement(input: {
+  locale: Locale;
+  reference: string;
+  organizationName: string;
+}): Promise<RenderedMail> {
+  const dict = mailDict[input.locale];
+  const element = createElement(SubmissionAcknowledgement, {
+    locale: input.locale,
+    dict,
+    organizationName: input.organizationName,
+    reference: input.reference,
+  });
+  return {
+    subject: `${dict.acknowledgement.subject} — ${input.reference}`,
+    ...(await renderBoth(element)),
+  };
+}
+
+/**
+ * The organisation's short name, from the settings row — RULE 6. Read lazily
+ * so this module stays importable without a database; a failed read falls
+ * back to the generic noun rather than failing the send.
+ */
+async function resolveOrganizationName(locale: Locale): Promise<string> {
+  try {
+    const { _getOrganization } = await import('@/db/queries/content');
+    const org = await _getOrganization(locale);
+    const name = org?.shortName?.trim();
+    if (name) return name;
+  } catch (error) {
+    console.error('[mail] organisation name unavailable', error);
+  }
+  return mailDict[locale].organizationFallback;
+}
 
 export async function notifySubmission(input: NotifyInput): Promise<void> {
   const to = recipientFor(input.type, input.payload.enquiryType);
-  const adminUrl = `${publicEnv.NEXT_PUBLIC_SITE_URL}/admin/submissions?ref=${encodeURIComponent(input.reference)}`;
 
-  const body = input.isSensitive
-    ? `<div dir="rtl" style="font-family:system-ui,sans-serif">
-         <p>وردت شكوى جديدة برقم مرجعي <strong>${escapeHtml(input.reference)}</strong>.</p>
-         <p>محتوى الشكوى غير مرفق في هذه الرسالة عمداً. اقرأها من لوحة التحكم:</p>
-         <p><a href="${adminUrl}">${adminUrl}</a></p>
-       </div>`
-    : `<div dir="rtl" style="font-family:system-ui,sans-serif">
-         <p>الرقم المرجعي: <strong>${escapeHtml(input.reference)}</strong></p>
-         ${payloadTable(input.payload)}
-         <p><a href="${adminUrl}">فتح في لوحة التحكم</a></p>
-       </div>`;
+  const organizationName = input.organizationName ?? (await resolveOrganizationName(input.locale));
+  const staffOrganizationName =
+    input.locale === STAFF_LOCALE
+      ? organizationName
+      : (input.organizationName ?? (await resolveOrganizationName(STAFF_LOCALE)));
+
+  const notification = await renderNotification({
+    type: input.type,
+    reference: input.reference,
+    isSensitive: input.isSensitive,
+    payload: input.payload,
+    organizationName: staffOrganizationName,
+    hasAttachment: input.type === 'job',
+  });
 
   const sends: Promise<unknown>[] = [
     resend().emails.send({
       from: serverEnv.MAIL_FROM,
       to,
-      subject: `${SUBJECT[input.type]} — ${input.reference}`,
-      html: body,
+      subject: notification.subject,
+      html: notification.html,
+      text: notification.text,
     }),
   ];
 
@@ -115,12 +236,18 @@ export async function notifySubmission(input: NotifyInput): Promise<void> {
   // can expose a complainant.
   const email = input.payload.email ?? input.payload.reporterEmail;
   if (!input.isSensitive && typeof email === 'string' && email.includes('@')) {
+    const acknowledgement = await renderAcknowledgement({
+      locale: input.locale,
+      reference: input.reference,
+      organizationName,
+    });
     sends.push(
       resend().emails.send({
         from: serverEnv.MAIL_FROM,
         to: email,
-        subject: `${ACK_SUBJECT[input.locale]} — ${input.reference}`,
-        html: acknowledgementBody(input.locale, input.reference),
+        subject: acknowledgement.subject,
+        html: acknowledgement.html,
+        text: acknowledgement.text,
       }),
     );
   }
@@ -128,20 +255,8 @@ export async function notifySubmission(input: NotifyInput): Promise<void> {
   const results = await Promise.allSettled(sends);
   for (const result of results) {
     if (result.status === 'rejected') {
+      // The reference identifies the row; nothing from the payload is logged.
       console.error('[mail] send failed', { reference: input.reference, error: result.reason });
     }
   }
-}
-
-function acknowledgementBody(locale: Locale, reference: string): string {
-  if (locale === 'en') {
-    return `<div dir="ltr" style="font-family:system-ui,sans-serif">
-      <p>Thank you — we have received your message.</p>
-      <p>Your reference number is <strong>${escapeHtml(reference)}</strong>. Please keep it for any follow-up.</p>
-    </div>`;
-  }
-  return `<div dir="rtl" style="font-family:system-ui,sans-serif">
-    <p>شكراً لك — وصلتنا رسالتك.</p>
-    <p>رقمك المرجعي هو <strong>${escapeHtml(reference)}</strong>، احتفظ به لأي متابعة.</p>
-  </div>`;
 }

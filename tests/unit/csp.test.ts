@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildAdminCsp, buildSiteCsp } from '@/lib/security/csp';
+import { buildAdminCsp, buildSiteCsp, sentryIngestOrigin } from '@/lib/security/csp';
 
 /**
  * These exist because of one bug and one risk.
@@ -73,5 +73,35 @@ describe('development CSP', () => {
   it('omits upgrade-insecure-requests, which would break that socket', () => {
     expect(buildSiteCsp(true)).not.toContain('upgrade-insecure-requests');
     expect(buildAdminCsp('n', true)).not.toContain('upgrade-insecure-requests');
+  });
+});
+
+describe('Sentry ingest origin', () => {
+  const DSN = 'https://0123456789abcdef@o4500000000000000.ingest.de.sentry.io/4500000000000001';
+  const ORIGIN = 'https://o4500000000000000.ingest.de.sentry.io';
+
+  it('derives exactly the ingest host from a DSN, never a wildcard', () => {
+    expect(sentryIngestOrigin(DSN)).toBe(ORIGIN);
+    expect(sentryIngestOrigin(undefined)).toBeNull();
+    expect(sentryIngestOrigin('')).toBeNull();
+    expect(sentryIngestOrigin('not a url')).toBeNull();
+    expect(sentryIngestOrigin('http://key@insecure.example/1')).toBeNull();
+  });
+
+  it('names no tracker at all when the DSN is unset', () => {
+    for (const csp of [buildSiteCsp(false, null), buildAdminCsp('n', false, null)]) {
+      expect(csp).not.toContain('sentry');
+    }
+  });
+
+  it('adds the origin to connect-src only, and to nothing else', () => {
+    for (const csp of [buildSiteCsp(false, ORIGIN), buildAdminCsp('n', false, ORIGIN)]) {
+      const directives = csp.split('; ');
+      const withSentry = directives.filter((d) => d.includes(ORIGIN));
+      expect(withSentry).toHaveLength(1);
+      expect(withSentry[0]).toMatch(/^connect-src /);
+      // The SDK is bundled, not a script tag: script-src must not grow.
+      expect(directives.find((d) => d.startsWith('script-src'))).not.toContain('sentry');
+    }
   });
 });
