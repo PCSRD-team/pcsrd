@@ -8,7 +8,10 @@ import type { Dictionary } from './ar';
  * `undefined` on a live page, and nobody reviewing an Arabic-first site checks
  * every English string.
  */
+import { partialsEn } from './partials';
+
 export const en: Dictionary = {
+  ...partialsEn,
   common: {
     skipToContent: 'Skip to content',
     menu: 'Menu',
