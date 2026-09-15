@@ -1,5 +1,7 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
+import { useEffect } from 'react';
 import { fontVariables } from './fonts';
 import './globals.css';
 
@@ -23,6 +25,12 @@ import './globals.css';
  *
  * `digest` is rendered deliberately. It is the only handle a visitor can quote
  * and an operator can grep for, and it contains no detail of the failure.
+ *
+ * The error is reported to Sentry from here because a root-layout failure is
+ * the one kind that Next's own server-side hook does not see rendered. When
+ * no DSN is configured the SDK was never initialised and the call is a no-op;
+ * when one is, `beforeSend` in `sentry.scrub.config.ts` strips everything
+ * but the message and the stack.
  */
 export default function GlobalError({
   error,
@@ -31,6 +39,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="ar" dir="rtl">
       <body className={`${fontVariables} bg-paper-ground antialiased`}>

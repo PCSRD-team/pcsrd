@@ -16,6 +16,17 @@ const publicSchema = z.object({
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1),
   /** Digits only, no leading `+` — this is the `wa.me` path format. */
   NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().regex(/^\d{8,15}$/),
+  /**
+   * The browser SDK's DSN. Optional: unset means the client SDK never
+   * initialises and the CSP names no ingest origin. A DSN is not a secret —
+   * it is a public write-only key — but its shape is checked so a typo cannot
+   * become a `connect-src` entry. An empty string is normalised to unset in
+   * `source` below, so a copied `.env.example` with the line blank is fine.
+   */
+  NEXT_PUBLIC_SENTRY_DSN: z
+    .string()
+    .regex(/^https:\/\/\S+$/)
+    .optional(),
 });
 
 export type PublicEnv = z.infer<typeof publicSchema>;
@@ -32,6 +43,7 @@ const source = {
   NEXT_PUBLIC_DEFAULT_LOCALE: process.env.NEXT_PUBLIC_DEFAULT_LOCALE,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   NEXT_PUBLIC_WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
+  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN || undefined,
 };
 
 function parsePublic(): PublicEnv {
