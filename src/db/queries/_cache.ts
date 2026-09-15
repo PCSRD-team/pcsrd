@@ -18,14 +18,23 @@ import { unstable_cache } from 'next/cache';
 /** One hour. Content changes by publish, which busts the tag immediately. */
 export const DEFAULT_REVALIDATE = 3600;
 
+/**
+ * `tags` is either a fixed list (a list query) or a function of the call's
+ * arguments (a detail query), so `getPostBySlug('x', 'ar')` can register
+ * `post:x` alongside `post:list`. Before this, every detail query registered
+ * only its list tag and the per-slug tags in `tags.ts` were computed and
+ * revalidated but registered by nothing (ARCH-009 / NEXT-007): an edit
+ * dropped every cached post page instead of its own. The function form is what
+ * makes the granularity real.
+ */
 export function cached<TArgs extends unknown[], TResult>(
   fn: (...args: TArgs) => Promise<TResult>,
   keyParts: string[],
-  options: { tags: string[]; revalidate?: number },
+  options: { tags: string[] | ((...args: TArgs) => string[]); revalidate?: number },
 ): (...args: TArgs) => Promise<TResult> {
   return (...args: TArgs) =>
     unstable_cache(() => fn(...args), [...keyParts, ...args.map(stableKey)], {
-      tags: options.tags,
+      tags: typeof options.tags === 'function' ? options.tags(...args) : options.tags,
       revalidate: options.revalidate ?? DEFAULT_REVALIDATE,
     })();
 }
