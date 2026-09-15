@@ -2,7 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
+import { getMediaUsage } from '@/db/queries/admin';
 import { requireActor } from '@/lib/auth/guard';
+import { publicEnv } from '@/lib/env.public';
 import { revalidateEntity } from '@/lib/cache/revalidate';
 import type { Entity } from '@/lib/cache/tags';
 import { type ActionResult, err, ok, runAction } from '@/lib/errors';
@@ -10,6 +12,8 @@ import type { Actor } from '@/services/_shared/actor';
 import { fieldErrorsFrom } from '@/lib/validation/common';
 import { parseAdminForm, type FormShape } from '@/lib/validation/form-data';
 import {
+  inviteUserSchema,
+  mediaMetadataSchema,
   metricSchema,
   pageSchema,
   partnerSchema,
@@ -18,6 +22,7 @@ import {
   programSchema,
   projectSchema,
   publicationSchema,
+  redirectSchema,
   storySchema,
   vacancySchema,
 } from '@/lib/validation/admin';
@@ -31,15 +36,20 @@ import {
 } from '@/services/content';
 import { upsertMetric, upsertPartner, upsertPerson } from '@/services/content/catalog.service';
 import { upsertProject } from '@/services/content/project.service';
+import { createRedirect } from '@/services/content/redirect.service';
+import { updateMedia } from '@/services/media/media.service';
+import { inviteUser } from '@/services/users/user.service';
 import type { z } from 'zod';
 
 /**
- * The `FormData` entry points for the admin forms.
+ * The `FormData` entry points for the admin forms — the only way a record is
+ * created or edited from the web.
  *
- * These are a thin shell over `src/actions/admin/content.ts`, which takes an
- * already-parsed object. The split is deliberate: a form posts `FormData`, but
- * a bulk import, a seed script and a test all have an object already, and
- * making them build a `FormData` to reach the same code would be theatre.
+ * Each one is six lines: guard, parse the form, validate, call the service,
+ * revalidate, redirect. There is no parallel object-taking action layer: a
+ * bulk import, a seed script or a test calls the **service** directly, which
+ * takes an object already. Every export here is a live POST endpoint, so
+ * there is exactly one per form and nothing kept "just in case" (DUP-001).
  */
 
 export type EntityResult = ActionResult<{ id: string }>;
@@ -108,6 +118,14 @@ const SHAPES = {
     booleans: ['isPublic', 'isFeatured'],
     nullable: ['programId', 'projectId', 'displayPrefix', 'verificationSource', 'id'],
   },
+  media: {
+    booleans: ['hasIdentifiableMinors'],
+    nullable: ['altEn', 'captionAr', 'captionEn', 'credit', 'consentReference'],
+  },
+  redirect: {},
+  user: {
+    booleans: ['canViewSensitive'],
+  },
 } satisfies Record<string, FormShape>;
 
 /**
@@ -115,17 +133,39 @@ const SHAPES = {
  * `{ partnerId, role }`. Reshaping here keeps the service's contract about the
  * junction rather than about the form that happened to produce it.
  */
-function shapeProjectLinks(input: Record<string, unknown>) {
+function shapeProjectLinks(input: Record<string, unknown>, hasGallery: boolean) {
   const implementing = (input.implementingPartners as string[]) ?? [];
   const donors = (input.donors as string[]) ?? [];
-  const gallery = (input.gallery as string[]) ?? [];
 
   return {
-    ...input,
+    ...shapeGallery(input, hasGallery),
     partners: [
       ...implementing.map((partnerId) => ({ partnerId, role: 'implementing' as const })),
       ...donors.map((partnerId) => ({ partnerId, role: 'donor' as const })),
     ],
+    // One locality per line in a textarea; `multi` collected the single
+    // field into a one-element array, so it is split here.
+    localities: ((input.localities as string[] | undefined) ?? [])
+      .flatMap((line) => line.split(/[\n,،]/))
+      .map((s) => s.trim())
+      .filter(Boolean),
+  };
+}
+
+/**
+ * `gallery` arrives as repeated ids in DOM order; the services take
+ * `{ mediaId, displayOrder }[]`. Only a form that renders a `GalleryPicker`
+ * posts the field at all (the picker carries an always-present sentinel, so an
+ * emptied gallery still posts) — for any other form `media` stays `undefined`
+ * and the service keeps the stored junction rows untouched. `hasGallery` is
+ * `formData.has('gallery')`, checked before `parseAdminForm` fills a missing
+ * multi field with `[]`.
+ */
+function shapeGallery(input: Record<string, unknown>, hasGallery: boolean) {
+  if (!hasGallery) return input;
+  const gallery = (input.gallery as string[]) ?? [];
+  return {
+    ...input,
     media: gallery.map((mediaId, index) => ({ mediaId, displayOrder: index })),
   };
 }
@@ -138,14 +178,23 @@ async function handle<TSchema extends z.ZodType>(
   run: (
     actor: Actor,
     input: z.infer<TSchema>,
-  ) => Promise<{ id: string; slugAr?: string; slugEn?: string }>,
+  ) => Promise<{
+    id: string;
+    slugAr?: string;
+    slugEn?: string;
+    previousSlugs?: { ar: string; en: string };
+    key?: string;
+  }>,
 ): Promise<EntityResult> {
   return runAction(async () => {
     // Guard first, always — before the body is even parsed.
     const actor = await requireActor();
 
+    const hasGallery = formData.has('gallery');
     const raw = parseAdminForm(formData, SHAPES[shapeKey]);
-    const parsed = schema.safeParse(shapeKey === 'project' ? shapeProjectLinks(raw) : raw);
+    const parsed = schema.safeParse(
+      shapeKey === 'project' ? shapeProjectLinks(raw, hasGallery) : shapeGallery(raw, hasGallery),
+    );
 
     if (!parsed.success) {
       return err('validation', 'errors.validation', fieldErrorsFrom(parsed.error));
@@ -153,6 +202,16 @@ async function handle<TSchema extends z.ZodType>(
 
     const result = await run(actor, parsed.data);
     revalidateEntity(entity, { ar: result.slugAr, en: result.slugEn });
+    // A renamed record leaves its old URL cached otherwise.
+    if (result.previousSlugs) {
+      revalidateEntity(entity, { ar: result.previousSlugs.ar, en: result.previousSlugs.en });
+    }
+    // Pages and programmes are cached by `key`, not slug.
+    if (result.key && (entity === 'page' || entity === 'program')) {
+      revalidateEntity(entity, { ar: result.key });
+    }
+    // A partner logo appears on project pages.
+    if (entity === 'partner') revalidateEntity('project');
     return ok({ id: result.id }, 'admin.saved');
   });
 }
@@ -249,7 +308,7 @@ export async function savePartnerForm(_prev: EntityResult | null, formData: Form
     partnerSchema,
     (actor, input) => upsertPartner(db, actor, input),
   );
-  if (result.ok) redirect('/admin/partners?saved=1');
+  if (result.ok) redirect(`/admin/partners/${result.data.id}?saved=1`);
   return result;
 }
 
@@ -261,7 +320,7 @@ export async function savePersonForm(_prev: EntityResult | null, formData: FormD
     personSchema,
     (actor, input) => upsertPerson(db, actor, input),
   );
-  if (result.ok) redirect('/admin/people?saved=1');
+  if (result.ok) redirect(`/admin/people/${result.data.id}?saved=1`);
   return result;
 }
 
@@ -273,6 +332,80 @@ export async function saveMetricForm(_prev: EntityResult | null, formData: FormD
     metricSchema,
     (actor, input) => upsertMetric(db, actor, input),
   );
-  if (result.ok) redirect('/admin/metrics?saved=1');
+  if (result.ok) redirect(`/admin/metrics/${result.data.id}?saved=1`);
+  return result;
+}
+
+// ── Media, redirects, users ──────────────────────────────────────────────
+// Not content entities: no slug, no status, a different service each — but
+// the same shape of action, so the same helper carries them.
+
+export async function saveMediaForm(_prev: EntityResult | null, formData: FormData) {
+  const id = String(formData.get('id') ?? '');
+  const result = await handle(
+    'media',
+    formData,
+    'media',
+    // `kind` is fixed at upload; the form edits the descriptive fields only.
+    mediaMetadataSchema.omit({ kind: true }),
+    async (actor, input) => {
+      await updateMedia(db, actor, id, input);
+      // Alt text, caption and consent state render on every page that embeds
+      // the asset, and those pages are cached by their own slug or key — the
+      // `media` list tag alone does not reach them.
+      for (const usage of await getMediaUsage(actor, id)) {
+        if (usage.cacheEntity) revalidateEntity(usage.cacheEntity, usage.cacheKeys);
+      }
+      return { id };
+    },
+  );
+  if (result.ok) redirect(`/admin/media/${id}?saved=1`);
+  return result;
+}
+
+export async function saveRedirectForm(_prev: EntityResult | null, formData: FormData) {
+  const result = await handle(
+    'redirect',
+    formData,
+    'redirect',
+    redirectSchema,
+    (actor, input) => createRedirect(db, actor, input),
+  );
+  if (result.ok) redirect('/admin/redirects?ok=admin.created');
+  return result;
+}
+
+/**
+ * The auth call is made here, not in the service. Creating an `auth.users` row
+ * is an HTTP request to Supabase with the service-role key — a runtime
+ * concern, like the storage delete in `catalog.ts` — and `supabase-server.ts`
+ * imports `next/headers`, which a service may not. The service receives it as
+ * a port and owns everything that is a rule: who may invite, the least-
+ * privilege default, the audit entry.
+ */
+export async function inviteUserForm(_prev: EntityResult | null, formData: FormData) {
+  const result = await runAction(async () => {
+    const actor = await requireActor();
+    const raw = parseAdminForm(formData, SHAPES.user);
+    const parsed = inviteUserSchema.safeParse(raw);
+    if (!parsed.success) {
+      return err('validation', 'errors.validation', fieldErrorsFrom(parsed.error));
+    }
+
+    const { createSupabaseAdminClient } = await import('@/lib/auth/supabase-server');
+    const user = await inviteUser(db, actor, parsed.data, {
+      async inviteByEmail(email, fullName) {
+        const { data, error } = await createSupabaseAdminClient().auth.admin.inviteUserByEmail(
+          email,
+          // `handle_new_user` reads `full_name` from the user metadata.
+          { data: { full_name: fullName }, redirectTo: `${publicEnv.NEXT_PUBLIC_SITE_URL}/admin/login` },
+        );
+        if (error || !data.user) throw error ?? new Error('invite returned no user');
+        return { id: data.user.id };
+      },
+    });
+    return ok({ id: user.id }, 'admin.invited');
+  });
+  if (result.ok) redirect('/admin/users?ok=admin.invited');
   return result;
 }

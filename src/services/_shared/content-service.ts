@@ -50,6 +50,11 @@ export type ContentMutationResult = {
   status: ContentStatus;
   /** Slugs before the edit, so a renamed page's old URL is invalidated too. */
   previousSlugs?: { ar: string; en: string };
+  /**
+   * Pages (and programmes) are cached by `key`, not slug — `getPageByKey`
+   * registers `page:<key>` — so the action needs it to bust the right tag.
+   */
+  key?: string;
 };
 
 export type ContentInputBase = {
@@ -65,8 +70,16 @@ export type ContentServiceConfig<TInput extends ContentInputBase> = {
   table: ContentTable;
   /** Appears in `audit_logs.entity_type`. Singular, snake_case. */
   entityType: string;
-  /** Maps validated input to column values. Slugs are supplied already resolved. */
-  toColumns: (input: TInput, slugs: { slugAr: string; slugEn: string }) => Record<string, unknown>;
+  /**
+   * Maps validated input to column values. Slugs are supplied already
+   * resolved. `existing` is the stored row on an update, so a column the
+   * form does not post can be **kept** rather than reset — see `keep`.
+   */
+  toColumns: (
+    input: TInput,
+    slugs: { slugAr: string; slugEn: string },
+    existing: ContentRow | null,
+  ) => Record<string, unknown>;
   /** Media that must clear the consent gate before this row may be published. */
   mediaIds?: (input: TInput) => (string | null | undefined)[];
   /** Extra work inside the same transaction — junction rows, derived columns. */
@@ -85,6 +98,21 @@ export type ContentService<TInput extends ContentInputBase> = {
   ) => Promise<ContentMutationResult>;
   remove: (db: Db, actor: Actor, id: string) => Promise<ContentMutationResult>;
 };
+
+/**
+ * The value to write for a column the form may not have posted.
+ *
+ * Every service rebuilds the whole row on save, so a column with no input in
+ * the form was silently reset on every edit — `accent_token` back to its
+ * default, `specific_objectives` to `[]`, a gallery to nothing. `undefined`
+ * means "not posted": keep what is stored, or the default on a create.
+ * `null` and `[]` are real values and are written as given.
+ */
+export function keep<T>(value: T | undefined, existing: ContentRow | null, column: string, fallback: T): T {
+  if (value !== undefined) return value;
+  if (existing && column in existing) return existing[column] as T;
+  return fallback;
+}
 
 export function createContentService<TInput extends ContentInputBase>(
   config: ContentServiceConfig<TInput>,
@@ -107,7 +135,7 @@ export function createContentService<TInput extends ContentInputBase>(
         const slugs = deriveSlugs(input);
         await assertSlugsUnique(tx, table, slugs, existing?.id);
 
-        const values = config.toColumns(input, slugs);
+        const values = config.toColumns(input, slugs, existing);
         const status = (values.status as ContentStatus | undefined) ?? 'draft';
 
         assertCanTransition(actor, existing?.status ?? 'draft', status);
@@ -145,6 +173,7 @@ export function createContentService<TInput extends ContentInputBase>(
           slugEn: row.slugEn,
           status: row.status,
           previousSlugs: existing ? { ar: existing.slugAr, en: existing.slugEn } : undefined,
+          key: keyOf(row),
         };
       });
     },
@@ -180,7 +209,7 @@ export function createContentService<TInput extends ContentInputBase>(
           diff: { status: { from: existing.status, to: status } },
         });
 
-        return { id: row.id, slugAr: row.slugAr, slugEn: row.slugEn, status: row.status };
+        return { id: row.id, slugAr: row.slugAr, slugEn: row.slugEn, status: row.status, key: keyOf(row) };
       });
     },
 
@@ -212,8 +241,14 @@ export function createContentService<TInput extends ContentInputBase>(
           slugAr: existing.slugAr,
           slugEn: existing.slugEn,
           status: existing.status,
+          key: keyOf(existing),
         };
       });
     },
   };
+}
+
+/** The `key` column where the table has one (pages, programmes). */
+function keyOf(row: ContentRow): string | undefined {
+  return typeof row.key === 'string' ? row.key : undefined;
 }

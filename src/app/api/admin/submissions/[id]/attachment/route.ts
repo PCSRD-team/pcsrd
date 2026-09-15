@@ -68,10 +68,14 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     if (error || !data) return new Response('Not found', { status: 404 });
 
     await withActor(db, actor, (tx) =>
+      // `download_attachment` is not in the database's `audit_action_known`
+      // CHECK, so it is recorded as a `view_sensitive` event whose diff names
+      // the attachment — the row-level enum is the live database's, not ours.
       writeAudit(tx, actor, {
-        action: 'download_attachment',
+        action: 'view_sensitive',
         entityType: 'form_submission',
         entityId: row.id,
+        diff: { attachment: { from: null, to: 'download' } },
       }),
     );
 

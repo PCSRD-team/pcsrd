@@ -23,7 +23,7 @@ import { useId, useState } from 'react';
  */
 
 const controlClass =
-  'block w-full rule-control bg-paper px-3 py-2 text-small text-ink focus:border-navy-700';
+  'block w-full rounded-md rule-control bg-paper px-3 py-2 text-small text-ink focus:border-navy-700';
 
 function Meta({
   length,
@@ -90,8 +90,8 @@ export function BilingualField({
   const shared = { rows: multiline ? 4 : undefined } as { rows?: number };
 
   return (
-    <fieldset className="grid gap-4 md:grid-cols-2">
-      <legend className="mbe-2 text-small font-medium text-ink">
+    <fieldset className="rounded-lg border border-rule bg-paper p-4 shadow-[0_10px_28px_rgb(20_33_63/0.04)]">
+      <legend className="px-2 text-small font-medium text-ink">
         {label}
         {required ? (
           <span className="ms-1 text-gold-700" aria-hidden="true">
@@ -101,6 +101,7 @@ export function BilingualField({
         {hint ? <span className="ms-3 text-caption text-ink-55">{hint}</span> : null}
       </legend>
 
+      <div className="grid gap-4 md:grid-cols-2">
       <div>
         <label htmlFor={`${id}-ar`} className="eyebrow">
           العربية
@@ -147,6 +148,7 @@ export function BilingualField({
           className={`${controlClass} mbs-1 text-start`}
         />
         <Meta length={en.length} max={maxLength?.en} error={errorEn} />
+      </div>
       </div>
     </fieldset>
   );

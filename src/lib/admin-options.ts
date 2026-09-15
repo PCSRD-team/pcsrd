@@ -1,5 +1,9 @@
 import {
+  consentStatus,
   governorate,
+  logoPermission,
+  membershipLevel,
+  metricStatus,
   partnerType,
   personCategory,
   postCategory,
@@ -8,6 +12,8 @@ import {
   publicationType,
   targetGroup,
   themeTag,
+  translationStatus,
+  userRole,
   vacancyType,
 } from '@/db/schema/enums';
 
@@ -82,5 +88,32 @@ export const ADMIN_OPTIONS = {
     strategy: 'خطة استراتيجية',
     evaluation: 'تقييم',
     other: 'أخرى',
+  }),
+  membershipLevel: label(membershipLevel.enumValues, { full: 'عضو كامل', observer: 'مراقب' }),
+  logoPermission: label(logoPermission.enumValues, {
+    granted: 'ممنوح',
+    pending: 'قيد الانتظار',
+    denied: 'مرفوض',
+  }),
+  metricStatus: label(metricStatus.enumValues, {
+    target: 'مستهدف',
+    reported: 'مُبلَّغ عنه',
+    verified: 'مُتحقَّق منه',
+  }),
+  consentStatus: label(consentStatus.enumValues, {
+    not_required: 'لا تلزم موافقة',
+    obtained: 'مُوثَّقة',
+    pending: 'قيد الانتظار',
+  }),
+  translationStatus: label(translationStatus.enumValues, {
+    ar_only: 'عربي فقط',
+    machine_draft: 'ترجمة آلية أولية',
+    human_translated: 'مترجَم بشرياً',
+    reviewed: 'مراجَع',
+  }),
+  userRole: label(userRole.enumValues, {
+    admin: 'مدير',
+    content_manager: 'مسؤول محتوى',
+    editor: 'محرّر',
   }),
 } as const;

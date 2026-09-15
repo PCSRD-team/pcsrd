@@ -28,7 +28,13 @@ const ACTION_LABEL: Record<string, string> = {
   archive: 'أرشفة',
   delete: 'حذف',
   view_sensitive: 'فتح شكوى سرّية',
-  download_attachment: 'تنزيل مرفق',
+  invite: 'دعوة مستخدم',
+  set_role: 'تغيير دور',
+  deactivate: 'إيقاف حساب',
+  set_state: 'تغيير حالة طلب',
+  upload: 'رفع وسيط',
+  purge: 'حذف تلقائي',
+  login: 'تسجيل دخول',
 };
 
 export default async function DashboardPage() {
@@ -37,51 +43,85 @@ export default async function DashboardPage() {
 
   const published = data.content.filter((row) => row.status === 'published');
   const drafts = data.content.filter((row) => row.status !== 'published');
+  const cards = [
+    {
+      label: 'طلبات جديدة',
+      value: data.newSubmissions,
+      href: '/admin/submissions',
+      action: 'فتح الوارد',
+      tone: 'bg-white border-navy-700/15',
+      accent: 'bg-navy-700',
+    },
+    ...(actor.canViewSensitive
+      ? [
+          {
+            label: 'شكاوى سرّية جديدة',
+            value: data.sensitiveNew,
+            href: '/admin/submissions/sensitive',
+            action: 'فتح',
+            tone: 'bg-destructive-soft border-destructive/30',
+            accent: 'bg-destructive',
+          },
+        ]
+      : []),
+    {
+      label: 'وسائط تنتظر موافقة',
+      value: data.consentGaps,
+      href: '/admin/media?needsConsent=1',
+      action: 'مراجعة',
+      tone: data.consentGaps > 0 ? 'bg-gold-050 border-gold-600/50' : 'bg-white border-navy-700/15',
+      accent: 'bg-gold-600',
+    },
+  ];
 
   return (
     <>
-      <AdminHeader title="لوحة التحكم" />
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rule-edge bg-paper p-6">
-          <p className="eyebrow">طلبات جديدة</p>
-          <p className="mbs-3 font-mono text-h1 text-ink">{data.newSubmissions}</p>
-          <Link href="/admin/submissions" className="mbs-3 block text-caption">
-            فتح الوارد
-          </Link>
-        </div>
-
-        {actor.canViewSensitive ? (
-          <div className="rule-edge border-gold-600 bg-gold-050 p-6">
-            <p className="eyebrow">شكاوى سرّية جديدة</p>
-            <p className="mbs-3 font-mono text-h1 text-ink">{data.sensitiveNew}</p>
-            <Link href="/admin/submissions/sensitive" className="mbs-3 block text-caption">
-              فتح
+      <AdminHeader
+        title="لوحة التحكم"
+        description="نظرة تشغيلية سريعة على المحتوى والوارد وسلامة النشر."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/posts/new"
+              className="inline-flex min-h-10 items-center rounded-xl bg-navy-700 px-4 text-caption font-medium text-paper no-underline shadow-[0_8px_20px_rgb(37_66_132/0.18)] transition hover:bg-navy-900"
+            >
+              + خبر جديد
+            </Link>
+            <Link
+              href="/admin/media"
+              className="inline-flex min-h-10 items-center rounded-xl border border-rule bg-white px-4 text-caption font-medium text-ink no-underline transition hover:border-gold-600 hover:bg-gold-050"
+            >
+              رفع صورة
             </Link>
           </div>
-        ) : null}
+        }
+      />
 
-        {/*
-          The one operational number worth a dashboard slot: assets that would
-          refuse a publish. Discovering this at publish time is discovering it
-          at the worst possible moment.
-        */}
-        <div
-          className={`rule-edge p-6 ${data.consentGaps > 0 ? 'border-gold-600 bg-gold-050' : 'bg-paper'}`}
-        >
-          <p className="eyebrow">وسائط تنتظر موافقة</p>
-          <p className="mbs-3 font-mono text-h1 text-ink">{data.consentGaps}</p>
-          <Link href="/admin/media?needsConsent=1" className="mbs-3 block text-caption">
-            مراجعة
-          </Link>
-        </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {cards.map((card) => (
+          <article
+            key={card.label}
+            className={`relative animate-slide-fade overflow-hidden rounded-2xl border p-6 shadow-[0_18px_45px_rgb(20_33_63/0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgb(20_33_63/0.12)] ${card.tone}`}
+          >
+            <span className={`absolute inset-bs-0 inset-e-0 h-1 w-full ${card.accent}`} aria-hidden="true" />
+            <p className="text-caption font-semibold text-ink-55">{card.label}</p>
+            <p className="mbs-3 font-mono text-h1 text-ink">{card.value}</p>
+            <Link
+              href={card.href}
+              className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-ink/15 bg-white/70 px-3 text-caption font-medium text-ink no-underline transition hover:border-gold-600 hover:bg-white hover:text-gold-700"
+            >
+              {card.action}
+              <span aria-hidden="true">←</span>
+            </Link>
+          </article>
+        ))}
       </div>
 
       <section className="mbs-10">
-        <h2 className="text-h3 font-semibold text-ink">المحتوى</h2>
-        <span className="rule-mark mbs-3 mbe-5 block" aria-hidden="true" />
+        <h2 className="text-h3 font-semibold text-navy-900">صحة المحتوى</h2>
+        <p className="mbs-1 mbe-5 text-caption text-ink-55">ملخص حالات النشر في أقسام الموقع.</p>
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="rule-edge bg-paper p-6">
+          <div className="rounded-2xl border border-white bg-white/90 p-6 shadow-[0_14px_38px_rgb(20_33_63/0.06)]">
             <p className="eyebrow mbe-3">منشور</p>
             <ul className="space-y-1 text-small">
               {published.map((row) => (
@@ -92,7 +132,7 @@ export default async function DashboardPage() {
               ))}
             </ul>
           </div>
-          <div className="rule-edge bg-paper p-6">
+          <div className="rounded-2xl border border-white bg-white/90 p-6 shadow-[0_14px_38px_rgb(20_33_63/0.06)]">
             <p className="eyebrow mbe-3">غير منشور</p>
             <ul className="space-y-1 text-small">
               {drafts.map((row) => (
@@ -109,8 +149,8 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mbs-10">
-        <h2 className="text-h3 font-semibold text-ink">آخر النشاط</h2>
-        <span className="rule-mark mbs-3 mbe-5 block" aria-hidden="true" />
+        <h2 className="text-h3 font-semibold text-navy-900">آخر النشاط</h2>
+        <p className="mbs-1 mbe-5 text-caption text-ink-55">أحدث العمليات المسجلة في لوحة التحكم.</p>
         <DataTable
           rows={data.recentAudit}
           empty="لا نشاط بعد."

@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
-import type { Db } from '@/db';
-import { withActor } from '@/db/session';
+import { eq, sql } from 'drizzle-orm';
+import type { Db, Tx } from '@/db';
+import { rowsOf, withActor } from '@/db/session';
 import { mediaAssets } from '@/db/schema';
 import type { ConsentStatus, MediaKind } from '@/db/schema/enums';
 import { AppError, notFound } from '@/lib/errors';
@@ -160,6 +160,21 @@ export async function updateMedia(
       });
     }
 
+    // The same shape `chk_media_minor_consent` enforces, stated on the merged
+    // row so the editor gets the error on the field rather than a constraint
+    // name: minors ⇒ consent obtained ⇒ a reference on file.
+    const merged = { ...existing, ...input };
+    if (merged.hasIdentifiableMinors && merged.consent !== 'obtained') {
+      throw new AppError('validation', 'errors.media.minorConsentState', {
+        fieldErrors: { consent: ['errors.media.minorConsentState'] },
+      });
+    }
+    if (merged.hasIdentifiableMinors && !merged.consentReference?.trim()) {
+      throw new AppError('validation', 'errors.media.consentReferenceRequired', {
+        fieldErrors: { consentReference: ['errors.media.consentReferenceRequired'] },
+      });
+    }
+
     const row = one(
       await tx
         .update(mediaAssets)
@@ -200,6 +215,17 @@ export async function deleteMedia(
       .limit(1);
     if (!existing) throw notFound('media_asset');
 
+    // 05-ADMIN §5: "deleteMedia must first check references across all FK
+    // tables and refuse with a list of usages." The foreign keys are `on
+    // delete set null` (junctions cascade), so the database would happily
+    // blank eleven hero images — a bug that surfaces on the public site, not
+    // in the admin. `app.media_usage` is SECURITY DEFINER, so it sees every
+    // reference regardless of the caller's row visibility.
+    const usages = await listMediaUsage(tx, id);
+    if (usages.length > 0) {
+      throw new AppError('conflict', 'errors.mediaInUse', { meta: { usages } });
+    }
+
     await writeAudit(tx, actor, {
       action: 'delete',
       entityType: 'media_asset',
@@ -207,11 +233,28 @@ export async function deleteMedia(
       diff: computeDiff(existing, {}),
     });
 
-    // Every foreign key referencing media_assets is `on delete set null` except
-    // the four junction tables, which cascade. Removing an asset therefore
-    // blanks a hero image rather than deleting the article that used it.
     await tx.delete(mediaAssets).where(eq(mediaAssets.id, id));
 
     return { bucket: existing.bucket, path: existing.path };
   });
+}
+
+// ── Usage ────────────────────────────────────────────────────────────────
+
+export type MediaUsage = { entityType: string; entityId: string | null; field: string };
+
+/**
+ * Every row that references an asset, from `app.media_usage`. Shared by the
+ * delete rule above and the detail screen, so what the screen lists is
+ * exactly what the rule refuses on.
+ */
+export async function listMediaUsage(tx: Db | Tx, mediaId: string): Promise<MediaUsage[]> {
+  const rows = rowsOf<{ entity_type: string; entity_id: string | null; field: string }>(
+    await tx.execute(sql`select * from app.media_usage(${mediaId}::uuid)`),
+  );
+  return rows.map((row) => ({
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    field: row.field,
+  }));
 }

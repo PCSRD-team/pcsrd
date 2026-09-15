@@ -23,6 +23,7 @@ import { one } from '../_shared/one';
 import { computeDiff } from '../_shared/diff';
 import { assertCan } from '../_shared/permissions';
 import {
+  assertCanTransition,
   assertMediaConsent,
   assertMetricPublishable,
   assertPersonPublishable,
@@ -113,6 +114,47 @@ export async function upsertPartner(
       entityType: 'partner',
       entityId: row.id,
       diff: computeDiff(existing ?? null, row),
+    });
+
+    return { id: row.id };
+  });
+}
+
+/**
+ * Status-only transition from a list row. A partner logo is subject to the
+ * same consent gate as any other asset the moment it goes public with
+ * permission granted — the same rule `upsertPartner` applies on a full save.
+ */
+export async function setPartnerStatus(
+  db: Db,
+  actor: Actor,
+  id: string,
+  status: ContentStatus,
+): Promise<{ id: string }> {
+  return withActor(db, actor, async (tx) => {
+    const [existing] = await tx.select().from(partners).where(eq(partners.id, id)).limit(1);
+    if (!existing) throw notFound('partner');
+
+    assertCanTransition(actor, existing.status, status);
+    if (status === 'published' && existing.logoPermission === 'granted') {
+      await assertMediaConsent(tx, [existing.logoMediaId]);
+    }
+
+    const row = one(
+      await tx
+        .update(partners)
+        .set({ status, updatedAt: new Date() })
+        .where(eq(partners.id, id))
+        .returning(),
+      'partner',
+    );
+
+    await writeAudit(tx, actor, {
+      action:
+        status === 'published' ? 'publish' : status === 'archived' ? 'archive' : 'unpublish',
+      entityType: 'partner',
+      entityId: id,
+      diff: { status: { from: existing.status, to: row.status } },
     });
 
     return { id: row.id };
@@ -322,6 +364,8 @@ export type OrganizationInput = Partial<{
   shortNameAr: string;
   shortNameEn: string;
   acronym: string;
+  shortDescriptionAr: string | null;
+  shortDescriptionEn: string | null;
   alternateNames: string[];
   foundedYear: number;
   licenseNumber: string;
@@ -340,6 +384,7 @@ export type OrganizationInput = Partial<{
   additionalPhones: string[];
   whatsappNumber: string | null;
   email: string | null;
+  secondaryEmail: string | null;
   addressAr: string | null;
   addressEn: string | null;
   addressIsPublic: boolean;
@@ -347,7 +392,16 @@ export type OrganizationInput = Partial<{
   officeHoursEn: string | null;
   socials: SocialLink[];
   officialChannels: OfficialChannel[];
+  footerCtaTitleAr: string | null;
+  footerCtaTitleEn: string | null;
+  footerCtaDescriptionAr: string | null;
+  footerCtaDescriptionEn: string | null;
+  footerCtaButtonLabelAr: string | null;
+  footerCtaButtonLabelEn: string | null;
+  footerCtaUrl: string | null;
+  footerCtaEnabled: boolean;
   logoPrimaryId: string | null;
+  footerLogoId: string | null;
   logoMonoId: string | null;
   defaultOgId: string | null;
 }>;
@@ -362,6 +416,7 @@ const CONTACT_FIELDS = new Set<keyof OrganizationInput>([
   'additionalPhones',
   'whatsappNumber',
   'email',
+  'secondaryEmail',
   'addressAr',
   'addressEn',
   'addressIsPublic',
@@ -369,6 +424,14 @@ const CONTACT_FIELDS = new Set<keyof OrganizationInput>([
   'officeHoursEn',
   'socials',
   'officialChannels',
+  'footerCtaTitleAr',
+  'footerCtaTitleEn',
+  'footerCtaDescriptionAr',
+  'footerCtaDescriptionEn',
+  'footerCtaButtonLabelAr',
+  'footerCtaButtonLabelEn',
+  'footerCtaUrl',
+  'footerCtaEnabled',
 ]);
 
 export async function updateOrganization(

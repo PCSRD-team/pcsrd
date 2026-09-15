@@ -40,6 +40,11 @@ export const TAGS = {
   page: (key: string) => `page:${key}`,
 
   mediaList: 'media:list',
+  /**
+   * The whole redirects table as one cached array, read by `src/proxy.ts` on
+   * every non-asset request and busted by the redirects action. One tag, one
+   * entry: the proxy must never pay a per-request query.
+   */
   redirectList: 'redirect:list',
 } as const;
 
@@ -114,4 +119,19 @@ export function tagsFor(entity: Entity, keys?: { ar?: string | null; en?: string
   if (entity === 'media') tags.push(TAGS.partnerList, TAGS.personList);
 
   return [...new Set(tags)];
+}
+
+/**
+ * The tags a **detail query** registers: the item's own tag plus its list
+ * tag. Registered, not just computed — `cached()` accepts a function of the
+ * query's arguments so the slug reaches `unstable_cache`.
+ *
+ * The list tag is kept alongside the item tag on purpose. A status change
+ * from `published` to `archived` is revalidated by the admin action with both
+ * slugs, but a bulk path (the archive cron in `'stale'` mode, a seed, a
+ * restore) may only bust the list; the list tag on the detail entry is what
+ * keeps that path correct too.
+ */
+export function detailTags(entity: SluggedEntity, key: string): string[] {
+  return [ITEM_TAG[entity](key), LIST_TAG[entity]];
 }

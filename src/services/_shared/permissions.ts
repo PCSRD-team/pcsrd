@@ -22,6 +22,13 @@ export const CAPABILITIES = [
   'submissions.handle',
   'users.manage',
   'audit.read',
+  /**
+   * Not a row in 02-API §7, which predates the redirects table. The sidebar
+   * already lists redirects under Settings for `admin` only and the database
+   * policy `redirects.rt_write` is `app.is_admin()`; this names that rule so a
+   * service can assert it rather than compare a role string.
+   */
+  'redirects.manage',
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];

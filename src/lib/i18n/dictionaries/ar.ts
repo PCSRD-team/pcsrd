@@ -236,6 +236,22 @@ export const ar = {
     occurredOn: 'تاريخ الحادثة',
   },
 
+  contactPage: {
+    eyebrow: 'نحن هنا للاستماع',
+    lead: 'أرسل استفسارك وسيتابع فريقنا معك عبر بيانات التواصل التي تضعها في النموذج.',
+    formTitle: 'أرسل لنا رسالة',
+    formLead: 'الحقول المعلّمة بنجمة مطلوبة. سنستخدم بياناتك للرد على هذا الطلب فقط.',
+    detailsTitle: 'بيانات التواصل',
+    detailsLead: 'تواصل معنا مباشرة أو تحقق من حسابات المؤسسة الرسمية.',
+    responseNote: 'تصل رسالتك مباشرة إلى فريق المؤسسة وتحصل على رقم مرجعي للمتابعة.',
+    officialChannels: 'حساباتنا الرسمية',
+    noContactDetails: 'ستظهر بيانات التواصل هنا بعد إضافتها من لوحة التحكم.',
+    verifyChannels: 'تحقق من جميع القنوات',
+    complaintsEyebrow: 'مسار آمن ومستقل',
+    complaintsLead: 'يمكنك تقديم شكوى بسرية، مع إمكانية عدم ذكر اسمك أو أي وسيلة تواصل.',
+    complaintFormTitle: 'تفاصيل الشكوى',
+  },
+
   states: {
     emptyTitle: 'لا يوجد محتوى بعد',
     emptyBody: 'سيظهر المحتوى هنا فور نشره.',
@@ -313,8 +329,200 @@ export const ar = {
       consentRequired: 'قصة المستفيد تحتاج إلى إذن موثّق قبل النشر.',
     },
 
+    // Zod refines that mirror database CHECK constraints, so the editor gets
+    // the message on the field rather than a constraint name.
+    project: {
+      dateOrder: 'تاريخ بداية المشروع يجب أن يسبق تاريخ نهايته.',
+    },
+
+    post: {
+      expiryOnlyAnnouncements: 'تاريخ الانتهاء متاح للإعلانات فقط.',
+    },
+
+    partner: {
+      membershipLevelShape: 'مستوى العضوية متاح للشبكات والعضويات فقط.',
+    },
+
     attachment: {
       sensitiveRefused: 'لا يمكن تنزيل مرفق مرتبط ببلاغ سرّي.',
+    },
+
+    // Thrown by `services/users/user.service.ts` and `redirect.service.ts`.
+    // The first three mirror the database's own refusals
+    // (`guard_profile_privileges`): the service states the rule before the
+    // statement is issued, and the trigger states it again for a raw console.
+    users: {
+      selfRole: 'لا يمكنك تغيير دورك بنفسك. اطلب ذلك من مدير آخر.',
+      selfDeactivate: 'لا يمكنك إيقاف حسابك بنفسك.',
+      lastAdmin: 'لا يمكن إزالة آخر مدير نشط في النظام.',
+      inviteFailed: 'تعذّر إرسال الدعوة. تحقّق من البريد الإلكتروني وحاول مجدداً.',
+      emailTaken: 'يوجد حساب بهذا البريد الإلكتروني بالفعل.',
+      profileMissing: 'أُنشئ الحساب لكن لم يُعثر على ملفه. راجع مدير النظام.',
+    },
+
+    redirects: {
+      sourceTaken: 'يوجد تحويل من هذا المسار بالفعل.',
+      pathFormat: 'يجب أن يبدأ المسار بشرطة مائلة «/» ولا يحتوي على مسافات.',
+      loop: 'المصدر والوجهة متطابقان.',
+      reserved: 'لا يمكن تحويل مسارات لوحة التحكم أو الواجهة البرمجية.',
+    },
+
+    mediaInUse: 'لا يمكن حذف وسيط مستخدم في محتوى. أزل الاستخدامات أولاً.',
+  },
+
+  /**
+   * Admin panel copy that crosses the action boundary as a dictionary key —
+   * result messages, row actions, confirmations, the screens with no field
+   * config. The admin is Arabic-only, so the English half of this block is
+   * never rendered; it exists because `Dictionary` is derived from this file
+   * and both locales must carry the same shape.
+   */
+  admin: {
+    saved: 'تم الحفظ.',
+    created: 'تمت الإضافة.',
+    statusChanged: 'تم تغيير الحالة.',
+    deleted: 'تم الحذف.',
+    invited: 'أُرسلت الدعوة بالبريد الإلكتروني.',
+    updated: 'تم التحديث.',
+
+    form: {
+      checkFields: 'تحقّق من الحقول المميّزة.',
+      save: 'حفظ',
+      saveDraft: 'حفظ كمسودة',
+      submitReview: 'إرسال للمراجعة',
+      publish: 'نشر',
+      unpublish: 'إلغاء النشر',
+      archive: 'أرشفة',
+      restore: 'إعادة إلى مسودة',
+      delete: 'حذف',
+      confirmDelete: 'تأكيد الحذف',
+      deleteHint: 'الحذف نهائي ولا يمكن التراجع عنه.',
+      deletePublishedHint: 'أوقف نشر العنصر قبل حذفه.',
+      cancel: 'إلغاء',
+      actions: 'إجراءات',
+      add: 'إضافة',
+      back: 'رجوع إلى القائمة',
+      lastEdited: 'آخر تعديل',
+    },
+
+    flash: {
+      error: 'تعذّر تنفيذ الإجراء.',
+    },
+
+    users: {
+      title: 'المستخدمون',
+      description:
+        'صلاحية قراءة الشكاوى السرّية تُمنح لكل شخص على حدة، ولا يمنحها دور المدير تلقائياً.',
+      invite: 'دعوة مستخدم',
+      inviteHint:
+        'يصل المدعوّ بريد لتعيين كلمة المرور. يبدأ الحساب بدور «محرّر» ما لم يُحدَّد غير ذلك.',
+      email: 'البريد الإلكتروني',
+      fullName: 'الاسم الكامل',
+      role: 'الدور',
+      sendInvite: 'إرسال الدعوة',
+      setRole: 'تغيير الدور',
+      grantSensitive: 'منح صلاحية الشكاوى السرّية',
+      revokeSensitive: 'سحب صلاحية الشكاوى السرّية',
+      deactivate: 'إيقاف الحساب',
+      reactivate: 'إعادة تفعيل الحساب',
+      confirmDeactivate: 'تأكيد الإيقاف',
+      you: 'أنت',
+      selfHint: 'لا يمكنك تغيير دورك أو إيقاف حسابك بنفسك.',
+      roles: { admin: 'مدير', content_manager: 'مسؤول محتوى', editor: 'محرّر' },
+      active: 'نشط',
+      inactive: 'موقوف',
+      sensitiveAllowed: 'مسموح',
+      lastLogin: 'آخر دخول',
+      never: 'لم يدخل بعد',
+    },
+
+    redirects: {
+      title: 'التحويلات',
+      description:
+        'تسري فوراً على الموقع: يستشير الوكيل قائمة مخزّنة مؤقتاً ويُحدَّثها كل حفظ.',
+      add: 'إضافة تحويل',
+      source: 'من المسار',
+      sourceHint: 'المسار القديم كما يظهر في الرابط، مثل /old-page. يُطابَق مع أو بدون بادئة اللغة.',
+      destination: 'إلى المسار',
+      destinationHint: 'مسار داخلي يبدأ بـ / أو رابط كامل يبدأ بـ https://.',
+      code: 'رمز الحالة',
+      codes: {
+        '301': '301 — دائم',
+        '302': '302 — مؤقت',
+        '307': '307 — مؤقت (يحفظ الطريقة)',
+        '308': '308 — دائم (يحفظ الطريقة)',
+      },
+      empty: 'لا تحويلات.',
+    },
+
+    media: {
+      edit: 'تعديل بيانات الوسيط',
+      usage: 'أين يُستخدم',
+      notUsed: 'غير مستخدم في أي محتوى.',
+      usageHint: 'لا يمكن حذف الوسيط ما دام مستخدماً. أزل الاستخدامات أولاً ثم احذفه.',
+      delete: 'حذف الوسيط',
+      deleteHint: 'يُحذف السجل والملف من التخزين.',
+      file: 'الملف',
+      dimensions: 'الأبعاد',
+      size: 'الحجم',
+      uploaded: 'رُفع في',
+      exifNotStripped: 'بيانات EXIF لم تُجرَّد',
+      openDetail: 'التفاصيل',
+      fields: {
+        altAr: 'النص البديل (عربي)',
+        altEn: 'Alt text (English)',
+        captionAr: 'التعليق (عربي)',
+        captionEn: 'Caption (English)',
+        credit: 'المصدر / حقوق الصورة',
+        consent: 'حالة الموافقة',
+        consentReference: 'مرجع الموافقة',
+        hasIdentifiableMinors: 'تُظهر قُصّراً يمكن التعرّف عليهم',
+        minorsHint: 'إن فُعّل، لا يُنشر أي محتوى يستخدم هذا الوسيط قبل توثيق الموافقة.',
+      },
+      consent: {
+        not_required: 'لا تلزم موافقة',
+        obtained: 'مُوثَّقة',
+        pending: 'قيد الانتظار',
+      },
+      usageEntity: {
+        program: 'برنامج',
+        project: 'مشروع',
+        story: 'قصة',
+        post: 'خبر',
+        vacancy: 'وظيفة',
+        page: 'صفحة',
+        partner: 'شريك',
+        person: 'شخص',
+        publication: 'إصدار',
+        organization: 'بيانات المؤسسة',
+        project_gallery: 'معرض مشروع',
+        story_gallery: 'معرض قصة',
+        program_gallery: 'معرض برنامج',
+        post_gallery: 'معرض خبر',
+      },
+    },
+
+    submissions: {
+      handling: 'المعالجة',
+      state: 'الحالة',
+      internalNote: 'ملاحظة داخلية',
+      noteHint: 'لا تُنسخ هذه الملاحظة إلى سجل التدقيق.',
+      handledBy: 'المسؤول',
+      handledAt: 'آخر معالجة',
+      notHandled: 'لم تُعالَج بعد',
+      download: 'تنزيل المرفق',
+      downloadHint: 'يُسجَّل كل تنزيل في سجل التدقيق.',
+      sensitiveNoDownload: 'لا يُتاح تنزيل مرفقات الشكاوى السرّية.',
+      purgeAt: 'يُحذف تلقائياً في',
+      field: 'الحقل',
+      value: 'القيمة',
+      empty: 'لا محتوى.',
+      states: {
+        new: 'جديد',
+        in_progress: 'قيد المعالجة',
+        handled: 'مُعالَج',
+        archived: 'مؤرشف',
+      },
     },
   },
 
@@ -322,6 +530,12 @@ export const ar = {
     identityTitle: 'السجل التعريفي',
     channelsTitle: 'القنوات الرسمية',
     programsTitle: 'البرامج',
+    brandTitle: 'المؤسسة',
+    quickLinksTitle: 'روابط سريعة',
+    getInvolvedTitle: 'شارك معنا',
+    contactTitle: 'التواصل والحسابات',
+    secondaryEmail: 'بريد إلكتروني إضافي',
+    noSocialLinks: 'ستظهر الحسابات الاجتماعية هنا بعد إضافة روابطها في الإعدادات.',
     legalTitle: 'أحكام',
     privacy: 'سياسة الخصوصية',
     accessibility: 'إتاحة الوصول',
@@ -415,6 +629,14 @@ export const ar = {
     facebook: 'فيسبوك', instagram: 'إنستغرام', whatsapp: 'واتساب',
     telegram: 'تيليغرام', x: 'إكس', website: 'موقع إلكتروني',
     phone_call: 'مكالمة هاتفية', sms: 'رسالة نصية', in_person: 'مقابلة مباشرة',
+  },
+
+  /** Copy for generated metadata and social cards. */
+  seo: {
+    ogImageAlt: 'بطاقة تعريفية بالمؤسسة تحمل اسمها ووصفها المختصر',
+    getInvolved: {
+      volunteerTitle: 'تطوّع معنا',
+    },
   },
 
   a11y: {
