@@ -1,5 +1,47 @@
 import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
+
+/**
+ * `tailwind-merge` has to be told about the tokens in `globals.css`.
+ *
+ * Out of the box it classifies `text-*` by shape: a t-shirt size is a font
+ * size, anything else is a colour. Every type token in this design system
+ * — `text-small`, `text-caption`, `text-eyebrow`, `text-h2` — is "anything
+ * else", so `cn('text-small text-ink')` returned `'text-ink'`: the size was
+ * silently dropped as a "conflicting colour" in every component that set
+ * both, which is nearly all of them. The page rendered at the browser
+ * default 16px and nobody noticed, because 16px is close enough to `body`.
+ *
+ * The same applies to the spacing tokens (`min-h-target`) and the container
+ * tokens (`max-w-narrow`): unknown to the merger, they were kept alongside
+ * the class they should have replaced, and the cascade picked one at random.
+ *
+ * Keep this list in step with the `@theme` block. The unit test in
+ * `tests/unit/ui-cn.test.ts` fails when a size token is not merged.
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    theme: {
+      text: [
+        'display',
+        'display-ar',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'lead',
+        'body-large',
+        'body',
+        'small',
+        'caption',
+        'eyebrow',
+        'label',
+      ],
+      spacing: ['target', 'section', 'section-sm'],
+      container: ['content', 'narrow', 'prose'],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

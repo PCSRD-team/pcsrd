@@ -6,14 +6,14 @@
 
 @theme {
   /* ink */
-  --color-ink:            #14213F;
-  --color-ink-70:         #3B4560;
-  --color-ink-55:         #5A6478;
+  --color-ink: #14213f;
+  --color-ink-70: #3b4560;
+  --color-ink-55: #5a6478;
 
   /* navy */
-  --color-navy-900:       #182E5D;
-  --color-navy-700:       #254284;
-  --color-navy-100:       #E7EBF4;
+  --color-navy-900: #182e5d;
+  --color-navy-700: #254284;
+  --color-navy-100: #e7ebf4;
 
   /* gold — marking colour only; gold-600 never carries text on paper.
      gold-700 is the text-carrying gold, and it was #B87B12: 3.42:1 on paper,
@@ -23,67 +23,126 @@
      hover state — which needs 4.5:1. #875A0F clears it on all four grounds
      (5.75 / 5.22 / 4.64 / 5.62). gold-600 is unchanged: it is a rule, a stamp
      and a focus halo, never text. */
-  --color-gold-700:       #875A0F;
-  --color-gold-600:       #DD991C;
-  --color-gold-050:       #FEF7E7;
+  --color-gold-700: #875a0f;
+  --color-gold-600: #dd991c;
+  --color-gold-050: #fef7e7;
 
   /* paper */
-  --color-paper:          #FBFAF6;
-  --color-paper-alt:      #F2EFE7;
-  --color-paper-ground:   #E5E2DA;
+  --color-paper: #fbfaf6;
+  --color-paper-alt: #f2efe7;
+  --color-paper-ground: #e5e2da;
 
   /* rules */
-  --color-rule:           #D8D3C7;
-  --color-rule-strong:    #C9C3B4;
-  --color-hairline:       #E3DED2;
+  --color-rule: #d8d3c7;
+  --color-rule-strong: #c9c3b4;
+  --color-hairline: #e3ded2;
 
   /* rule-control — the boundary that *identifies* a form control, as opposed
      to `rule`, which draws a decorative panel edge. SC 1.4.11 applies to the
      first and not the second, and `rule` is 1.43:1 on paper, so one token
      could not serve both. The weight is unchanged at 1px, so the three-weight
      vocabulary is intact; only the colour differs, and only on controls. */
-  --color-rule-control:   #97907F;
+  --color-rule-control: #97907f;
+
+  /* semantic states */
+  --color-success: #1f6b54;
+  --color-success-soft: #e4f1eb;
+  --color-warning: #875a0f;
+  --color-warning-soft: #fef7e7;
+  --color-destructive: #9f2d20;
+  --color-destructive-soft: #fae9e6;
 
   /* labels — was #8A8272: 3.64:1 on paper and 2.94:1 on the page ground, at
      12px, on 41 eyebrows, 14 mono captions and every admin form label. The
      page-ground cases failed even the 3:1 large-text floor. #6A6353 is
      5.71 / 5.19 / 4.61 / 5.58 across the four grounds. */
-  --color-mono-muted:     #6A6353;
+  --color-mono-muted: #6a6353;
 
   /* programme identity */
   --color-prog-protection: #254284;
-  --color-prog-response:   #B3591B;
-  --color-prog-recovery:   #1F6B54;
+  --color-prog-response: #b3591b;
+  --color-prog-recovery: #1f6b54;
 
   /* type — families are bound to the next/font variables set in layout.tsx,
      which self-hosts both faces at build time. No runtime request leaves the
      origin, which is also what keeps the CSP free of a font host. */
-  --font-sans: var(--font-plex-arabic), "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-sans:
+    var(--font-plex-arabic), "IBM Plex Sans Arabic", system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
 
-  --text-display:    4rem;      --text-display--line-height:   1.06;
-  --text-display-ar: 2.375rem;  --text-display-ar--line-height:1.30;
-  --text-h1:         2.5rem;    --text-h1--line-height:        1.20;
-  --text-h2:         1.75rem;   --text-h2--line-height:        1.30;
-  --text-h3:         1.25rem;   --text-h3--line-height:        1.40;
-  --text-lead:       1.125rem;  --text-lead--line-height:      1.65;
-  --text-body:       1rem;      --text-body--line-height:      1.80;
-  --text-small:      0.9375rem; --text-small--line-height:     1.60;
-  --text-caption:    0.90625rem;--text-caption--line-height:   1.60;
-  --text-eyebrow:    0.75rem;   --text-eyebrow--line-height:   1.40;
+  --text-display: 3.75rem;
+  --text-display--line-height: 1.08;
+  --text-display-ar: 2.625rem;
+  --text-display-ar--line-height: 1.32;
+  --text-h1: 2.625rem;
+  --text-h1--line-height: 1.16;
+  --text-h2: 1.875rem;
+  --text-h2--line-height: 1.24;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.4;
+  --text-h4: 1.125rem;
+  --text-h4--line-height: 1.45;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.65;
+  --text-body-large: 1.0625rem;
+  --text-body-large--line-height: 1.75;
+  --text-body: 1rem;
+  --text-body--line-height: 1.8;
+  --text-small: 0.9375rem;
+  --text-small--line-height: 1.6;
+  --text-caption: 0.90625rem;
+  --text-caption--line-height: 1.6;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1.4;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.45;
 
   /* layout */
   --container-content: 1180px;
+  --container-narrow: 760px;
+  --container-prose: 78ch;
+
+  /* section rhythm — read by `section-gap` below */
+  --spacing-section: 6rem;
+  --spacing-section-sm: 3.5rem;
+
+  /* the three rule weights — fixed meanings, do not add a fourth.
+     1px rule        = container edge / list separator
+     2px ink         = section boundary (a new record begins)
+     2px x 88px gold = heading mark / attestation
+     A programme accent (`rule-accent`) and a notice accent borrow the 2px
+     weight in a different colour; they are not a fourth weight. */
+  --rule-edge: 1px;
+  --rule-section: 2px;
+  --rule-mark-length: 88px;
+
+  /* controls — 44px is the minimum touch target on every interactive element */
+  --spacing-target: 2.75rem;
+
+  /* radius and elevation. `--radius-none` is the only radius token the kit
+     uses; every other `rounded-*` and every `shadow-*` is reported by
+     `better-tailwindcss/no-restricted-classes` in eslint.config.mjs. The
+     default Tailwind radius/shadow scales are deliberately *not* zeroed with
+     `--radius-*: initial` yet: that would turn every remaining call site into
+     a `no-unknown-classes` error before the migration is done. Do that, or
+     flip the lint rule to "error", once the call sites are clean. */
   --radius-none: 0;
 }
 
 @layer base {
-  :root { color-scheme: light; }
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    overflow-inline: clip;
+  }
 
   body {
     background: var(--color-paper-ground);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    overflow-inline: clip;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -96,14 +155,23 @@
     font-variant-numeric: lining-nums;
   }
 
-  :lang(en) { line-height: 1.65; }
+  :lang(en) {
+    line-height: 1.65;
+  }
 
   a {
     color: var(--color-navy-700);
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
+    transition:
+      color 160ms ease-out,
+      background-color 160ms ease-out,
+      border-color 160ms ease-out;
   }
-  a:hover { color: var(--color-gold-700); }
+
+  a:hover {
+    color: var(--color-gold-700);
+  }
 
   /* Two-tone, because one tone cannot work on both grounds this site uses.
      `gold-600` alone is 2.33:1 against paper and 1.88:1 against the page
@@ -120,10 +188,20 @@
     box-shadow: 0 0 0 4px var(--color-gold-600);
   }
 
-  p, li { text-wrap: pretty; }
+  p,
+  li {
+    text-wrap: pretty;
+  }
+
+  button,
+  summary {
+    touch-action: manipulation;
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
@@ -134,14 +212,37 @@
    1px rule        = container edge / list separator
    2px ink         = section boundary
    2px x 88px gold = heading mark */
-@utility rule-edge { border: 1px solid var(--color-rule); }
+@utility rule-edge {
+  border: var(--rule-edge) solid var(--color-rule);
+}
 
 /* Same weight, darker colour, one job: the boundary that tells a user where a
    text field begins. `rule-edge` is decorative and exempt from SC 1.4.11;
    this is not, and at 1.43:1 the shared token could not carry it. */
-@utility rule-control { border: 1px solid var(--color-rule-control); }
+@utility rule-control {
+  border: var(--rule-edge) solid var(--color-rule-control);
+}
 
-@utility rule-section { border-block-start: 2px solid var(--color-ink); }
+@utility rule-section {
+  border-block-start: var(--rule-section) solid var(--color-ink);
+}
+
+/* The programme accent on a card: the 2px weight in the programme colour,
+   read from `--accent` so one class serves all three programmes. Falls back
+   to ink, i.e. a plain section boundary, when no accent is set. */
+@utility rule-accent {
+  border: var(--rule-edge) solid var(--color-rule);
+  border-block-start: var(--rule-section) solid var(--accent, var(--color-ink));
+}
+
+/* Inline-start accent on a notice: same 2px weight, colour from `--accent`.
+   Both accent utilities restate the 1px edge so they are self-contained —
+   a shorthand `border` from another utility sorted later would erase the
+   accent longhand. */
+@utility rule-accent-start {
+  border: var(--rule-edge) solid var(--color-rule);
+  border-inline-start: var(--rule-section) solid var(--accent, var(--color-ink));
+}
 
 /* A horizontal scroller with a fade at both inline edges.
    An `overflow-x-auto` list shows no scrollbar at rest on a touch device, so
@@ -159,8 +260,219 @@
 }
 
 @utility rule-mark {
-  inline-size: 88px; block-size: 2px;
+  inline-size: var(--rule-mark-length);
+  block-size: var(--rule-section);
   background: var(--color-gold-600);
+}
+
+@utility loading-surface {
+  background:
+    linear-gradient(90deg, transparent, rgb(255 255 255 / 35%), transparent),
+    var(--color-rule);
+  background-size: 240px 100%, 100% 100%;
+  background-position: -240px 0, 0 0;
+  animation: loading-sweep 1.6s ease-in-out infinite;
+}
+
+@utility motion-standard {
+  transition-duration: 160ms;
+  transition-timing-function: ease-out;
+}
+
+@utility animate-slide-fade {
+  animation: slide-fade 560ms ease-out both;
+}
+
+@utility animate-soft-reveal {
+  animation: soft-reveal 700ms ease-out both;
+}
+
+@utility animate-hero-slide-in {
+  animation: hero-slide-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-hero-preview-in {
+  animation: hero-preview-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-hero-image-in {
+  animation: hero-image-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-hero-text-in {
+  animation: hero-text-in 420ms cubic-bezier(0.22, 1, 0.36, 1) 35ms both;
+}
+
+@utility animate-hero-progress {
+  animation: hero-progress 4500ms linear both;
+}
+
+@utility animate-dropdown-in {
+  animation: dropdown-in 190ms ease-out both;
+}
+
+@utility animate-menu-backdrop {
+  animation: menu-backdrop-in 240ms ease-out both;
+}
+
+@utility animate-menu-drawer {
+  animation: menu-drawer-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility programme-arrow-start {
+  inset-block-start: 50%;
+  inset-inline-start: 0.5rem;
+  transform: translateY(-50%);
+}
+
+@utility programme-arrow-end {
+  inset-block-start: 50%;
+  inset-inline-end: 0.5rem;
+  transform: translateY(-50%);
+}
+
+@utility link-pending {
+  inline-size: 0.45rem;
+  block-size: 0.45rem;
+  flex: 0 0 auto;
+  background: var(--color-gold-600);
+  opacity: 0;
+  transform: scale(0.65);
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.link-pending[data-pending="true"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@keyframes loading-sweep {
+  to {
+    background-position: calc(100% + 240px) 0, 0 0;
+  }
+}
+
+@keyframes slide-fade {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes hero-slide-in {
+  from {
+    opacity: 0.82;
+    transform: translateX(var(--slide-x, 24px)) scale(0.994);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes hero-preview-in {
+  from {
+    opacity: 0.82;
+    transform: translateY(4px) scale(0.992);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes hero-image-in {
+  from {
+    opacity: 0.75;
+    transform: scale(1.035);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes hero-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-progress {
+  from {
+    inline-size: 0;
+  }
+
+  to {
+    inline-size: 100%;
+  }
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menu-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes menu-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (width >= 768px) {
+  .programme-arrow-start {
+    inset-inline-start: calc(17% - 0.25rem);
+  }
+
+  .programme-arrow-end {
+    inset-inline-end: calc(17% - 0.25rem);
+  }
 }
 
 /* The content column. 1180px, 64px desktop padding, 20px mobile.
@@ -174,19 +486,148 @@
 }
 
 @media (width >= 768px) {
-  .container-content { padding-inline: 4rem; }
+  .container-content {
+    padding-inline: 4rem;
+  }
 }
 
 /* Prose measure — 52–78ch, never the full column width. */
-@utility measure { max-inline-size: 68ch; }
+@utility measure {
+  max-inline-size: 68ch;
+}
 
-@utility measure-lead { max-inline-size: 52ch; }
+@utility measure-lead {
+  max-inline-size: 52ch;
+}
+
+@utility measure-reading {
+  max-inline-size: 74ch;
+}
+
+/* Narrow column — a form, a legal page, a receipt. */
+@utility container-narrow {
+  margin-inline: auto;
+  inline-size: 100%;
+  max-inline-size: var(--container-narrow);
+}
+
+/* Form control surface: 1px `rule-control` edge, radius 0, 44px tall.
+   The focus treatment is the global `:focus-visible` rule; the invalid state
+   is carried by `aria-invalid`, so it cannot be styled without also being
+   announced. */
+@utility control {
+  display: block;
+  inline-size: 100%;
+  min-block-size: var(--spacing-target);
+  border: var(--rule-edge) solid var(--color-rule-control);
+  background: #fff;
+  color: var(--color-ink);
+  padding-block: 0.625rem;
+  padding-inline: 0.875rem;
+  font: inherit;
+  font-size: var(--text-small);
+  line-height: var(--text-small--line-height);
+  transition:
+    border-color 160ms ease-out,
+    background-color 160ms ease-out;
+}
+
+.control:disabled,
+.control[aria-disabled="true"] {
+  cursor: not-allowed;
+  background: var(--color-paper-alt);
+  color: var(--color-ink-55);
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--color-navy-700);
+}
+
+.control[aria-invalid="true"] {
+  border-color: var(--color-destructive);
+}
+
+/* `<select>` keeps the native arrow but loses the native chrome. */
+select.control {
+  padding-inline-end: 2.5rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2314213F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 1rem;
+}
+
+[dir="rtl"] select.control {
+  background-position: left 0.875rem center;
+}
+
+select.control[multiple] {
+  padding-inline-end: 0.875rem;
+  background-image: none;
+}
+
+/* Checkbox and radio: native controls, square, ink-tinted. */
+@utility control-choice {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--color-navy-700);
+}
+
+/* Native file input: the button half gets the secondary-button treatment. */
+@utility control-file {
+  display: block;
+  inline-size: 100%;
+  font-size: var(--text-small);
+  color: var(--color-ink);
+}
+
+.control-file::file-selector-button {
+  margin-inline-end: 1rem;
+  min-block-size: var(--spacing-target);
+  border: var(--rule-edge) solid var(--color-rule-control);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  padding-inline: 1rem;
+  font: inherit;
+  font-size: var(--text-small);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.control-file::file-selector-button:hover {
+  background: var(--color-paper-alt);
+}
 
 /* Section rhythm: 110px desktop, 64px mobile. */
-@utility section-gap { padding-block: 4rem; }
+@utility section-gap {
+  padding-block: var(--spacing-section-sm);
+}
 
 @media (width >= 768px) {
-  .section-gap { padding-block: 6.875rem; }
+  .section-gap {
+    padding-block: var(--spacing-section);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-surface {
+    animation: none;
+  }
+
+  .animate-slide-fade,
+  .animate-soft-reveal,
+  .animate-hero-slide-in,
+  .animate-hero-preview-in,
+  .animate-hero-image-in,
+  .animate-hero-text-in,
+  .animate-hero-progress,
+  .animate-dropdown-in,
+  .animate-menu-backdrop,
+  .animate-menu-drawer {
+    animation: none;
+  }
 }
 
 /* Mono eyebrow label. Never below 11px, always uppercase for Latin. */
@@ -197,6 +638,130 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-mono-muted);
+}
+
+@utility type-display {
+  font-size: var(--text-display);
+  line-height: var(--text-display--line-height);
+  font-weight: 600;
+}
+
+@utility type-page-title {
+  font-size: var(--text-h1);
+  line-height: var(--text-h1--line-height);
+  font-weight: 600;
+}
+
+@utility type-section-title {
+  font-size: var(--text-h2);
+  line-height: var(--text-h2--line-height);
+  font-weight: 600;
+}
+
+@utility type-content-title {
+  font-size: var(--text-h3);
+  line-height: var(--text-h3--line-height);
+  font-weight: 600;
+}
+
+@utility type-lead {
+  font-size: var(--text-lead);
+  line-height: var(--text-lead--line-height);
+}
+
+@utility type-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  color: var(--color-mono-muted);
+}
+
+@utility section-stack {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@utility editorial-divider {
+  border-block-start: 1px solid var(--color-rule);
+}
+
+@utility inset-block-fill {
+  inset-block: 0;
+}
+
+@utility rule-inline-start-strong {
+  border-inline-start: 2px solid var(--color-ink);
+}
+
+@utility content-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@utility media-treatment {
+  overflow: hidden;
+  background: var(--color-paper-alt);
+}
+
+@utility media-zoom {
+  transition: transform 280ms ease-out;
+}
+
+@utility interactive-surface {
+  transition:
+    border-color 160ms ease-out,
+    background-color 160ms ease-out;
+}
+
+.interactive-surface:hover {
+  border-color: var(--color-rule-strong);
+  background-color: var(--color-paper-alt);
+}
+
+.media-treatment:hover .media-zoom {
+  transform: scale(1.025);
+}
+
+@utility icon-16 {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+@utility icon-20 {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+@utility icon-24 {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+@utility icon-button {
+  display: inline-flex;
+  min-inline-size: 2.75rem;
+  min-block-size: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 160ms ease-out,
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+@utility icon-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-zoom,
+  .interactive-surface,
+  .icon-button {
+    transform: none !important;
+  }
 }
 
 /* Skip link — visible only when focused, positioned logically so it lands on
