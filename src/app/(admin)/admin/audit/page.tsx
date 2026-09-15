@@ -14,7 +14,13 @@ const ACTION_LABEL: Record<string, string> = {
   archive: 'أرشفة',
   delete: 'حذف',
   view_sensitive: 'فتح شكوى سرّية',
-  download_attachment: 'تنزيل مرفق',
+  invite: 'دعوة مستخدم',
+  set_role: 'تغيير دور',
+  deactivate: 'إيقاف حساب',
+  set_state: 'تغيير حالة طلب',
+  upload: 'رفع وسيط',
+  purge: 'حذف تلقائي',
+  login: 'تسجيل دخول',
 };
 
 /**

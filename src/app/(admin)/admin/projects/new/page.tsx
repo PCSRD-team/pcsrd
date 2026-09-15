@@ -1,3 +1,4 @@
+import { adminFormDict } from '@/components/admin/admin-dict';
 import { AdminHeader } from '@/components/admin/shell';
 import { ProjectForm } from '@/components/admin/project-form';
 import { listRelationOptions } from '@/db/queries/admin';
@@ -20,7 +21,7 @@ export default async function NewProjectPage() {
       <ProjectForm
         values={{}}
         canPublish={can(actor, 'content.publish')}
-        canDelete={can(actor, 'content.delete')}
+        dict={adminFormDict()}
         options={{
           programs: programs.map((p) => ({ value: p.id, label: p.label })),
           partners: partners.map((p) => ({ value: p.id, label: p.label })),

@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { DataTable, Pagination, StatusBadge, TimeCell } from '@/components/admin/controls';
+import { Flash } from '@/components/admin/flash';
+import { RowActions } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
+import { adminDict } from '@/components/admin/admin-dict';
 import { type AdminEntity, listAdminRows } from '@/db/queries/admin';
 import { contentStatus, type ContentStatus } from '@/db/schema/enums';
 import type { Actor } from '@/services/_shared/actor';
@@ -90,6 +93,8 @@ export async function EntityListPage({
         }
       />
 
+      <Flash searchParams={searchParams} />
+
       <form method="get" className="mbe-6 flex flex-wrap items-end gap-3">
         <div>
           <label htmlFor="q" className="eyebrow">
@@ -143,6 +148,21 @@ export async function EntityListPage({
             header: 'آخر تعديل',
             numeric: true,
             cell: (row) => <TimeCell value={row.updatedAt} />,
+          },
+          {
+            key: 'actions',
+            header: adminDict.form.actions,
+            cell: (row) => (
+              <RowActions
+                entity={entity}
+                id={row.id}
+                status={row.status}
+                actor={actor}
+                returnTo={`/admin/${meta.path}`}
+                label={row.title}
+                allowDelete={meta.canCreate}
+              />
+            ),
           },
         ]}
       />

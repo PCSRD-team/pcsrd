@@ -37,9 +37,20 @@ export function assertCanTransition(
  *
  * Publishing a photograph of an identifiable child without documented consent
  * is not a content mistake; it is a safeguarding incident. The check runs over
- * **every** asset a record references, and it runs on publish rather than on
- * upload, because consent can be recorded after the file arrives and can also
- * be withdrawn after it was granted.
+ * **every** asset a record references.
+ *
+ * **Defence in depth, not the first line.** The live database carries
+ * `chk_media_minor_consent` — a row may say `has_identifiable_minors` only
+ * when `consent = 'obtained'` **and** a `consent_reference` is stored — and
+ * `media_assets_alt_ar_check`, which refuses blank alt text. Both branches
+ * below are therefore unreachable against that schema: a row that would trip
+ * them cannot exist. They stay because this service also runs against a
+ * database that has not been migrated (PGlite before `0005`, a restore, a
+ * future relaxation of the constraint), and because the message an editor
+ * sees at publish time should name the rule, not a constraint.
+ *
+ * The consequence for the media form: consent has to be recorded *before* the
+ * minors flag can be set, not after — the form says so on the checkbox.
  */
 export async function assertMediaConsent(
   tx: Db | Tx,

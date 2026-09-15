@@ -1,6 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
+import { adminFormDict } from '@/components/admin/admin-dict';
+import { Flash } from '@/components/admin/flash';
 import { ProjectForm } from '@/components/admin/project-form';
+import { DeleteAction } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
 import { TranslationBadge } from '@/components/admin/controls';
 import { db } from '@/db';
@@ -55,15 +58,11 @@ export default async function EditProjectPage({
         action={<TranslationBadge partial={translation.partial} />}
       />
 
-      {search.saved ? (
-        <div className="rule-edge mbe-6 border-gold-600 bg-gold-050 p-4" role="status">
-          <p className="text-small text-ink">تم الحفظ.</p>
-        </div>
-      ) : null}
+      <Flash searchParams={search} />
 
       <ProjectForm
         canPublish={can(actor, 'content.publish')}
-        canDelete={can(actor, 'content.delete')}
+        dict={adminFormDict()}
         values={{
           id: row.id,
           status: row.status,
@@ -93,7 +92,10 @@ export default async function EditProjectPage({
           seoTitleEn: row.seoTitleEn,
           seoDescriptionAr: row.seoDescriptionAr,
           seoDescriptionEn: row.seoDescriptionEn,
+          ogMediaId: row.ogMediaId,
           noIndex: row.noIndex,
+          translationStatus: row.translationStatus,
+          gallery: links.media.map((link) => link.mediaId),
           implementingPartners: links.partners
             .filter((link) => link.role === 'implementing')
             .map((link) => link.partnerId),
@@ -109,6 +111,17 @@ export default async function EditProjectPage({
           states: [...ADMIN_OPTIONS.projectState],
         }}
       />
+
+      <div className="mbs-8">
+        <DeleteAction
+          entity="project"
+          id={id}
+          status={row.status}
+          actor={actor}
+          returnTo="/admin/projects"
+          label={row.titleAr}
+        />
+      </div>
     </>
   );
 }

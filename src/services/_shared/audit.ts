@@ -1,16 +1,16 @@
-import { auditLogs, type AuditDiff } from '@/db/schema';
+import { type AuditAction, auditLogs, type AuditDiff } from '@/db/schema';
 import type { Tx } from '@/db';
 import { type Actor, isSystem } from './actor';
 
-export type AuditAction =
-  | 'create'
-  | 'update'
-  | 'publish'
-  | 'unpublish'
-  | 'archive'
-  | 'delete'
-  | 'view_sensitive'
-  | 'download_attachment';
+/**
+ * Re-exported from the schema, where it mirrors the `audit_action_known`
+ * CHECK on the live table. A verb not in that list is a rejected insert that
+ * rolls back the mutation it describes — so the type is the constraint, not a
+ * wider local union. User management uses `invite`, `set_role` and
+ * `deactivate`; a reactivation or a sensitive-access change is an `update`
+ * with a diff.
+ */
+export type { AuditAction };
 
 /**
  * Writes one audit entry.

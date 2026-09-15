@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db, Tx } from '@/db';
 import { readAsActor, rowsOf, withActor } from '@/db/session';
-import { formSubmissions } from '@/db/schema';
+import { formSubmissions, profiles } from '@/db/schema';
 import type { LocaleCode, SubmissionState, SubmissionType } from '@/db/schema/enums';
 import { notFound } from '@/lib/errors';
 import { decryptPayload, encryptPayload } from '@/lib/security/crypto';
@@ -142,6 +142,8 @@ export type SubmissionDetail = {
   attachmentPath: string | null;
   internalNote: string | null;
   handledBy: string | null;
+  /** Display name of `handledBy`, resolved here so the page shows a person, not a uuid. */
+  handledByName: string | null;
   handledAt: Date | null;
   createdAt: Date;
   purgeAfter: string;
@@ -169,13 +171,15 @@ export async function getSubmission(
   assertCan(actor, 'submissions.read');
 
   return withActor(db, actor, async (tx) => {
-    const [row] = await tx
-      .select()
+    const [found] = await tx
+      .select({ row: formSubmissions, handledByName: profiles.fullName })
       .from(formSubmissions)
+      .leftJoin(profiles, eq(profiles.id, formSubmissions.handledBy))
       .where(eq(formSubmissions.id, id))
       .limit(1);
 
-    if (!row) throw notFound('submission');
+    if (!found) throw notFound('submission');
+    const row = found.row;
     if (row.isSensitive) assertCanViewSensitive(actor);
 
     const payload = row.payloadEncrypted ? decryptPayload(row.payloadEncrypted) : row.payload;
@@ -199,6 +203,7 @@ export async function getSubmission(
       attachmentPath: row.attachmentPath,
       internalNote: row.internalNote,
       handledBy: row.handledBy,
+      handledByName: found.handledByName,
       handledAt: row.handledAt,
       createdAt: row.createdAt,
       purgeAfter: row.purgeAfter,

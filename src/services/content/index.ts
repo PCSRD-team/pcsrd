@@ -25,6 +25,7 @@ import { assertStoryConsent } from '../_shared/publish';
 import {
   type ContentInputBase,
   createContentService,
+  keep,
 } from '../_shared/content-service';
 
 /**
@@ -273,7 +274,7 @@ export type ProgramInput = ContentInputBase &
 export const programService = createContentService<ProgramInput>({
   table: programs,
   entityType: 'program',
-  toColumns: (input, slugs) => ({
+  toColumns: (input, slugs, existing) => ({
     ...lifecycleColumns(input),
     ...slugs,
     key: input.key,
@@ -281,15 +282,20 @@ export const programService = createContentService<ProgramInput>({
     titleEn: input.titleEn ?? null,
     taglineAr: input.taglineAr ?? null,
     taglineEn: input.taglineEn ?? null,
-    accentToken: input.accentToken ?? '--color-prog-protection',
+    // Not on the form — the token follows the programme key and is set once
+    // at seed time. Kept as stored rather than reset to the first programme's
+    // colour on every save.
+    accentToken: keep(input.accentToken, existing, 'accentToken', '--color-prog-protection'),
     introductionAr: input.introductionAr ?? null,
     introductionEn: input.introductionEn ?? null,
     rationaleAr: input.rationaleAr ?? null,
     rationaleEn: input.rationaleEn ?? null,
     strategicObjectiveAr: input.strategicObjectiveAr ?? null,
     strategicObjectiveEn: input.strategicObjectiveEn ?? null,
-    specificObjectives: input.specificObjectives ?? [],
-    keyInterventions: input.keyInterventions ?? [],
+    // Structured arrays with no editor yet (05-ADMIN §3 `ArrayField`); kept
+    // as stored until one exists, so a save does not empty them.
+    specificObjectives: keep(input.specificObjectives, existing, 'specificObjectives', []),
+    keyInterventions: keep(input.keyInterventions, existing, 'keyInterventions', []),
     sustainabilityAr: input.sustainabilityAr ?? null,
     sustainabilityEn: input.sustainabilityEn ?? null,
     impactStatementAr: input.impactStatementAr ?? null,

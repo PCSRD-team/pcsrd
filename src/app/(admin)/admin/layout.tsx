@@ -1,8 +1,6 @@
 import { fontVariables } from '@/app/fonts';
-import { AdminShell, buildNav } from '@/components/admin/shell';
-import { getDashboard } from '@/db/queries/admin';
+import { AdminShell } from '@/components/admin/shell';
 import { requireAuth } from '@/lib/auth/guard';
-import { getCurrentProfileDetail } from '@/lib/auth/session';
 import '../../globals.css';
 
 /**
@@ -35,22 +33,11 @@ export const metadata = {
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const actor = await requireAuth();
-  const [profile, dashboard] = await Promise.all([
-    getCurrentProfileDetail(),
-    getDashboard(actor),
-  ]);
-
-  const nav = buildNav(actor, {
-    submissions: dashboard.newSubmissions,
-    sensitive: dashboard.sensitiveNew,
-  });
 
   return (
     <html lang="ar" dir="rtl">
       <body className={`${fontVariables} bg-paper-ground antialiased`}>
-        <AdminShell actor={{ ...actor, fullName: profile?.fullName }} nav={nav}>
-          {children}
-        </AdminShell>
+        <AdminShell actor={actor}>{children}</AdminShell>
       </body>
     </html>
   );

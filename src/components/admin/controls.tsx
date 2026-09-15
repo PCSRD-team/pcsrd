@@ -33,7 +33,7 @@ export function StatusBadge({ status }: { status: ContentStatus }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-3 py-0.5 font-mono text-eyebrow',
+        'inline-flex items-center rounded-full border px-3 py-0.5 font-mono text-eyebrow shadow-[0_8px_20px_rgb(20_33_63/0.06)]',
         STATUS_TONE[status],
       )}
     >
@@ -82,17 +82,17 @@ export function DataTable<T extends { id: string | number }>({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="rule-edge bg-paper-alt p-10 text-center">
+      <div className="rounded-2xl border border-white bg-white/75 p-10 text-center shadow-[0_12px_32px_rgb(20_33_63/0.05)]">
         <p className="text-small text-ink-55">{empty}</p>
       </div>
     );
   }
 
   return (
-    <div className="rule-edge overflow-x-auto bg-paper">
+    <div className="overflow-x-auto rounded-2xl border border-white bg-white/90 shadow-[0_14px_36px_rgb(20_33_63/0.07)]">
       <table className="w-full">
         <thead>
-          <tr className="border-be-2 border-ink">
+          <tr className="border-be border-rule bg-navy-100/55">
             {columns.map((column) => (
               <th key={column.key} scope="col" className="eyebrow p-3 text-start whitespace-nowrap">
                 {column.header}
@@ -102,7 +102,7 @@ export function DataTable<T extends { id: string | number }>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-be border-hairline hover:bg-paper-alt">
+            <tr key={row.id} className="border-be border-hairline transition-colors hover:bg-gold-050/45">
               {columns.map((column, index) => (
                 <td
                   key={column.key}
@@ -200,7 +200,7 @@ export function Pagination({
 // ── Form scaffolding ─────────────────────────────────────────────────────
 
 export const inputClass =
-  'block w-full rule-control bg-paper px-3 py-2 text-small text-ink focus:border-navy-700';
+  'block min-h-11 w-full rounded-xl border border-rule bg-white px-3 py-2 text-small text-ink outline-none motion-standard transition-[border-color,box-shadow,background-color] hover:border-navy-700/40 focus:border-navy-700 focus:shadow-[0_0_0_4px_rgb(37_66_132/0.10)] disabled:cursor-not-allowed disabled:bg-paper-alt disabled:text-ink-55';
 
 /**
  * The ids `Field` renders, joined for `aria-describedby`.
@@ -234,7 +234,7 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 rounded-xl bg-white/55 p-3">
       <label htmlFor={name} className="block text-small font-medium text-ink">
         {label}
         {required ? (
@@ -271,6 +271,7 @@ export function EnumSelect({
   required,
   hint,
   multiple,
+  error,
 }: {
   name: string;
   label: string;
@@ -279,9 +280,10 @@ export function EnumSelect({
   required?: boolean;
   hint?: string;
   multiple?: boolean;
+  error?: string;
 }) {
   return (
-    <Field name={name} label={label} hint={hint} required={required}>
+    <Field name={name} label={label} hint={hint} required={required} error={error}>
       <select
         id={name}
         name={name}
@@ -289,6 +291,8 @@ export function EnumSelect({
         multiple={multiple}
         defaultValue={defaultValue}
         size={multiple ? Math.min(options.length, 6) : undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={fieldDescribedBy(name, hint, error)}
         className={inputClass}
       >
         {!multiple ? <option value="">—</option> : null}
@@ -307,11 +311,13 @@ export function CheckboxField({
   label,
   hint,
   defaultChecked,
+  error,
 }: {
   name: string;
   label: string;
   hint?: string;
   defaultChecked?: boolean;
+  error?: string;
 }) {
   return (
     <div className="space-y-1">
@@ -321,11 +327,22 @@ export function CheckboxField({
           name={name}
           type="checkbox"
           defaultChecked={defaultChecked}
-          className="size-4 accent-navy-700"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={fieldDescribedBy(name, hint, error)}
+          className="size-4 rounded accent-navy-700"
         />
         {label}
       </label>
-      {hint ? <p className="text-caption text-ink-55">{hint}</p> : null}
+      {hint ? (
+        <p id={`${name}-hint`} className="text-caption text-ink-55">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={`${name}-error`} className="text-caption text-gold-700" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -333,23 +350,24 @@ export function CheckboxField({
 /**
  * The sticky action bar.
  *
- * Publish and delete are rendered only when the actor holds the capability,
- * and the actions guard again. A disabled button an editor can see but not use
+ * Publish is rendered only when the actor holds the capability, and the
+ * actions guard again. A disabled button an editor can see but not use
  * teaches them the tool is broken; an absent one teaches them the boundary.
+ *
+ * Delete is not here: it is a separate form (`DeleteAction`) rendered below
+ * the editor, because a form cannot nest inside another form.
  */
 export function PublishBar({
   status,
   canPublish,
-  canDelete,
   children,
 }: {
   status: ContentStatus;
   canPublish: boolean;
-  canDelete: boolean;
   children?: ReactNode;
 }) {
   return (
-    <div className="sticky inset-be-0 mbs-10 flex flex-wrap items-center gap-3 border-bs-2 border-ink bg-paper p-4">
+    <div className="sticky inset-be-0 z-20 mbs-10 flex flex-wrap items-center gap-3 rounded-2xl border border-white bg-paper/95 p-4 shadow-[0_-16px_45px_rgb(20_33_63/0.10)] backdrop-blur">
       <StatusBadge status={status} />
       <div className="flex-1" />
       {children}
@@ -357,7 +375,7 @@ export function PublishBar({
         type="submit"
         name="status"
         value="draft"
-        className="rule-edge px-5 py-2 text-small text-ink hover:bg-paper-alt"
+        className="rule-edge rounded-md px-5 py-2 text-small text-ink hover:bg-paper-alt"
       >
         حفظ كمسودة
       </button>
@@ -365,7 +383,7 @@ export function PublishBar({
         type="submit"
         name="status"
         value="in_review"
-        className="rule-edge px-5 py-2 text-small text-ink hover:bg-paper-alt"
+        className="rule-edge rounded-md px-5 py-2 text-small text-ink hover:bg-paper-alt"
       >
         إرسال للمراجعة
       </button>
@@ -374,7 +392,7 @@ export function PublishBar({
           type="submit"
           name="status"
           value="published"
-          className="bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900"
+          className="rounded-md bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900"
         >
           نشر
         </button>
@@ -384,12 +402,11 @@ export function PublishBar({
           type="submit"
           name="status"
           value="archived"
-          className="rule-edge border-gold-600 px-5 py-2 text-small text-gold-700 hover:bg-gold-050"
+          className="rule-edge rounded-md border-gold-600 px-5 py-2 text-small text-gold-700 hover:bg-gold-050"
         >
           أرشفة
         </button>
       ) : null}
-      {canDelete ? <span className="text-caption text-ink-55">الحذف من صفحة القائمة</span> : null}
     </div>
   );
 }

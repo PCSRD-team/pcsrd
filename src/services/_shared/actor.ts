@@ -10,6 +10,7 @@ import type { UserRole } from '@/db/schema/enums';
  */
 export type Actor = {
   id: string;
+  fullName?: string | null;
   role: UserRole;
   /** Not derived from `role` — granted per person by policy (02-API §7). */
   canViewSensitive: boolean;

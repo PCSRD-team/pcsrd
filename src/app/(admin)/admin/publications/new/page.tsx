@@ -1,4 +1,5 @@
 import { savePublicationForm } from '@/actions/admin/entity-forms';
+import { adminFormDict } from '@/components/admin/admin-dict';
 import { ContentForm } from '@/components/admin/content-form';
 import { PUBLICATION_FIELDS } from '@/components/admin/field-configs';
 import { AdminHeader } from '@/components/admin/shell';
@@ -18,8 +19,8 @@ export default async function Page() {
         fields={PUBLICATION_FIELDS}
         values={{}}
         canPublish={can(actor, 'content.publish')}
-        canDelete={can(actor, 'content.delete')}
         includeSeo={false}
+        dict={adminFormDict()}
       />
     </>
   );

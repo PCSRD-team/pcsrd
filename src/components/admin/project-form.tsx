@@ -10,9 +10,13 @@ import {
   PublishBar,
   inputClass,
 } from '@/components/admin/controls';
+import { GalleryPicker } from '@/components/admin/gallery-picker';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { MediaPicker } from '@/components/admin/media-picker';
+import { ADMIN_OPTIONS } from '@/lib/admin-options';
 import type { RichText } from '@/db/schema/_shared';
 import type { ContentStatus } from '@/db/schema/enums';
+import { type AdminFormDict, resolveAdminKey } from './admin-dict';
 
 /**
  * The project editor — the template the other content forms follow.
@@ -55,7 +59,11 @@ export type ProjectFormValues = {
   seoTitleEn: string | null;
   seoDescriptionAr: string | null;
   seoDescriptionEn: string | null;
+  ogMediaId: string | null;
   noIndex: boolean;
+  translationStatus: string;
+  /** Ordered media ids from `project_media`. */
+  gallery: string[];
   implementingPartners: string[];
   donors: string[];
 };
@@ -66,7 +74,7 @@ export function ProjectForm({
   values,
   options,
   canPublish,
-  canDelete,
+  dict,
 }: {
   values: Partial<ProjectFormValues>;
   options: {
@@ -77,14 +85,21 @@ export function ProjectForm({
     states: Option[];
   };
   canPublish: boolean;
-  canDelete: boolean;
+  dict: AdminFormDict;
 }) {
   const [state, formAction, pending] = useActionState<EntityResult | null, FormData>(
     saveProjectForm,
     null,
   );
   const errors = state && !state.ok ? state.fieldErrors : undefined;
-  const firstError = (field: string) => errors?.[field]?.[0];
+  const firstError = (field: string) => {
+    const key = errors?.[field]?.[0];
+    return key ? resolveAdminKey(dict, key) : undefined;
+  };
+  // STATE-007 — see `ContentForm`.
+  const hasFieldErrors = Boolean(
+    errors && Object.keys(errors).some((key) => key !== '_form' && (errors[key]?.length ?? 0) > 0),
+  );
 
   return (
     <form action={formAction} className="space-y-8">
@@ -92,7 +107,11 @@ export function ProjectForm({
 
       {state && !state.ok ? (
         <div className="rule-edge border-gold-600 bg-gold-050 p-4" role="alert">
-          <p className="text-small text-ink">تحقّق من الحقول المميّزة.</p>
+          <p className="text-small text-ink">
+            {hasFieldErrors
+              ? resolveAdminKey(dict, 'admin.form.checkFields')
+              : resolveAdminKey(dict, state.messageKey)}
+          </p>
         </div>
       ) : null}
 
@@ -233,15 +252,31 @@ export function ProjectForm({
         />
       </div>
 
-      <Field name="heroMediaId" label="معرّف الصورة الرئيسية" hint="من مكتبة الوسائط.">
-        <input
-          id="heroMediaId"
-          name="heroMediaId"
-          defaultValue={values.heroMediaId ?? ''}
-          dir="ltr"
-          className={`${inputClass} text-start font-mono text-caption`}
+      <Field
+        name="localities"
+        label="المناطق والأحياء"
+        hint="اسم في كل سطر. تظهر مع المحافظات في بطاقة المشروع."
+        error={firstError('localities')}
+      >
+        <textarea
+          id="localities"
+          name="localities"
+          rows={3}
+          defaultValue={(values.localities ?? []).join('\n')}
+          className={inputClass}
         />
       </Field>
+
+      <Field name="heroMediaId" label="الصورة الرئيسية" hint="اختر صورة من مكتبة الوسائط.">
+        <MediaPicker name="heroMediaId" initialValue={values.heroMediaId ?? ''} kind="image" />
+      </Field>
+
+      <GalleryPicker
+        name="gallery"
+        label="معرض الصور"
+        hint="بالترتيب الذي تظهر به. كل صورة تخضع لقاعدة الموافقة عند النشر."
+        initial={values.gallery ?? []}
+      />
 
       <CheckboxField name="isFeatured" label="مميّز" defaultChecked={values.isFeatured} />
 
@@ -259,7 +294,7 @@ export function ProjectForm({
         />
       </Field>
 
-      <details className="rule-edge bg-paper p-5">
+      <details className="rule-edge rounded-lg bg-paper p-5 shadow-[0_10px_28px_rgb(20_33_63/0.04)]">
         <summary className="cursor-pointer text-small font-medium text-ink">
           تحسين محركات البحث
         </summary>
@@ -280,6 +315,14 @@ export function ProjectForm({
             defaultAr={values.seoDescriptionAr ?? ''}
             defaultEn={values.seoDescriptionEn ?? ''}
           />
+          <Field
+            name="ogMediaId"
+            label="صورة المشاركة (Open Graph)"
+            hint="تظهر عند مشاركة الرابط. إن تُركت فارغة تُستخدم صورة المؤسسة الافتراضية."
+            error={firstError('ogMediaId')}
+          >
+            <MediaPicker name="ogMediaId" initialValue={values.ogMediaId ?? ''} kind="image" />
+          </Field>
           <CheckboxField
             name="noIndex"
             label="منع الفهرسة"
@@ -289,12 +332,17 @@ export function ProjectForm({
         </div>
       </details>
 
+      <EnumSelect
+        name="translationStatus"
+        label="حالة الترجمة"
+        options={[...ADMIN_OPTIONS.translationStatus]}
+        defaultValue={values.translationStatus ?? 'ar_only'}
+        hint="تُحدَّد يدوياً. الموقع يعرض المحتوى العربي للقارئ الإنجليزي ما لم تكن الترجمة مراجَعة."
+        error={firstError('translationStatus')}
+      />
+
       <fieldset disabled={pending}>
-        <PublishBar
-          status={values.status ?? 'draft'}
-          canPublish={canPublish}
-          canDelete={canDelete}
-        />
+        <PublishBar status={values.status ?? 'draft'} canPublish={canPublish} />
       </fieldset>
     </form>
   );

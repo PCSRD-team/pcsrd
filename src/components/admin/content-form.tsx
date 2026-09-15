@@ -11,9 +11,13 @@ import {
   fieldDescribedBy,
   inputClass,
 } from '@/components/admin/controls';
+import { GalleryPicker } from '@/components/admin/gallery-picker';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { MediaPicker } from '@/components/admin/media-picker';
+import { ADMIN_OPTIONS } from '@/lib/admin-options';
 import type { RichText } from '@/db/schema/_shared';
 import type { ContentStatus } from '@/db/schema/enums';
+import { type AdminFormDict, resolveAdminKey } from './admin-dict';
 
 /**
  * The editor for every content entity except projects.
@@ -31,31 +35,71 @@ export type FieldSpec =
   | { kind: 'textarea'; name: string; label: string; hint?: string }
   | { kind: 'select'; name: string; label: string; options: { value: string; label: string }[]; required?: boolean; multiple?: boolean; hint?: string }
   | { kind: 'checkbox'; name: string; label: string; hint?: string }
-  | { kind: 'media'; name: string; label: string; hint?: string };
+  | { kind: 'media'; name: string; label: string; hint?: string; assetKind?: 'image' | 'document' }
+  /** An ordered list of image ids, posted as repeated `name` fields. */
+  | { kind: 'gallery'; name: string; label: string; hint?: string };
 
-export type ContentFormValues = Record<string, unknown> & {
-  id?: string;
-  status?: ContentStatus;
-};
+/**
+ * Loosely typed on purpose: a row of any entity is passed straight in, and
+ * `status` may be a content lifecycle value or, for an impact figure, a
+ * verification state — only the publish bar reads it as the former.
+ */
+export type ContentFormValues = Record<string, unknown> & { id?: string };
 
 export function ContentForm({
   action,
   fields,
   values,
   canPublish,
-  canDelete,
   includeSeo = true,
+  bar = 'publish',
+  translation = true,
+  dict,
 }: {
   action: (prev: EntityResult | null, formData: FormData) => Promise<EntityResult>;
   fields: FieldSpec[];
   values: ContentFormValues;
   canPublish: boolean;
-  canDelete: boolean;
   includeSeo?: boolean;
+  /**
+   * `publish` renders the draft / review / publish bar and posts `status`.
+   * `save` renders one button, for records with no lifecycle (people, impact
+   * figures, media) — where a `status` select of the entity's own may exist
+   * and must not collide with the bar's buttons.
+   */
+  bar?: 'publish' | 'save';
+  /**
+   * Renders the `translation_status` select. On for the content entities,
+   * which all carry the column; off for a partner, which does not.
+   */
+  translation?: boolean;
+  /** `errors` + `admin`, so a service's thrown key renders as a sentence. */
+  dict: AdminFormDict;
 }) {
   const [state, formAction, pending] = useActionState<EntityResult | null, FormData>(action, null);
   const errors = state && !state.ok ? state.fieldErrors : undefined;
-  const firstError = (field: string) => errors?.[field]?.[0];
+  // Every field kind reads through this, so a rejected save always points at
+  // the input that caused it. The key is resolved here, at the last moment.
+  const firstError = (field: string) => {
+    const key = errors?.[field]?.[0];
+    return key ? resolveAdminKey(dict, key) : undefined;
+  };
+
+  // STATE-007: the banner used to say "check the highlighted fields" for
+  // every failure, including a consent gate or a permission refusal that
+  // highlights nothing. When there are no field errors the action's own
+  // message is what the editor needs; when there are, the generic prompt plus
+  // any form-level (`_form`) issues.
+  const hasFieldErrors = Boolean(
+    errors && Object.keys(errors).some((key) => key !== '_form' && (errors[key]?.length ?? 0) > 0),
+  );
+  const bannerText =
+    state && !state.ok
+      ? hasFieldErrors
+        ? resolveAdminKey(dict, 'admin.form.checkFields')
+        : resolveAdminKey(dict, state.messageKey)
+      : null;
+  const formLevel = (errors?._form ?? []).map((key) => resolveAdminKey(dict, key));
 
   const str = (key: string) => (values[key] as string | null | undefined) ?? '';
   const doc = (key: string) => (values[key] as RichText | null | undefined) ?? null;
@@ -64,9 +108,14 @@ export function ContentForm({
     <form action={formAction} className="space-y-8">
       {values.id ? <input type="hidden" name="id" value={String(values.id)} /> : null}
 
-      {state && !state.ok ? (
+      {bannerText ? (
         <div className="rule-edge border-gold-600 bg-gold-050 p-4" role="alert">
-          <p className="text-small text-ink">تحقّق من الحقول المميّزة.</p>
+          <p className="text-small text-ink">{bannerText}</p>
+          {formLevel.map((text) => (
+            <p key={text} className="mbs-1 text-caption text-ink">
+              {text}
+            </p>
+          ))}
         </div>
       ) : null}
 
@@ -160,6 +209,7 @@ export function ContentForm({
                 required={field.required}
                 multiple={field.multiple}
                 hint={field.hint}
+                error={firstError(field.name)}
                 defaultValue={
                   field.multiple
                     ? ((values[field.name] as string[] | undefined) ?? [])
@@ -175,7 +225,19 @@ export function ContentForm({
                 name={field.name}
                 label={field.label}
                 hint={field.hint}
+                error={firstError(field.name)}
                 defaultChecked={Boolean(values[field.name])}
+              />
+            );
+
+          case 'gallery':
+            return (
+              <GalleryPicker
+                key={field.name}
+                name={field.name}
+                label={field.label}
+                hint={field.hint}
+                initial={(values[field.name] as string[] | undefined) ?? []}
               />
             );
 
@@ -188,14 +250,12 @@ export function ContentForm({
                 hint={field.hint}
                 error={firstError(field.name)}
               >
-                <input
-                  id={field.name}
+                <MediaPicker
                   name={field.name}
-                  defaultValue={str(field.name)}
-                  dir="ltr"
-                  aria-invalid={firstError(field.name) ? true : undefined}
-                  aria-describedby={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
-                  className={`${inputClass} text-start font-mono text-caption`}
+                  initialValue={str(field.name)}
+                  kind={field.assetKind ?? 'image'}
+                  invalid={Boolean(firstError(field.name))}
+                  describedBy={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
                 />
               </Field>
             );
@@ -203,7 +263,7 @@ export function ContentForm({
       })}
 
       {includeSeo ? (
-        <details className="rule-edge bg-paper p-5">
+        <details className="rule-edge rounded-lg bg-paper p-5 shadow-[0_10px_28px_rgb(20_33_63/0.04)]">
           <summary className="cursor-pointer text-small font-medium text-ink">
             تحسين محركات البحث
           </summary>
@@ -224,6 +284,20 @@ export function ContentForm({
               defaultAr={str('seoDescriptionAr')}
               defaultEn={str('seoDescriptionEn')}
             />
+            <Field
+              name="ogMediaId"
+              label="صورة المشاركة (Open Graph)"
+              hint="تظهر عند مشاركة الرابط. إن تُركت فارغة تُستخدم صورة المؤسسة الافتراضية."
+              error={firstError('ogMediaId')}
+            >
+              <MediaPicker
+                name="ogMediaId"
+                initialValue={str('ogMediaId')}
+                kind="image"
+                invalid={Boolean(firstError('ogMediaId'))}
+                describedBy={fieldDescribedBy('ogMediaId', 'hint', firstError('ogMediaId'))}
+              />
+            </Field>
             <CheckboxField
               name="noIndex"
               label="منع الفهرسة"
@@ -233,12 +307,34 @@ export function ContentForm({
         </details>
       ) : null}
 
-      <fieldset disabled={pending}>
-        <PublishBar
-          status={values.status ?? 'draft'}
-          canPublish={canPublish}
-          canDelete={canDelete}
+      {bar === 'publish' && translation ? (
+        <EnumSelect
+          name="translationStatus"
+          label="حالة الترجمة"
+          options={[...ADMIN_OPTIONS.translationStatus]}
+          defaultValue={str('translationStatus') || 'ar_only'}
+          hint="تُحدَّد يدوياً. الموقع يعرض المحتوى العربي للقارئ الإنجليزي ما لم تكن الترجمة مراجَعة."
+          error={firstError('translationStatus')}
         />
+      ) : null}
+
+      <fieldset disabled={pending}>
+        {bar === 'publish' ? (
+          <PublishBar
+            status={(values.status as ContentStatus | undefined) ?? 'draft'}
+            canPublish={canPublish}
+          />
+        ) : (
+          <div className="sticky inset-be-0 z-20 mbs-10 flex flex-wrap items-center gap-3 border border-rule bg-paper p-4">
+            <div className="flex-1" />
+            <button
+              type="submit"
+              className="bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900"
+            >
+              {dict.admin.form.save}
+            </button>
+          </div>
+        )}
       </fieldset>
     </form>
   );

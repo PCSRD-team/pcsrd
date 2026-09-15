@@ -1,9 +1,13 @@
 import { notFound } from 'next/navigation';
 import { savePostForm } from '@/actions/admin/entity-forms';
+import { adminFormDict } from '@/components/admin/admin-dict';
 import { ContentForm } from '@/components/admin/content-form';
-import { POST_FIELDS } from '@/components/admin/field-configs';
+import { postFields } from '@/components/admin/field-configs';
+import { Flash } from '@/components/admin/flash';
+import { DeleteAction } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
-import { getAdminRow } from '@/db/queries/admin';
+import { getAdminGallery, getAdminRow, listRelationOptions } from '@/db/queries/admin';
+import type { ContentStatus } from '@/db/schema/enums';
 import { requireAuth } from '@/lib/auth/guard';
 import { can } from '@/services/_shared/permissions';
 
@@ -12,27 +16,51 @@ export const dynamic = 'force-dynamic';
 export default async function Page({ params, searchParams }: PageProps<'/admin/posts/[id]'>) {
   const [{ id }, search, actor] = await Promise.all([params, searchParams, requireAuth()]);
 
-  const row = await getAdminRow(actor, 'post', id);
+  const [row, gallery] = await Promise.all([
+    getAdminRow(actor, 'post', id),
+    getAdminGallery(actor, 'post', id),
+  ]);
   if (!row) notFound();
+  const [programs, projects] = await Promise.all([
+    listRelationOptions(actor, 'programs'),
+    listRelationOptions(actor, 'projects'),
+  ]);
+  const options = {
+    programs: programs.map((p) => ({ value: p.id, label: p.label })),
+    projects: projects.map((p) => ({ value: p.id, label: p.label })),
+  };
+
+  // The gallery is a junction, not a column; it rides along as `gallery` so
+  // the form can post it back in order.
+  const values: Record<string, unknown> = { ...(row as Record<string, unknown>), gallery };
+  const title = String(values.titleAr ?? 'خبر');
 
   return (
     <>
-      <AdminHeader title={String((row as Record<string, unknown>).titleAr ?? 'خبر')} />
+      <AdminHeader title={title} />
 
-      {search.saved ? (
-        <div className="rule-edge mbe-6 border-gold-600 bg-gold-050 p-4" role="status">
-          <p className="text-small text-ink">تم الحفظ.</p>
-        </div>
-      ) : null}
+      <Flash searchParams={search} />
 
       <ContentForm
         action={savePostForm}
-        fields={POST_FIELDS}
-        values={row as Record<string, unknown>}
+        fields={postFields(options)}
+        values={values}
         canPublish={can(actor, 'content.publish')}
-        canDelete={can(actor, 'content.delete')}
         includeSeo={true}
+        dict={adminFormDict()}
       />
+
+      {/* Its own form, outside the editor: a form cannot nest in a form. */}
+      <div className="mbs-8">
+        <DeleteAction
+          entity="post"
+          id={id}
+          status={values.status as ContentStatus}
+          actor={actor}
+          returnTo="/admin/posts"
+          label={title}
+        />
+      </div>
     </>
   );
 }

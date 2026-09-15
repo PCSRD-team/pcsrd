@@ -235,6 +235,22 @@ export const en: Dictionary = {
     occurredOn: 'Date it happened',
   },
 
+  contactPage: {
+    eyebrow: 'We are here to listen',
+    lead: 'Send your enquiry and our team will follow up using the contact details you provide.',
+    formTitle: 'Send us a message',
+    formLead: 'Fields marked with an asterisk are required. We use your details only to respond to this request.',
+    detailsTitle: 'Contact details',
+    detailsLead: 'Reach us directly or verify the organisation’s official accounts.',
+    responseNote: 'Your message goes directly to the organisation’s team, and you receive a reference number for follow-up.',
+    officialChannels: 'Our official accounts',
+    noContactDetails: 'Contact details will appear here once they are added in the dashboard.',
+    verifyChannels: 'Verify all channels',
+    complaintsEyebrow: 'A safe, independent channel',
+    complaintsLead: 'You can submit a complaint confidentially without providing your name or contact details.',
+    complaintFormTitle: 'Complaint details',
+  },
+
   states: {
     emptyTitle: 'Nothing here yet',
     emptyBody: 'Content will appear here once it is published.',
@@ -311,8 +327,187 @@ export const en: Dictionary = {
       consentRequired: 'A beneficiary story needs documented consent before publishing.',
     },
 
+    project: {
+      dateOrder: 'The project start date must come before its end date.',
+    },
+
+    post: {
+      expiryOnlyAnnouncements: 'An expiry date is only available on announcements.',
+    },
+
+    partner: {
+      membershipLevelShape: 'A membership level applies to networks and memberships only.',
+    },
+
     attachment: {
       sensitiveRefused: 'An attachment on a confidential report cannot be downloaded.',
+    },
+
+    users: {
+      selfRole: 'You cannot change your own role. Ask another administrator.',
+      selfDeactivate: 'You cannot deactivate your own account.',
+      lastAdmin: 'The last active administrator cannot be removed.',
+      inviteFailed: 'The invitation could not be sent. Check the email address and try again.',
+      emailTaken: 'An account with this email address already exists.',
+      profileMissing: 'The account was created but its profile was not found. Contact an administrator.',
+    },
+
+    redirects: {
+      sourceTaken: 'A redirect from this path already exists.',
+      pathFormat: 'The path must start with "/" and contain no spaces.',
+      loop: 'Source and destination are the same.',
+      reserved: 'Admin and API paths cannot be redirected.',
+    },
+
+    mediaInUse: 'A media asset that is in use cannot be deleted. Remove its usages first.',
+  },
+
+  admin: {
+    saved: 'Saved.',
+    created: 'Created.',
+    statusChanged: 'Status changed.',
+    deleted: 'Deleted.',
+    invited: 'Invitation sent by email.',
+    updated: 'Updated.',
+
+    form: {
+      checkFields: 'Check the highlighted fields.',
+      save: 'Save',
+      saveDraft: 'Save as draft',
+      submitReview: 'Submit for review',
+      publish: 'Publish',
+      unpublish: 'Unpublish',
+      archive: 'Archive',
+      restore: 'Back to draft',
+      delete: 'Delete',
+      confirmDelete: 'Confirm deletion',
+      deleteHint: 'Deletion is permanent and cannot be undone.',
+      deletePublishedHint: 'Unpublish the item before deleting it.',
+      cancel: 'Cancel',
+      actions: 'Actions',
+      add: 'Add',
+      back: 'Back to the list',
+      lastEdited: 'Last edited',
+    },
+
+    flash: {
+      error: 'The action could not be completed.',
+    },
+
+    users: {
+      title: 'Users',
+      description:
+        'Access to confidential complaints is granted per person; the admin role does not grant it automatically.',
+      invite: 'Invite a user',
+      inviteHint:
+        'The invitee receives an email to set a password. The account starts as an editor unless set otherwise.',
+      email: 'Email',
+      fullName: 'Full name',
+      role: 'Role',
+      sendInvite: 'Send invitation',
+      setRole: 'Change role',
+      grantSensitive: 'Grant confidential-complaint access',
+      revokeSensitive: 'Revoke confidential-complaint access',
+      deactivate: 'Deactivate account',
+      reactivate: 'Reactivate account',
+      confirmDeactivate: 'Confirm deactivation',
+      you: 'you',
+      selfHint: 'You cannot change your own role or deactivate yourself.',
+      roles: { admin: 'Administrator', content_manager: 'Content manager', editor: 'Editor' },
+      active: 'Active',
+      inactive: 'Deactivated',
+      sensitiveAllowed: 'Allowed',
+      lastLogin: 'Last sign-in',
+      never: 'Never signed in',
+    },
+
+    redirects: {
+      title: 'Redirects',
+      description:
+        'Take effect immediately: the proxy consults a cached list that every save refreshes.',
+      add: 'Add redirect',
+      source: 'From path',
+      sourceHint: 'The old path as it appears in the URL, e.g. /old-page. Matched with or without the locale prefix.',
+      destination: 'To path',
+      destinationHint: 'An internal path starting with / or a full URL starting with https://.',
+      code: 'Status code',
+      codes: {
+        '301': '301 — permanent',
+        '302': '302 — temporary',
+        '307': '307 — temporary (keeps method)',
+        '308': '308 — permanent (keeps method)',
+      },
+      empty: 'No redirects.',
+    },
+
+    media: {
+      edit: 'Edit media details',
+      usage: 'Where it is used',
+      notUsed: 'Not used by any content.',
+      usageHint: 'An asset cannot be deleted while it is in use. Remove its usages first.',
+      delete: 'Delete asset',
+      deleteHint: 'Removes the record and the file from storage.',
+      file: 'File',
+      dimensions: 'Dimensions',
+      size: 'Size',
+      uploaded: 'Uploaded',
+      exifNotStripped: 'EXIF data not stripped',
+      openDetail: 'Details',
+      fields: {
+        altAr: 'Alt text (Arabic)',
+        altEn: 'Alt text (English)',
+        captionAr: 'Caption (Arabic)',
+        captionEn: 'Caption (English)',
+        credit: 'Credit',
+        consent: 'Consent status',
+        consentReference: 'Consent reference',
+        hasIdentifiableMinors: 'Shows identifiable minors',
+        minorsHint: 'When on, nothing using this asset can be published before consent is documented.',
+      },
+      consent: {
+        not_required: 'Not required',
+        obtained: 'Documented',
+        pending: 'Pending',
+      },
+      usageEntity: {
+        program: 'Programme',
+        project: 'Project',
+        story: 'Story',
+        post: 'News item',
+        vacancy: 'Vacancy',
+        page: 'Page',
+        partner: 'Partner',
+        person: 'Person',
+        publication: 'Publication',
+        organization: 'Organisation settings',
+        project_gallery: 'Project gallery',
+        story_gallery: 'Story gallery',
+        program_gallery: 'Programme gallery',
+        post_gallery: 'News gallery',
+      },
+    },
+
+    submissions: {
+      handling: 'Handling',
+      state: 'State',
+      internalNote: 'Internal note',
+      noteHint: 'This note is not copied into the audit log.',
+      handledBy: 'Handled by',
+      handledAt: 'Last handled',
+      notHandled: 'Not handled yet',
+      download: 'Download attachment',
+      downloadHint: 'Every download is written to the audit log.',
+      sensitiveNoDownload: 'Attachments on confidential complaints cannot be downloaded.',
+      purgeAt: 'Automatically deleted on',
+      field: 'Field',
+      value: 'Value',
+      empty: 'No content.',
+      states: {
+        new: 'New',
+        in_progress: 'In progress',
+        handled: 'Handled',
+        archived: 'Archived',
+      },
     },
   },
 
@@ -320,6 +515,12 @@ export const en: Dictionary = {
     identityTitle: 'Identity record',
     channelsTitle: 'Official channels',
     programsTitle: 'Programmes',
+    brandTitle: 'Organization',
+    quickLinksTitle: 'Quick links',
+    getInvolvedTitle: 'Get involved',
+    contactTitle: 'Contact and social',
+    secondaryEmail: 'Secondary email',
+    noSocialLinks: 'Social accounts will appear here once their URLs are configured.',
     legalTitle: 'Legal',
     privacy: 'Privacy policy',
     accessibility: 'Accessibility',
@@ -407,6 +608,13 @@ export const en: Dictionary = {
     facebook: 'Facebook', instagram: 'Instagram', whatsapp: 'WhatsApp',
     telegram: 'Telegram', x: 'X', website: 'Website',
     phone_call: 'Phone call', sms: 'SMS', in_person: 'In person',
+  },
+
+  seo: {
+    ogImageAlt: 'Organisation card with its name and short description',
+    getInvolved: {
+      volunteerTitle: 'Volunteer with us',
+    },
   },
 
   a11y: {
