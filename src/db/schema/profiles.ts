@@ -18,7 +18,7 @@ export const profiles = pgTable(
   'profiles',
   {
     id: uuid().primaryKey(),
-    email: text().notNull().unique(),
+    email: text().notNull().unique('profiles_email_key'),
     fullName: text().notNull(),
     role: userRole().notNull().default('editor'),
 
@@ -34,7 +34,12 @@ export const profiles = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('profiles_role_idx').on(t.role).where(sql`${t.isActive}`)],
+  (t) => [
+    index('profiles_role_idx').on(t.role).where(sql`${t.isActive}`),
+    index('ix_profiles_active').on(t.isActive),
+    // Live duplicate of `profiles_role_idx` from the hand-written DDL.
+    index('ix_profiles_role').on(t.role).where(sql`${t.isActive}`),
+  ],
 );
 
 export type Profile = typeof profiles.$inferSelect;

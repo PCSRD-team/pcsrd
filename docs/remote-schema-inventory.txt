@@ -1,407 +1,936 @@
+# Remote schema inventory — Supabase project ouyivpcvowkpcfiqduyx (ap-northeast-1)
+#
+# Captured 2026-09-14 by a READ-ONLY script connecting as `postgres` over DIRECT_URL and
+# selecting from information_schema.columns, pg_constraint, pg_indexes, pg_enum,
+# pg_trigger, pg_proc, pg_policies, pg_class, pg_roles, has_sequence_privilege,
+# information_schema.role_table_grants and storage.buckets. Nothing was written.
+#
+# This file is the recorded truth that `tests/integration/schema-parity.test.ts`
+# checks the migration chain against. Regenerate it when the live database changes;
+# never edit it to match the migrations.
+#
+# Facts worth knowing before touching the migrations:
+#   - There is NO `drizzle.__drizzle_migrations` table and NO `supabase_migrations`
+#     schema on the live database. The schema was created from hand-written DDL and
+#     later patched in place; `drizzle/` reproduces it (verified by the parity test),
+#     but `drizzle-kit migrate` has never run against it. Apply new migrations by hand
+#     and write them idempotently — see `drizzle/0005_live_parity.sql`.
+#   - Constraint names are Postgres defaults (`<t>_<c>_fkey`, `<t>_<c>_key`,
+#     `<junction>_pkey`), except `organization_settings_footer_logo_id_media_assets_id_fk`
+#     which came from the hand-applied `0004`.
+#   - Every `ix_*` / `ux_*` index is from the original DDL. Many duplicate a
+#     `*_idx` index exactly (same columns, same predicate); they cost write time
+#     and nothing else. Dropping them on the live database is a safe cleanup — then
+#     remove them from `src/db/schema/*` and add a migration.
+#   - `audit_logs.id` is `bigint GENERATED ALWAYS AS IDENTITY`, not `bigserial`.
+#
+# Legend: NN = not null · PK = primary key member · def= column default
+
+## Enums
+  consent_status         {not_required,obtained,pending}
+  content_status         {draft,in_review,published,archived}
+  governorate            {north_gaza,gaza,middle,khan_younis,rafah}
+  locale_code            {ar,en}
+  logo_permission        {granted,pending,denied}
+  media_kind             {image,video,document}
+  membership_level       {full,observer}
+  metric_status          {target,reported,verified}
+  partner_role           {implementing,donor}
+  partner_type           {implementing,donor,network,membership}
+  person_category        {board,executive,staff}
+  post_category          {news,statement,announcement}
+  program_key            {protection,humanitarian_response,early_recovery}
+  project_status         {planned,active,completed}
+  publication_type       {report,policy,profile,strategy,evaluation,other}
+  submission_state       {new,in_progress,handled,archived}
+  submission_type        {partnership,contact,volunteer,job,complaint,fraud_report}
+  target_group           {children,youth,women,poor_families,elderly,pwd}
+  theme_tag              {women,children,youth_adolescents,psychosocial_health,relief}
+  translation_status     {ar_only,machine_draft,human_translated,reviewed}
+  user_role              {admin,content_manager,editor}
+  vacancy_type           {job,volunteer}
+
+## Tables
 
 ### audit_logs (7)
-  id                             int64                        NN PK
-  actor_id                       uuid                         FK->profiles.id
+  id                             bigint                       NN PK identity always
+  actor_id                       uuid                         FK->profiles.id on delete SET NULL
   action                         text                         NN
   entity_type                    text                         NN
-  entity_id                      uuid                         
-  diff                           jsonb                        
-  created_at                     timestamp with time zone     NN def=now()
+  entity_id                      uuid
+  diff                           jsonb
+  created_at                     timestamptz                  NN def=now()
+  constraints:
+    audit_logs_pkey                              PRIMARY KEY (id)
+    audit_action_known                           CHECK ((action = ANY (ARRAY['create'::text, 'update'::text, 'publish'::text, 'unpublish'::text, 'delete'::text, 'login'::text, 'invite'::text, 'set_role'::text, 'deactivate'::text, 'view_sensitive'::text, 'set_state'::text, 'upload'::text, 'purge'::text, 'archive'::text])))
+  indexes:
+    audit_action_idx                 USING btree (action, created_at DESC)
+    audit_actor_idx                  USING btree (actor_id, created_at DESC)
+    audit_entity_idx                 USING btree (entity_type, entity_id, created_at DESC)
+    ix_audit_action                  USING btree (action, created_at DESC)
+    ix_audit_actor                   USING btree (actor_id, created_at DESC)
+    ix_audit_entity                  USING btree (entity_type, entity_id, created_at DESC)
+  triggers:
+    trg_audit_immutable                      BEFORE DELETE OR UPDATE → app.block_audit_mutation()
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
 
 ### form_submissions (17)
   id                             uuid                         NN PK def=gen_random_uuid()
   reference                      text                         NN
-  type                           public.submission_type       {partnership,contact,volunteer,job,complaint,fraud_report} NN
-  is_sensitive                   boolean                      NN def=False
-  locale                         public.locale_code           {ar,en} NN def=ar
-  payload                        jsonb                        
-  payload_encrypted              bytea                        
-  payload_key_id                 text                         
-  attachment_path                text                         
-  state                          public.submission_state      {new,in_progress,handled,archived} NN def=new
-  handled_by                     uuid                         FK->profiles.id
-  handled_at                     timestamp with time zone     
-  internal_note                  text                         
-  ip_hash                        text                         
-  user_agent                     text                         
-  created_at                     timestamp with time zone     NN def=now()
+  type                           submission_type              NN
+  is_sensitive                   boolean                      NN def=false
+  locale                         locale_code                  NN def='ar'::locale_code
+  payload                        jsonb
+  payload_encrypted              bytea
+  payload_key_id                 text
+  attachment_path                text
+  state                          submission_state             NN def='new'::submission_state
+  handled_by                     uuid                         FK->profiles.id on delete SET NULL
+  handled_at                     timestamptz
+  internal_note                  text
+  ip_hash                        text
+  user_agent                     text
+  created_at                     timestamptz                  NN def=now()
   purge_after                    date                         NN
+  constraints:
+    form_submissions_pkey                        PRIMARY KEY (id)
+    form_submissions_reference_key               UNIQUE (reference)
+    submissions_handled_shape                    CHECK (((state = 'new'::submission_state) OR (handled_at IS NOT NULL)))
+    submissions_payload_exclusive                CHECK (((is_sensitive AND (payload IS NULL) AND (payload_encrypted IS NOT NULL) AND (payload_key_id IS NOT NULL)) OR ((NOT is_sensitive) AND (payload IS NOT NULL) AND (payload_encrypted IS NULL) AND (payload_key_id IS NULL))))
+    submissions_sensitive_unlinkable             CHECK (((NOT is_sensitive) OR ((ip_hash IS NULL) AND (user_agent IS NULL))))
+  indexes:
+    ix_submissions_handler           USING btree (handled_by)
+    ix_submissions_purge             USING btree (purge_after)
+    ix_submissions_state             USING btree (state, created_at DESC)
+    ix_submissions_type              USING btree (type, created_at DESC)
+    submissions_purge_idx            USING btree (purge_after)
+    submissions_sensitive_idx        USING btree (is_sensitive, created_at DESC)
+    submissions_state_idx            USING btree (state) WHERE (state = 'new'::submission_state)
+    submissions_type_idx             USING btree (type, created_at DESC)
+  triggers:
+    trg_submission_reference                 BEFORE INSERT → app.gen_submission_reference()
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### impact_metrics (17)
   id                             uuid                         NN PK def=gen_random_uuid()
   label_ar                       text                         NN
-  label_en                       text                         
-  value                          numeric                      NN
+  label_en                       text
+  value                          numeric(14,2)                NN
   unit                           text                         NN
-  display_prefix                 text                         
-  program_id                     uuid                         FK->programs.id
-  project_id                     uuid                         FK->projects.id
+  display_prefix                 text
+  program_id                     uuid                         FK->programs.id on delete SET NULL
+  project_id                     uuid                         FK->projects.id on delete CASCADE
   period_start                   date                         NN
   period_end                     date                         NN
-  status                         public.metric_status         {target,reported,verified} NN
-  verification_source            text                         
-  is_public                      boolean                      NN def=False
-  is_featured                    boolean                      NN def=False
-  display_order                  int32                        NN def=0
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
+  status                         metric_status                NN
+  verification_source            text
+  is_public                      boolean                      NN def=false
+  is_featured                    boolean                      NN def=false
+  display_order                  smallint                     NN def=0
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  constraints:
+    impact_metrics_pkey                          PRIMARY KEY (id)
+    impact_metrics_display_prefix_check          CHECK (((display_prefix IS NULL) OR (display_prefix = ANY (ARRAY['+'::text, '~'::text]))))
+    metrics_period_order                         CHECK ((period_end >= period_start))
+    metrics_verified_needs_source                CHECK (((status <> 'verified'::metric_status) OR ((verification_source IS NOT NULL) AND (length(btrim(verification_source)) > 0))))
+  indexes:
+    ix_metrics_program               USING btree (program_id)
+    ix_metrics_project               USING btree (project_id)
+    ix_metrics_public                USING btree (display_order, period_end DESC) WHERE is_public
+    metrics_program_idx              USING btree (program_id) WHERE is_public
+    metrics_project_idx              USING btree (project_id)
+    metrics_public_idx               USING btree (status, is_public, display_order)
+  triggers:
+    trg_impact_metrics_updated_at            BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### media_assets (20)
   id                             uuid                         NN PK def=gen_random_uuid()
-  kind                           public.media_kind            {image,video,document} NN def=image
-  bucket                         text                         NN def=media
+  kind                           media_kind                   NN def='image'::media_kind
+  bucket                         text                         NN def='media'::text
   path                           text                         NN
   mime_type                      text                         NN
-  file_size                      int32                        NN
-  width                          int32                        
-  height                         int32                        
-  blur_data_url                  text                         
+  file_size                      integer                      NN
+  width                          integer
+  height                         integer
+  blur_data_url                  text
   alt_ar                         text                         NN
-  alt_en                         text                         
-  caption_ar                     text                         
-  caption_en                     text                         
-  credit                         text                         
-  consent                        public.consent_status        {not_required,obtained,pending} NN def=not_required
-  consent_reference              text                         
-  has_identifiable_minors        boolean                      NN def=False
-  exif_stripped                  boolean                      NN def=False
-  created_at                     timestamp with time zone     NN def=now()
-  created_by                     uuid                         FK->profiles.id
+  alt_en                         text
+  caption_ar                     text
+  caption_en                     text
+  credit                         text
+  consent                        consent_status               NN def='not_required'::consent_status
+  consent_reference              text
+  has_identifiable_minors        boolean                      NN def=false
+  exif_stripped                  boolean                      NN def=false
+  created_at                     timestamptz                  NN def=now()
+  created_by                     uuid                         FK->profiles.id on delete SET NULL
+  constraints:
+    media_assets_pkey                            PRIMARY KEY (id)
+    media_assets_path_key                        UNIQUE (path)
+    chk_media_minor_consent                      CHECK (((has_identifiable_minors = false) OR ((consent = 'obtained'::consent_status) AND (consent_reference IS NOT NULL))))
+    media_assets_alt_ar_check                    CHECK ((length(btrim(alt_ar)) > 0))
+    media_assets_file_size_check                 CHECK ((file_size > 0))
+  indexes:
+    ix_media_consent                 USING btree (consent) WHERE has_identifiable_minors
+    ix_media_created_by              USING btree (created_by)
+    ix_media_kind                    USING btree (kind, created_at DESC)
+    media_bucket_idx                 USING btree (bucket)
+    media_consent_idx                USING btree (consent) WHERE has_identifiable_minors
+    media_kind_idx                   USING btree (kind, created_at DESC)
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
-### organization_settings (36)
-  id                             boolean                      NN PK def=True
+### organization_settings (48)
+  id                             boolean                      NN PK def=true
   legal_name_ar                  text                         NN
   legal_name_en                  text                         NN
   short_name_ar                  text                         NN
   short_name_en                  text                         NN
   acronym                        text                         NN
-  alternate_names                text[]                       NN
-  founded_year                   int32                        NN
+  alternate_names                text[]                       NN def='{}'::text[]
+  founded_year                   smallint                     NN
   license_number                 text                         NN
-  license_authority_ar           text                         
-  license_authority_en           text                         
-  legal_form_ar                  text                         
-  legal_form_en                  text                         
-  vision_ar                      text                         
-  vision_en                      text                         
-  mission_ar                     text                         
-  mission_en                     text                         
-  core_values                    jsonb                        NN
-  principles                     jsonb                        NN
-  strategic_objectives           jsonb                        NN
-  primary_phone                  text                         
-  additional_phones              text[]                       NN
-  whatsapp_number                text                         
-  email                          text                         
-  address_ar                     text                         
-  address_en                     text                         
-  address_is_public              boolean                      NN def=False
-  office_hours_ar                text                         
-  office_hours_en                text                         
-  socials                        jsonb                        NN
-  official_channels              jsonb                        NN
-  logo_primary_id                uuid                         FK->media_assets.id
-  logo_mono_id                   uuid                         FK->media_assets.id
-  default_og_id                  uuid                         FK->media_assets.id
-  updated_at                     timestamp with time zone     NN def=now()
-  updated_by                     uuid                         FK->profiles.id
+  license_authority_ar           text
+  license_authority_en           text
+  legal_form_ar                  text
+  legal_form_en                  text
+  vision_ar                      text
+  vision_en                      text
+  mission_ar                     text
+  mission_en                     text
+  core_values                    jsonb                        NN def='[]'::jsonb
+  principles                     jsonb                        NN def='[]'::jsonb
+  strategic_objectives           jsonb                        NN def='[]'::jsonb
+  primary_phone                  text
+  additional_phones              text[]                       NN def='{}'::text[]
+  whatsapp_number                text
+  email                          text
+  address_ar                     text
+  address_en                     text
+  address_is_public              boolean                      NN def=false
+  office_hours_ar                text
+  office_hours_en                text
+  socials                        jsonb                        NN def='[]'::jsonb
+  official_channels              jsonb                        NN def='[]'::jsonb
+  logo_primary_id                uuid                         FK->media_assets.id on delete SET NULL
+  logo_mono_id                   uuid                         FK->media_assets.id on delete SET NULL
+  default_og_id                  uuid                         FK->media_assets.id on delete SET NULL
+  updated_at                     timestamptz                  NN def=now()
+  updated_by                     uuid                         FK->profiles.id on delete SET NULL
+  short_description_ar           text
+  short_description_en           text
+  secondary_email                text
+  footer_cta_title_ar            text
+  footer_cta_title_en            text
+  footer_cta_description_ar      text
+  footer_cta_description_en      text
+  footer_cta_button_label_ar     text
+  footer_cta_button_label_en     text
+  footer_cta_url                 text
+  footer_cta_enabled             boolean                      NN def=false
+  footer_logo_id                 uuid                         FK->media_assets.id on delete SET NULL
+  constraints:
+    organization_settings_pkey                   PRIMARY KEY (id)
+    org_json_shapes                              CHECK (((jsonb_typeof(core_values) = 'array'::text) AND (jsonb_typeof(principles) = 'array'::text) AND (jsonb_typeof(strategic_objectives) = 'array'::text) AND (jsonb_typeof(socials) = 'array'::text) AND (jsonb_typeof(official_channels) = 'array'::text)))
+    org_whatsapp_digits                          CHECK (((whatsapp_number IS NULL) OR (whatsapp_number ~ '^[0-9]{8,15}$'::text)))
+    organization_settings_founded_year_check     CHECK (((founded_year >= 1900) AND (founded_year <= 2100)))
+    organization_settings_id_check               CHECK (id)
+  triggers:
+    trg_organization_settings_updated_at     BEFORE UPDATE → app.set_updated_at()
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### pages (21)
   id                             uuid                         NN PK def=gen_random_uuid()
-  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
-  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
-  published_at                   timestamp with time zone     
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
-  created_by                     uuid                         FK->profiles.id
-  updated_by                     uuid                         FK->profiles.id
+  status                         content_status               NN def='draft'::content_status
+  translation_status             translation_status           NN def='ar_only'::translation_status
+  published_at                   timestamptz
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  created_by                     uuid                         FK->profiles.id on delete SET NULL
+  updated_by                     uuid                         FK->profiles.id on delete SET NULL
   slug_ar                        text                         NN
   slug_en                        text                         NN
   key                            text                         NN
   title_ar                       text                         NN
-  title_en                       text                         
-  body_ar                        jsonb                        
-  body_en                        jsonb                        
-  seo_title_ar                   text                         
-  seo_title_en                   text                         
-  seo_description_ar             text                         
-  seo_description_en             text                         
-  og_media_id                    uuid                         FK->media_assets.id
-  no_index                       boolean                      NN def=False
+  title_en                       text
+  body_ar                        jsonb
+  body_en                        jsonb
+  seo_title_ar                   text
+  seo_title_en                   text
+  seo_description_ar             text
+  seo_description_en             text
+  og_media_id                    uuid                         FK->media_assets.id on delete SET NULL
+  no_index                       boolean                      NN def=false
+  constraints:
+    pages_pkey                                   PRIMARY KEY (id)
+    pages_key_key                                UNIQUE (key)
+    pages_slug_shape                             CHECK (((slug_ar ~ '^[^\s/]+$'::text) AND (slug_en ~ '^[^\s/]+$'::text)))
+  indexes:
+    pages_slug_ar_idx                UNIQUE USING btree (slug_ar)
+    pages_slug_en_idx                UNIQUE USING btree (slug_en)
+    ux_pages_slug_ar                 UNIQUE USING btree (slug_ar)
+    ux_pages_slug_en                 UNIQUE USING btree (slug_en)
+  triggers:
+    trg_pages_published_at                   BEFORE INSERT OR UPDATE → app.set_published_at()
+    trg_pages_status_gate                    BEFORE INSERT OR UPDATE → app.assert_status_transition()
+    trg_pages_updated_at                     BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### partners (17)
   id                             uuid                         NN PK def=gen_random_uuid()
   name_ar                        text                         NN
-  name_en                        text                         
-  type                           public.partner_type          {implementing,donor,network,membership} NN
-  membership_level               public.membership_level      {full,observer} 
-  sector_ar                      text                         
-  sector_en                      text                         
-  description_ar                 text                         
-  description_en                 text                         
-  website                        text                         
-  logo_media_id                  uuid                         FK->media_assets.id
-  logo_permission                public.logo_permission       {granted,pending,denied} NN def=pending
-  is_featured                    boolean                      NN def=False
-  display_order                  int32                        NN def=0
-  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
+  name_en                        text
+  type                           partner_type                 NN
+  membership_level               membership_level
+  sector_ar                      text
+  sector_en                      text
+  description_ar                 text
+  description_en                 text
+  website                        text
+  logo_media_id                  uuid                         FK->media_assets.id on delete SET NULL
+  logo_permission                logo_permission              NN def='pending'::logo_permission
+  is_featured                    boolean                      NN def=false
+  display_order                  smallint                     NN def=0
+  status                         content_status               NN def='draft'::content_status
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  constraints:
+    partners_pkey                                PRIMARY KEY (id)
+    partners_membership_shape                    CHECK (((membership_level IS NULL) OR (type = ANY (ARRAY['network'::partner_type, 'membership'::partner_type]))))
+  indexes:
+    ix_partners_public               USING btree (display_order, name_ar) WHERE (status = 'published'::content_status)
+    ix_partners_type                 USING btree (type)
+    partners_type_idx                USING btree (type, display_order) WHERE (status = 'published'::content_status)
+  triggers:
+    trg_partners_status_gate                 BEFORE INSERT OR UPDATE → app.assert_status_transition()
+    trg_partners_updated_at                  BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### people (13)
   id                             uuid                         NN PK def=gen_random_uuid()
   name_ar                        text                         NN
-  name_en                        text                         
+  name_en                        text
   role_ar                        text                         NN
-  role_en                        text                         
-  category                       public.person_category       {board,executive,staff} NN def=board
-  bio_ar                         text                         
-  bio_en                         text                         
-  photo_media_id                 uuid                         FK->media_assets.id
-  is_public                      boolean                      NN def=False
-  display_order                  int32                        NN def=0
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
+  role_en                        text
+  category                       person_category              NN def='board'::person_category
+  bio_ar                         text
+  bio_en                         text
+  photo_media_id                 uuid                         FK->media_assets.id on delete SET NULL
+  is_public                      boolean                      NN def=false
+  display_order                  smallint                     NN def=0
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  constraints:
+    people_pkey                                  PRIMARY KEY (id)
+  indexes:
+    ix_people_public                 USING btree (category, display_order) WHERE is_public
+    people_public_idx                USING btree (category, display_order) WHERE is_public
+  triggers:
+    trg_people_media_consent                 BEFORE INSERT OR UPDATE → app.assert_person_media_consent()
+    trg_people_updated_at                    BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### post_media (3)
-  post_id                        uuid                         NN PK FK->posts.id
-  media_id                       uuid                         NN PK FK->media_assets.id
-  display_order                  int32                        NN def=0
+  post_id                        uuid                         NN PK FK->posts.id on delete CASCADE
+  media_id                       uuid                         NN PK FK->media_assets.id on delete CASCADE
+  display_order                  smallint                     NN def=0
+  constraints:
+    post_media_pkey                              PRIMARY KEY (post_id, media_id)
+  indexes:
+    post_media_media_idx             USING btree (media_id)
+  triggers:
+    trg_post_media_media_consent             BEFORE INSERT OR UPDATE → app.assert_junction_media_consent()
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_write                     ALL      app_runtime
 
 ### posts (28)
   id                             uuid                         NN PK def=gen_random_uuid()
-  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
-  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
-  published_at                   timestamp with time zone     
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
-  created_by                     uuid                         FK->profiles.id
-  updated_by                     uuid                         FK->profiles.id
+  status                         content_status               NN def='draft'::content_status
+  translation_status             translation_status           NN def='ar_only'::translation_status
+  published_at                   timestamptz
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  created_by                     uuid                         FK->profiles.id on delete SET NULL
+  updated_by                     uuid                         FK->profiles.id on delete SET NULL
   slug_ar                        text                         NN
   slug_en                        text                         NN
-  category                       public.post_category         {news,statement,announcement} NN def=news
+  category                       post_category                NN def='news'::post_category
   title_ar                       text                         NN
-  title_en                       text                         
-  excerpt_ar                     text                         
-  excerpt_en                     text                         
-  body_ar                        jsonb                        
-  body_en                        jsonb                        
-  program_id                     uuid                         FK->programs.id
-  project_id                     uuid                         FK->projects.id
-  hero_media_id                  uuid                         FK->media_assets.id
-  expires_at                     timestamp with time zone     
-  is_featured                    boolean                      NN def=False
-  seo_title_ar                   text                         
-  seo_title_en                   text                         
-  seo_description_ar             text                         
-  seo_description_en             text                         
-  og_media_id                    uuid                         FK->media_assets.id
-  no_index                       boolean                      NN def=False
+  title_en                       text
+  excerpt_ar                     text
+  excerpt_en                     text
+  body_ar                        jsonb
+  body_en                        jsonb
+  program_id                     uuid                         FK->programs.id on delete SET NULL
+  project_id                     uuid                         FK->projects.id on delete SET NULL
+  hero_media_id                  uuid                         FK->media_assets.id on delete SET NULL
+  expires_at                     timestamptz
+  is_featured                    boolean                      NN def=false
+  seo_title_ar                   text
+  seo_title_en                   text
+  seo_description_ar             text
+  seo_description_en             text
+  og_media_id                    uuid                         FK->media_assets.id on delete SET NULL
+  no_index                       boolean                      NN def=false
+  constraints:
+    posts_pkey                                   PRIMARY KEY (id)
+    posts_expiry_only_announcements              CHECK (((expires_at IS NULL) OR (category = 'announcement'::post_category)))
+    posts_slug_shape                             CHECK (((slug_ar ~ '^[^\s/]+$'::text) AND (slug_en ~ '^[^\s/]+$'::text)))
+  indexes:
+    ix_posts_program                 USING btree (program_id)
+    ix_posts_project                 USING btree (project_id)
+    ix_posts_public                  USING btree (category, published_at DESC) WHERE (status = 'published'::content_status)
+    ix_posts_search_ar               USING gin (to_tsvector('simple'::regconfig, ((COALESCE(title_ar, ''::text) || ' '::text) || COALESCE(excerpt_ar, ''::text))))
+    posts_category_idx               USING btree (category, status, published_at DESC)
+    posts_expiring_idx               USING btree (expires_at) WHERE (expires_at IS NOT NULL)
+    posts_published_idx              USING btree (status, published_at DESC)
+    posts_slug_ar_idx                UNIQUE USING btree (slug_ar)
+    posts_slug_en_idx                UNIQUE USING btree (slug_en)
+    ux_posts_slug_ar                 UNIQUE USING btree (slug_ar)
+    ux_posts_slug_en                 UNIQUE USING btree (slug_en)
+  triggers:
+    trg_posts_media_consent                  BEFORE INSERT OR UPDATE → app.assert_media_consent()
+    trg_posts_published_at                   BEFORE INSERT OR UPDATE → app.set_published_at()
+    trg_posts_status_gate                    BEFORE INSERT OR UPDATE → app.assert_status_transition()
+    trg_posts_updated_at                     BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### profiles (9)
-  id                             uuid                         NN PK
+  id                             uuid                         NN PK FK->auth.users.id on delete CASCADE
   email                          text                         NN
   full_name                      text                         NN
-  role                           public.user_role             {admin,content_manager,editor} NN def=editor
-  can_view_sensitive             boolean                      NN def=False
-  is_active                      boolean                      NN def=True
-  last_login_at                  timestamp with time zone     
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
+  role                           user_role                    NN def='editor'::user_role
+  can_view_sensitive             boolean                      NN def=false
+  is_active                      boolean                      NN def=true
+  last_login_at                  timestamptz
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  constraints:
+    profiles_pkey                                PRIMARY KEY (id)
+    profiles_email_key                           UNIQUE (email)
+  indexes:
+    ix_profiles_active               USING btree (is_active)
+    ix_profiles_role                 USING btree (role) WHERE is_active
+    profiles_role_idx                USING btree (role) WHERE is_active
+  triggers:
+    trg_profiles_guard                       BEFORE UPDATE → app.guard_profile_privileges()
+    trg_profiles_updated_at                  BEFORE UPDATE → app.set_updated_at()
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### program_media (3)
-  program_id                     uuid                         NN PK FK->programs.id
-  media_id                       uuid                         NN PK FK->media_assets.id
-  display_order                  int32                        NN def=0
+  program_id                     uuid                         NN PK FK->programs.id on delete CASCADE
+  media_id                       uuid                         NN PK FK->media_assets.id on delete CASCADE
+  display_order                  smallint                     NN def=0
+  constraints:
+    program_media_pkey                           PRIMARY KEY (program_id, media_id)
+  indexes:
+    program_media_media_idx          USING btree (media_id)
+  triggers:
+    trg_program_media_media_consent          BEFORE INSERT OR UPDATE → app.assert_junction_media_consent()
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_write                     ALL      app_runtime
 
 ### programs (41)
   id                             uuid                         NN PK def=gen_random_uuid()
-  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
-  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
-  published_at                   timestamp with time zone     
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
-  created_by                     uuid                         FK->profiles.id
-  updated_by                     uuid                         FK->profiles.id
+  status                         content_status               NN def='draft'::content_status
+  translation_status             translation_status           NN def='ar_only'::translation_status
+  published_at                   timestamptz
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  created_by                     uuid                         FK->profiles.id on delete SET NULL
+  updated_by                     uuid                         FK->profiles.id on delete SET NULL
   slug_ar                        text                         NN
   slug_en                        text                         NN
-  key                            public.program_key           {protection,humanitarian_response,early_recovery} NN
+  key                            program_key                  NN
   title_ar                       text                         NN
-  title_en                       text                         
-  tagline_ar                     text                         
-  tagline_en                     text                         
-  accent_token                   text                         NN def=--color-prog-protection
-  introduction_ar                jsonb                        
-  introduction_en                jsonb                        
-  rationale_ar                   jsonb                        
-  rationale_en                   jsonb                        
-  strategic_objective_ar         text                         
-  strategic_objective_en         text                         
-  specific_objectives            jsonb                        NN
-  key_interventions              jsonb                        NN
-  sustainability_ar              jsonb                        
-  sustainability_en              jsonb                        
-  impact_statement_ar            jsonb                        
-  impact_statement_en            jsonb                        
-  eligibility_ar                 jsonb                        
-  eligibility_en                 jsonb                        
-  how_to_access_ar               jsonb                        
-  how_to_access_en               jsonb                        
-  target_groups                  public.target_group[]        NN
-  hero_media_id                  uuid                         FK->media_assets.id
-  display_order                  int32                        NN def=0
-  seo_title_ar                   text                         
-  seo_title_en                   text                         
-  seo_description_ar             text                         
-  seo_description_en             text                         
-  og_media_id                    uuid                         FK->media_assets.id
-  no_index                       boolean                      NN def=False
+  title_en                       text
+  tagline_ar                     text
+  tagline_en                     text
+  accent_token                   text                         NN def='--color-prog-protection'::text
+  introduction_ar                jsonb
+  introduction_en                jsonb
+  rationale_ar                   jsonb
+  rationale_en                   jsonb
+  strategic_objective_ar         text
+  strategic_objective_en         text
+  specific_objectives            jsonb                        NN def='[]'::jsonb
+  key_interventions              jsonb                        NN def='[]'::jsonb
+  sustainability_ar              jsonb
+  sustainability_en              jsonb
+  impact_statement_ar            jsonb
+  impact_statement_en            jsonb
+  eligibility_ar                 jsonb
+  eligibility_en                 jsonb
+  how_to_access_ar               jsonb
+  how_to_access_en               jsonb
+  target_groups                  target_group[]               NN def='{}'::target_group[]
+  hero_media_id                  uuid                         FK->media_assets.id on delete SET NULL
+  display_order                  smallint                     NN def=0
+  seo_title_ar                   text
+  seo_title_en                   text
+  seo_description_ar             text
+  seo_description_en             text
+  og_media_id                    uuid                         FK->media_assets.id on delete SET NULL
+  no_index                       boolean                      NN def=false
+  constraints:
+    programs_pkey                                PRIMARY KEY (id)
+    programs_key_key                             UNIQUE (key)
+    programs_slug_shape                          CHECK (((slug_ar ~ '^[^\s/]+$'::text) AND (slug_en ~ '^[^\s/]+$'::text)))
+  indexes:
+    ix_programs_hero                 USING btree (hero_media_id)
+    ix_programs_public               USING btree (display_order, published_at DESC) WHERE (status = 'published'::content_status)
+    programs_slug_ar_idx             UNIQUE USING btree (slug_ar)
+    programs_slug_en_idx             UNIQUE USING btree (slug_en)
+    programs_status_idx              USING btree (status, display_order)
+    ux_programs_slug_ar              UNIQUE USING btree (slug_ar)
+    ux_programs_slug_en              UNIQUE USING btree (slug_en)
+  triggers:
+    trg_programs_media_consent               BEFORE INSERT OR UPDATE → app.assert_media_consent()
+    trg_programs_published_at                BEFORE INSERT OR UPDATE → app.set_published_at()
+    trg_programs_status_gate                 BEFORE INSERT OR UPDATE → app.assert_status_transition()
+    trg_programs_updated_at                  BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### project_media (3)
-  project_id                     uuid                         NN PK FK->projects.id
-  media_id                       uuid                         NN PK FK->media_assets.id
-  display_order                  int32                        NN def=0
+  project_id                     uuid                         NN PK FK->projects.id on delete CASCADE
+  media_id                       uuid                         NN PK FK->media_assets.id on delete CASCADE
+  display_order                  smallint                     NN def=0
+  constraints:
+    project_media_pkey                           PRIMARY KEY (project_id, media_id)
+  indexes:
+    project_media_media_idx          USING btree (media_id)
+  triggers:
+    trg_project_media_media_consent          BEFORE INSERT OR UPDATE → app.assert_junction_media_consent()
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_write                     ALL      app_runtime
 
 ### project_partners (3)
-  project_id                     uuid                         NN PK FK->projects.id
-  partner_id                     uuid                         NN PK FK->partners.id
-  role                           public.partner_role          {implementing,donor} NN PK
+  project_id                     uuid                         NN PK FK->projects.id on delete CASCADE
+  partner_id                     uuid                         NN PK FK->partners.id on delete CASCADE
+  role                           partner_role                 NN PK
+  constraints:
+    project_partners_pkey                        PRIMARY KEY (project_id, partner_id, role)
+  indexes:
+    ix_project_partners_partner      USING btree (partner_id)
+    project_partners_partner_idx     USING btree (partner_id)
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_write                     ALL      app_runtime
 
 ### projects (36)
   id                             uuid                         NN PK def=gen_random_uuid()
-  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
-  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
-  published_at                   timestamp with time zone     
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
-  created_by                     uuid                         FK->profiles.id
-  updated_by                     uuid                         FK->profiles.id
+  status                         content_status               NN def='draft'::content_status
+  translation_status             translation_status           NN def='ar_only'::translation_status
+  published_at                   timestamptz
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  created_by                     uuid                         FK->profiles.id on delete SET NULL
+  updated_by                     uuid                         FK->profiles.id on delete SET NULL
   slug_ar                        text                         NN
   slug_en                        text                         NN
-  program_id                     uuid                         NN FK->programs.id
+  program_id                     uuid                         NN FK->programs.id on delete RESTRICT
   title_ar                       text                         NN
-  title_en                       text                         
-  summary_ar                     text                         
-  summary_en                     text                         
-  objective_ar                   jsonb                        
-  objective_en                   jsonb                        
-  activities_ar                  jsonb                        
-  activities_en                  jsonb                        
-  outcomes_ar                    jsonb                        
-  outcomes_en                    jsonb                        
-  project_state                  public.project_status        {planned,active,completed} NN def=active
-  start_date                     date                         
-  end_date                       date                         
-  governorates                   public.governorate[]         NN
-  localities                     text[]                       NN
-  themes                         public.theme_tag[]           NN
-  hero_media_id                  uuid                         FK->media_assets.id
-  is_featured                    boolean                      NN def=False
-  source_note                    text                         
-  seo_title_ar                   text                         
-  seo_title_en                   text                         
-  seo_description_ar             text                         
-  seo_description_en             text                         
-  og_media_id                    uuid                         FK->media_assets.id
-  no_index                       boolean                      NN def=False
+  title_en                       text
+  summary_ar                     text
+  summary_en                     text
+  objective_ar                   jsonb
+  objective_en                   jsonb
+  activities_ar                  jsonb
+  activities_en                  jsonb
+  outcomes_ar                    jsonb
+  outcomes_en                    jsonb
+  project_state                  project_status               NN def='active'::project_status
+  start_date                     date
+  end_date                       date
+  governorates                   governorate[]                NN def='{}'::governorate[]
+  localities                     text[]                       NN def='{}'::text[]
+  themes                         theme_tag[]                  NN def='{}'::theme_tag[]
+  hero_media_id                  uuid                         FK->media_assets.id on delete SET NULL
+  is_featured                    boolean                      NN def=false
+  source_note                    text
+  seo_title_ar                   text
+  seo_title_en                   text
+  seo_description_ar             text
+  seo_description_en             text
+  og_media_id                    uuid                         FK->media_assets.id on delete SET NULL
+  no_index                       boolean                      NN def=false
+  constraints:
+    projects_pkey                                PRIMARY KEY (id)
+    projects_date_order                          CHECK (((end_date IS NULL) OR (start_date IS NULL) OR (end_date >= start_date)))
+    projects_slug_shape                          CHECK (((slug_ar ~ '^[^\s/]+$'::text) AND (slug_en ~ '^[^\s/]+$'::text)))
+  indexes:
+    ix_projects_featured             USING btree (published_at DESC) WHERE ((status = 'published'::content_status) AND is_featured)
+    ix_projects_govs                 USING gin (governorates)
+    ix_projects_program              USING btree (program_id)
+    ix_projects_public               USING btree (published_at DESC) WHERE (status = 'published'::content_status)
+    ix_projects_search_ar            USING gin (to_tsvector('simple'::regconfig, ((COALESCE(title_ar, ''::text) || ' '::text) || COALESCE(summary_ar, ''::text))))
+    ix_projects_state                USING btree (project_state, start_date DESC)
+    ix_projects_themes               USING gin (themes)
+    projects_featured_idx            USING btree (is_featured) WHERE (status = 'published'::content_status)
+    projects_gov_gin                 USING gin (governorates)
+    projects_program_idx             USING btree (program_id, status)
+    projects_published_idx           USING btree (status, published_at DESC)
+    projects_slug_ar_idx             UNIQUE USING btree (slug_ar)
+    projects_slug_en_idx             UNIQUE USING btree (slug_en)
+    projects_start_year_idx          USING btree (start_date) WHERE (status = 'published'::content_status)
+    projects_themes_gin              USING gin (themes)
+    ux_projects_slug_ar              UNIQUE USING btree (slug_ar)
+    ux_projects_slug_en              UNIQUE USING btree (slug_en)
+  triggers:
+    trg_projects_media_consent               BEFORE INSERT OR UPDATE → app.assert_media_consent()
+    trg_projects_published_at                BEFORE INSERT OR UPDATE → app.set_published_at()
+    trg_projects_status_gate                 BEFORE INSERT OR UPDATE → app.assert_status_transition()
+    trg_projects_updated_at                  BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### publications (20)
   id                             uuid                         NN PK def=gen_random_uuid()
-  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
-  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
-  published_at                   timestamp with time zone     
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
-  created_by                     uuid                         FK->profiles.id
-  updated_by                     uuid                         FK->profiles.id
+  status                         content_status               NN def='draft'::content_status
+  translation_status             translation_status           NN def='ar_only'::translation_status
+  published_at                   timestamptz
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  created_by                     uuid                         FK->profiles.id on delete SET NULL
+  updated_by                     uuid                         FK->profiles.id on delete SET NULL
   slug_ar                        text                         NN
   slug_en                        text                         NN
-  type                           public.publication_type      {report,policy,profile,strategy,evaluation,other} NN def=report
+  type                           publication_type             NN def='report'::publication_type
   title_ar                       text                         NN
-  title_en                       text                         
-  description_ar                 text                         
-  description_en                 text                         
-  file_ar_id                     uuid                         FK->media_assets.id
-  file_en_id                     uuid                         FK->media_assets.id
-  published_year                 int32                        
-  is_featured                    boolean                      NN def=False
-  display_order                  int32                        NN def=0
+  title_en                       text
+  description_ar                 text
+  description_en                 text
+  file_ar_id                     uuid                         FK->media_assets.id on delete SET NULL
+  file_en_id                     uuid                         FK->media_assets.id on delete SET NULL
+  published_year                 smallint
+  is_featured                    boolean                      NN def=false
+  display_order                  smallint                     NN def=0
+  constraints:
+    publications_pkey                            PRIMARY KEY (id)
+    publications_published_year_check            CHECK (((published_year IS NULL) OR ((published_year >= 1900) AND (published_year <= 2100))))
+    publications_slug_shape                      CHECK (((slug_ar ~ '^[^\s/]+$'::text) AND (slug_en ~ '^[^\s/]+$'::text)))
+  indexes:
+    ix_publications_public           USING btree (type, published_year DESC) WHERE (status = 'published'::content_status)
+    publications_slug_ar_idx         UNIQUE USING btree (slug_ar)
+    publications_slug_en_idx         UNIQUE USING btree (slug_en)
+    publications_type_idx            USING btree (type, display_order) WHERE (status = 'published'::content_status)
+    ux_publications_slug_ar          UNIQUE USING btree (slug_ar)
+    ux_publications_slug_en          UNIQUE USING btree (slug_en)
+  triggers:
+    trg_publications_media_consent           BEFORE INSERT OR UPDATE → app.assert_media_consent()
+    trg_publications_published_at            BEFORE INSERT OR UPDATE → app.set_published_at()
+    trg_publications_status_gate             BEFORE INSERT OR UPDATE → app.assert_status_transition()
+    trg_publications_updated_at              BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### redirects (5)
   id                             uuid                         NN PK def=gen_random_uuid()
   source_path                    text                         NN
   destination_path               text                         NN
-  status_code                    int32                        NN def=308
-  created_at                     timestamp with time zone     NN def=now()
+  status_code                    smallint                     NN def=308
+  created_at                     timestamptz                  NN def=now()
+  constraints:
+    redirects_pkey                               PRIMARY KEY (id)
+    redirects_source_path_key                    UNIQUE (source_path)
+    redirects_absolute                           CHECK (((source_path ~~ '/%'::text) AND (destination_path ~~ '/%'::text)))
+    redirects_no_loop                            CHECK ((source_path <> destination_path))
+    redirects_status_code                        CHECK ((status_code = ANY (ARRAY[301, 302, 307, 308])))
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_write                     ALL      app_runtime
 
 ### stories (33)
   id                             uuid                         NN PK def=gen_random_uuid()
-  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
-  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
-  published_at                   timestamp with time zone     
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
-  created_by                     uuid                         FK->profiles.id
-  updated_by                     uuid                         FK->profiles.id
+  status                         content_status               NN def='draft'::content_status
+  translation_status             translation_status           NN def='ar_only'::translation_status
+  published_at                   timestamptz
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  created_by                     uuid                         FK->profiles.id on delete SET NULL
+  updated_by                     uuid                         FK->profiles.id on delete SET NULL
   slug_ar                        text                         NN
   slug_en                        text                         NN
-  program_id                     uuid                         FK->programs.id
-  project_id                     uuid                         FK->projects.id
+  program_id                     uuid                         FK->programs.id on delete SET NULL
+  project_id                     uuid                         FK->projects.id on delete SET NULL
   title_ar                       text                         NN
-  title_en                       text                         
-  summary_ar                     text                         
-  summary_en                     text                         
-  body_ar                        jsonb                        
-  body_en                        jsonb                        
-  quote_text_ar                  text                         
-  quote_text_en                  text                         
-  quote_attribution_ar           text                         
-  quote_attribution_en           text                         
-  subject_anonymized             boolean                      NN def=True
-  consent_obtained               boolean                      NN def=False
-  consent_reference              text                         
-  hero_media_id                  uuid                         FK->media_assets.id
-  is_featured                    boolean                      NN def=False
-  seo_title_ar                   text                         
-  seo_title_en                   text                         
-  seo_description_ar             text                         
-  seo_description_en             text                         
-  og_media_id                    uuid                         FK->media_assets.id
-  no_index                       boolean                      NN def=False
+  title_en                       text
+  summary_ar                     text
+  summary_en                     text
+  body_ar                        jsonb
+  body_en                        jsonb
+  quote_text_ar                  text
+  quote_text_en                  text
+  quote_attribution_ar           text
+  quote_attribution_en           text
+  subject_anonymized             boolean                      NN def=true
+  consent_obtained               boolean                      NN def=false
+  consent_reference              text
+  hero_media_id                  uuid                         FK->media_assets.id on delete SET NULL
+  is_featured                    boolean                      NN def=false
+  seo_title_ar                   text
+  seo_title_en                   text
+  seo_description_ar             text
+  seo_description_en             text
+  og_media_id                    uuid                         FK->media_assets.id on delete SET NULL
+  no_index                       boolean                      NN def=false
+  constraints:
+    stories_pkey                                 PRIMARY KEY (id)
+    stories_named_needs_consent                  CHECK ((subject_anonymized OR consent_obtained))
+    stories_slug_shape                           CHECK (((slug_ar ~ '^[^\s/]+$'::text) AND (slug_en ~ '^[^\s/]+$'::text)))
+  indexes:
+    ix_stories_program               USING btree (program_id)
+    ix_stories_project               USING btree (project_id)
+    ix_stories_public                USING btree (published_at DESC) WHERE (status = 'published'::content_status)
+    stories_program_idx              USING btree (program_id)
+    stories_project_idx              USING btree (project_id)
+    stories_published_idx            USING btree (status, published_at DESC)
+    stories_slug_ar_idx              UNIQUE USING btree (slug_ar)
+    stories_slug_en_idx              UNIQUE USING btree (slug_en)
+    ux_stories_slug_ar               UNIQUE USING btree (slug_ar)
+    ux_stories_slug_en               UNIQUE USING btree (slug_en)
+  triggers:
+    trg_stories_media_consent                BEFORE INSERT OR UPDATE → app.assert_media_consent()
+    trg_stories_published_at                 BEFORE INSERT OR UPDATE → app.set_published_at()
+    trg_stories_status_gate                  BEFORE INSERT OR UPDATE → app.assert_status_transition()
+    trg_stories_updated_at                   BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
 
 ### story_media (3)
-  story_id                       uuid                         NN PK FK->stories.id
-  media_id                       uuid                         NN PK FK->media_assets.id
-  display_order                  int32                        NN def=0
+  story_id                       uuid                         NN PK FK->stories.id on delete CASCADE
+  media_id                       uuid                         NN PK FK->media_assets.id on delete CASCADE
+  display_order                  smallint                     NN def=0
+  constraints:
+    story_media_pkey                             PRIMARY KEY (story_id, media_id)
+  indexes:
+    story_media_media_idx            USING btree (media_id)
+  triggers:
+    trg_story_media_media_consent            BEFORE INSERT OR UPDATE → app.assert_junction_media_consent()
+  policies (3):
+    pcsrd_owner_all              ALL      postgres
+    rt_select                    SELECT   app_runtime
+    rt_write                     ALL      app_runtime
 
 ### vacancies (30)
   id                             uuid                         NN PK def=gen_random_uuid()
-  status                         public.content_status        {draft,in_review,published,archived} NN def=draft
-  translation_status             public.translation_status    {ar_only,machine_draft,human_translated,reviewed} NN def=ar_only
-  published_at                   timestamp with time zone     
-  created_at                     timestamp with time zone     NN def=now()
-  updated_at                     timestamp with time zone     NN def=now()
-  created_by                     uuid                         FK->profiles.id
-  updated_by                     uuid                         FK->profiles.id
+  status                         content_status               NN def='draft'::content_status
+  translation_status             translation_status           NN def='ar_only'::translation_status
+  published_at                   timestamptz
+  created_at                     timestamptz                  NN def=now()
+  updated_at                     timestamptz                  NN def=now()
+  created_by                     uuid                         FK->profiles.id on delete SET NULL
+  updated_by                     uuid                         FK->profiles.id on delete SET NULL
   slug_ar                        text                         NN
   slug_en                        text                         NN
-  type                           public.vacancy_type          {job,volunteer} NN def=job
+  type                           vacancy_type                 NN def='job'::vacancy_type
   title_ar                       text                         NN
-  title_en                       text                         
-  location_ar                    text                         
-  location_en                    text                         
-  employment_type                text                         
-  description_ar                 jsonb                        
-  description_en                 jsonb                        
-  requirements_ar                jsonb                        
-  requirements_en                jsonb                        
+  title_en                       text
+  location_ar                    text
+  location_en                    text
+  employment_type                text
+  description_ar                 jsonb
+  description_en                 jsonb
+  requirements_ar                jsonb
+  requirements_en                jsonb
   deadline                       date                         NN
-  application_method             text                         NN def=form
-  application_email              text                         
+  application_method             text                         NN def='form'::text
+  application_email              text
   posted_at                      date                         NN def=CURRENT_DATE
-  seo_title_ar                   text                         
-  seo_title_en                   text                         
-  seo_description_ar             text                         
-  seo_description_en             text                         
-  og_media_id                    uuid                         FK->media_assets.id
-  no_index                       boolean                      NN def=False
+  seo_title_ar                   text
+  seo_title_en                   text
+  seo_description_ar             text
+  seo_description_en             text
+  og_media_id                    uuid                         FK->media_assets.id on delete SET NULL
+  no_index                       boolean                      NN def=false
+  constraints:
+    vacancies_pkey                               PRIMARY KEY (id)
+    vacancies_email_required                     CHECK (((application_method <> 'email'::text) OR (application_email IS NOT NULL)))
+    vacancies_method                             CHECK ((application_method = ANY (ARRAY['form'::text, 'email'::text])))
+    vacancies_slug_shape                         CHECK (((slug_ar ~ '^[^\s/]+$'::text) AND (slug_en ~ '^[^\s/]+$'::text)))
+  indexes:
+    ix_vacancies_open                USING btree (deadline) WHERE (status = 'published'::content_status)
+    ux_vacancies_slug_ar             UNIQUE USING btree (slug_ar)
+    ux_vacancies_slug_en             UNIQUE USING btree (slug_en)
+    vacancies_open_idx               USING btree (type, deadline DESC) WHERE (status = 'published'::content_status)
+    vacancies_slug_ar_idx            UNIQUE USING btree (slug_ar)
+    vacancies_slug_en_idx            UNIQUE USING btree (slug_en)
+  triggers:
+    trg_vacancies_published_at               BEFORE INSERT OR UPDATE → app.set_published_at()
+    trg_vacancies_status_gate                BEFORE INSERT OR UPDATE → app.assert_status_transition()
+    trg_vacancies_updated_at                 BEFORE UPDATE → app.set_updated_at()
+  policies (5):
+    pcsrd_owner_all              ALL      postgres
+    rt_delete                    DELETE   app_runtime
+    rt_insert                    INSERT   app_runtime
+    rt_select                    SELECT   app_runtime
+    rt_update                    UPDATE   app_runtime
+
+## Row-level security (relrowsecurity / relforcerowsecurity)
+  audit_logs               enabled=true forced=true
+  form_submissions         enabled=true forced=true
+  impact_metrics           enabled=true forced=true
+  media_assets             enabled=true forced=true
+  organization_settings    enabled=true forced=true
+  pages                    enabled=true forced=true
+  partners                 enabled=true forced=true
+  people                   enabled=true forced=true
+  post_media               enabled=true forced=true
+  posts                    enabled=true forced=true
+  profiles                 enabled=true forced=true
+  program_media            enabled=true forced=true
+  programs                 enabled=true forced=true
+  project_media            enabled=true forced=true
+  project_partners         enabled=true forced=true
+  projects                 enabled=true forced=true
+  publications             enabled=true forced=true
+  redirects                enabled=true forced=true
+  stories                  enabled=true forced=true
+  story_media              enabled=true forced=true
+  vacancies                enabled=true forced=true
+
+## Functions (schema app + public)
+  app.actor_id()  [secdef=false]
+  app.actor_role()  [secdef=false]
+  app.archive_expired_content()  [secdef=true]
+  app.assert_junction_media_consent()  [secdef=false]
+  app.assert_media_consent()  [secdef=false]
+  app.assert_person_media_consent()  [secdef=false]
+  app.assert_status_transition()  [secdef=false]
+  app.block_audit_mutation()  [secdef=false]
+  app.can_publish()  [secdef=false]
+  app.can_view_sensitive()  [secdef=false]
+  app.gen_submission_reference()  [secdef=false]
+  app.guard_profile_privileges()  [secdef=false]
+  app.handle_new_user()  [secdef=true]
+  app.handle_user_email_change()  [secdef=true]
+  app.is_admin()  [secdef=false]
+  app.is_runtime_session()  [secdef=false]
+  app.is_staff()  [secdef=false]
+  app.media_consent_violations(ids uuid[])  [secdef=false]
+  app.media_usage(p_media_id uuid)  [secdef=true]
+  app.purge_audit_logs(p_retention_months integer)  [secdef=true]
+  app.purge_expired_submissions()  [secdef=true]
+  app.security_context()  [secdef=false]
+  app.set_published_at()  [secdef=false]
+  app.set_updated_at()  [secdef=false]
+  app.submit_form(p_type submission_type, p_locale locale_code, p_payload jsonb, p_payload_encrypted bytea, p_payload_key_id text, p_attachment_path text, p_ip_hash text, p_user_agent text, p_force_sensitive boolean)  [secdef=true]
+  public.generate_submission_reference()  [secdef=false]
+
+## Triggers on auth.users (Supabase-owned)
+
+## Roles
+  anon  bypassrls=false  login=false
+  app_runtime  bypassrls=false  login=true
+  authenticated  bypassrls=false  login=false
+  postgres  bypassrls=true  login=true
+  service_role  bypassrls=true  login=false
+
+## Sequences
+  audit_logs_id_seq  app_runtime USAGE=true
+  audit_logs.id serial sequence: public.audit_logs_id_seq
+
+## Table grants to app_runtime (policies gate rows; grants gate statements)
+  audit_logs               INSERT,SELECT
+  form_submissions         SELECT,UPDATE
+  impact_metrics           DELETE,INSERT,SELECT,UPDATE
+  media_assets             DELETE,INSERT,SELECT,UPDATE
+  organization_settings    SELECT,UPDATE
+  pages                    DELETE,INSERT,SELECT,UPDATE
+  partners                 DELETE,INSERT,SELECT,UPDATE
+  people                   DELETE,INSERT,SELECT,UPDATE
+  post_media               DELETE,INSERT,SELECT,UPDATE
+  posts                    DELETE,INSERT,SELECT,UPDATE
+  profiles                 SELECT,UPDATE
+  program_media            DELETE,INSERT,SELECT,UPDATE
+  programs                 DELETE,INSERT,SELECT,UPDATE
+  project_media            DELETE,INSERT,SELECT,UPDATE
+  project_partners         DELETE,INSERT,SELECT,UPDATE
+  projects                 DELETE,INSERT,SELECT,UPDATE
+  publications             DELETE,INSERT,SELECT,UPDATE
+  redirects                DELETE,INSERT,SELECT,UPDATE
+  stories                  DELETE,INSERT,SELECT,UPDATE
+  story_media              DELETE,INSERT,SELECT,UPDATE
+  vacancies                DELETE,INSERT,SELECT,UPDATE
+  (no INSERT on form_submissions — app.submit_form is SECURITY DEFINER;
+   no INSERT on organization_settings — the singleton is an owner-created fixture;
+   no UPDATE/DELETE on audit_logs — append-only, also enforced by trg_audit_immutable)
+
+## Storage buckets
+  applications   public=false   limit=5242880    mime=["application/pdf","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+  documents      public=true    limit=20971520   mime=["application/pdf"]
+  media          public=true    limit=10485760   mime=["image/jpeg","image/png","image/webp","image/avif","image/svg+xml"]
+  storage.objects policies:
+    pcsrd_public_read_documents  SELECT  anon,authenticated
+    pcsrd_public_read_media  SELECT  anon,authenticated
+
+## Schemas present
+  app, auth, extensions, graphql, graphql_public, information_schema, pg_catalog, pgbouncer, public, realtime, storage, vault

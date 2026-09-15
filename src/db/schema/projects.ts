@@ -12,7 +12,16 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { blockA, blockB, blockC, type RichText } from './_shared';
+import {
+  blockA,
+  blockAForeignKeys,
+  blockB,
+  blockC,
+  blockCForeignKey,
+  fk,
+  type RichText,
+  slugShapeCheck,
+} from './_shared';
 import { governorate, partnerRole, projectStatus, themeTag } from './enums';
 import { mediaAssets } from './media';
 import { partners } from './partners';
@@ -28,9 +37,7 @@ export const projects = pgTable(
      * `restrict`, not `cascade`: deleting a programme that still has projects
      * would silently delete published content. The admin must move them first.
      */
-    programId: uuid()
-      .notNull()
-      .references(() => programs.id, { onDelete: 'restrict' }),
+    programId: uuid().notNull(),
 
     titleAr: text().notNull(),
     titleEn: text(),
@@ -52,7 +59,7 @@ export const projects = pgTable(
     localities: text().array().notNull().default(sql`'{}'`),
     themes: themeTag().array().notNull().default(sql`'{}'`),
 
-    heroMediaId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
+    heroMediaId: uuid(),
     isFeatured: boolean().notNull().default(false),
     /** Internal provenance. Never rendered. */
     sourceNote: text(),
@@ -60,6 +67,11 @@ export const projects = pgTable(
     ...blockC(),
   },
   (t) => [
+    ...blockAForeignKeys('projects', t),
+    blockCForeignKey('projects', t),
+    fk('projects_program_id_fkey', t.programId, programs.id, 'restrict'),
+    fk('projects_hero_media_id_fkey', t.heroMediaId, mediaAssets.id, 'set null'),
+    slugShapeCheck('projects', t),
     uniqueIndex('projects_slug_ar_idx').on(t.slugAr),
     uniqueIndex('projects_slug_en_idx').on(t.slugEn),
     index('projects_program_idx').on(t.programId, t.status),
@@ -71,10 +83,32 @@ export const projects = pgTable(
     index('projects_featured_idx')
       .on(t.isFeatured)
       .where(sql`${t.status} = 'published'`),
+    index('projects_start_year_idx')
+      .on(t.startDate)
+      .where(sql`${t.status} = 'published'`),
     check(
       'projects_date_order',
       sql`${t.endDate} is null or ${t.startDate} is null or ${t.endDate} >= ${t.startDate}`,
     ),
+    // The `ix_*` family is the hand-written DDL the live database was built
+    // from. `ix_projects_govs` / `ix_projects_themes` duplicate the two GIN
+    // indexes above exactly; the rest are distinct shapes.
+    index('ix_projects_program').on(t.programId),
+    index('ix_projects_state').on(t.projectState, t.startDate.desc()),
+    index('ix_projects_public')
+      .on(t.publishedAt.desc())
+      .where(sql`${t.status} = 'published'`),
+    index('ix_projects_featured')
+      .on(t.publishedAt.desc())
+      .where(sql`${t.status} = 'published' and ${t.isFeatured}`),
+    index('ix_projects_govs').using('gin', t.governorates),
+    index('ix_projects_themes').using('gin', t.themes),
+    index('ix_projects_search_ar').using(
+      'gin',
+      sql`to_tsvector('simple'::regconfig, ((COALESCE(${t.titleAr}, ''::text) || ' '::text) || COALESCE(${t.summaryAr}, ''::text)))`,
+    ),
+    uniqueIndex('ux_projects_slug_ar').on(t.slugAr),
+    uniqueIndex('ux_projects_slug_en').on(t.slugEn),
   ],
 );
 
@@ -85,32 +119,33 @@ export const projects = pgTable(
 export const projectPartners = pgTable(
   'project_partners',
   {
-    projectId: uuid()
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
-    partnerId: uuid()
-      .notNull()
-      .references(() => partners.id, { onDelete: 'cascade' }),
+    projectId: uuid().notNull(),
+    partnerId: uuid().notNull(),
     role: partnerRole().notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.projectId, t.partnerId, t.role] }),
+    primaryKey({ name: 'project_partners_pkey', columns: [t.projectId, t.partnerId, t.role] }),
+    fk('project_partners_project_id_fkey', t.projectId, projects.id, 'cascade'),
+    fk('project_partners_partner_id_fkey', t.partnerId, partners.id, 'cascade'),
     index('project_partners_partner_idx').on(t.partnerId),
+    // Live duplicate of `project_partners_partner_idx` from the hand-written DDL.
+    index('ix_project_partners_partner').on(t.partnerId),
   ],
 );
 
 export const projectMedia = pgTable(
   'project_media',
   {
-    projectId: uuid()
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
-    mediaId: uuid()
-      .notNull()
-      .references(() => mediaAssets.id, { onDelete: 'cascade' }),
+    projectId: uuid().notNull(),
+    mediaId: uuid().notNull(),
     displayOrder: smallint().notNull().default(0),
   },
-  (t) => [primaryKey({ columns: [t.projectId, t.mediaId] })],
+  (t) => [
+    primaryKey({ name: 'project_media_pkey', columns: [t.projectId, t.mediaId] }),
+    fk('project_media_project_id_fkey', t.projectId, projects.id, 'cascade'),
+    fk('project_media_media_id_fkey', t.mediaId, mediaAssets.id, 'cascade'),
+    index('project_media_media_idx').on(t.mediaId),
+  ],
 );
 
 export type Project = typeof projects.$inferSelect;

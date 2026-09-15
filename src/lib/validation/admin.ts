@@ -15,9 +15,11 @@ import {
   programKey,
   projectStatus,
   publicationType,
+  submissionState,
   targetGroup,
   themeTag,
   translationStatus,
+  userRole,
   vacancyType,
 } from '@/db/schema/enums';
 import { emailSchema, optionalText, phoneSchema, shortText, slugSchema } from './common';
@@ -115,25 +117,39 @@ export const projectSchema = z.object({
     .array(z.object({ partnerId: uuid, role: enumOf(partnerRole.enumValues) }))
     .optional(),
   media: z.array(mediaLink).optional(),
-});
+})
+  // `projects_date_order` in the database. Here so the editor gets the error
+  // on the end-date input rather than a form-level constraint failure.
+  .refine((v) => !v.startDate || !v.endDate || v.endDate >= v.startDate, {
+    path: ['endDate'],
+    message: 'errors.project.dateOrder',
+  });
 
 // ── Posts ────────────────────────────────────────────────────────────────
 
-export const postSchema = z.object({
-  ...base,
-  ...seo,
-  category: enumOf(postCategory.enumValues).default('news'),
-  excerptAr: optionalText(400).nullable(),
-  excerptEn: optionalText(400).nullable(),
-  bodyAr: richText,
-  bodyEn: richText,
-  programId: optionalUuid,
-  projectId: optionalUuid,
-  heroMediaId: optionalUuid,
-  expiresAt: z.coerce.date().nullable().optional(),
-  isFeatured: z.coerce.boolean().default(false),
-  media: z.array(mediaLink).optional(),
-});
+export const postSchema = z
+  .object({
+    ...base,
+    ...seo,
+    category: enumOf(postCategory.enumValues).default('news'),
+    excerptAr: optionalText(400).nullable(),
+    excerptEn: optionalText(400).nullable(),
+    bodyAr: richText,
+    bodyEn: richText,
+    programId: optionalUuid,
+    projectId: optionalUuid,
+    heroMediaId: optionalUuid,
+    expiresAt: z.coerce.date().nullable().optional(),
+    isFeatured: z.coerce.boolean().default(false),
+    media: z.array(mediaLink).optional(),
+  })
+  // `posts_expiry_only_announcements`: only an announcement may carry an
+  // expiry. The archive cron reads the column, so a news item with a date
+  // would vanish from the site without anyone having asked for that.
+  .refine((v) => !v.expiresAt || v.category === 'announcement', {
+    path: ['expiresAt'],
+    message: 'errors.post.expiryOnlyAnnouncements',
+  });
 
 // ── Stories ──────────────────────────────────────────────────────────────
 
@@ -194,8 +210,10 @@ export const programSchema = z.object({
   rationaleEn: richText,
   strategicObjectiveAr: optionalText(600).nullable(),
   strategicObjectiveEn: optionalText(600).nullable(),
-  specificObjectives: z.array(z.unknown()).default([]),
-  keyInterventions: z.array(z.unknown()).default([]),
+  // No default: absent means "not posted" and the service keeps the stored
+  // value. A default of `[]` emptied both arrays on every save.
+  specificObjectives: z.array(z.unknown()).optional(),
+  keyInterventions: z.array(z.unknown()).optional(),
   sustainabilityAr: richText,
   sustainabilityEn: richText,
   impactStatementAr: richText,
@@ -244,7 +262,8 @@ export const publicationSchema = z.object({
   descriptionEn: optionalText(800).nullable(),
   fileArId: optionalUuid,
   fileEnId: optionalUuid,
-  publishedYear: z.coerce.number().int().min(1990).max(2100).nullable().optional(),
+  /** 1900–2100, the bounds of `publications_published_year_check`. */
+  publishedYear: z.coerce.number().int().min(1900).max(2100).nullable().optional(),
   isFeatured: z.coerce.boolean().default(false),
   displayOrder: z.coerce.number().int().min(0).default(0),
 });
@@ -277,7 +296,13 @@ export const partnerSchema = z.object({
   isFeatured: z.coerce.boolean().default(false),
   displayOrder: z.coerce.number().int().min(0).default(0),
   status,
-});
+})
+  // `partners_membership_shape`: a membership level only means something on a
+  // network or membership body.
+  .refine((v) => !v.membershipLevel || v.type === 'network' || v.type === 'membership', {
+    path: ['membershipLevel'],
+    message: 'errors.partner.membershipLevelShape',
+  });
 
 // ── People ───────────────────────────────────────────────────────────────
 
@@ -319,21 +344,38 @@ export const metricSchema = z
   .refine((v) => v.periodEnd >= v.periodStart, {
     path: ['periodEnd'],
     message: 'errors.metric.periodOrder',
+  })
+  // `metrics_verified_needs_source`: "verified" is a claim about provenance,
+  // and the database refuses it without a source to point at.
+  .refine((v) => v.status !== 'verified' || Boolean(v.verificationSource?.trim()), {
+    path: ['verificationSource'],
+    message: 'errors.metric.sourceRequired',
   });
 
 // ── Media ────────────────────────────────────────────────────────────────
 
-export const mediaMetadataSchema = z.object({
-  kind: enumOf(mediaKind.enumValues).default('image'),
-  altAr: shortText(2, 300),
-  altEn: optionalText(300).nullable(),
-  captionAr: optionalText(500).nullable(),
-  captionEn: optionalText(500).nullable(),
-  credit: optionalText(160).nullable(),
-  consent: enumOf(consentStatus.enumValues).default('not_required'),
-  consentReference: optionalText(120).nullable(),
-  hasIdentifiableMinors: z.coerce.boolean().default(false),
-});
+export const mediaMetadataSchema = z
+  .object({
+    kind: enumOf(mediaKind.enumValues).default('image'),
+    /** Non-blank — `media_assets_alt_ar_check` refuses whitespace. */
+    altAr: shortText(2, 300),
+    altEn: optionalText(300).nullable(),
+    captionAr: optionalText(500).nullable(),
+    captionEn: optionalText(500).nullable(),
+    credit: optionalText(160).nullable(),
+    consent: enumOf(consentStatus.enumValues).default('not_required'),
+    consentReference: optionalText(120).nullable(),
+    hasIdentifiableMinors: z.coerce.boolean().default(false),
+  })
+  // `chk_media_minor_consent`: an identifiable child needs `obtained` consent
+  // and a reference to the document. The database refuses the row otherwise;
+  // this puts the error on the input the uploader has to fill.
+  .refine(
+    (v) =>
+      !v.hasIdentifiableMinors ||
+      (v.consent === 'obtained' && Boolean(v.consentReference?.trim())),
+    { path: ['consentReference'], message: 'errors.media.consentReferenceRequired' },
+  );
 
 // ── Organisation settings ────────────────────────────────────────────────
 
@@ -378,6 +420,8 @@ const socialLinkSchema = z.object({
   platform: shortText(1, 40),
   url: z.url({ message: 'errors.field.url' }).max(300),
   is_official: z.coerce.boolean().default(true),
+  visible: z.coerce.boolean().default(true),
+  display_order: z.coerce.number().int().min(0).max(999).optional().nullable(),
 });
 
 const officialChannelSchema = z.object({
@@ -385,6 +429,8 @@ const officialChannelSchema = z.object({
   handle: shortText(1, 120),
   url: z.url({ message: 'errors.field.url' }).max(300),
   is_official: z.coerce.boolean().default(true),
+  visible: z.coerce.boolean().default(true),
+  display_order: z.coerce.number().int().min(0).max(999).optional().nullable(),
   note_ar: optionalText(300).nullable(),
   note_en: optionalText(300).nullable(),
 });
@@ -396,6 +442,8 @@ export const organizationSchema = z
     shortNameAr: shortText(2, 120),
     shortNameEn: shortText(2, 120),
     acronym: shortText(1, 24),
+    shortDescriptionAr: optionalText(500).nullable(),
+    shortDescriptionEn: optionalText(500).nullable(),
     alternateNames: z.array(shortText(1, 200)).max(20),
     foundedYear: z.coerce.number().int().min(1900).max(2100),
     licenseNumber: shortText(1, 80),
@@ -418,6 +466,7 @@ export const organizationSchema = z
       .union([z.string().trim().regex(/^\d{8,15}$/, { message: 'errors.field.phone' }), z.literal('')])
       .nullable(),
     email: z.union([emailSchema, z.literal('')]).nullable(),
+    secondaryEmail: z.union([emailSchema, z.literal('')]).nullable(),
     addressAr: optionalText(300).nullable(),
     addressEn: optionalText(300).nullable(),
     addressIsPublic: z.coerce.boolean(),
@@ -425,9 +474,126 @@ export const organizationSchema = z
     officeHoursEn: optionalText(200).nullable(),
     socials: z.array(socialLinkSchema).max(20),
     officialChannels: z.array(officialChannelSchema).max(30),
+    footerCtaTitleAr: optionalText(160).nullable(),
+    footerCtaTitleEn: optionalText(160).nullable(),
+    footerCtaDescriptionAr: optionalText(500).nullable(),
+    footerCtaDescriptionEn: optionalText(500).nullable(),
+    footerCtaButtonLabelAr: optionalText(80).nullable(),
+    footerCtaButtonLabelEn: optionalText(80).nullable(),
+    footerCtaUrl: z.union([z.url({ message: 'errors.field.url' }), z.literal('')]).nullable(),
+    footerCtaEnabled: z.coerce.boolean(),
     logoPrimaryId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
+    footerLogoId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
     logoMonoId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
     defaultOgId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
   })
   .partial()
   .strict();
+
+// ── Redirects ────────────────────────────────────────────────────────────
+// Appended rather than interleaved: the schemas above are being aligned to
+// the database by a separate change.
+
+/** An absolute site path — `/old-page`, never a host or a query string. */
+const sitePath = z
+  .string()
+  .trim()
+  .max(300, { message: 'errors.field.tooLong' })
+  .regex(/^\/[^\s?#]*$/, { message: 'errors.redirects.pathFormat' });
+
+export const REDIRECT_STATUS_CODES = ['301', '302', '307', '308'] as const;
+
+export const redirectSchema = z
+  .object({
+    sourcePath: sitePath,
+    /**
+     * A site path only. The `redirects_absolute` CHECK requires both paths to
+     * start with `/`, so an absolute URL is refused by the database — the
+     * `proxy` resolves the destination against the site anyway.
+     */
+    destinationPath: sitePath,
+    statusCode: z.enum(REDIRECT_STATUS_CODES).default('308'),
+  })
+  .refine((v) => v.sourcePath !== v.destinationPath, {
+    path: ['destinationPath'],
+    message: 'errors.redirects.loop',
+  })
+  .refine((v) => !/^\/(admin|api|_next)(\/|$)/.test(v.sourcePath), {
+    path: ['sourcePath'],
+    message: 'errors.redirects.reserved',
+  });
+
+// ── Users ────────────────────────────────────────────────────────────────
+
+const userRoleValue = enumOf(userRole.enumValues);
+
+export const inviteUserSchema = z.object({
+  email: emailSchema,
+  fullName: shortText(2, 120),
+  role: userRoleValue.default('editor'),
+  canViewSensitive: z.coerce.boolean().default(false),
+});
+
+export const setUserRoleSchema = z.object({
+  userId: uuid,
+  role: userRoleValue,
+});
+
+export const setUserFlagSchema = z.object({
+  userId: uuid,
+  /**
+   * `'true'` or `'false'` from a submit button's value. Not `z.coerce.boolean()`,
+   * which is `Boolean(value)` and turns the string `'false'` into `true`.
+   */
+  value: z.enum(['true', 'false']).transform((v) => v === 'true'),
+});
+
+// ── Row actions ──────────────────────────────────────────────────────────
+
+/** Entities whose list rows carry publish/unpublish/archive buttons. */
+export const STATUS_ENTITIES = [
+  'program',
+  'project',
+  'post',
+  'story',
+  'vacancy',
+  'publication',
+  'page',
+  'partner',
+] as const;
+
+/** Entities whose rows may be deleted from a list or an edit page. */
+export const DELETE_ENTITIES = [...STATUS_ENTITIES, 'person', 'metric'] as const;
+
+/**
+ * Where a row action sends the browser afterwards. Restricted to a path inside
+ * the admin so the `returnTo` field can never become an open redirect.
+ */
+const adminReturnPath = z
+  .string()
+  .regex(/^\/admin(?:\/[\w-]+)*\/?$/)
+  .default('/admin');
+
+export const rowStatusSchema = z.object({
+  entity: z.enum(STATUS_ENTITIES),
+  id: uuid,
+  status: enumOf(contentStatus.enumValues),
+  returnTo: adminReturnPath,
+});
+
+export const rowDeleteSchema = z.object({
+  entity: z.enum(DELETE_ENTITIES),
+  id: uuid,
+  returnTo: adminReturnPath,
+});
+
+export const rowIdSchema = z.object({
+  id: uuid,
+  returnTo: adminReturnPath,
+});
+
+export const submissionStateFormSchema = z.object({
+  id: uuid,
+  state: enumOf(submissionState.enumValues),
+  internalNote: optionalText(4000).nullable(),
+});

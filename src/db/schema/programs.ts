@@ -9,7 +9,16 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { blockA, blockB, blockC, type RichText } from './_shared';
+import {
+  blockA,
+  blockAForeignKeys,
+  blockB,
+  blockC,
+  blockCForeignKey,
+  fk,
+  type RichText,
+  slugShapeCheck,
+} from './_shared';
 import { programKey, targetGroup } from './enums';
 import { mediaAssets } from './media';
 
@@ -31,7 +40,7 @@ export const programs = pgTable(
     ...blockA(),
     ...blockB(),
 
-    key: programKey().notNull().unique(),
+    key: programKey().notNull().unique('programs_key_key'),
     titleAr: text().notNull(),
     titleEn: text(),
     taglineAr: text(),
@@ -66,30 +75,42 @@ export const programs = pgTable(
     howToAccessEn: jsonb().$type<RichText>(),
 
     targetGroups: targetGroup().array().notNull().default(sql`'{}'`),
-    heroMediaId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
+    heroMediaId: uuid(),
     displayOrder: smallint().notNull().default(0),
 
     ...blockC(),
   },
   (t) => [
+    ...blockAForeignKeys('programs', t),
+    blockCForeignKey('programs', t),
+    fk('programs_hero_media_id_fkey', t.heroMediaId, mediaAssets.id, 'set null'),
+    slugShapeCheck('programs', t),
     uniqueIndex('programs_slug_ar_idx').on(t.slugAr),
     uniqueIndex('programs_slug_en_idx').on(t.slugEn),
     index('programs_status_idx').on(t.status, t.displayOrder),
+    index('ix_programs_hero').on(t.heroMediaId),
+    index('ix_programs_public')
+      .on(t.displayOrder, t.publishedAt.desc())
+      .where(sql`${t.status} = 'published'`),
+    // Live duplicates of the two slug indexes from the hand-written DDL.
+    uniqueIndex('ux_programs_slug_ar').on(t.slugAr),
+    uniqueIndex('ux_programs_slug_en').on(t.slugEn),
   ],
 );
 
 export const programMedia = pgTable(
   'program_media',
   {
-    programId: uuid()
-      .notNull()
-      .references(() => programs.id, { onDelete: 'cascade' }),
-    mediaId: uuid()
-      .notNull()
-      .references(() => mediaAssets.id, { onDelete: 'cascade' }),
+    programId: uuid().notNull(),
+    mediaId: uuid().notNull(),
     displayOrder: smallint().notNull().default(0),
   },
-  (t) => [primaryKey({ columns: [t.programId, t.mediaId] })],
+  (t) => [
+    primaryKey({ name: 'program_media_pkey', columns: [t.programId, t.mediaId] }),
+    fk('program_media_program_id_fkey', t.programId, programs.id, 'cascade'),
+    fk('program_media_media_id_fkey', t.mediaId, mediaAssets.id, 'cascade'),
+    index('program_media_media_idx').on(t.mediaId),
+  ],
 );
 
 export type Program = typeof programs.$inferSelect;
