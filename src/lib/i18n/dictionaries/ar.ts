@@ -9,7 +9,10 @@
  * No organisational facts live in this file. Names, licence numbers, phone
  * numbers and figures all come from `organization_settings` — RULE 6.
  */
+import { partialsAr } from './partials';
+
 export const ar = {
+  ...partialsAr,
   common: {
     skipToContent: 'تخطَّ إلى المحتوى',
     menu: 'القائمة',
