@@ -73,7 +73,7 @@ export function FormShell({
       <button
         type="submit"
         disabled={pending}
-        className="bg-navy-700 px-6 py-3 text-small font-medium text-paper hover:bg-navy-900 disabled:opacity-60"
+        className="min-h-12 rounded-xl bg-navy-700 px-7 py-3 text-small font-semibold text-paper shadow-[0_10px_24px_rgb(37_66_132/0.18)] transition hover:bg-navy-900 disabled:opacity-60"
       >
         {pending ? dict.common.submitting : (submitLabel ?? dict.common.submit)}
       </button>
