@@ -71,6 +71,56 @@ const eslintConfig = defineConfig([
           ignore: ["^cf-turnstile$"],
         },
       ],
+
+      // ── Design system: radius 0, no shadows, gold is a marking colour ──
+      // 04-DESIGN-SYSTEM and docs/design_handoff/README.md. Hierarchy comes
+      // from three rule weights and ground colour, never from elevation or
+      // rounding; gold-600 is a rule, a stamp and a focus ring, never a fill
+      // and never text on paper (text is gold-700, 5.75:1).
+      //
+      // Severity is "warn" DELIBERATELY AND TEMPORARILY. The shared kit in
+      // src/components/ui is clean; the pages, admin, forms and layout
+      // components are being migrated onto it in the next phase. Flip this to
+      // "error" once `eslint` reports zero warnings from this rule. Each
+      // pattern matches the full class including variants (`md:rounded-lg`,
+      // `hover:shadow-md`), so the only escape is `-none`.
+      "better-tailwindcss/no-restricted-classes": [
+        "warn",
+        {
+          restrict: [
+            {
+              pattern: "^(?:[^:]*:)*-?rounded(?!(?:-[a-z]+)?-none$)(?:-.*)?$",
+              message:
+                'Radius 0 by system: "$0" is not allowed. Use `rounded-none` or nothing.',
+            },
+            {
+              pattern: "^(?:[^:]*:)*-?(?:inset-)?shadow(?!-none$)(?:-.*)?$",
+              message:
+                'No shadows: "$0" is not allowed. Elevation is a rule weight and a ground colour.',
+            },
+            {
+              pattern: "^(?:[^:]*:)*-?drop-shadow(?!-none$)(?:-.*)?$",
+              message: 'No shadows: "$0" is not allowed.',
+            },
+            {
+              pattern: "^(?:[^:]*:)*-?(?:backdrop-)?blur(?!-none$)(?:-.*)?$",
+              message:
+                'No decorative blur: "$0" is not allowed. There is no motion or elevation vocabulary in this system.',
+            },
+            {
+              pattern: "^(?:[^:]*:)*bg-gold-(?:600|500)(?:/\d+)?$",
+              message:
+                'Gold is a marking colour, never a fill: "$0". Use a rule (`rule-mark`, `border-gold-600`) or the attestation ground `bg-gold-050`.',
+            },
+            {
+              pattern: "^((?:[^:]*:)*)text-gold-600(?:/\d+)?$",
+              fix: "$1text-gold-700",
+              message:
+                'gold-600 is 2.3:1 on paper and never carries text: "$0". Use `text-gold-700`.',
+            },
+          ],
+        },
+      ],
     },
   },
 
