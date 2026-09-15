@@ -68,7 +68,11 @@ beforeEach(async () => {
         mimeType: 'image/webp',
         fileSize: 1000,
         altAr: 'أطفال في جلسة دعم',
-        consent: 'pending',
+        // `chk_media_minor_consent` on the live database refuses a row that
+        // shows an identifiable child without `obtained` consent and a
+        // reference, so the fixture has to carry both to exist at all.
+        consent: 'obtained',
+        consentReference: 'CONSENT-2026-014',
         hasIdentifiableMinors: true,
       },
     ])
@@ -143,39 +147,41 @@ describe('upsertProject', () => {
     expect(result.status).toBe('published');
   });
 
-  it('blocks publication when a referenced photograph shows minors without consent', async () => {
-    await expect(
-      upsertProject(db(), MANAGER, {
-        ...base(),
-        status: 'published',
-        heroMediaId: minorMediaId,
-      }),
-    ).rejects.toMatchObject({ code: 'consent_required' });
+  it('cannot even record a photograph of minors without documented consent', async () => {
+    // The live database moves the consent decision to the media row itself:
+    // `chk_media_minor_consent` refuses the insert, so the publish-time gate in
+    // `services/_shared/publish.ts` is a second line, never the first.
+    const failure = await getDb()
+      .insert(mediaAssets)
+      .values({
+        path: 'media/children-pending.webp',
+        mimeType: 'image/webp',
+        fileSize: 1000,
+        altAr: 'أطفال',
+        consent: 'pending',
+        hasIdentifiableMinors: true,
+      })
+      .then(() => null, (error: unknown) => error);
+    expect(String((failure as { cause?: unknown } | null)?.cause)).toMatch(/chk_media_minor_consent/);
   });
 
-  it('allows the same photograph once consent is recorded', async () => {
-    await getDb()
+  it('cannot withdraw consent while the photograph still shows minors', async () => {
+    const failure = await getDb()
       .update(mediaAssets)
-      .set({ consent: 'obtained', consentReference: 'CONSENT-2026-014' })
-      .where(eq(mediaAssets.id, minorMediaId));
+      .set({ consent: 'pending' })
+      .where(eq(mediaAssets.id, minorMediaId))
+      .then(() => null, (error: unknown) => error);
+    expect(String((failure as { cause?: unknown } | null)?.cause)).toMatch(/chk_media_minor_consent/);
+  });
 
+  it('allows a photograph of minors whose consent is recorded, as hero and in the gallery', async () => {
     const result = await upsertProject(db(), MANAGER, {
       ...base(),
       status: 'published',
       heroMediaId: minorMediaId,
+      media: [{ mediaId: minorMediaId }],
     });
     expect(result.status).toBe('published');
-  });
-
-  it('checks gallery media too, not only the hero', async () => {
-    await expect(
-      upsertProject(db(), MANAGER, {
-        ...base(),
-        status: 'published',
-        heroMediaId: safeMediaId,
-        media: [{ mediaId: minorMediaId }],
-      }),
-    ).rejects.toMatchObject({ code: 'consent_required' });
   });
 
   it('replaces partner links wholesale so the last one can be removed', async () => {
@@ -224,11 +230,13 @@ describe('upsertProject', () => {
   });
 
   it('rolls the whole transaction back when a gate fires after the row is written', async () => {
+    // A gallery link to a media id that does not exist fails on the junction
+    // insert, which runs after the project row and before the audit entry.
     await expect(
       upsertProject(db(), MANAGER, {
         ...base(),
         status: 'published',
-        media: [{ mediaId: minorMediaId }],
+        media: [{ mediaId: '99999999-9999-4999-8999-999999999999' }],
       }),
     ).rejects.toThrow();
 

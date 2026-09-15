@@ -10,7 +10,7 @@ import {
   text,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { timestamps } from './_shared';
+import { fk, timestamps } from './_shared';
 import { metricStatus } from './enums';
 import { programs } from './programs';
 import { projects } from './projects';
@@ -37,8 +37,8 @@ export const impactMetrics = pgTable(
     /** `'+'` | `'~'` | null — rendered verbatim before the number. */
     displayPrefix: text(),
 
-    programId: uuid().references(() => programs.id, { onDelete: 'set null' }),
-    projectId: uuid().references(() => projects.id, { onDelete: 'cascade' }),
+    programId: uuid(),
+    projectId: uuid(),
 
     periodStart: date().notNull(),
     periodEnd: date().notNull(),
@@ -52,9 +52,28 @@ export const impactMetrics = pgTable(
     ...timestamps(),
   },
   (t) => [
+    fk('impact_metrics_program_id_fkey', t.programId, programs.id, 'set null'),
+    fk('impact_metrics_project_id_fkey', t.projectId, projects.id, 'cascade'),
+    check(
+      'impact_metrics_display_prefix_check',
+      sql`${t.displayPrefix} is null or ${t.displayPrefix} in ('+', '~')`,
+    ),
+    check('metrics_period_order', sql`${t.periodEnd} >= ${t.periodStart}`),
+    /** "Verified" is a claim about provenance; without a source it is a label. */
+    check(
+      'metrics_verified_needs_source',
+      sql`${t.status} <> 'verified' or (${t.verificationSource} is not null and length(btrim(${t.verificationSource})) > 0)`,
+    ),
     index('metrics_public_idx').on(t.status, t.isPublic, t.displayOrder),
     index('metrics_program_idx').on(t.programId).where(sql`${t.isPublic}`),
-    check('metrics_period_order', sql`${t.periodEnd} >= ${t.periodStart}`),
+    index('metrics_project_idx').on(t.projectId),
+    // The `ix_*` family is the hand-written DDL the live database was built
+    // from; `ix_metrics_project` duplicates `metrics_project_idx` exactly.
+    index('ix_metrics_program').on(t.programId),
+    index('ix_metrics_project').on(t.projectId),
+    index('ix_metrics_public')
+      .on(t.displayOrder, t.periodEnd.desc())
+      .where(sql`${t.isPublic}`),
   ],
 );
 

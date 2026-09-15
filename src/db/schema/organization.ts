@@ -9,6 +9,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { fk } from './_shared';
 import { mediaAssets } from './media';
 import { profiles } from './profiles';
 
@@ -23,8 +24,14 @@ export type TitledBlock = {
 /** `[{ text_ar, text_en }]` */
 export type BilingualLine = { text_ar: string; text_en?: string | null };
 
-/** `[{ platform, url, is_official }]` */
-export type SocialLink = { platform: string; url: string; is_official: boolean };
+/** `[{ platform, url, is_official, visible, display_order }]` */
+export type SocialLink = {
+  platform: string;
+  url: string;
+  is_official: boolean;
+  visible?: boolean;
+  display_order?: number | null;
+};
 
 /**
  * The channels the organisation actually owns, rendered on `/verify` so a
@@ -36,6 +43,8 @@ export type OfficialChannel = {
   handle: string;
   url: string;
   is_official: boolean;
+  visible?: boolean;
+  display_order?: number | null;
   note_ar?: string | null;
   note_en?: string | null;
 };
@@ -58,8 +67,11 @@ export const organizationSettings = pgTable(
     shortNameAr: text().notNull(),
     shortNameEn: text().notNull(),
     acronym: text().notNull(),
+    shortDescriptionAr: text(),
+    shortDescriptionEn: text(),
     /** schema.org `alternateName` — spellings the org is also searched by. */
     alternateNames: text().array().notNull().default(sql`'{}'`),
+    /** 1900–2100, by `organization_settings_founded_year_check`. */
     foundedYear: smallint().notNull(),
     licenseNumber: text().notNull(),
     licenseAuthorityAr: text(),
@@ -86,9 +98,13 @@ export const organizationSettings = pgTable(
 
     primaryPhone: text(),
     additionalPhones: text().array().notNull().default(sql`'{}'`),
-    /** Digits only, no leading `+` — this is the `wa.me` link format. */
+    /**
+     * Digits only, no leading `+` — this is the `wa.me` link format, and the
+     * `org_whatsapp_digits` CHECK (`^[0-9]{8,15}$`) holds it to that.
+     */
     whatsappNumber: text(),
     email: text(),
+    secondaryEmail: text(),
     addressAr: text(),
     addressEn: text(),
     /** DNH-6: the office address is published only on an explicit decision. */
@@ -101,14 +117,51 @@ export const organizationSettings = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
 
-    logoPrimaryId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
-    logoMonoId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
-    defaultOgId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
+    footerCtaTitleAr: text(),
+    footerCtaTitleEn: text(),
+    footerCtaDescriptionAr: text(),
+    footerCtaDescriptionEn: text(),
+    footerCtaButtonLabelAr: text(),
+    footerCtaButtonLabelEn: text(),
+    footerCtaUrl: text(),
+    footerCtaEnabled: boolean().notNull().default(false),
+
+    logoPrimaryId: uuid(),
+    footerLogoId: uuid(),
+    logoMonoId: uuid(),
+    defaultOgId: uuid(),
 
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedBy: uuid().references(() => profiles.id, { onDelete: 'set null' }),
+    updatedBy: uuid(),
   },
-  (t) => [check('organization_settings_singleton', sql`${t.id}`)],
+  (t) => [
+    fk('organization_settings_logo_primary_id_fkey', t.logoPrimaryId, mediaAssets.id, 'set null'),
+    // Added by `0004`, so it carries Drizzle's naming rather than Postgres's.
+    fk(
+      'organization_settings_footer_logo_id_media_assets_id_fk',
+      t.footerLogoId,
+      mediaAssets.id,
+      'set null',
+    ),
+    fk('organization_settings_logo_mono_id_fkey', t.logoMonoId, mediaAssets.id, 'set null'),
+    fk('organization_settings_default_og_id_fkey', t.defaultOgId, mediaAssets.id, 'set null'),
+    fk('organization_settings_updated_by_fkey', t.updatedBy, profiles.id, 'set null'),
+    check('organization_settings_id_check', sql`${t.id}`),
+    check(
+      'organization_settings_founded_year_check',
+      sql`${t.foundedYear} >= 1900 and ${t.foundedYear} <= 2100`,
+    ),
+    check(
+      'org_whatsapp_digits',
+      sql`${t.whatsappNumber} is null or ${t.whatsappNumber} ~ '^[0-9]{8,15}$'`,
+    ),
+    // The five jsonb columns are edited as JSON text in the admin form; the
+    // database refuses anything that parsed but is not an array.
+    check(
+      'org_json_shapes',
+      sql`jsonb_typeof(${t.coreValues}) = 'array' and jsonb_typeof(${t.principles}) = 'array' and jsonb_typeof(${t.strategicObjectives}) = 'array' and jsonb_typeof(${t.socials}) = 'array' and jsonb_typeof(${t.officialChannels}) = 'array'`,
+    ),
+  ],
 );
 
 export type OrganizationSettings = typeof organizationSettings.$inferSelect;

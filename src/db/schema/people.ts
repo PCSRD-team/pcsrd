@@ -7,7 +7,7 @@ import {
   text,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { timestamps } from './_shared';
+import { fk, timestamps } from './_shared';
 import { personCategory } from './enums';
 import { mediaAssets } from './media';
 
@@ -29,13 +29,18 @@ export const people = pgTable(
     category: personCategory().notNull().default('board'),
     bioAr: text(),
     bioEn: text(),
-    photoMediaId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
+    photoMediaId: uuid(),
     isPublic: boolean().notNull().default(false),
     displayOrder: smallint().notNull().default(0),
     ...timestamps(),
   },
   (t) => [
+    fk('people_photo_media_id_fkey', t.photoMediaId, mediaAssets.id, 'set null'),
     index('people_public_idx')
+      .on(t.category, t.displayOrder)
+      .where(sql`${t.isPublic}`),
+    // Live duplicate of `people_public_idx` from the hand-written DDL.
+    index('ix_people_public')
       .on(t.category, t.displayOrder)
       .where(sql`${t.isPublic}`),
   ],

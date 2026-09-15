@@ -1,13 +1,14 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   index,
   pgTable,
   smallint,
   text,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { timestamps } from './_shared';
+import { fk, timestamps } from './_shared';
 import { contentStatus, logoPermission, membershipLevel, partnerType } from './enums';
 import { mediaAssets } from './media';
 
@@ -26,14 +27,14 @@ export const partners = pgTable(
     nameAr: text().notNull(),
     nameEn: text(),
     type: partnerType().notNull(),
-    /** Null unless `type` is `network` or `membership`. */
+    /** Null unless `type` is `network` or `membership` — `partners_membership_shape`. */
     membershipLevel: membershipLevel(),
     sectorAr: text(),
     sectorEn: text(),
     descriptionAr: text(),
     descriptionEn: text(),
     website: text(),
-    logoMediaId: uuid().references(() => mediaAssets.id, { onDelete: 'set null' }),
+    logoMediaId: uuid(),
     logoPermission: logoPermission().notNull().default('pending'),
     isFeatured: boolean().notNull().default(false),
     displayOrder: smallint().notNull().default(0),
@@ -41,9 +42,18 @@ export const partners = pgTable(
     ...timestamps(),
   },
   (t) => [
+    fk('partners_logo_media_id_fkey', t.logoMediaId, mediaAssets.id, 'set null'),
+    check(
+      'partners_membership_shape',
+      sql`${t.membershipLevel} is null or ${t.type} in ('network', 'membership')`,
+    ),
     index('partners_type_idx')
       .on(t.type, t.displayOrder)
       .where(sql`${t.status} = 'published'`),
+    index('ix_partners_public')
+      .on(t.displayOrder, t.nameAr)
+      .where(sql`${t.status} = 'published'`),
+    index('ix_partners_type').on(t.type),
   ],
 );
 
