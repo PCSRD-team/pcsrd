@@ -6,13 +6,21 @@ import { JobPostingJsonLd } from '@/components/seo/json-ld';
 import { Bidi, DateText } from '@/components/ui/bidi';
 import { Badge, DefinitionList, Panel, Prose, Section, SectionHeading } from '@/components/ui/primitives';
 import { UntranslatedNotice } from '@/components/ui/states';
-import { getVacancyBySlug } from '@/db/queries/content';
+import { getVacancyBySlug, listVacancySlugs } from '@/db/queries/content';
+import { prerenderData } from '@/lib/build-time';
 import { formatDate } from '@/lib/format';
-import { isLocale } from '@/lib/i18n/config';
+import { LOCALES, isLocale } from '@/lib/i18n/config';
 import { formSlice } from '@/lib/i18n/form-dict';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 
 export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const slugs = await prerenderData('vacancy slugs', () => listVacancySlugs(), []);
+  return LOCALES.flatMap((locale) =>
+    slugs.map((row) => ({ locale, slug: locale === 'ar' ? row.slugAr : row.slugEn })),
+  );
+}
 
 export async function generateMetadata({
   params,

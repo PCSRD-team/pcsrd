@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import type { Locale } from './config';
 import type { Dictionary } from './dictionaries/ar';
 
@@ -14,8 +15,10 @@ const loaders = {
   en: () => import('./dictionaries/en').then((m) => m.en),
 } as const;
 
-export async function getDictionary(locale: Locale): Promise<Dictionary> {
+export const getDictionary = cache(async function getDictionary(
+  locale: Locale,
+): Promise<Dictionary> {
   return loaders[locale]();
-}
+});
 
 export type { Dictionary };

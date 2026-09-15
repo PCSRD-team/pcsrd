@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import { fontVariables } from '@/app/fonts';
 import { ChannelsBar, SiteFooter, SiteHeader } from '@/components/layout/chrome';
@@ -46,6 +46,11 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 /** Both locales are pre-rendered. There are only two. */
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -69,7 +74,7 @@ export default async function LocaleLayout({
 
         <OrganizationJsonLd org={org} locale={locale} />
 
-        <ChannelsBar locale={locale} dict={dict} />
+        <ChannelsBar locale={locale} dict={dict} org={org} />
         <SiteHeader locale={locale} dict={dict} org={org} />
 
         <main id="main" className="flex-1">
