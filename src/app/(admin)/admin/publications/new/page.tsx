@@ -1,5 +1,6 @@
 import { savePublicationForm } from '@/actions/admin/entity-forms';
 import { adminFormDict } from '@/components/admin/admin-dict';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import { ContentForm } from '@/components/admin/content-form';
 import { PUBLICATION_FIELDS } from '@/components/admin/field-configs';
 import { AdminHeader } from '@/components/admin/shell';
@@ -13,7 +14,7 @@ export default async function Page() {
 
   return (
     <>
-      <AdminHeader title="إصدار جديد" />
+      <AdminHeader title={adminUi.entity.newPublication} />
       <ContentForm
         action={savePublicationForm}
         fields={PUBLICATION_FIELDS}

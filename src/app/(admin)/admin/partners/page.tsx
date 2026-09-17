@@ -1,9 +1,12 @@
-import Link from 'next/link';
 import { adminDict } from '@/components/admin/admin-dict';
-import { DataTable, StatusBadge } from '@/components/admin/controls';
+import { adminUi } from '@/components/admin/admin-ui-dict';
+import { StatusBadge } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { RowActions } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
+import { ButtonLink } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Table } from '@/components/ui/table';
 import { listAdminPartners } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 import { ADMIN_OPTIONS } from '@/lib/admin-options';
@@ -20,38 +23,41 @@ const permissionLabel = Object.fromEntries(
 export default async function PartnersAdminPage({ searchParams }: PageProps<'/admin/partners'>) {
   const [actor, search] = await Promise.all([requireAuth(), searchParams]);
   const rows = await listAdminPartners(actor);
+  const t = adminUi.partners;
+  const title = adminUi.nav.partners;
 
   return (
     <>
       <AdminHeader
-        title="الشركاء"
-        description="لا يُعرض شعار الشريك على الموقع إلا إذا كان الإذن ممنوحاً."
-        action={
-          <Link
-            href="/admin/partners/new"
-            className="bg-navy-700 px-5 py-2 text-small font-medium text-paper no-underline hover:bg-navy-900"
-          >
-            {adminDict.form.add}
-          </Link>
-        }
+        title={title}
+        description={t.lede}
+        action={<ButtonLink href="/admin/partners/new">{adminDict.form.add}</ButtonLink>}
       />
 
       <Flash searchParams={search} />
 
-      <DataTable
+      <Table
+        caption={title}
+        captionHidden
         rows={rows}
         rowHref={(r) => `/admin/partners/${r.id}`}
-        empty="لا شركاء."
+        empty={
+          <EmptyState
+            title={t.empty}
+            body={t.emptyBody}
+            action={<ButtonLink href="/admin/partners/new">{adminDict.form.add}</ButtonLink>}
+          />
+        }
         columns={[
-          { key: 'name', header: 'الاسم', cell: (r) => r.nameAr },
-          { key: 'type', header: 'النوع', cell: (r) => typeLabel[r.type] ?? r.type },
+          { key: 'name', header: adminUi.list.columns.name, rowHeader: true, cell: (r) => r.nameAr },
+          { key: 'type', header: t.columns.type, cell: (r) => typeLabel[r.type] ?? r.type },
           {
             key: 'logo',
-            header: 'إذن الشعار',
+            header: t.columns.logo,
             cell: (r) => permissionLabel[r.logoPermission] ?? r.logoPermission,
           },
-          { key: 'status', header: 'الحالة', cell: (r) => <StatusBadge status={r.status} /> },
-          { key: 'order', header: 'الترتيب', numeric: true, cell: (r) => r.displayOrder },
+          { key: 'status', header: adminUi.list.columns.status, cell: (r) => <StatusBadge status={r.status} /> },
+          { key: 'order', header: adminUi.list.columns.order, numeric: true, cell: (r) => r.displayOrder },
           {
             key: 'actions',
             header: adminDict.form.actions,

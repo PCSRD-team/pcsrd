@@ -1,3 +1,4 @@
+import { Notice } from '@/components/ui/notice';
 import { adminFormDict, isAdminKey, resolveAdminKey } from './admin-dict';
 
 /**
@@ -10,6 +11,8 @@ import { adminFormDict, isAdminKey, resolveAdminKey } from './admin-dict';
  * component must not become a way to put arbitrary text on an admin page.
  *
  * A Server Component: it reads params the page already has and ships nothing.
+ * `Notice` carries the live semantics: `danger` is `role="alert"`, `success`
+ * is `role="status"`.
  */
 export function Flash({
   searchParams,
@@ -27,17 +30,17 @@ export function Flash({
       ? resolveAdminKey(dict, errKey)
       : resolveAdminKey(dict, 'admin.flash.error');
     return (
-      <div className="rule-edge mbe-6 border-gold-600 bg-gold-050 p-4" role="alert">
-        <p className="text-small text-ink">{text}</p>
-      </div>
+      <Notice tone="danger" className="mbe-6">
+        {text}
+      </Notice>
     );
   }
 
   if (okKey && isAdminKey(dict, okKey)) {
     return (
-      <div className="rule-edge mbe-6 border-gold-600 bg-gold-050 p-4" role="status">
-        <p className="text-small text-ink">{resolveAdminKey(dict, okKey)}</p>
-      </div>
+      <Notice tone="success" className="mbe-6">
+        {resolveAdminKey(dict, okKey)}
+      </Notice>
     );
   }
 

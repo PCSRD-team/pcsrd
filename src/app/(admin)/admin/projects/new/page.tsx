@@ -1,6 +1,7 @@
 import { adminFormDict } from '@/components/admin/admin-dict';
-import { AdminHeader } from '@/components/admin/shell';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import { ProjectForm } from '@/components/admin/project-form';
+import { AdminHeader } from '@/components/admin/shell';
 import { listRelationOptions } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 import { ADMIN_OPTIONS } from '@/lib/admin-options';
@@ -17,7 +18,7 @@ export default async function NewProjectPage() {
 
   return (
     <>
-      <AdminHeader title="مشروع جديد" />
+      <AdminHeader title={adminUi.entity.newProject} />
       <ProjectForm
         values={{}}
         canPublish={can(actor, 'content.publish')}

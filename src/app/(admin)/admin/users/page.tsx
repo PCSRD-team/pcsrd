@@ -1,10 +1,14 @@
 import { adminDict, adminFormDict } from '@/components/admin/admin-dict';
-import { DataTable, TimeCell } from '@/components/admin/controls';
+import { adminUi } from '@/components/admin/admin-ui-dict';
+import { DateCell } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { InviteUserForm } from '@/components/admin/invite-user-form';
 import { AdminHeader } from '@/components/admin/shell';
 import { UserActions } from '@/components/admin/user-actions';
+import { Badge } from '@/components/ui/badge';
 import { Bidi } from '@/components/ui/bidi';
+import { EmptyState } from '@/components/ui/feedback';
+import { Table } from '@/components/ui/table';
 import { listUsers } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 import { assertCan } from '@/services/_shared/permissions';
@@ -26,6 +30,7 @@ export default async function UsersPage({ searchParams }: PageProps<'/admin/user
 
   const users = await listUsers(actor);
   const t = adminDict.users;
+  const ui = adminUi.users;
 
   return (
     <>
@@ -37,13 +42,16 @@ export default async function UsersPage({ searchParams }: PageProps<'/admin/user
         <InviteUserForm dict={adminFormDict()} />
       </div>
 
-      <DataTable
+      <Table
+        caption={t.title}
+        captionHidden
         rows={users}
-        empty="لا مستخدمين."
+        empty={<EmptyState title={ui.empty} body={ui.emptyBody} />}
         columns={[
           {
             key: 'name',
-            header: 'الاسم',
+            header: ui.columns.name,
+            rowHeader: true,
             cell: (u) => (
               <>
                 {u.fullName}
@@ -53,19 +61,32 @@ export default async function UsersPage({ searchParams }: PageProps<'/admin/user
               </>
             ),
           },
-          { key: 'email', header: t.email, numeric: true, cell: (u) => <Bidi>{u.email}</Bidi> },
+          {
+            key: 'email',
+            header: t.email,
+            numeric: true,
+            align: 'start',
+            cell: (u) => <Bidi>{u.email}</Bidi>,
+          },
           { key: 'role', header: t.role, cell: (u) => t.roles[u.role] },
           {
             key: 'sensitive',
-            header: 'الشكاوى السرّية',
-            cell: (u) => (u.canViewSensitive ? t.sensitiveAllowed : '—'),
+            header: ui.columns.sensitive,
+            cell: (u) => (u.canViewSensitive ? <Badge tone="warning">{t.sensitiveAllowed}</Badge> : '—'),
           },
-          { key: 'active', header: 'الحالة', cell: (u) => (u.isActive ? t.active : t.inactive) },
+          {
+            key: 'active',
+            header: ui.columns.status,
+            cell: (u) => (
+              <Badge tone={u.isActive ? 'success' : 'complete'}>{u.isActive ? t.active : t.inactive}</Badge>
+            ),
+          },
           {
             key: 'login',
             header: t.lastLogin,
             numeric: true,
-            cell: (u) => (u.lastLoginAt ? <TimeCell value={u.lastLoginAt} /> : t.never),
+            align: 'start',
+            cell: (u) => (u.lastLoginAt ? <DateCell value={u.lastLoginAt} /> : t.never),
           },
           {
             key: 'actions',

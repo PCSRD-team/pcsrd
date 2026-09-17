@@ -1,6 +1,14 @@
 'use client';
+// Client Component: the character counters and "copy from Arabic" need the
+// live value (`useState`); the ids are `useId` so two fields on one page
+// never collide. The inputs still post natively.
 
 import { useId, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { describedBy, FieldError, FieldRow, Fieldset } from '@/components/ui/field';
+import { Eyebrow } from '@/components/ui/typography';
+import { cn } from '@/lib/utils';
+import { adminUi } from './admin-ui-dict';
 
 /**
  * The defining component of the authoring experience.
@@ -20,16 +28,21 @@ import { useId, useState } from 'react';
  *    retypes them and introduces a discrepancy.
  * 5. **A character count against the SEO limit**, because Arabic runs about ten
  *    percent longer per character and a title that fits in English will not.
+ *
+ * The controls are native elements wearing the kit's `control` utility
+ * rather than the kit's `Input`: that component derives `id` from `name`,
+ * and these ids come from `useId` so the same field can appear twice on a
+ * page (the SEO title and the title, say) without a collision. The
+ * `describedBy`/`aria-invalid` contract is the same one the kit follows.
  */
 
-const controlClass =
-  'block w-full rounded-md rule-control bg-paper px-3 py-2 text-small text-ink focus:border-navy-700';
-
 function Meta({
+  id,
   length,
   max,
   error,
 }: {
+  id: string;
   length: number;
   max?: number;
   error?: string;
@@ -39,17 +52,11 @@ function Meta({
 
   return (
     <div className="mbs-1 flex items-baseline justify-between gap-3">
-      {error ? (
-        <p className="text-caption text-gold-700" role="alert">
-          {error}
-        </p>
-      ) : (
-        <span />
-      )}
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : <span />}
       {max ? (
         <span
           dir="ltr"
-          className={`font-mono text-eyebrow ${over ? 'text-gold-700' : 'text-mono-muted'}`}
+          className={cn('font-mono text-eyebrow', over ? 'text-destructive' : 'text-mono-muted')}
         >
           {length}/{max}
         </span>
@@ -85,72 +92,64 @@ export function BilingualField({
   const [ar, setAr] = useState(defaultAr);
   const [en, setEn] = useState(defaultEn);
   const id = useId();
+  const t = adminUi.bilingual;
 
   const Control = multiline ? 'textarea' : 'input';
   const shared = { rows: multiline ? 4 : undefined } as { rows?: number };
+  const controlClass = cn('control mbs-1', multiline && 'min-h-24 resize-y');
 
   return (
-    <fieldset className="rounded-lg border border-rule bg-paper p-4 shadow-[0_10px_28px_rgb(20_33_63/0.04)]">
-      <legend className="px-2 text-small font-medium text-ink">
-        {label}
-        {required ? (
-          <span className="ms-1 text-gold-700" aria-hidden="true">
-            *
-          </span>
-        ) : null}
-        {hint ? <span className="ms-3 text-caption text-ink-55">{hint}</span> : null}
-      </legend>
-
-      <div className="grid gap-4 md:grid-cols-2">
-      <div>
-        <label htmlFor={`${id}-ar`} className="eyebrow">
-          العربية
-        </label>
-        <Control
-          {...shared}
-          id={`${id}-ar`}
-          name={`${name}Ar`}
-          dir="rtl"
-          lang="ar"
-          required={required}
-          value={ar}
-          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-            setAr(e.target.value)
-          }
-          className={`${controlClass} mbs-1`}
-        />
-        <Meta length={ar.length} max={maxLength?.ar} error={errorAr} />
-      </div>
-
-      <div>
-        <div className="flex items-baseline justify-between gap-3">
-          <label htmlFor={`${id}-en`} className="eyebrow">
-            English
-          </label>
-          <button
-            type="button"
-            onClick={() => setEn(ar)}
-            className="text-caption text-navy-700 underline"
-          >
-            نسخ من العربية
-          </button>
+    <Fieldset name={id} legend={label} hint={hint} required={required}>
+      <FieldRow>
+        <div>
+          <Eyebrow as="span" className="block">
+            <label htmlFor={`${id}-ar`}>{t.arabic}</label>
+          </Eyebrow>
+          <Control
+            {...shared}
+            id={`${id}-ar`}
+            name={`${name}Ar`}
+            dir="rtl"
+            lang="ar"
+            required={required}
+            value={ar}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+              setAr(e.target.value)
+            }
+            aria-invalid={errorAr ? true : undefined}
+            aria-describedby={describedBy(`${id}-ar`, undefined, errorAr)}
+            className={controlClass}
+          />
+          <Meta id={`${id}-ar`} length={ar.length} max={maxLength?.ar} error={errorAr} />
         </div>
-        <Control
-          {...shared}
-          id={`${id}-en`}
-          name={`${name}En`}
-          dir="ltr"
-          lang="en"
-          value={en}
-          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-            setEn(e.target.value)
-          }
-          className={`${controlClass} mbs-1 text-start`}
-        />
-        <Meta length={en.length} max={maxLength?.en} error={errorEn} />
-      </div>
-      </div>
-    </fieldset>
+
+        <div>
+          <div className="flex items-baseline justify-between gap-3">
+            <Eyebrow as="span">
+              <label htmlFor={`${id}-en`}>{t.english}</label>
+            </Eyebrow>
+            <Button type="button" tone="quiet" size="sm" onClick={() => setEn(ar)}>
+              {t.copyFromArabic}
+            </Button>
+          </div>
+          <Control
+            {...shared}
+            id={`${id}-en`}
+            name={`${name}En`}
+            dir="ltr"
+            lang="en"
+            value={en}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+              setEn(e.target.value)
+            }
+            aria-invalid={errorEn ? true : undefined}
+            aria-describedby={describedBy(`${id}-en`, undefined, errorEn)}
+            className={cn(controlClass, 'text-start')}
+          />
+          <Meta id={`${id}-en`} length={en.length} max={maxLength?.en} error={errorEn} />
+        </div>
+      </FieldRow>
+    </Fieldset>
   );
 }
 

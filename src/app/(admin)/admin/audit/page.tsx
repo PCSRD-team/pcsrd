@@ -1,27 +1,14 @@
-import { DataTable, Pagination, TimeCell } from '@/components/admin/controls';
+import { adminUi } from '@/components/admin/admin-ui-dict';
+import { AdminPagination, DateCell } from '@/components/admin/controls';
 import { AdminHeader } from '@/components/admin/shell';
+import { Bidi } from '@/components/ui/bidi';
+import { EmptyState } from '@/components/ui/feedback';
+import { Table } from '@/components/ui/table';
 import { listAudit } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 import { assertCan } from '@/services/_shared/permissions';
 
 export const dynamic = 'force-dynamic';
-
-const ACTION_LABEL: Record<string, string> = {
-  create: 'إنشاء',
-  update: 'تعديل',
-  publish: 'نشر',
-  unpublish: 'إلغاء نشر',
-  archive: 'أرشفة',
-  delete: 'حذف',
-  view_sensitive: 'فتح شكوى سرّية',
-  invite: 'دعوة مستخدم',
-  set_role: 'تغيير دور',
-  deactivate: 'إيقاف حساب',
-  set_state: 'تغيير حالة طلب',
-  upload: 'رفع وسيط',
-  purge: 'حذف تلقائي',
-  login: 'تسجيل دخول',
-};
 
 /**
  * The audit log. Read-only, and enforced as such by the database: the
@@ -41,35 +28,38 @@ export default async function AuditPage({ searchParams }: PageProps<'/admin/audi
     page: Number.isInteger(page) && page > 0 ? page : 1,
   });
 
+  const t = adminUi.audit;
+  const actionLabel = (action: string) => (t.actions as Record<string, string>)[action] ?? action;
+
   return (
     <>
-      <AdminHeader
-        title="سجل التدقيق"
-        description="للقراءة فقط. قاعدة البيانات ترفض أي تعديل أو حذف على هذا الجدول."
-      />
+      <AdminHeader title={t.title} description={t.lede} />
 
-      <DataTable
+      <Table
+        caption={t.title}
+        captionHidden
         rows={result.items}
-        empty="لا سجلات."
+        empty={<EmptyState title={t.empty} body={t.lede} />}
         columns={[
-          { key: 'action', header: 'الإجراء', cell: (r) => ACTION_LABEL[r.action] ?? r.action },
-          { key: 'entity', header: 'العنصر', cell: (r) => r.entityType },
+          { key: 'action', header: t.columns.action, cell: (r) => actionLabel(r.action) },
+          { key: 'entity', header: t.columns.entity, cell: (r) => <Bidi>{r.entityType}</Bidi> },
           {
             key: 'fields',
-            header: 'الحقول المتغيّرة',
-            cell: (r) => (r.diff ? Object.keys(r.diff).join('، ') : '—'),
+            header: t.columns.fields,
+            cell: (r) => (r.diff ? <Bidi>{Object.keys(r.diff).join(', ')}</Bidi> : '—'),
           },
-          { key: 'actor', header: 'المستخدم', cell: (r) => (r.isSystem ? 'النظام' : r.actorName) },
+          { key: 'actor', header: t.columns.actor, cell: (r) => (r.isSystem ? t.system : r.actorName) },
           {
             key: 'at',
-            header: 'التاريخ',
+            header: t.columns.at,
             numeric: true,
-            cell: (r) => <TimeCell value={r.createdAt} />,
+            align: 'start',
+            cell: (r) => <DateCell value={r.createdAt} />,
           },
         ]}
       />
 
-      <Pagination
+      <AdminPagination
         page={result.page}
         totalPages={result.totalPages}
         hrefFor={(n) => (n > 1 ? `/admin/audit?page=${n}` : '/admin/audit')}

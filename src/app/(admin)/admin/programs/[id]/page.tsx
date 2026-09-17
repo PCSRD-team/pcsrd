@@ -1,11 +1,14 @@
 import { notFound } from 'next/navigation';
 import { saveProgramForm } from '@/actions/admin/entity-forms';
 import { adminFormDict } from '@/components/admin/admin-dict';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import { ContentForm } from '@/components/admin/content-form';
+import { StatusBadge } from '@/components/admin/controls';
 import { PROGRAM_FIELDS } from '@/components/admin/field-configs';
 import { Flash } from '@/components/admin/flash';
 import { AdminHeader } from '@/components/admin/shell';
 import { getAdminGallery, getAdminRow } from '@/db/queries/admin';
+import type { ContentStatus } from '@/db/schema/enums';
 import { requireAuth } from '@/lib/auth/guard';
 import { can } from '@/services/_shared/permissions';
 
@@ -23,11 +26,11 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/p
   // The gallery is a junction, not a column; it rides along as `gallery` so
   // the form can post it back in order.
   const values: Record<string, unknown> = { ...(row as Record<string, unknown>), gallery };
-  const title = String(values.titleAr ?? 'برنامج');
+  const title = String(values.titleAr ?? adminUi.entity.fallbackProgram);
 
   return (
     <>
-      <AdminHeader title={title} />
+      <AdminHeader title={title} meta={<StatusBadge status={values.status as ContentStatus} />} />
 
       <Flash searchParams={search} />
 

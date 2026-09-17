@@ -1,33 +1,36 @@
 'use client';
+// Client Component: `useActionState` places a rejected save's errors on the
+// fields that caused them. The form still submits natively before hydration.
 
 import { useActionState } from 'react';
 import { type EntityResult, saveProjectForm } from '@/actions/admin/entity-forms';
 import { BilingualField } from '@/components/admin/bilingual-field';
-import {
-  CheckboxField,
-  EnumSelect,
-  Field,
-  PublishBar,
-  inputClass,
-} from '@/components/admin/controls';
+import { PublishBar } from '@/components/admin/controls';
 import { GalleryPicker } from '@/components/admin/gallery-picker';
-import { RichTextEditor } from '@/components/admin/rich-text-editor';
 import { MediaPicker } from '@/components/admin/media-picker';
+import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { describedBy, Field, FieldRow } from '@/components/ui/field';
+import { Checkbox, Input, Select, Textarea } from '@/components/ui/inputs';
+import { Stack } from '@/components/ui/layout';
+import { Notice } from '@/components/ui/notice';
 import { ADMIN_OPTIONS } from '@/lib/admin-options';
 import type { RichText } from '@/db/schema/_shared';
 import type { ContentStatus } from '@/db/schema/enums';
 import { type AdminFormDict, resolveAdminKey } from './admin-dict';
+import { adminUi } from './admin-ui-dict';
 
 /**
  * The project editor — the template the other content forms follow.
  *
- * A Client Component for `useActionState`, and it submits natively before
- * hydration like every other form here. What the client adds is field-level
- * error placement and the rich-text editors.
+ * What the client adds over a native form is field-level error placement and
+ * the rich-text editors. The **status** is posted by whichever button in
+ * `PublishBar` was pressed, so "save as draft" and "publish" are the same
+ * submission with a different value rather than two code paths that can
+ * drift apart.
  *
- * The **status** is posted by whichever button in `PublishBar` was pressed, so
- * "save as draft" and "publish" are the same submission with a different value
- * rather than two code paths that can drift apart.
+ * Field labels and hints are the project's own configuration and live here,
+ * like the entity configs in `field-configs.ts`; the chrome around them comes
+ * from `adminUi`.
  */
 
 export type ProjectFormValues = {
@@ -70,6 +73,37 @@ export type ProjectFormValues = {
 
 export type Option = { value: string; label: string };
 
+const LABEL = {
+  title: 'العنوان',
+  slug: 'المسار',
+  slugHint: 'حروف وأرقام وشرطات فقط. يُشتق من العنوان إن تُرك فارغاً.',
+  program: 'البرنامج',
+  state: 'حالة المشروع',
+  startDate: 'تاريخ البدء',
+  endDate: 'تاريخ الانتهاء',
+  endDateHint: 'لا يسبق تاريخ البدء.',
+  governorates: 'المحافظات',
+  themes: 'المحاور',
+  implementingPartners: 'شركاء التنفيذ',
+  donors: 'الجهات المموّلة',
+  summary: 'ملخّص',
+  objectiveAr: 'الهدف (عربي)',
+  objectiveEn: 'Objective (English)',
+  activitiesAr: 'الأنشطة (عربي)',
+  activitiesEn: 'Activities (English)',
+  outcomesAr: 'المخرجات (عربي)',
+  outcomesEn: 'Outcomes (English)',
+  localities: 'المناطق والأحياء',
+  localitiesHint: 'اسم في كل سطر. تظهر مع المحافظات في بطاقة المشروع.',
+  hero: 'الصورة الرئيسية',
+  heroHint: 'اختر صورة من مكتبة الوسائط.',
+  gallery: 'معرض الصور',
+  galleryHint: 'بالترتيب الذي تظهر به. كل صورة تخضع لقاعدة الموافقة عند النشر.',
+  featured: 'مميّز',
+  sourceNote: 'ملاحظة داخلية',
+  sourceNoteHint: 'لا تُعرض على الموقع. لتوثيق مصدر البيانات.',
+} as const;
+
 export function ProjectForm({
   values,
   options,
@@ -100,250 +134,277 @@ export function ProjectForm({
   const hasFieldErrors = Boolean(
     errors && Object.keys(errors).some((key) => key !== '_form' && (errors[key]?.length ?? 0) > 0),
   );
+  const f = adminUi.form;
 
   return (
-    <form action={formAction} className="space-y-8">
-      {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
+    <form action={formAction}>
+      <Stack gap={8}>
+        {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
-      {state && !state.ok ? (
-        <div className="rule-edge border-gold-600 bg-gold-050 p-4" role="alert">
-          <p className="text-small text-ink">
+        {state && !state.ok ? (
+          <Notice tone="danger">
             {hasFieldErrors
               ? resolveAdminKey(dict, 'admin.form.checkFields')
               : resolveAdminKey(dict, state.messageKey)}
-          </p>
-        </div>
-      ) : null}
+          </Notice>
+        ) : null}
 
-      <BilingualField
-        name="title"
-        label="العنوان"
-        required
-        maxLength={{ ar: 200, en: 200 }}
-        defaultAr={values.titleAr ?? ''}
-        defaultEn={values.titleEn ?? ''}
-        errorAr={firstError('titleAr')}
-        errorEn={firstError('titleEn')}
-      />
-
-      <BilingualField
-        name="slug"
-        label="المسار"
-        required
-        hint="حروف وأرقام وشرطات فقط. يُشتق من العنوان إن تُرك فارغاً."
-        defaultAr={values.slugAr ?? ''}
-        defaultEn={values.slugEn ?? ''}
-        errorAr={firstError('slugAr')}
-        errorEn={firstError('slugEn')}
-      />
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <EnumSelect
-          name="programId"
-          label="البرنامج"
+        <BilingualField
+          name="title"
+          label={LABEL.title}
           required
-          options={options.programs}
-          defaultValue={values.programId}
+          maxLength={{ ar: 200, en: 200 }}
+          defaultAr={values.titleAr ?? ''}
+          defaultEn={values.titleEn ?? ''}
+          errorAr={firstError('titleAr')}
+          errorEn={firstError('titleEn')}
         />
-        <EnumSelect
-          name="projectState"
-          label="حالة المشروع"
-          options={options.states}
-          defaultValue={values.projectState ?? 'active'}
+
+        <BilingualField
+          name="slug"
+          label={LABEL.slug}
+          required
+          hint={LABEL.slugHint}
+          defaultAr={values.slugAr ?? ''}
+          defaultEn={values.slugEn ?? ''}
+          errorAr={firstError('slugAr')}
+          errorEn={firstError('slugEn')}
         />
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Field name="startDate" label="تاريخ البدء">
-          <input
-            id="startDate"
-            name="startDate"
-            type="date"
-            defaultValue={values.startDate ?? ''}
-            className={inputClass}
-          />
-        </Field>
-        <Field name="endDate" label="تاريخ الانتهاء" hint="لا يسبق تاريخ البدء.">
-          <input
-            id="endDate"
-            name="endDate"
-            type="date"
-            defaultValue={values.endDate ?? ''}
-            className={inputClass}
-          />
-          {firstError('endDate') ? (
-            <p className="text-caption text-gold-700" role="alert">
-              {firstError('endDate')}
-            </p>
-          ) : null}
-        </Field>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <EnumSelect
-          name="governorates"
-          label="المحافظات"
-          multiple
-          options={options.governorates}
-          defaultValue={values.governorates}
-        />
-        <EnumSelect
-          name="themes"
-          label="المحاور"
-          multiple
-          options={options.themes}
-          defaultValue={values.themes}
-        />
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <EnumSelect
-          name="implementingPartners"
-          label="شركاء التنفيذ"
-          multiple
-          options={options.partners}
-          defaultValue={values.implementingPartners}
-        />
-        <EnumSelect
-          name="donors"
-          label="الجهات المموّلة"
-          multiple
-          options={options.partners}
-          defaultValue={values.donors}
-        />
-      </div>
-
-      <BilingualField
-        name="summary"
-        label="ملخّص"
-        multiline
-        maxLength={{ ar: 600, en: 600 }}
-        defaultAr={values.summaryAr ?? ''}
-        defaultEn={values.summaryEn ?? ''}
-      />
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <RichTextEditor name="objectiveAr" label="الهدف (عربي)" defaultValue={values.objectiveAr} />
-        <RichTextEditor
-          name="objectiveEn"
-          label="Objective (English)"
-          dir="ltr"
-          defaultValue={values.objectiveEn}
-        />
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <RichTextEditor name="activitiesAr" label="الأنشطة (عربي)" defaultValue={values.activitiesAr} />
-        <RichTextEditor
-          name="activitiesEn"
-          label="Activities (English)"
-          dir="ltr"
-          defaultValue={values.activitiesEn}
-        />
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <RichTextEditor name="outcomesAr" label="المخرجات (عربي)" defaultValue={values.outcomesAr} />
-        <RichTextEditor
-          name="outcomesEn"
-          label="Outcomes (English)"
-          dir="ltr"
-          defaultValue={values.outcomesEn}
-        />
-      </div>
-
-      <Field
-        name="localities"
-        label="المناطق والأحياء"
-        hint="اسم في كل سطر. تظهر مع المحافظات في بطاقة المشروع."
-        error={firstError('localities')}
-      >
-        <textarea
-          id="localities"
-          name="localities"
-          rows={3}
-          defaultValue={(values.localities ?? []).join('\n')}
-          className={inputClass}
-        />
-      </Field>
-
-      <Field name="heroMediaId" label="الصورة الرئيسية" hint="اختر صورة من مكتبة الوسائط.">
-        <MediaPicker name="heroMediaId" initialValue={values.heroMediaId ?? ''} kind="image" />
-      </Field>
-
-      <GalleryPicker
-        name="gallery"
-        label="معرض الصور"
-        hint="بالترتيب الذي تظهر به. كل صورة تخضع لقاعدة الموافقة عند النشر."
-        initial={values.gallery ?? []}
-      />
-
-      <CheckboxField name="isFeatured" label="مميّز" defaultChecked={values.isFeatured} />
-
-      <Field
-        name="sourceNote"
-        label="ملاحظة داخلية"
-        hint="لا تُعرض على الموقع. لتوثيق مصدر البيانات."
-      >
-        <textarea
-          id="sourceNote"
-          name="sourceNote"
-          rows={2}
-          defaultValue={values.sourceNote ?? ''}
-          className={inputClass}
-        />
-      </Field>
-
-      <details className="rule-edge rounded-lg bg-paper p-5 shadow-[0_10px_28px_rgb(20_33_63/0.04)]">
-        <summary className="cursor-pointer text-small font-medium text-ink">
-          تحسين محركات البحث
-        </summary>
-        <div className="mbs-5 space-y-6">
-          <BilingualField
-            name="seoTitle"
-            label="عنوان SEO"
-            maxLength={{ ar: 60, en: 60 }}
-            hint="العربية أطول بنحو 10% لكل حرف."
-            defaultAr={values.seoTitleAr ?? ''}
-            defaultEn={values.seoTitleEn ?? ''}
-          />
-          <BilingualField
-            name="seoDescription"
-            label="وصف SEO"
-            multiline
-            maxLength={{ ar: 160, en: 160 }}
-            defaultAr={values.seoDescriptionAr ?? ''}
-            defaultEn={values.seoDescriptionEn ?? ''}
-          />
-          <Field
-            name="ogMediaId"
-            label="صورة المشاركة (Open Graph)"
-            hint="تظهر عند مشاركة الرابط. إن تُركت فارغة تُستخدم صورة المؤسسة الافتراضية."
-            error={firstError('ogMediaId')}
-          >
-            <MediaPicker name="ogMediaId" initialValue={values.ogMediaId ?? ''} kind="image" />
+        <FieldRow>
+          <Field name="programId" label={LABEL.program} required error={firstError('programId')}>
+            <Select
+              name="programId"
+              required
+              options={options.programs}
+              defaultValue={values.programId}
+              error={firstError('programId')}
+            />
           </Field>
-          <CheckboxField
-            name="noIndex"
-            label="منع الفهرسة"
-            defaultChecked={values.noIndex}
-            hint="يمنع محركات البحث من فهرسة هذه الصفحة."
+          <Field name="projectState" label={LABEL.state} error={firstError('projectState')}>
+            <Select
+              name="projectState"
+              options={options.states}
+              defaultValue={values.projectState ?? 'active'}
+              error={firstError('projectState')}
+            />
+          </Field>
+        </FieldRow>
+
+        <FieldRow>
+          <Field name="startDate" label={LABEL.startDate} error={firstError('startDate')}>
+            <Input
+              name="startDate"
+              type="date"
+              defaultValue={values.startDate ?? ''}
+              error={firstError('startDate')}
+            />
+          </Field>
+          <Field
+            name="endDate"
+            label={LABEL.endDate}
+            hint={LABEL.endDateHint}
+            error={firstError('endDate')}
+          >
+            <Input
+              name="endDate"
+              type="date"
+              defaultValue={values.endDate ?? ''}
+              hint={LABEL.endDateHint}
+              error={firstError('endDate')}
+            />
+          </Field>
+        </FieldRow>
+
+        <FieldRow>
+          <Field name="governorates" label={LABEL.governorates} error={firstError('governorates')}>
+            <Select
+              name="governorates"
+              multiple
+              options={options.governorates}
+              defaultValue={values.governorates}
+              error={firstError('governorates')}
+            />
+          </Field>
+          <Field name="themes" label={LABEL.themes} error={firstError('themes')}>
+            <Select
+              name="themes"
+              multiple
+              options={options.themes}
+              defaultValue={values.themes}
+              error={firstError('themes')}
+            />
+          </Field>
+        </FieldRow>
+
+        <FieldRow>
+          <Field
+            name="implementingPartners"
+            label={LABEL.implementingPartners}
+            error={firstError('implementingPartners')}
+          >
+            <Select
+              name="implementingPartners"
+              multiple
+              options={options.partners}
+              defaultValue={values.implementingPartners}
+              error={firstError('implementingPartners')}
+            />
+          </Field>
+          <Field name="donors" label={LABEL.donors} error={firstError('donors')}>
+            <Select
+              name="donors"
+              multiple
+              options={options.partners}
+              defaultValue={values.donors}
+              error={firstError('donors')}
+            />
+          </Field>
+        </FieldRow>
+
+        <BilingualField
+          name="summary"
+          label={LABEL.summary}
+          multiline
+          maxLength={{ ar: 600, en: 600 }}
+          defaultAr={values.summaryAr ?? ''}
+          defaultEn={values.summaryEn ?? ''}
+        />
+
+        <FieldRow>
+          <RichTextEditor name="objectiveAr" label={LABEL.objectiveAr} defaultValue={values.objectiveAr} />
+          <RichTextEditor
+            name="objectiveEn"
+            label={LABEL.objectiveEn}
+            dir="ltr"
+            defaultValue={values.objectiveEn}
           />
-        </div>
-      </details>
+        </FieldRow>
 
-      <EnumSelect
-        name="translationStatus"
-        label="حالة الترجمة"
-        options={[...ADMIN_OPTIONS.translationStatus]}
-        defaultValue={values.translationStatus ?? 'ar_only'}
-        hint="تُحدَّد يدوياً. الموقع يعرض المحتوى العربي للقارئ الإنجليزي ما لم تكن الترجمة مراجَعة."
-        error={firstError('translationStatus')}
-      />
+        <FieldRow>
+          <RichTextEditor name="activitiesAr" label={LABEL.activitiesAr} defaultValue={values.activitiesAr} />
+          <RichTextEditor
+            name="activitiesEn"
+            label={LABEL.activitiesEn}
+            dir="ltr"
+            defaultValue={values.activitiesEn}
+          />
+        </FieldRow>
 
-      <fieldset disabled={pending}>
-        <PublishBar status={values.status ?? 'draft'} canPublish={canPublish} />
-      </fieldset>
+        <FieldRow>
+          <RichTextEditor name="outcomesAr" label={LABEL.outcomesAr} defaultValue={values.outcomesAr} />
+          <RichTextEditor
+            name="outcomesEn"
+            label={LABEL.outcomesEn}
+            dir="ltr"
+            defaultValue={values.outcomesEn}
+          />
+        </FieldRow>
+
+        <Field
+          name="localities"
+          label={LABEL.localities}
+          hint={LABEL.localitiesHint}
+          error={firstError('localities')}
+        >
+          <Textarea
+            name="localities"
+            rows={3}
+            defaultValue={(values.localities ?? []).join('\n')}
+            hint={LABEL.localitiesHint}
+            error={firstError('localities')}
+          />
+        </Field>
+
+        <Field name="heroMediaId" label={LABEL.hero} hint={LABEL.heroHint} error={firstError('heroMediaId')}>
+          <MediaPicker
+            name="heroMediaId"
+            initialValue={values.heroMediaId ?? ''}
+            kind="image"
+            invalid={Boolean(firstError('heroMediaId'))}
+            describedBy={describedBy('heroMediaId', LABEL.heroHint, firstError('heroMediaId'))}
+          />
+        </Field>
+
+        <GalleryPicker
+          name="gallery"
+          label={LABEL.gallery}
+          hint={LABEL.galleryHint}
+          initial={values.gallery ?? []}
+        />
+
+        <Checkbox name="isFeatured" label={LABEL.featured} defaultChecked={values.isFeatured} />
+
+        <Field name="sourceNote" label={LABEL.sourceNote} hint={LABEL.sourceNoteHint}>
+          <Textarea
+            name="sourceNote"
+            rows={2}
+            defaultValue={values.sourceNote ?? ''}
+            hint={LABEL.sourceNoteHint}
+          />
+        </Field>
+
+        <details className="rule-edge bg-paper p-6">
+          <summary className="cursor-pointer text-small font-medium text-ink">{f.seo}</summary>
+          <Stack gap={6} className="mbs-5">
+            <BilingualField
+              name="seoTitle"
+              label={f.seoTitle}
+              maxLength={{ ar: 60, en: 60 }}
+              hint={f.seoTitleHint}
+              defaultAr={values.seoTitleAr ?? ''}
+              defaultEn={values.seoTitleEn ?? ''}
+            />
+            <BilingualField
+              name="seoDescription"
+              label={f.seoDescription}
+              multiline
+              maxLength={{ ar: 160, en: 160 }}
+              defaultAr={values.seoDescriptionAr ?? ''}
+              defaultEn={values.seoDescriptionEn ?? ''}
+            />
+            <Field
+              name="ogMediaId"
+              label={f.ogImage}
+              hint={f.ogImageHint}
+              error={firstError('ogMediaId')}
+            >
+              <MediaPicker
+                name="ogMediaId"
+                initialValue={values.ogMediaId ?? ''}
+                kind="image"
+                invalid={Boolean(firstError('ogMediaId'))}
+                describedBy={describedBy('ogMediaId', f.ogImageHint, firstError('ogMediaId'))}
+              />
+            </Field>
+            <Checkbox
+              name="noIndex"
+              label={f.noIndex}
+              defaultChecked={values.noIndex}
+              hint={f.noIndexHint}
+            />
+          </Stack>
+        </details>
+
+        <Field
+          name="translationStatus"
+          label={f.translationStatus}
+          hint={f.translationStatusHint}
+          error={firstError('translationStatus')}
+        >
+          <Select
+            name="translationStatus"
+            options={[...ADMIN_OPTIONS.translationStatus]}
+            defaultValue={values.translationStatus ?? 'ar_only'}
+            hint={f.translationStatusHint}
+            error={firstError('translationStatus')}
+          />
+        </Field>
+
+        <fieldset disabled={pending}>
+          <PublishBar status={values.status ?? 'draft'} canPublish={canPublish} />
+        </fieldset>
+      </Stack>
     </form>
   );
 }

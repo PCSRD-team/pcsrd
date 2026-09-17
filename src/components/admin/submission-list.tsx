@@ -1,6 +1,13 @@
 import Link from 'next/link';
-import { DataTable, Pagination, TimeCell } from '@/components/admin/controls';
+import { adminDict } from '@/components/admin/admin-dict';
+import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { AdminPagination, DateCell } from '@/components/admin/controls';
 import { AdminHeader } from '@/components/admin/shell';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Bidi, Code } from '@/components/ui/bidi';
+import { EmptyState } from '@/components/ui/feedback';
+import { Table } from '@/components/ui/table';
+import { Caption } from '@/components/ui/typography';
 import { listSubmissions } from '@/db/queries/admin';
 import type { SubmissionState, SubmissionType } from '@/db/schema/enums';
 import type { Actor } from '@/services/_shared/actor';
@@ -14,21 +21,20 @@ import type { Actor } from '@/services/_shared/actor';
  * make that audit meaningless.
  */
 
-export const TYPE_LABEL: Record<SubmissionType, string> = {
-  partnership: 'شراكة',
-  contact: 'تواصل',
-  volunteer: 'تطوّع',
-  job: 'توظيف',
-  complaint: 'شكوى',
-  fraud_report: 'بلاغ انتحال',
+export const TYPE_LABEL: Record<SubmissionType, string> = adminUi.submissions.types;
+export const STATE_LABEL: Record<SubmissionState, string> = adminDict.submissions.states;
+
+const STATE_TONE: Record<SubmissionState, BadgeTone> = {
+  new: 'info',
+  in_progress: 'active',
+  handled: 'success',
+  archived: 'complete',
 };
 
-export const STATE_LABEL: Record<SubmissionState, string> = {
-  new: 'جديد',
-  in_progress: 'قيد المعالجة',
-  handled: 'مُعالَج',
-  archived: 'مؤرشف',
-};
+/** The state in words, with the tone as reinforcement. */
+export function SubmissionStateBadge({ state }: { state: SubmissionState }) {
+  return <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>;
+}
 
 export async function SubmissionListPage({
   actor,
@@ -41,58 +47,69 @@ export async function SubmissionListPage({
 }) {
   const result = await listSubmissions(actor, { sensitive, page });
   const base = sensitive ? '/admin/submissions/sensitive' : '/admin/submissions';
+  const t = adminUi.submissions;
+  const title = sensitive ? t.sensitiveTitle : t.title;
 
   return (
     <>
       <AdminHeader
-        title={sensitive ? 'الشكاوى السرّية' : 'الطلبات الواردة'}
-        description={
-          sensitive
-            ? 'محتوى هذه الشكاوى مشفّر في قاعدة البيانات، وفتح أي منها يُسجَّل في سجل التدقيق. لا تُنزَّل مرفقاتها.'
-            : `${result.total} طلب`
-        }
+        title={title}
+        description={sensitive ? t.sensitiveLede : fill(t.count, { n: result.total })}
       />
 
-      <DataTable
+      <Table
+        caption={title}
+        captionHidden
         rows={result.items}
         rowHref={(row) => `/admin/submissions/${row.id}`}
-        empty="لا طلبات."
+        empty={<EmptyState title={t.empty} body={t.emptyBody} />}
         columns={[
-          { key: 'reference', header: 'المرجع', cell: (row) => row.reference },
-          { key: 'type', header: 'النوع', cell: (row) => TYPE_LABEL[row.type] },
-          { key: 'state', header: 'الحالة', cell: (row) => STATE_LABEL[row.state] },
+          {
+            key: 'reference',
+            header: t.columns.reference,
+            rowHeader: true,
+            cell: (row) => <Code>{row.reference}</Code>,
+          },
+          { key: 'type', header: t.columns.type, cell: (row) => TYPE_LABEL[row.type] },
+          {
+            key: 'state',
+            header: t.columns.state,
+            cell: (row) => <SubmissionStateBadge state={row.state} />,
+          },
           {
             key: 'attachment',
-            header: 'مرفق',
-            cell: (row) => (row.hasAttachment ? 'نعم' : '—'),
+            header: t.columns.attachment,
+            cell: (row) => (row.hasAttachment ? adminUi.list.columns.yes : '—'),
           },
-          { key: 'handled', header: 'المسؤول', cell: (row) => row.handledBy ?? '—' },
+          { key: 'handled', header: t.columns.handledBy, cell: (row) => row.handledBy ?? '—' },
           {
             key: 'created',
-            header: 'وصل',
+            header: t.columns.createdAt,
             numeric: true,
-            cell: (row) => <TimeCell value={row.createdAt} />,
+            align: 'start',
+            cell: (row) => <DateCell value={row.createdAt} />,
           },
           {
             key: 'purge',
-            header: 'يُحذف في',
+            header: t.columns.purgeAfter,
             numeric: true,
-            cell: (row) => row.purgeAfter,
+            align: 'start',
+            cell: (row) => <Bidi>{row.purgeAfter}</Bidi>,
           },
         ]}
       />
 
-      <Pagination
+      <AdminPagination
         page={result.page}
         totalPages={result.totalPages}
         hrefFor={(n) => (n > 1 ? `${base}?page=${n}` : base)}
       />
 
       {!sensitive ? (
-        <p className="mbs-6 text-caption text-ink-55">
-          الشكاوى السرّية لا تظهر هنا. <Link href="/admin/submissions/sensitive">عرضها</Link> يتطلّب
-          صلاحية مستقلة.
-        </p>
+        <Caption className="mbs-6">
+          {t.sensitiveFootnote} <Link href="/admin/submissions/sensitive">{t.sensitiveFootnoteLink}</Link>{' '}
+          {t.sensitiveFootnoteTail}
+        </Caption>
       ) : null}
     </>
   );

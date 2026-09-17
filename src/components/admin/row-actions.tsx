@@ -1,10 +1,14 @@
 import { deleteEntity, setEntityStatus } from '@/actions/admin/content';
+import { Button, buttonClasses } from '@/components/ui/button';
+import { Panel } from '@/components/ui/card';
+import { Cluster } from '@/components/ui/layout';
+import { Caption, Heading } from '@/components/ui/typography';
 import type { ContentStatus } from '@/db/schema/enums';
 import type { DELETE_ENTITIES, STATUS_ENTITIES } from '@/lib/validation/admin';
 import type { Actor } from '@/services/_shared/actor';
 import { can } from '@/services/_shared/permissions';
-import { cn } from '@/lib/utils';
 import { adminDict } from './admin-dict';
+import { adminUi } from './admin-ui-dict';
 
 /**
  * Publish / unpublish / archive and delete, as plain forms.
@@ -21,10 +25,6 @@ import { adminDict } from './admin-dict';
 
 export type StatusEntity = (typeof STATUS_ENTITIES)[number];
 export type DeletableEntity = (typeof DELETE_ENTITIES)[number];
-
-const button = 'rule-edge px-3 py-1 text-caption text-ink hover:bg-paper-alt whitespace-nowrap';
-const primary = 'bg-navy-700 px-3 py-1 text-caption font-medium text-paper hover:bg-navy-900 whitespace-nowrap';
-const marked = 'rule-edge border-gold-600 px-3 py-1 text-caption text-gold-700 hover:bg-gold-050 whitespace-nowrap';
 
 function Hidden({ values }: { values: Record<string, string> }) {
   return (
@@ -58,33 +58,33 @@ export function StatusActions({
       {status !== 'published' ? (
         <form action={setEntityStatus}>
           <Hidden values={{ ...base, status: 'published' }} />
-          <button type="submit" className={primary}>
+          <Button type="submit" size="sm" tone="primary">
             {t.publish}
-          </button>
+          </Button>
         </form>
       ) : null}
       {status === 'published' ? (
         <>
           <form action={setEntityStatus}>
             <Hidden values={{ ...base, status: 'draft' }} />
-            <button type="submit" className={button}>
+            <Button type="submit" size="sm" tone="secondary">
               {t.unpublish}
-            </button>
+            </Button>
           </form>
           <form action={setEntityStatus}>
             <Hidden values={{ ...base, status: 'archived' }} />
-            <button type="submit" className={marked}>
+            <Button type="submit" size="sm" tone="marked">
               {t.archive}
-            </button>
+            </Button>
           </form>
         </>
       ) : null}
       {status === 'archived' ? (
         <form action={setEntityStatus}>
           <Hidden values={{ ...base, status: 'draft' }} />
-          <button type="submit" className={button}>
+          <Button type="submit" size="sm" tone="secondary">
             {t.restore}
-          </button>
+          </Button>
         </form>
       ) : null}
     </>
@@ -114,21 +114,27 @@ export function DeleteAction({
 
   return (
     <details className="group relative">
-      <summary className={cn(button, 'inline-block cursor-pointer list-none')}>{t.delete}</summary>
-      <div className="rule-edge mbs-2 max-w-sm border-gold-600 bg-paper p-3">
+      <summary
+        className={buttonClasses({
+          tone: 'secondary',
+          size: 'sm',
+          className: 'cursor-pointer list-none',
+        })}
+      >
+        {t.delete}
+      </summary>
+      <Panel tone="paper" padding="sm" className="mbs-2 max-w-sm border-destructive/40">
         {label ? <p className="mbe-2 text-small font-medium text-ink">{label}</p> : null}
-        <p className="text-caption text-ink-55">
-          {published ? t.deletePublishedHint : t.deleteHint}
-        </p>
+        <Caption>{published ? t.deletePublishedHint : t.deleteHint}</Caption>
         {!published ? (
           <form action={deleteEntity} className="mbs-3">
             <Hidden values={{ entity, id, returnTo }} />
-            <button type="submit" className={marked}>
+            <Button type="submit" size="sm" tone="danger">
               {t.confirmDelete}
-            </button>
+            </Button>
           </form>
         ) : null}
-      </div>
+      </Panel>
     </details>
   );
 }
@@ -153,7 +159,7 @@ export function RowActions({
   allowDelete?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-start gap-2">
+    <Cluster gap={2} align="start">
       {status && isStatusEntity(entity) ? (
         <StatusActions entity={entity} id={id} status={status} actor={actor} returnTo={returnTo} />
       ) : null}
@@ -167,7 +173,34 @@ export function RowActions({
           label={label}
         />
       ) : null}
-    </div>
+    </Cluster>
+  );
+}
+
+/**
+ * The delete zone under an editor — its own form, outside the editor's,
+ * because a form cannot nest in a form. Rendered only when the actor may
+ * delete; otherwise nothing, for the same reason as the buttons above.
+ */
+export function DeletePanel(props: {
+  entity: DeletableEntity;
+  id: string;
+  status?: ContentStatus;
+  actor: Actor;
+  returnTo: string;
+  label?: string;
+}) {
+  if (!can(props.actor, 'content.delete')) return null;
+  const t = adminUi.entity;
+
+  return (
+    <Panel as="section" tone="paper" padding="sm" className="mbs-8 border-destructive/40" labelledBy="delete-zone">
+      <Heading level={2} size="h4" id="delete-zone">
+        {t.deleteZone}
+      </Heading>
+      <Caption className="mbs-1 mbe-3">{t.deleteZoneHint}</Caption>
+      <DeleteAction {...props} />
+    </Panel>
   );
 }
 

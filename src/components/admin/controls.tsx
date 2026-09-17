@@ -1,45 +1,35 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Badge, StatusBadge as KitStatusBadge } from '@/components/ui/badge';
+import { Panel } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
+import { SubmitButton } from '@/components/ui/submit-button';
+import { TimeCell } from '@/components/ui/table';
 import type { ContentStatus } from '@/db/schema/enums';
 import { formatDate } from '@/lib/format';
-import { paginationRange } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { adminDict } from './admin-dict';
+import { adminUi, fill } from './admin-ui-dict';
 
 /**
  * Shared admin controls.
  *
- * Server Components except where interactivity genuinely requires otherwise —
- * the table, the badges and the field wrappers are all markup, so they render
- * on the server and ship no JavaScript.
+ * Everything here is a thin wrapper that binds a kit component to the
+ * admin's Arabic copy — nothing draws its own surface. The table, the
+ * fields, the inputs, the badges and the pagination are the kit's; what
+ * the admin adds is the dictionary lookup and the capability logic of the
+ * publish bar.
+ *
+ * Server Components except `PublishBar`/`SaveBar`, which render the kit's
+ * `SubmitButton` (a Client Component) and are themselves plain markup.
  */
 
 // ── Status ───────────────────────────────────────────────────────────────
 
-export const STATUS_LABEL: Record<ContentStatus, string> = {
-  draft: 'مسودة',
-  in_review: 'قيد المراجعة',
-  published: 'منشور',
-  archived: 'مؤرشف',
-};
-
-const STATUS_TONE: Record<ContentStatus, string> = {
-  draft: 'bg-paper-alt text-ink-55 border-rule',
-  in_review: 'bg-navy-100 text-navy-900 border-navy-700/30',
-  published: 'bg-gold-050 text-gold-700 border-gold-600',
-  archived: 'bg-paper text-ink-55 border-rule-strong',
-};
+/** `content_status` → the admin's word for it. */
+export const STATUS_LABEL: Record<ContentStatus, string> = adminUi.status;
 
 export function StatusBadge({ status }: { status: ContentStatus }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full border px-3 py-0.5 font-mono text-eyebrow shadow-[0_8px_20px_rgb(20_33_63/0.06)]',
-        STATUS_TONE[status],
-      )}
-    >
-      {STATUS_LABEL[status]}
-    </span>
-  );
+  return <KitStatusBadge status={status} label={STATUS_LABEL[status]} />;
 }
 
 /**
@@ -52,109 +42,24 @@ export function StatusBadge({ status }: { status: ContentStatus }) {
  */
 export function TranslationBadge({ partial }: { partial: boolean }) {
   if (!partial) return null;
-  return (
-    <span className="inline-flex items-center rounded-full border border-gold-600 bg-gold-050 px-3 py-0.5 font-mono text-eyebrow text-gold-700">
-      ترجمة ناقصة
-    </span>
-  );
+  return <Badge tone="warning">{adminUi.translationPartial}</Badge>;
 }
 
-// ── Table ────────────────────────────────────────────────────────────────
-
-export type Column<T> = {
-  key: string;
-  header: string;
-  cell: (row: T) => ReactNode;
-  /** Mono, LTR and narrow — dates, counts, references. */
-  numeric?: boolean;
-};
-
-export function DataTable<T extends { id: string | number }>({
-  rows,
-  columns,
-  empty,
-  rowHref,
-}: {
-  rows: T[];
-  columns: Column<T>[];
-  empty: string;
-  rowHref?: (row: T) => string;
-}) {
-  if (rows.length === 0) {
-    return (
-      <div className="rounded-2xl border border-white bg-white/75 p-10 text-center shadow-[0_12px_32px_rgb(20_33_63/0.05)]">
-        <p className="text-small text-ink-55">{empty}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto rounded-2xl border border-white bg-white/90 shadow-[0_14px_36px_rgb(20_33_63/0.07)]">
-      <table className="w-full">
-        <thead>
-          <tr className="border-be border-rule bg-navy-100/55">
-            {columns.map((column) => (
-              <th key={column.key} scope="col" className="eyebrow p-3 text-start whitespace-nowrap">
-                {column.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-be border-hairline transition-colors hover:bg-gold-050/45">
-              {columns.map((column, index) => (
-                <td
-                  key={column.key}
-                  // The admin is unconditionally `dir="rtl"`, so a Latin or
-                  // numeric run in a cell — a reference, a slug, a date, a
-                  // phone number — is reordered by the bidi algorithm and its
-                  // trailing punctuation jumps to the front. `PCS-2026-0041.`
-                  // renders as `.PCS-2026-0041`, and a complainant's callback
-                  // number comes out with the country code at the wrong end.
-                  //
-                  // `dir` on an element is sufficient isolation: the UA
-                  // stylesheet applies `unicode-bidi: isolate` to `[dir]`. The
-                  // `numeric` column type already promised "Mono, LTR and
-                  // narrow" and delivered only the first and the third.
-                  dir={column.numeric ? 'ltr' : undefined}
-                  className={cn(
-                    'p-3 text-small text-ink align-top',
-                    column.numeric && 'font-mono text-caption whitespace-nowrap',
-                  )}
-                >
-                  {/* The first cell carries the row link, so the whole row is
-                      not a link — that would make every cell's text
-                      unselectable and swallow nested controls. */}
-                  {index === 0 && rowHref ? (
-                    <Link href={rowHref(row)} className="text-ink hover:text-gold-700">
-                      {column.cell(row)}
-                    </Link>
-                  ) : (
-                    column.cell(row)
-                  )}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+// ── Table cells ──────────────────────────────────────────────────────────
 
 /** `updated_at` in a list, formatted once so every table agrees. */
-export function TimeCell({ value }: { value: Date }) {
+export function DateCell({ value }: { value: Date }) {
   return (
-    <time dateTime={value.toISOString()} dir="ltr">
+    <TimeCell dateTime={value.toISOString()}>
       {formatDate(value, 'ar', { year: 'numeric', month: 'short', day: 'numeric' })}
-    </time>
+    </TimeCell>
   );
 }
 
 // ── Pagination ───────────────────────────────────────────────────────────
 
-export function Pagination({
+/** The kit's pagination with the admin's labels bound. */
+export function AdminPagination({
   page,
   totalPages,
   hrefFor,
@@ -163,189 +68,22 @@ export function Pagination({
   totalPages: number;
   hrefFor: (page: number) => string;
 }) {
-  if (totalPages <= 1) return null;
-
   return (
-    <nav aria-label="ترقيم الصفحات" className="mbs-6">
-      <ul className="flex flex-wrap gap-2">
-        {paginationRange(page, totalPages).map((token, index) =>
-          token === 'gap' ? (
-            <li
-              key={`gap-${index}`}
-              aria-hidden="true"
-              className="px-2 py-1 font-mono text-caption text-mono-muted"
-            >
-              …
-            </li>
-          ) : (
-            <li key={token}>
-              <Link
-                href={hrefFor(token)}
-                aria-current={token === page ? 'page' : undefined}
-                className={cn(
-                  'rule-edge px-3 py-1 font-mono text-caption no-underline',
-                  token === page ? 'border-ink bg-ink text-paper' : 'text-ink hover:bg-paper-alt',
-                )}
-              >
-                {token}
-              </Link>
-            </li>
-          ),
-        )}
-      </ul>
-    </nav>
+    <Pagination
+      page={page}
+      totalPages={totalPages}
+      hrefFor={hrefFor}
+      label={adminUi.pagination.label}
+      previousLabel={adminUi.pagination.previous}
+      nextLabel={adminUi.pagination.next}
+      pageLabel={(n) => fill(adminUi.pagination.page, { n })}
+    />
   );
 }
 
-// ── Form scaffolding ─────────────────────────────────────────────────────
+// ── Action bars ──────────────────────────────────────────────────────────
 
-export const inputClass =
-  'block min-h-11 w-full rounded-xl border border-rule bg-white px-3 py-2 text-small text-ink outline-none motion-standard transition-[border-color,box-shadow,background-color] hover:border-navy-700/40 focus:border-navy-700 focus:shadow-[0_0_0_4px_rgb(37_66_132/0.10)] disabled:cursor-not-allowed disabled:bg-paper-alt disabled:text-ink-55';
-
-/**
- * The ids `Field` renders, joined for `aria-describedby`.
- *
- * The public forms have `describedBy` in `components/forms/fields.tsx`; this is
- * the admin's half of the same contract. They are deliberately not shared —
- * that module is a Client Component boundary for the public site and importing
- * across would drag it into the admin bundle for four lines.
- */
-export function fieldDescribedBy(name: string, hint?: string, error?: string) {
-  return (
-    [hint ? `${name}-hint` : null, error ? `${name}-error` : null].filter(Boolean).join(' ') ||
-    undefined
-  );
-}
-
-export function Field({
-  name,
-  label,
-  hint,
-  error,
-  required,
-  children,
-}: {
-  name: string;
-  label: string;
-  hint?: string;
-  /** Rendered with a stable id so the control can reference it. */
-  error?: string;
-  required?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className="space-y-2 rounded-xl bg-white/55 p-3">
-      <label htmlFor={name} className="block text-small font-medium text-ink">
-        {label}
-        {required ? (
-          <span className="ms-1 text-gold-700" aria-hidden="true">
-            *
-          </span>
-        ) : null}
-      </label>
-      {hint ? (
-        <p id={`${name}-hint`} className="text-caption text-ink-55">
-          {hint}
-        </p>
-      ) : null}
-      {children}
-      {/* `Field` rendered no error at all, so `ContentForm` rendered one itself
-          for text inputs and nothing whatsoever for textareas and selects — an
-          editor got a rejected save with no indication which field was wrong.
-          Owning it here means every branch gets it, and gets the id that makes
-          `aria-describedby` possible. */}
-      {error ? (
-        <p id={`${name}-error`} className="text-caption text-gold-700" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-export function EnumSelect({
-  name,
-  label,
-  options,
-  defaultValue,
-  required,
-  hint,
-  multiple,
-  error,
-}: {
-  name: string;
-  label: string;
-  options: { value: string; label: string }[];
-  defaultValue?: string | string[];
-  required?: boolean;
-  hint?: string;
-  multiple?: boolean;
-  error?: string;
-}) {
-  return (
-    <Field name={name} label={label} hint={hint} required={required} error={error}>
-      <select
-        id={name}
-        name={name}
-        required={required}
-        multiple={multiple}
-        defaultValue={defaultValue}
-        size={multiple ? Math.min(options.length, 6) : undefined}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={fieldDescribedBy(name, hint, error)}
-        className={inputClass}
-      >
-        {!multiple ? <option value="">—</option> : null}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </Field>
-  );
-}
-
-export function CheckboxField({
-  name,
-  label,
-  hint,
-  defaultChecked,
-  error,
-}: {
-  name: string;
-  label: string;
-  hint?: string;
-  defaultChecked?: boolean;
-  error?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="flex items-center gap-3 text-small text-ink">
-        <input
-          id={name}
-          name={name}
-          type="checkbox"
-          defaultChecked={defaultChecked}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={fieldDescribedBy(name, hint, error)}
-          className="size-4 rounded accent-navy-700"
-        />
-        {label}
-      </label>
-      {hint ? (
-        <p id={`${name}-hint`} className="text-caption text-ink-55">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={`${name}-error`} className="text-caption text-gold-700" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
+const barClass = 'sticky inset-be-0 z-20 mbs-10 flex flex-wrap items-center gap-3 rule-section';
 
 /**
  * The sticky action bar.
@@ -354,8 +92,11 @@ export function CheckboxField({
  * actions guard again. A disabled button an editor can see but not use
  * teaches them the tool is broken; an absent one teaches them the boundary.
  *
- * Delete is not here: it is a separate form (`DeleteAction`) rendered below
- * the editor, because a form cannot nest inside another form.
+ * Every button is a submit with `name="status"`, so "save as draft" and
+ * "publish" are one submission with a different value rather than two code
+ * paths that can drift apart. Delete is not here: it is a separate form
+ * (`DeleteAction`) rendered below the editor, because a form cannot nest
+ * inside another form.
  */
 export function PublishBar({
   status,
@@ -366,47 +107,75 @@ export function PublishBar({
   canPublish: boolean;
   children?: ReactNode;
 }) {
+  const t = adminDict.form;
+  const pending = adminUi.form.saving;
+
   return (
-    <div className="sticky inset-be-0 z-20 mbs-10 flex flex-wrap items-center gap-3 rounded-2xl border border-white bg-paper/95 p-4 shadow-[0_-16px_45px_rgb(20_33_63/0.10)] backdrop-blur">
+    <Panel tone="paper" padding="sm" className={barClass}>
       <StatusBadge status={status} />
       <div className="flex-1" />
       {children}
-      <button
-        type="submit"
+      <SubmitButton
+        tone="secondary"
         name="status"
         value="draft"
-        className="rule-edge rounded-md px-5 py-2 text-small text-ink hover:bg-paper-alt"
-      >
-        حفظ كمسودة
-      </button>
-      <button
-        type="submit"
+        label={t.saveDraft}
+        pendingLabel={pending}
+      />
+      <SubmitButton
+        tone="secondary"
         name="status"
         value="in_review"
-        className="rule-edge rounded-md px-5 py-2 text-small text-ink hover:bg-paper-alt"
-      >
-        إرسال للمراجعة
-      </button>
+        label={t.submitReview}
+        pendingLabel={pending}
+      />
       {canPublish ? (
-        <button
-          type="submit"
+        <SubmitButton
+          tone="primary"
           name="status"
           value="published"
-          className="rounded-md bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900"
-        >
-          نشر
-        </button>
+          label={t.publish}
+          pendingLabel={pending}
+        />
       ) : null}
       {canPublish && status === 'published' ? (
-        <button
-          type="submit"
+        <SubmitButton
+          tone="danger"
           name="status"
           value="archived"
-          className="rule-edge rounded-md border-gold-600 px-5 py-2 text-small text-gold-700 hover:bg-gold-050"
-        >
-          أرشفة
-        </button>
+          label={t.archive}
+          pendingLabel={pending}
+        />
       ) : null}
-    </div>
+    </Panel>
+  );
+}
+
+/**
+ * The single-button bar for records with no lifecycle — a person, an impact
+ * figure, a media asset, the organisation record. `pending` comes from the
+ * form's `useActionState` when it has one; otherwise `SubmitButton` reads
+ * `useFormStatus` itself.
+ */
+export function SaveBar({
+  label = adminDict.form.save,
+  pending,
+  note,
+}: {
+  label?: string;
+  pending?: boolean;
+  note?: string;
+}) {
+  return (
+    <Panel tone="paper" padding="sm" className={barClass}>
+      {pending === undefined ? (
+        <SubmitButton label={label} pendingLabel={adminUi.form.saving} />
+      ) : (
+        <Button type="submit" loading={pending}>
+          {pending ? adminUi.form.saving : label}
+        </Button>
+      )}
+      {note ? <p className="text-caption text-ink-55">{note}</p> : null}
+    </Panel>
   );
 }

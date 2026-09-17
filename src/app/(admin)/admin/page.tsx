@@ -1,172 +1,167 @@
-import Link from 'next/link';
+import { adminUi } from '@/components/admin/admin-ui-dict';
+import { DateCell, STATUS_LABEL } from '@/components/admin/controls';
 import { AdminHeader } from '@/components/admin/shell';
-import { DataTable, TimeCell } from '@/components/admin/controls';
+import { ButtonLink } from '@/components/ui/button';
+import { Card, CardBody, CardFooter } from '@/components/ui/card';
+import { DefinitionList } from '@/components/ui/definition-list';
+import { EmptyState } from '@/components/ui/feedback';
+import { Cluster, Grid, Section, SectionHeading } from '@/components/ui/layout';
+import { Table } from '@/components/ui/table';
+import { Caption, Eyebrow, Meta } from '@/components/ui/typography';
 import { getDashboard } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
 
-const ENTITY_LABEL: Record<string, string> = {
-  project: 'مشاريع',
-  post: 'أخبار',
-  story: 'قصص',
-  vacancy: 'وظائف',
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: 'مسودة',
-  in_review: 'قيد المراجعة',
-  published: 'منشور',
-  archived: 'مؤرشف',
-};
-
-const ACTION_LABEL: Record<string, string> = {
-  create: 'إنشاء',
-  update: 'تعديل',
-  publish: 'نشر',
-  unpublish: 'إلغاء نشر',
-  archive: 'أرشفة',
-  delete: 'حذف',
-  view_sensitive: 'فتح شكوى سرّية',
-  invite: 'دعوة مستخدم',
-  set_role: 'تغيير دور',
-  deactivate: 'إيقاف حساب',
-  set_state: 'تغيير حالة طلب',
-  upload: 'رفع وسيط',
-  purge: 'حذف تلقائي',
-  login: 'تسجيل دخول',
-};
-
+/**
+ * The dashboard.
+ *
+ * The count tiles are `Card` + `Meta`, not `Stat`: a `Stat` is an impact
+ * figure locked to a period and a verification status, and "new submissions
+ * today" is neither — it is an operational count that points at a screen.
+ */
 export default async function DashboardPage() {
   const actor = await requireAuth();
   const data = await getDashboard(actor);
+  const t = adminUi.dashboard;
 
   const published = data.content.filter((row) => row.status === 'published');
   const drafts = data.content.filter((row) => row.status !== 'published');
-  const cards = [
+  const entityLabel = (entity: string) =>
+    (t.entities as Record<string, string>)[entity] ?? entity;
+  const statusLabel = (status: string) =>
+    (STATUS_LABEL as Record<string, string>)[status] ?? status;
+
+  const cards: {
+    label: string;
+    value: number;
+    href: string;
+    action: string;
+    accent: string;
+  }[] = [
     {
-      label: 'طلبات جديدة',
+      label: t.newSubmissions,
       value: data.newSubmissions,
       href: '/admin/submissions',
-      action: 'فتح الوارد',
-      tone: 'bg-white border-navy-700/15',
-      accent: 'bg-navy-700',
+      action: t.openInbox,
+      accent: 'var(--color-navy-700)',
     },
     ...(actor.canViewSensitive
       ? [
           {
-            label: 'شكاوى سرّية جديدة',
+            label: t.sensitiveNew,
             value: data.sensitiveNew,
             href: '/admin/submissions/sensitive',
-            action: 'فتح',
-            tone: 'bg-destructive-soft border-destructive/30',
-            accent: 'bg-destructive',
+            action: t.open,
+            accent: 'var(--color-destructive)',
           },
         ]
       : []),
     {
-      label: 'وسائط تنتظر موافقة',
+      label: t.consentGaps,
       value: data.consentGaps,
       href: '/admin/media?needsConsent=1',
-      action: 'مراجعة',
-      tone: data.consentGaps > 0 ? 'bg-gold-050 border-gold-600/50' : 'bg-white border-navy-700/15',
-      accent: 'bg-gold-600',
+      action: t.review,
+      accent: data.consentGaps > 0 ? 'var(--color-gold-600)' : 'var(--color-ink)',
     },
   ];
 
   return (
     <>
       <AdminHeader
-        title="لوحة التحكم"
-        description="نظرة تشغيلية سريعة على المحتوى والوارد وسلامة النشر."
+        title={t.title}
+        description={t.lede}
         action={
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/admin/posts/new"
-              className="inline-flex min-h-10 items-center rounded-xl bg-navy-700 px-4 text-caption font-medium text-paper no-underline shadow-[0_8px_20px_rgb(37_66_132/0.18)] transition hover:bg-navy-900"
-            >
-              + خبر جديد
-            </Link>
-            <Link
-              href="/admin/media"
-              className="inline-flex min-h-10 items-center rounded-xl border border-rule bg-white px-4 text-caption font-medium text-ink no-underline transition hover:border-gold-600 hover:bg-gold-050"
-            >
-              رفع صورة
-            </Link>
-          </div>
+          <Cluster gap={2}>
+            <ButtonLink href="/admin/posts/new" size="sm">
+              {t.newPost}
+            </ButtonLink>
+            <ButtonLink href="/admin/media" tone="secondary" size="sm">
+              {t.uploadImage}
+            </ButtonLink>
+          </Cluster>
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <Grid as="ul" cols={3} gap={4}>
         {cards.map((card) => (
-          <article
-            key={card.label}
-            className={`relative animate-slide-fade overflow-hidden rounded-2xl border p-6 shadow-[0_18px_45px_rgb(20_33_63/0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgb(20_33_63/0.12)] ${card.tone}`}
-          >
-            <span className={`absolute inset-bs-0 inset-e-0 h-1 w-full ${card.accent}`} aria-hidden="true" />
-            <p className="text-caption font-semibold text-ink-55">{card.label}</p>
-            <p className="mbs-3 font-mono text-h1 text-ink">{card.value}</p>
-            <Link
-              href={card.href}
-              className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-ink/15 bg-white/70 px-3 text-caption font-medium text-ink no-underline transition hover:border-gold-600 hover:bg-white hover:text-gold-700"
-            >
-              {card.action}
-              <span aria-hidden="true">←</span>
-            </Link>
-          </article>
+          <Card key={card.label} as="li" accent={card.accent} padding="md">
+            <CardBody>
+              <Eyebrow>{card.label}</Eyebrow>
+              <Meta className="mbs-3 text-h1 text-ink">{card.value}</Meta>
+            </CardBody>
+            <CardFooter>
+              <ButtonLink href={card.href} tone="quiet" size="sm">
+                {card.action}
+              </ButtonLink>
+            </CardFooter>
+          </Card>
         ))}
-      </div>
+      </Grid>
 
-      <section className="mbs-10">
-        <h2 className="text-h3 font-semibold text-navy-900">صحة المحتوى</h2>
-        <p className="mbs-1 mbe-5 text-caption text-ink-55">ملخص حالات النشر في أقسام الموقع.</p>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-white bg-white/90 p-6 shadow-[0_14px_38px_rgb(20_33_63/0.06)]">
-            <p className="eyebrow mbe-3">منشور</p>
-            <ul className="space-y-1 text-small">
-              {published.map((row) => (
-                <li key={row.entity} className="flex justify-between">
-                  <span>{ENTITY_LABEL[row.entity] ?? row.entity}</span>
-                  <span className="font-mono text-caption">{row.n}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-white bg-white/90 p-6 shadow-[0_14px_38px_rgb(20_33_63/0.06)]">
-            <p className="eyebrow mbe-3">غير منشور</p>
-            <ul className="space-y-1 text-small">
-              {drafts.map((row) => (
-                <li key={`${row.entity}-${row.status}`} className="flex justify-between">
-                  <span>
-                    {ENTITY_LABEL[row.entity] ?? row.entity} — {STATUS_LABEL[row.status] ?? row.status}
-                  </span>
-                  <span className="font-mono text-caption">{row.n}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
+      <Section bounded spacing="tight" labelledBy="dashboard-health" className="mbs-10">
+        <SectionHeading as="h2" id="dashboard-health" title={t.health} lead={t.healthLede} />
+        <Grid cols={2} gap={4}>
+          <Card as="div" padding="md">
+            <Eyebrow className="mbe-3">{t.published}</Eyebrow>
+            {published.length ? (
+              <DefinitionList
+                layout="ruled"
+                items={published.map((row) => ({
+                  term: entityLabel(row.entity),
+                  value: <Meta as="span">{row.n}</Meta>,
+                }))}
+              />
+            ) : (
+              <Caption>{t.nothing}</Caption>
+            )}
+          </Card>
+          <Card as="div" padding="md">
+            <Eyebrow className="mbe-3">{t.unpublished}</Eyebrow>
+            {drafts.length ? (
+              <DefinitionList
+                layout="ruled"
+                items={drafts.map((row) => ({
+                  term: `${entityLabel(row.entity)} — ${statusLabel(row.status)}`,
+                  value: <Meta as="span">{row.n}</Meta>,
+                }))}
+              />
+            ) : (
+              <Caption>{t.nothing}</Caption>
+            )}
+          </Card>
+        </Grid>
+      </Section>
 
-      <section className="mbs-10">
-        <h2 className="text-h3 font-semibold text-navy-900">آخر النشاط</h2>
-        <p className="mbs-1 mbe-5 text-caption text-ink-55">أحدث العمليات المسجلة في لوحة التحكم.</p>
-        <DataTable
+      <Section bounded spacing="tight" labelledBy="dashboard-activity">
+        <SectionHeading as="h2" id="dashboard-activity" title={t.activity} lead={t.activityLede} />
+        <Table
+          caption={t.activity}
+          captionHidden
           rows={data.recentAudit}
-          empty="لا نشاط بعد."
+          empty={<EmptyState title={t.noActivity} body={t.activityLede} />}
           columns={[
-            { key: 'action', header: 'الإجراء', cell: (r) => ACTION_LABEL[r.action] ?? r.action },
-            { key: 'entity', header: 'العنصر', cell: (r) => r.entityType },
-            { key: 'actor', header: 'المستخدم', cell: (r) => r.actorName ?? 'النظام' },
+            {
+              key: 'action',
+              header: adminUi.audit.columns.action,
+              cell: (r) => (adminUi.audit.actions as Record<string, string>)[r.action] ?? r.action,
+            },
+            { key: 'entity', header: adminUi.audit.columns.entity, cell: (r) => r.entityType },
+            {
+              key: 'actor',
+              header: adminUi.audit.columns.actor,
+              cell: (r) => r.actorName ?? adminUi.audit.system,
+            },
             {
               key: 'at',
-              header: 'التاريخ',
+              header: adminUi.audit.columns.at,
               numeric: true,
-              cell: (r) => <TimeCell value={r.createdAt} />,
+              align: 'start',
+              cell: (r) => <DateCell value={r.createdAt} />,
             },
           ]}
         />
-      </section>
+      </Section>
     </>
   );
 }

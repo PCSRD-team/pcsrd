@@ -1,6 +1,13 @@
 'use client';
+// Client Component: lazy-loads the picker (which fetches the library) so a
+// form without a media field never ships it; the fallback keeps the hidden
+// input so a submit before hydration still posts the stored id.
 
 import { lazy, Suspense } from 'react';
+import { Panel } from '@/components/ui/card';
+import { Caption } from '@/components/ui/typography';
+import { cn } from '@/lib/utils';
+import { adminUi } from './admin-ui-dict';
 
 type MediaPickerProps = {
   name: string;
@@ -23,6 +30,7 @@ function MediaPickerFallback({
   describedBy,
   invalid,
 }: MediaPickerProps) {
+  const t = adminUi.mediaPicker;
   return (
     <>
       <input
@@ -33,13 +41,11 @@ function MediaPickerFallback({
         aria-describedby={describedBy}
         aria-invalid={invalid}
       />
-      <div className={`rounded-lg border bg-paper p-3 ${invalid ? 'border-gold-600' : 'border-rule'}`}>
-        <p className="text-caption text-ink-55">
-          {initialValue
-            ? 'Loading selected media...'
-            : `No ${kind === 'document' ? 'file' : 'image'} selected.`}
-        </p>
-      </div>
+      <Panel padding="sm" className={cn(invalid && 'border-destructive')}>
+        <Caption>
+          {initialValue ? t.loadingSelected : kind === 'document' ? t.noneFile : t.noneImage}
+        </Caption>
+      </Panel>
     </>
   );
 }

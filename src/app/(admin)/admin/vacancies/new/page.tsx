@@ -1,5 +1,6 @@
 import { saveVacancyForm } from '@/actions/admin/entity-forms';
 import { adminFormDict } from '@/components/admin/admin-dict';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import { ContentForm } from '@/components/admin/content-form';
 import { VACANCY_FIELDS } from '@/components/admin/field-configs';
 import { AdminHeader } from '@/components/admin/shell';
@@ -13,7 +14,7 @@ export default async function Page() {
 
   return (
     <>
-      <AdminHeader title="وظيفة جديدة" />
+      <AdminHeader title={adminUi.entity.newVacancy} />
       <ContentForm
         action={saveVacancyForm}
         fields={VACANCY_FIELDS}

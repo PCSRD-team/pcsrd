@@ -1,10 +1,15 @@
 'use client';
+// Client Component: TipTap is a contenteditable editor and lives in the
+// browser by definition. The hidden input keeps the form submittable
+// before it mounts.
 
 import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useId, useState } from 'react';
+import { IconButton } from '@/components/ui/button';
 import type { RichText } from '@/db/schema/_shared';
+import { adminUi } from './admin-ui-dict';
 
 /**
  * The rich-text editor.
@@ -17,19 +22,16 @@ import type { RichText } from '@/db/schema/_shared';
  *
  * The document is stored as JSON rather than HTML, which is what lets the
  * renderer stay a Server Component with no `dangerouslySetInnerHTML`.
+ *
+ * The toolbar is a row of the kit's `IconButton`s. The kit's `Icon` set has
+ * no formatting glyphs, so each button shows its label as text; the
+ * accessible name and the visible label are the same word.
  */
 
-const TOOLBAR_LABEL: Record<string, string> = {
-  bold: 'عريض',
-  italic: 'مائل',
-  h2: 'عنوان 2',
-  h3: 'عنوان 3',
-  bulletList: 'قائمة نقطية',
-  orderedList: 'قائمة مرقّمة',
-  blockquote: 'اقتباس',
-  link: 'رابط',
-  unlink: 'إزالة الرابط',
-};
+type ToolbarKey = keyof Pick<
+  typeof adminUi.richText,
+  'bold' | 'italic' | 'h2' | 'h3' | 'bulletList' | 'orderedList' | 'blockquote' | 'link'
+>;
 
 export function RichTextEditorImpl({
   name,
@@ -45,6 +47,7 @@ export function RichTextEditorImpl({
 }) {
   const [doc, setDoc] = useState<RichText | null>(defaultValue ?? null);
   const labelId = useId();
+  const t = adminUi.richText;
 
   const editor = useEditor({
     // Server-rendering a contenteditable produces a hydration mismatch; the
@@ -72,33 +75,31 @@ export function RichTextEditorImpl({
       attributes: {
         dir,
         lang: dir === 'rtl' ? 'ar' : 'en',
-        // The contenteditable had `dir`, `lang` and a class, and no accessible
-        // name at all — its label was an unassociated `<p>`. Two of these
-        // render side by side per rich-text field, so a screen-reader user
-        // heard two identical unnamed editable regions and could not tell the
-        // Arabic body from the English one. WCAG 2.2 SC 4.1.2.
+        // The contenteditable needs an accessible name of its own: two of
+        // these render side by side per rich-text field, and without it a
+        // screen-reader user hears two identical unnamed editable regions.
+        // WCAG 2.2 SC 4.1.2.
         'aria-labelledby': labelId,
         role: 'textbox',
         'aria-multiline': 'true',
-        class:
-          'min-h-40 rule-control bg-paper p-4 text-body text-ink focus:border-navy-700',
+        class: 'control min-h-40 text-body',
       },
     },
     onUpdate: ({ editor: instance }) => setDoc(instance.getJSON() as RichText),
   });
 
-  const button = (key: string, active: boolean, onClick: () => void) => (
-    <button
+  const button = (key: ToolbarKey, active: boolean, onClick: () => void) => (
+    <IconButton
       key={key}
-      type="button"
-      onClick={onClick}
+      label={t[key]}
+      size="sm"
+      tone={active ? 'primary' : 'quiet'}
       aria-pressed={active}
-      className={`px-3 py-1 font-mono text-eyebrow ${
-        active ? 'bg-ink text-paper' : 'text-ink hover:bg-paper-alt'
-      }`}
+      onClick={onClick}
+      className="font-mono text-eyebrow"
     >
-      {TOOLBAR_LABEL[key]}
-    </button>
+      {t[key]}
+    </IconButton>
   );
 
   return (
@@ -110,8 +111,8 @@ export function RichTextEditorImpl({
       {editor ? (
         <div
           role="toolbar"
-          aria-label={`${label} — أدوات التنسيق`}
-          className="rule-edge flex flex-wrap divide-x divide-rule bg-paper-alt"
+          aria-label={`${label} — ${t.toolbar}`}
+          className="rule-edge flex flex-wrap bg-paper-alt"
         >
           {button('bold', editor.isActive('bold'), () =>
             editor.chain().focus().toggleBold().run(),
@@ -135,7 +136,7 @@ export function RichTextEditorImpl({
             editor.chain().focus().toggleBlockquote().run(),
           )}
           {button('link', editor.isActive('link'), () => {
-            const href = window.prompt('الرابط', editor.getAttributes('link').href ?? 'https://');
+            const href = window.prompt(t.linkPrompt, editor.getAttributes('link').href ?? 'https://');
             if (href === null) return;
             if (href === '') {
               editor.chain().focus().unsetLink().run();
