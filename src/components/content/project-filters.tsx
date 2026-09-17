@@ -1,8 +1,14 @@
-import Link from 'next/link';
-import { Panel } from '@/components/ui/primitives';
+import { Bidi } from '@/components/ui/bidi';
+import { Button, ButtonLink } from '@/components/ui/button';
+import { Panel } from '@/components/ui/card';
+import { Fieldset, FormActions } from '@/components/ui/field';
+import { Checkbox, RadioGroup } from '@/components/ui/inputs';
+import { Heading, Meta } from '@/components/ui/typography';
 import type { ProjectFilters } from '@/db/queries/projects';
+import { formatNumber } from '@/lib/format';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import { type Locale, localePath } from '@/lib/i18n/config';
+import { projectStateLabel } from './cards';
 
 /**
  * The project facet panel.
@@ -15,7 +21,9 @@ import { type Locale, localePath } from '@/lib/i18n/config';
  * has to reimplement badly.
  *
  * Counts come from `getProjectFacets`, one aggregate query rather than one per
- * option.
+ * option. The controls are the kit's: `Fieldset` for the group, `Checkbox`
+ * per option (its label carries the count in mono), `RadioGroup` for the
+ * single-choice state facet.
  */
 
 type Facets = {
@@ -31,39 +39,43 @@ function CheckboxFacet({
   options,
   selected,
   labelFor,
+  locale,
 }: {
   name: string;
   legend: string;
   options: { key: string | number; count: number }[];
   selected: string[];
   labelFor: (key: string) => string;
+  locale: Locale;
 }) {
   if (options.length === 0) return null;
 
   return (
-    <fieldset className="border-bs border-hairline pbs-5">
-      <legend className="eyebrow">{legend}</legend>
-      <ul className="mbs-3 space-y-2">
+    <Fieldset name={name} legend={legend} className="border-bs border-hairline pbs-4">
+      <ul className="grid gap-0">
         {options.map((option) => {
           const value = String(option.key);
           return (
             <li key={value}>
-              <label className="flex items-center gap-3 text-small text-ink">
-                <input
-                  type="checkbox"
-                  name={name}
-                  value={value}
-                  defaultChecked={selected.includes(value)}
-                  className="size-4 accent-navy-700"
-                />
-                <span className="flex-1">{labelFor(value)}</span>
-                <span className="font-mono text-caption text-mono-muted">{option.count}</span>
-              </label>
+              <Checkbox
+                name={name}
+                id={`${name}-${value}`}
+                value={value}
+                defaultChecked={selected.includes(value)}
+                label={
+                  <span className="flex items-baseline gap-3">
+                    <span className="flex-1">{labelFor(value)}</span>
+                    <Meta as="span">
+                      <Bidi>{formatNumber(option.count, locale)}</Bidi>
+                    </Meta>
+                  </span>
+                }
+              />
             </li>
           );
         })}
       </ul>
-    </fieldset>
+    </Fieldset>
   );
 }
 
@@ -86,23 +98,41 @@ export function ProjectFilterPanel({
   const label = (group: keyof Dictionary['enums']) => (key: string) =>
     (dict.enums[group] as Record<string, string>)[key] ?? key;
 
+  const headingId = 'project-filters-heading';
+
   return (
-    <Panel as="aside" className="p-6" tone="paper">
+    <Panel as="aside" padding="sm" labelledBy={headingId} className="md:sticky md:inset-bs-6 md:self-start">
       <form method="get" aria-label={dict.a11y.filterPanel}>
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-h3 font-semibold text-ink">{dict.projects.filters}</h2>
-          <span className="font-mono text-caption text-mono-muted">
-            {total} {dict.projects.results}
-          </span>
+        <div className="flex items-baseline justify-between gap-3 pbe-4">
+          <Heading level={2} size="h4" id={headingId}>
+            {dict.projects.filters}
+          </Heading>
+          <Meta as="p">
+            <Bidi>{formatNumber(total, locale)}</Bidi> {dict.projects.results}
+          </Meta>
         </div>
 
-        <div className="mbs-5 space-y-5">
+        <div className="space-y-4">
           <CheckboxFacet
             name="program"
             legend={dict.projects.program}
             options={facets.byProgram}
             selected={filters.program ? [filters.program] : []}
             labelFor={label('program')}
+            locale={locale}
+          />
+          <RadioGroup
+            name="state"
+            legend={dict.projects.state}
+            columns={1}
+            className="border-bs border-hairline pbs-4"
+            defaultValue={filters.state ?? ''}
+            options={[
+              { value: '', label: dict.filters.all },
+              { value: 'active', label: projectStateLabel('active', dict) },
+              { value: 'completed', label: projectStateLabel('completed', dict) },
+              { value: 'planned', label: projectStateLabel('planned', dict) },
+            ]}
           />
           <CheckboxFacet
             name="gov"
@@ -110,6 +140,7 @@ export function ProjectFilterPanel({
             options={facets.byGovernorate}
             selected={filters.governorates ?? []}
             labelFor={label('governorate')}
+            locale={locale}
           />
           <CheckboxFacet
             name="theme"
@@ -117,6 +148,7 @@ export function ProjectFilterPanel({
             options={facets.byTheme}
             selected={filters.themes ?? []}
             labelFor={label('theme')}
+            locale={locale}
           />
           <CheckboxFacet
             name="year"
@@ -124,22 +156,20 @@ export function ProjectFilterPanel({
             options={facets.byYear}
             selected={filters.year ? [String(filters.year)] : []}
             labelFor={(key) => key}
+            locale={locale}
           />
         </div>
 
-        <div className="mbs-6 flex flex-wrap items-center gap-4">
-          <button
-            type="submit"
-            className="bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900"
-          >
-            {dict.projects.filters}
-          </button>
+        <FormActions>
+          <Button type="submit" size="sm">
+            {dict.filters.apply}
+          </Button>
           {/* A link, not a reset button: it clears the URL too, so the back
               button and a shared link behave the same way. */}
-          <Link href={localePath(locale, '/projects')} className="text-small">
+          <ButtonLink href={localePath(locale, '/projects')} tone="quiet" size="sm">
             {dict.projects.clearFilters}
-          </Link>
-        </div>
+          </ButtonLink>
+        </FormActions>
       </form>
     </Panel>
   );

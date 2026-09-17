@@ -1,14 +1,23 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { FraudReportForm } from '@/components/forms/public-forms';
+import { organizationName, visibleText } from '@/components/layout/chrome';
+import { SiteBreadcrumbs } from '@/components/layout/site-breadcrumbs';
+import { Badge } from '@/components/ui/badge';
 import { Bidi } from '@/components/ui/bidi';
-import { Badge, Panel, Section, SectionHeading } from '@/components/ui/primitives';
-import { EmptyState } from '@/components/ui/states';
-import { getOrganization } from '@/db/queries/content';
-import { buildWhatsAppUrl } from '@/lib/utils';
-import { isLocale } from '@/lib/i18n/config';
+import { ButtonLink } from '@/components/ui/button';
+import { Panel, RuledList, RuledListItem } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/feedback';
+import { Icon } from '@/components/ui/icon';
+import { Container, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
+import { Table, type Column } from '@/components/ui/table';
+import { getOrganization, getPageByKey } from '@/db/queries/content';
+import type { OfficialChannel } from '@/db/schema/organization';
+import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { formSlice, optionLabels } from '@/lib/i18n/form-dict';
+import { buildMetadata } from '@/lib/seo/metadata';
+import { buildWhatsAppUrl } from '@/lib/utils';
 
 /**
  * `/verify` — the authoritative list of official channels.
@@ -25,15 +34,23 @@ import { formSlice, optionLabels } from '@/lib/i18n/form-dict';
  */
 export const revalidate = 3600;
 
+type ChannelRow = OfficialChannel & { id: string };
+
 export async function generateMetadata({ params }: PageProps<'/[locale]/verify'>): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  const dict = await getDictionary(locale);
-  return {
-    title: dict.verify.title,
+  const [dict, org, page] = await Promise.all([
+    getDictionary(locale),
+    getOrganization(locale),
+    getPageByKey('verify', locale),
+  ]);
+  return buildMetadata({
+    locale,
+    path: '/verify',
+    title: page?.title ?? dict.verify.title,
     description: dict.verify.lead,
-    alternates: { canonical: `/${locale}/verify`, languages: { ar: '/ar/verify', en: '/en/verify' } },
-  };
+    siteName: organizationName(org),
+  });
 }
 
 export default async function VerifyPage({ params }: PageProps<'/[locale]/verify'>) {
@@ -42,65 +59,62 @@ export default async function VerifyPage({ params }: PageProps<'/[locale]/verify
 
   const [dict, org] = await Promise.all([getDictionary(locale), getOrganization(locale)]);
 
-  const channels = org?.officialChannels ?? [];
-  const official = channels.filter((c) => c.is_official);
-  const impostors = channels.filter((c) => !c.is_official);
+  const channels: ChannelRow[] = (org?.officialChannels ?? [])
+    .filter((channel) => channel.visible !== false)
+    .map((channel) => ({ ...channel, id: `${channel.platform}:${channel.handle}` }));
+  const official = channels.filter((channel) => channel.is_official);
+  const impostors = channels.filter((channel) => !channel.is_official);
+  const whatsapp = visibleText(org?.whatsappNumber);
+
+  const columns: Column<ChannelRow>[] = [
+    { key: 'platform', header: dict.verify.channel, rowHeader: true, cell: (row) => row.platform },
+    {
+      key: 'handle',
+      header: dict.verify.handle,
+      cell: (row) => (
+        <a href={row.url} rel="noopener noreferrer me" target="_blank" className="inline-flex items-center gap-2 font-mono text-caption">
+          <Bidi>{row.handle}</Bidi>
+          <Icon name="external" size={16} />
+        </a>
+      ),
+    },
+    {
+      key: 'status',
+      header: dict.verify.official,
+      cell: () => <Badge tone="verified">{dict.verify.official}</Badge>,
+    },
+  ];
 
   return (
-    <div className="container-content section-gap">
-      <SectionHeading as="h1" title={dict.verify.title} lead={dict.verify.lead} />
+    <Container className="section-gap">
+      <PageHeader
+        eyebrow={dict.channels.barLabel}
+        title={dict.verify.title}
+        lede={dict.verify.lead}
+        breadcrumbs={<SiteBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.nav.verify, path: '/verify' }]} />}
+        actions={
+          <ButtonLink href="#report" tone="marked" size="sm">
+            {dict.verify.reportTitle}
+          </ButtonLink>
+        }
+      />
 
-      {official.length === 0 ? (
-        <EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} />
-      ) : (
-        <Panel tone="gold" className="p-0">
-          {/* The admin's DataTable has this wrapper and this three-column table
-              did not, so a long handle or URL widened the whole document and
-              /ar/verify scrolled sideways in its entirety. That is the worst
-              page for it to happen on: it exists so a beneficiary can compare a
-              handle character by character against a suspicious account, and it
-              is the one most likely to be opened on a cheap phone. */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-start">
-            <caption className="sr-only">{dict.verify.title}</caption>
-            <thead>
-              <tr className="border-be-2 border-ink">
-                <th scope="col" className="eyebrow p-4 text-start">
-                  {dict.verify.channel}
-                </th>
-                <th scope="col" className="eyebrow p-4 text-start">
-                  {dict.verify.handle}
-                </th>
-                <th scope="col" className="eyebrow p-4 text-start">
-                  {dict.verify.official}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {official.map((channel) => (
-                <tr key={`${channel.platform}:${channel.handle}`} className="border-be border-hairline">
-                  <td className="p-4 text-small font-medium text-ink">{channel.platform}</td>
-                  <td className="p-4">
-                    <a href={channel.url} rel="noopener noreferrer me" target="_blank" className="font-mono text-caption">
-                      <Bidi>{channel.handle}</Bidi>
-                    </a>
-                  </td>
-                  <td className="p-4">
-                    <Badge tone="verified">{dict.verify.official}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            </table>
-          </div>
-        </Panel>
-      )}
+      {/* The attestation ground for the table: gold, like a verified figure. */}
+      <Panel tone="gold" padding="sm">
+        <Table
+          caption={dict.verify.title}
+          captionHidden
+          rows={official}
+          columns={columns}
+          empty={<EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} />}
+        />
+      </Panel>
 
-      {org?.whatsappNumber ? (
+      {whatsapp ? (
         <p className="mbs-6 text-small text-ink-70">
-          WhatsApp:{' '}
-          <a href={buildWhatsAppUrl(org.whatsappNumber)} rel="noopener noreferrer" target="_blank">
-            <Bidi>{org.whatsappNumber}</Bidi>
+          {dict.siteChrome.whatsapp}:{' '}
+          <a href={buildWhatsAppUrl(whatsapp)} rel="noopener noreferrer" target="_blank">
+            <Bidi>{whatsapp}</Bidi>
           </a>
         </p>
       ) : null}
@@ -111,39 +125,33 @@ export default async function VerifyPage({ params }: PageProps<'/[locale]/verify
       {impostors.length > 0 ? (
         <Section labelledBy="verify-impostors">
           <SectionHeading id="verify-impostors" title={dict.verify.notOurs} />
-          <ul className="space-y-3">
-            {impostors.map((channel) => (
-              <Panel as="li" key={`${channel.platform}:${channel.handle}`} className="flex flex-wrap items-baseline gap-4">
-                <span className="text-small font-medium text-ink">{channel.platform}</span>
-                <span className="font-mono text-caption">
-                  <Bidi>{channel.handle}</Bidi>
-                </span>
-                <Badge tone="warning">{dict.verify.notOurs}</Badge>
-                {(locale === 'ar' ? channel.note_ar : channel.note_en) ? (
-                  <p className="w-full text-caption text-ink-55">
-                    {locale === 'ar' ? channel.note_ar : channel.note_en}
-                  </p>
-                ) : null}
-              </Panel>
-            ))}
-          </ul>
+          <RuledList bounded>
+            {impostors.map((channel) => {
+              const note = visibleText(locale === 'ar' ? channel.note_ar : (channel.note_en ?? channel.note_ar));
+              return (
+                <RuledListItem key={channel.id} className="items-baseline">
+                  <span className="text-small font-medium text-ink">{channel.platform}</span>
+                  <Bidi className="font-mono text-caption">{channel.handle}</Bidi>
+                  <Badge tone="danger">{dict.verify.notOurs}</Badge>
+                  {note ? <p className="w-full text-caption text-ink-55">{note}</p> : null}
+                </RuledListItem>
+              );
+            })}
+          </RuledList>
         </Section>
       ) : null}
 
-      <Section id="report" labelledBy="verify-report">
-        <SectionHeading
-          id="verify-report"
-          title={dict.verify.reportTitle}
-          lead={dict.verify.reportLead}
-        />
-        <div className="max-w-[52rem]">
-          <FraudReportForm
-            dict={formSlice(dict)}
-            locale={locale}
-            labels={optionLabels(dict)}
-          />
-        </div>
+      <Section id="report" labelledBy="verify-report" className="scroll-mbs-28">
+        <SectionHeading id="verify-report" title={dict.verify.reportTitle} lead={dict.verify.reportLead} />
+        <Panel tone="white" className="max-w-narrow">
+          <FraudReportForm dict={formSlice(dict)} locale={locale} labels={optionLabels(dict)} />
+        </Panel>
+        <p className="mbs-6 text-small text-ink-70">
+          <ButtonLink href={localePath(locale, '/contact')} tone="quiet" size="sm">
+            {dict.getInvolved.contactAlternative}
+          </ButtonLink>
+        </p>
       </Section>
-    </div>
+    </Container>
   );
 }

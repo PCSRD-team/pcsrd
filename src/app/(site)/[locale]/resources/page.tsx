@@ -1,80 +1,125 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { mediaSrc } from '@/components/content/media';
+import { ContentBreadcrumbs } from '@/components/content/page-chrome';
+import { getSiteName } from '@/components/content/site';
+import { CollectionPageJsonLd } from '@/components/seo/json-ld';
+import { Badge } from '@/components/ui/badge';
 import { Bidi } from '@/components/ui/bidi';
-import { Panel, SectionHeading } from '@/components/ui/primitives';
-import { EmptyState } from '@/components/ui/states';
+import { ButtonLink } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Container, PageHeader } from '@/components/ui/layout';
+import { Table } from '@/components/ui/table';
 import { listPublications } from '@/db/queries/content';
-import { publicEnv } from '@/lib/env.public';
-import { formatFileSize, storageUrl } from '@/lib/format';
-import { isLocale } from '@/lib/i18n/config';
+import { formatFileSize } from '@/lib/format';
+import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { buildMetadata } from '@/lib/seo/metadata';
 
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/resources'>): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  const dict = await getDictionary(locale);
-  return {
+  const [dict, siteName] = await Promise.all([getDictionary(locale), getSiteName(locale)]);
+  return buildMetadata({
+    locale,
+    path: '/resources',
     title: dict.resources.title,
     description: dict.resources.lead,
-    alternates: { canonical: `/${locale}/resources`, languages: { ar: '/ar/resources', en: '/en/resources' } },
-  };
+    siteName,
+  });
 }
 
+/** The publications register: document, type, year, file. */
 export default async function ResourcesPage({ params }: PageProps<'/[locale]/resources'>) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [dict, publications] = await Promise.all([
-    getDictionary(locale),
-    listPublications(locale),
-  ]);
+  const [dict, publications] = await Promise.all([getDictionary(locale), listPublications(locale)]);
 
   return (
-    <div className="container-content section-gap">
-      <SectionHeading as="h1" title={dict.resources.title} lead={dict.resources.lead} />
+    <Container className="section-gap">
+      {/* Items point at the list itself: a publication has no page of its
+          own, and a `#fragment` URL is not a distinct resource. */}
+      <CollectionPageJsonLd
+        name={dict.resources.title}
+        description={dict.resources.lead}
+        url={localePath(locale, '/resources')}
+        locale={locale}
+        items={publications.map((publication) => ({
+          name: publication.title,
+          url: localePath(locale, '/resources'),
+        }))}
+      />
 
-      {publications.length === 0 ? (
-        <EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} />
-      ) : (
-        <ul className="space-y-4">
-          {publications.map((publication) => (
-            <Panel as="li" key={publication.id} className="flex flex-wrap items-baseline justify-between gap-4">
-              <div className="min-w-0">
-                <p className="eyebrow">{dict.enums.publicationType[publication.type]}</p>
-                <h2 className="mbs-2 text-h3 font-semibold text-ink">{publication.title}</h2>
+      <PageHeader
+        title={dict.resources.title}
+        lede={dict.resources.lead}
+        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.resources.title }]} />}
+      />
+
+      <Table
+        caption={dict.tableCaptions.publications}
+        rows={publications}
+        empty={<EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} bounded />}
+        columns={[
+          {
+            key: 'title',
+            header: dict.resources.title,
+            rowHeader: true,
+            cell: (publication) => (
+              <span className="block">
+                <span className="block text-body font-medium">{publication.title}</span>
                 {publication.description ? (
-                  <p className="measure mbs-2 text-small text-ink-70">{publication.description}</p>
-                ) : null}
-              </div>
-
-              <div className="flex shrink-0 items-baseline gap-4">
-                {publication.publishedYear ? (
-                  <span className="font-mono text-caption text-mono-muted">
-                    <Bidi>{String(publication.publishedYear)}</Bidi>
+                  <span className="measure mbs-1 block text-caption font-normal text-ink-55">
+                    {publication.description}
                   </span>
                 ) : null}
-                {publication.filePath ? (
-                  <a
-                    href={storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, 'documents', publication.filePath)}
-                    className="border-be-2 border-gold-600 py-1 text-small font-medium text-ink no-underline hover:bg-gold-050"
-                  >
-                    {dict.common.download}{' '}
-                    <Bidi>{formatFileSize(publication.fileSize, locale)}</Bidi>
-                  </a>
-                ) : (
-                  // A publication with no file in this locale is not an error —
-                  // the reader is told which language it exists in.
-                  <span className="text-caption text-ink-55">
-                    {dict.resources.notAvailableInLocale}
-                  </span>
-                )}
-              </div>
-            </Panel>
-          ))}
-        </ul>
-      )}
-    </div>
+              </span>
+            ),
+          },
+          {
+            key: 'type',
+            header: dict.forms.category,
+            cell: (publication) => (
+              <Badge tone="neutral" uppercase={false}>
+                {dict.enums.publicationType[publication.type]}
+              </Badge>
+            ),
+          },
+          {
+            key: 'year',
+            header: dict.contentUi.year,
+            numeric: true,
+            align: 'start',
+            cell: (publication) => (publication.publishedYear ? String(publication.publishedYear) : '—'),
+          },
+          {
+            key: 'file',
+            header: dict.contentUi.file,
+            cell: (publication) =>
+              publication.filePath ? (
+                <ButtonLink
+                  href={mediaSrc(publication.filePath, 'documents')}
+                  tone="marked"
+                  size="sm"
+                  download
+                  ariaLabel={`${dict.common.download}: ${publication.title ?? ''}`}
+                >
+                  {dict.common.download}{' '}
+                  <Bidi className="font-mono text-eyebrow text-mono-muted">
+                    {formatFileSize(publication.fileSize, locale)}
+                  </Bidi>
+                </ButtonLink>
+              ) : (
+                // A publication with no file in this locale is not an error —
+                // the reader is told which language it exists in.
+                <span className="text-caption text-ink-55">{dict.resources.notAvailableInLocale}</span>
+              ),
+          },
+        ]}
+      />
+    </Container>
   );
 }

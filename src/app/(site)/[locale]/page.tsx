@@ -1,382 +1,249 @@
-import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
-import { Bidi, DateText } from "@/components/ui/bidi";
-import { ImpactCount } from "@/components/content/impact-count";
-import { ProgrammeHeroCarousel, type ProgrammeHeroItem } from "@/components/content/programme-hero-carousel";
-import { Badge, ButtonLink, Section, SectionHeading } from "@/components/ui/primitives";
-import {
-  getOrganization,
-  listPartners,
-  listPosts,
-  listPrograms,
-  listStories,
-} from "@/db/queries/content";
-import { listFeaturedProjects } from "@/db/queries/projects";
-import { publicEnv } from "@/lib/env.public";
-import { formatDate, formatPeriod, storageUrl } from "@/lib/format";
-import { isLocale, localePath, type Locale } from "@/lib/i18n/config";
-import { getDictionary, type Dictionary } from "@/lib/i18n/get-dictionary";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { organizationName, visibleText } from '@/components/layout/chrome';
+import { Badge } from '@/components/ui/badge';
+import { Bidi, DateText } from '@/components/ui/bidi';
+import { ButtonLink } from '@/components/ui/button';
+import { Card, CardBody, CardFooter, CardMedia, Panel, RuledList, RuledListItem } from '@/components/ui/card';
+import { DefinitionList } from '@/components/ui/definition-list';
+import { Figure, LogoTile } from '@/components/ui/figure';
+import { Icon } from '@/components/ui/icon';
+import { Container, Grid, Rule, Section, SectionHeading } from '@/components/ui/layout';
+import { Stat, StatGroup } from '@/components/ui/stat';
+import { Eyebrow, Heading, Lede } from '@/components/ui/typography';
+import { getOrganization, listMetrics, listPartners, listPosts, listPrograms, listStories } from '@/db/queries/content';
+import { getProjectFacets, listFeaturedProjects } from '@/db/queries/projects';
+import { publicEnv } from '@/lib/env.public';
+import { formatDate, formatNumber, formatPeriod, storageUrl } from '@/lib/format';
+import { isLocale, localePath, type Locale } from '@/lib/i18n/config';
+import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
+import { buildMetadata } from '@/lib/seo/metadata';
+import { StrategicObjectives } from './about/_components/strategy';
+import { InvolvementCards } from './get-involved/_components/involvement-cards';
 
 export const revalidate = 3600;
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/[locale]">): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
-  const [dict, org] = await Promise.all([
-    getDictionary(locale),
-    getOrganization(locale),
-  ]);
+/**
+ * Home — the eleven sections of `04-DESIGN-SYSTEM §3.3`, in render order,
+ * closed by the verify block the design uses as the final call to action.
+ *
+ * Every figure on this page is a published record: an impact metric renders
+ * only with its period and verification status (`Stat` refuses otherwise),
+ * and the credibility strip counts published rows rather than stating claims.
+ * Nothing is typed in; a section with no published content is not rendered.
+ */
 
-  return {
-    title: org?.legalName ?? org?.acronym,
-    description: org?.mission ?? dict.home.programsLead,
-    alternates: {
-      canonical: `/${locale}`,
-      languages: { ar: "/ar", en: "/en" },
-    },
-  };
-}
-
-type MediaAsset = {
-  heroPath: string | null;
-  heroAlt: string | null;
-  heroBlur: string | null;
-};
+type Org = NonNullable<Awaited<ReturnType<typeof getOrganization>>>;
 
 function mediaSrc(path: string) {
-  return storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, "media", path);
+  return storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, 'media', path);
 }
 
-function isVisibleText(value: string | null | undefined) {
-  const text = value?.trim();
-  return Boolean(text && !text.startsWith("TODO(org):"));
-}
-
-function visibleText(value: string | null | undefined) {
-  const text = value?.trim();
-  return text && !text.startsWith("TODO(org):") ? text : null;
-}
-
-function hrefForCta(locale: Locale, url: string) {
-  if (/^https?:\/\//i.test(url) || url.startsWith("mailto:") || url.startsWith("tel:")) return url;
-  return localePath(locale, url.startsWith("/") ? url : `/${url}`);
-}
-
-function MediaFrame({
-  media,
-  priority = false,
-  sizes,
-  className,
-}: {
-  media: MediaAsset | null;
-  priority?: boolean;
-  sizes: string;
-  className: string;
-}) {
-  if (!media?.heroPath) {
-    return (
-      <div className={`relative overflow-hidden rounded-lg bg-paper-alt ${className}`}>
-        <Image
-          src="/hero-bg.png"
-          alt=""
-          fill
-          sizes={sizes}
-          priority={priority}
-          className="object-cover"
-        />
-        <span className="absolute inset-0 bg-ink/20" aria-hidden="true" />
-      </div>
-    );
-  }
-
-  return (
-    <div className={`media-treatment relative rounded-lg ${className}`}>
-      <Image
-        src={mediaSrc(media.heroPath)}
-        alt={media.heroAlt ?? ""}
-        fill
-        sizes={sizes}
-        placeholder={media.heroBlur ? "blur" : "empty"}
-        blurDataURL={media.heroBlur ?? undefined}
-        priority={priority}
-        className="media-zoom object-cover"
-      />
-    </div>
-  );
-}
-
-function Arrow({ locale }: { locale: Locale }) {
-  return <span aria-hidden="true">{locale === "ar" ? "‹" : "›"}</span>;
-}
-
-function TextLink({
+/** A section's header row: eyebrow + title on the start side, the "all …" link on the end side. */
+function HomeSectionHeading({
+  id,
+  index,
+  title,
+  lead,
   href,
-  children,
-  locale,
+  linkLabel,
 }: {
-  href: string;
-  children: ReactNode;
-  locale: Locale;
+  id: string;
+  index: number;
+  title: string;
+  lead?: string | null;
+  href?: string;
+  linkLabel?: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="motion-standard inline-flex min-h-11 items-center gap-2 rounded-md border border-ink/15 bg-paper px-4 text-small font-medium text-ink no-underline transition hover:-translate-y-0.5 hover:border-gold-600 hover:bg-gold-050"
-    >
-      {locale === "ar" ? <Arrow locale={locale} /> : null}
-      {children}
-      {locale === "en" ? <Arrow locale={locale} /> : null}
-    </Link>
+    <SectionHeading
+      id={id}
+      eyebrow={String(index).padStart(2, '0')}
+      title={title}
+      lead={lead}
+      actions={
+        href && linkLabel ? (
+          <ButtonLink href={href} tone="marked" size="sm" pendingMark>
+            {linkLabel}
+          </ButtonLink>
+        ) : null
+      }
+    />
   );
 }
 
-type ImpactStripItem = {
-  id: string;
-  valueText: string;
-  label: string;
-  context: string | null;
-  icon: "people" | "heart" | "location" | "calendar" | "shield";
-};
+export async function generateMetadata({ params }: PageProps<'/[locale]'>): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const org = await getOrganization(locale);
+  const siteName = organizationName(org);
+  return buildMetadata({
+    locale,
+    path: '/',
+    title: siteName,
+    description: org?.shortDescription ?? org?.mission,
+    siteName,
+  });
+}
 
-function ImpactIcon({ icon }: { icon: ImpactStripItem["icon"] }) {
-  if (icon === "people") {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-7 fill-none stroke-current stroke-[1.9]">
-        <path d="M8.5 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM15.5 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.8 19c.6-2.8 2.3-4.2 4.7-4.2S12.6 16.2 13.2 19M10.8 19c.5-2.8 2.2-4.2 4.7-4.2 2.4 0 4.1 1.4 4.7 4.2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (icon === "heart") {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-7 fill-none stroke-current stroke-[1.9]">
-        <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.7A4 4 0 0 1 19 10c0 5.5-7 10-7 10Z" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 13h2l1-2 2 4 1-2h2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  if (icon === "location") {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-7 fill-none stroke-current stroke-[1.9]">
-        <path d="M12 21s6-5.2 6-10A6 6 0 0 0 6 11c0 4.8 6 10 6 10Z" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="12" cy="11" r="2.2" />
-      </svg>
-    );
-  }
-  if (icon === "calendar") {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-7 fill-none stroke-current stroke-[1.9]">
-        <path d="M6 5h12a2 2 0 0 1 2 2v11H4V7a2 2 0 0 1 2-2ZM4 10h16M8 3v4M16 3v4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
+// ── 1. Hero ──────────────────────────────────────────────────────────────
+
+function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Org | null }) {
+  const name = organizationName(org);
+  const statement = visibleText(org?.mission) ?? visibleText(org?.shortDescription);
+  const foundedYear = org?.foundedYear && org.foundedYear > 1900 ? String(org.foundedYear) : null;
+  const licenseNumber = visibleText(org?.licenseNumber);
+
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-7 fill-none stroke-current stroke-[1.9]">
-      <path d="M12 3.5 19 6v5.2c0 4.2-2.6 7.4-7 9.3-4.4-1.9-7-5.1-7-9.3V6l7-2.5Z" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <Section as="section" bounded={false} labelledBy="home-hero" className="bg-paper">
+      <Container className="grid items-center gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
+        <div>
+          <Eyebrow as="p" className="mbe-3">
+            {dict.home.heroEyebrow}
+            {foundedYear ? (
+              <>
+                {' · '}
+                {dict.about.foundedYear} <Bidi>{foundedYear}</Bidi>
+              </>
+            ) : null}
+            {licenseNumber ? (
+              <>
+                {' · '}
+                {dict.about.licenseNumber} <Bidi>{licenseNumber}</Bidi>
+              </>
+            ) : null}
+          </Eyebrow>
+          <h1 id="home-hero" className="text-h1 font-semibold text-ink text-balance md:text-display-ar">
+            {name}
+          </h1>
+          <Rule weight="mark" as="span" className="mbs-4" />
+          {statement ? <Lede className="mbs-5">{statement}</Lede> : null}
+
+          <div className="mbs-8">
+            <DefinitionList
+              layout="grid"
+              className="border-bs border-rule pbs-4 sm:grid-cols-[max-content_1fr_max-content_1fr]"
+              items={[
+                { term: dict.about.foundedYear, value: foundedYear ? <Bidi>{foundedYear}</Bidi> : null },
+                { term: dict.about.licenseNumber, value: licenseNumber ? <Bidi>{licenseNumber}</Bidi> : null },
+                { term: dict.about.licenseAuthority, value: visibleText(org?.licenseAuthority) },
+                { term: dict.about.legalForm, value: visibleText(org?.legalForm) },
+              ]}
+            />
+          </div>
+
+          <div className="mbs-8 flex flex-wrap items-center gap-4">
+            <ButtonLink href={localePath(locale, '/get-involved/partner')} tone="primary" size="lg" pendingMark>
+              {dict.nav.partner}
+            </ButtonLink>
+            <ButtonLink href={localePath(locale, '/verify')} tone="marked" pendingMark>
+              {dict.nav.verify}
+            </ButtonLink>
+          </div>
+        </div>
+
+        {/* Decorative: the text carries the meaning and renders before the image. */}
+        <Figure
+          image={{ src: '/hero-bg.webp', width: 1672, height: 941 }}
+          alt=""
+          decorative
+          ratio="wide"
+          preload
+          sizes="(min-width: 1180px) 540px, (min-width: 1024px) 46vw, 100vw"
+          className="rule-edge"
+        />
+      </Container>
+    </Section>
   );
 }
 
-function buildImpactStripItems({
-  locale,
-  org,
-}: {
-  locale: Locale;
-  org: Awaited<ReturnType<typeof getOrganization>>;
-}): ImpactStripItem[] {
-  return designImpactStats(locale, org);
-}
+// ── 2. Credibility strip ─────────────────────────────────────────────────
 
-function designImpactStats(locale: Locale, org: Awaited<ReturnType<typeof getOrganization>>): ImpactStripItem[] {
-  const foundedYear = org?.foundedYear && org.foundedYear > 1900 ? String(org.foundedYear) : "2015";
-  const licenseNumber = visibleText(org?.licenseNumber) ?? "1128";
-
-  return locale === "ar"
-    ? [
-        {
-          id: "design-impact-beneficiaries",
-          valueText: "85,642+",
-          label: "مستفيد",
-          context: "منذ تأسيسنا",
-          icon: "people",
-        },
-        {
-          id: "design-impact-projects",
-          valueText: "126",
-          label: "مشروع",
-          context: "منجز",
-          icon: "heart",
-        },
-        {
-          id: "design-impact-locations",
-          valueText: "96",
-          label: "موقع عمل",
-          context: "في غزة والضفة",
-          icon: "location",
-        },
-        {
-          id: "design-impact-founded",
-          valueText: foundedYear,
-          label: "سنة التأسيس",
-          context: `ترخيص رقم ${licenseNumber}`,
-          icon: "calendar",
-        },
-      ]
-    : [
-        {
-          id: "design-impact-beneficiaries",
-          valueText: "85,642+",
-          label: "Beneficiaries",
-          context: "Since founding",
-          icon: "people",
-        },
-        {
-          id: "design-impact-projects",
-          valueText: "126",
-          label: "Projects",
-          context: "Completed",
-          icon: "heart",
-        },
-        {
-          id: "design-impact-locations",
-          valueText: "96",
-          label: "Work locations",
-          context: "In Gaza and the West Bank",
-          icon: "location",
-        },
-        {
-          id: "design-impact-founded",
-          valueText: foundedYear,
-          label: "Founded",
-          context: `Licence no. ${licenseNumber}`,
-          icon: "calendar",
-        },
-      ];
-}
-
-function designPreviewProgrammes(locale: Locale): ProgrammeHeroItem[] {
-  const shared = {
-    imageSrc: null,
-    imageAlt: null,
-    imageBlur: null,
-    accentToken: "--color-gold-600",
-  };
-
-  return locale === "ar"
-    ? [
-        {
-          ...shared,
-          id: "design-preview-protection",
-          href: localePath(locale, "/programs"),
-          title: "الحماية والدعم النفسي",
-          summary: "نوفر بيئة آمنة وخدمات حماية ودعماً نفسياً واجتماعياً للفئات الأكثر ضعفاً.",
-        },
-        {
-          ...shared,
-          id: "design-preview-humanitarian-response",
-          href: localePath(locale, "/programs"),
-          title: "الاستجابة الإنسانية",
-          summary: "تدخلات إغاثية سريعة وخدمات أساسية للأسر والمجتمعات خلال الأزمات.",
-        },
-        {
-          ...shared,
-          id: "design-preview-early-recovery",
-          href: localePath(locale, "/programs"),
-          title: "التعافي المبكر",
-          summary: "برنامج يهدف إلى دعم الأسر والمجتمعات المتضررة للبدء باستعادة قدراتها على التعافي وتحسين ظروفها المعيشية بصورة تدريجية ومستدامة.",
-        },
-      ]
-    : [
-        {
-          ...shared,
-          id: "design-preview-protection",
-          href: localePath(locale, "/programs"),
-          title: "Protection and Psychosocial Support",
-          summary: "Safe, accountable protection services and psychosocial support for the most vulnerable groups.",
-        },
-        {
-          ...shared,
-          id: "design-preview-humanitarian-response",
-          href: localePath(locale, "/programs"),
-          title: "Humanitarian Response",
-          summary: "Rapid relief interventions and essential services for families and communities during crises.",
-        },
-        {
-          ...shared,
-          id: "design-preview-early-recovery",
-          href: localePath(locale, "/programs"),
-          title: "Early Recovery",
-          summary: "A program designed to support affected families and communities in rebuilding their capacity to recover and gradually improve their living conditions.",
-        },
-      ];
-}
-
-function heroProgramRank(program: ProgrammeHeroItem) {
-  const title = program.title.toLocaleLowerCase();
-  const id = program.id.toLocaleLowerCase();
-  if (title.includes("الحماية") || title.includes("protection") || id.includes("protection")) return 0;
-  if (title.includes("الاستجابة") || title.includes("humanitarian") || id.includes("humanitarian")) return 1;
-  if (title.includes("التعافي") || title.includes("recovery") || id.includes("recovery")) return 2;
-  return 10;
-}
-
-function completeHeroProgrammes(locale: Locale, programmes: ProgrammeHeroItem[]) {
-  // Design-phase previews keep the approved carousel layout visible until the CMS has three published programmes.
-  const existingTitles = new Set(programmes.map((program) => program.title.toLocaleLowerCase()));
-  const previews = designPreviewProgrammes(locale).filter((program) => !existingTitles.has(program.title.toLocaleLowerCase()));
-  return [...programmes, ...previews].sort((a, b) => heroProgramRank(a) - heroProgramRank(b)).slice(0, 3);
-}
-
-function ImpactStrip({
+function CredibilityStrip({
   locale,
   dict,
   org,
+  governorates,
+  partners,
+  memberships,
 }: {
   locale: Locale;
   dict: Dictionary;
-  org: Awaited<ReturnType<typeof getOrganization>>;
+  org: Org | null;
+  governorates: number;
+  partners: number;
+  memberships: number;
 }) {
-  const shownMetrics = buildImpactStripItems({ locale, org });
-  if (shownMetrics.length === 0) return null;
+  const years =
+    org?.foundedYear && org.foundedYear > 1900 ? new Date().getUTCFullYear() - org.foundedYear : 0;
+  const cells = [
+    { key: 'years', value: years, label: dict.homePage.yearsActive },
+    { key: 'governorates', value: governorates, label: dict.homePage.governoratesCount },
+    { key: 'partners', value: partners, label: dict.homePage.partnersCount },
+    { key: 'memberships', value: memberships, label: dict.homePage.membershipsCount },
+  ].filter((cell) => cell.value > 0);
+  if (cells.length === 0) return null;
 
   return (
-    <section aria-labelledby="home-impact" className="bg-paper pbs-5 pbe-8 md:pbs-9 md:pbe-10">
-      <h2 id="home-impact" className="sr-only">{dict.home.impactTitle}</h2>
-      <div className="mx-auto max-w-[1460px] px-4 sm:px-6 lg:px-8">
-        <ul
-          dir="ltr"
-          className="grid gap-y-8 divide-rule rounded-lg border border-rule bg-white px-5 py-7 shadow-[0_18px_60px_rgb(20_33_63/0.07)] sm:grid-cols-2 md:grid-cols-4 md:divide-x md:px-8 md:py-7"
-        >
-          {shownMetrics.map((metric) => (
-            <li
-              key={metric.id}
-              dir={locale === "ar" ? "rtl" : "ltr"}
-              className="flex min-h-28 flex-col items-center justify-center px-4 text-center"
-            >
-              <span className="mbe-3 inline-flex size-14 shrink-0 items-center justify-center rounded-full bg-gold-050 text-gold-700">
-                <ImpactIcon icon={metric.icon} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-h2 font-semibold leading-tight text-ink">
-                  <ImpactCount value={metric.valueText} />
-                </span>
-                <span className="mbs-1 block text-small font-semibold text-ink">{metric.label}</span>
-                {metric.context ? <span className="block text-caption text-ink-55">{metric.context}</span> : null}
-              </span>
+    <Section as="section" tone="alt" spacing="tight" bounded={false} labelledBy="home-credibility">
+      <h2 id="home-credibility" className="sr-only">
+        {dict.homePage.identityTitle}
+      </h2>
+      <Container>
+        <ul className="grid divide-y divide-rule border-y border-rule sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
+          {cells.map((cell) => (
+            <li key={cell.key} className="px-5 py-6 sm:border-s sm:border-rule sm:first:border-s-0">
+              <p className="font-mono text-h2 font-semibold leading-none text-ink tabular-nums">
+                <Bidi>{formatNumber(cell.value, locale)}</Bidi>
+              </p>
+              <p className="mbs-2 text-small text-ink-70">{cell.label}</p>
             </li>
           ))}
         </ul>
-      </div>
-    </section>
+      </Container>
+    </Section>
   );
 }
 
-function ProgramsOverview({
+// ── 3. Who we are ────────────────────────────────────────────────────────
+
+function AboutTeaser({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Org | null }) {
+  const description = visibleText(org?.shortDescription) ?? visibleText(org?.vision);
+  const hasObjectives = (org?.strategicObjectives?.length ?? 0) > 0;
+  if (!description && !hasObjectives) return null;
+
+  return (
+    <Section labelledBy="home-about" spacing="default" bounded={false}>
+      <Container className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
+        <div>
+          <HomeSectionHeading id="home-about" index={1} title={dict.homePage.aboutTitle} />
+          {description ? <p className="measure text-body text-ink-70">{description}</p> : null}
+          <div className="mbs-6 flex flex-wrap gap-3">
+            <ButtonLink href={localePath(locale, '/about')} tone="secondary" pendingMark>
+              {dict.homePage.aboutCta}
+            </ButtonLink>
+            <ButtonLink href={localePath(locale, '/about/governance')} tone="marked" pendingMark>
+              {dict.about.governance}
+            </ButtonLink>
+          </div>
+        </div>
+        {hasObjectives ? (
+          <div>
+            <Eyebrow as="p" className="mbe-3">
+              {dict.aboutPages.objectivesTitle}
+            </Eyebrow>
+            <StrategicObjectives lines={org?.strategicObjectives} locale={locale} dict={dict} heading={false} />
+          </div>
+        ) : null}
+      </Container>
+    </Section>
+  );
+}
+
+// ── 4. Programmes ────────────────────────────────────────────────────────
+
+function ProgramsGrid({
   locale,
   dict,
   programs,
@@ -388,57 +255,155 @@ function ProgramsOverview({
   if (programs.length === 0) return null;
 
   return (
-    <Section labelledBy="home-programs" className="bg-paper">
-      <div className="container-content">
-        <SectionHeading id="home-programs" title={dict.home.programsTitle} lead={dict.home.programsLead} />
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {programs.map((program, index) => (
-              <Link
-                key={program.id}
-                href={localePath(locale, `/programs/${program.slug}`)}
-                className="interactive-surface group grid h-full overflow-hidden rounded-2xl border border-rule bg-white text-ink no-underline shadow-[0_16px_45px_rgb(20_33_63/0.08)] transition duration-300 ease-out hover:-translate-y-1 hover:border-ink/25 hover:text-ink hover:shadow-[0_24px_60px_rgb(20_33_63/0.14)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
-              >
-                <MediaFrame
-                  media={program}
-                  sizes="(min-width: 768px) 31vw, 100vw"
-                  className="aspect-[16/10] rounded-none [&_.media-zoom]:group-hover:scale-[1.03]"
-                />
-                <article className="grid min-h-64 content-between p-5">
-                  <div>
-                  <div className="mbe-4 flex items-center justify-between gap-3">
-                    <span className="font-mono text-caption text-ink-55">
-                      <Bidi>{String(index + 1).padStart(2, "0")}</Bidi>
-                    </span>
-                    <span
-                      className="block h-0.5 w-[88px] transition-all duration-300 group-hover:w-28"
-                      style={{ background: `var(${program.accentToken})` }}
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <h3 className="text-h3 font-semibold leading-snug text-ink">
+    <Section tone="alt" labelledBy="home-programs" bounded={false}>
+      <Container>
+        <HomeSectionHeading
+          id="home-programs"
+          index={2}
+          title={dict.home.programsTitle}
+          lead={dict.home.programsLead}
+          href={localePath(locale, '/programs')}
+          linkLabel={dict.common.viewAll}
+        />
+        <Grid as="ul" cols={3} gap={6}>
+          {programs.map((program, index) => (
+            <Card as="li" key={program.id} accent={`var(${program.accentToken})`} interactive>
+              <CardBody>
+                <p className="font-mono text-eyebrow text-mono-muted">
+                  <Bidi>{`P-${String(index + 1).padStart(2, '0')}`}</Bidi>
+                  {' · '}
+                  {dict.enums.program[program.key]}
+                </p>
+                <h3 className="mbs-3 text-h3 font-semibold text-ink">
+                  <Link
+                    href={localePath(locale, `/programs/${program.slug}`)}
+                    className="text-ink no-underline after:absolute after:inset-0 hover:text-gold-700"
+                  >
                     {program.title}
-                  </h3>
-                  {program.tagline ? <p className="mbs-3 max-w-2xl text-small leading-7 text-ink-70">{program.tagline}</p> : null}
-                  </div>
-                  <span className="mbs-5 inline-flex items-center gap-2 text-small font-semibold text-gold-700">
-                    {dict.common.readMore}
-                    <span
-                      aria-hidden="true"
-                      className="motion-standard transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1"
-                    >
-                      {locale === "ar" ? "←" : "→"}
-                    </span>
-                  </span>
-                </article>
-              </Link>
-            ))}
-        </div>
-      </div>
+                  </Link>
+                </h3>
+                {program.tagline ? <p className="mbs-3 text-small text-ink-70">{program.tagline}</p> : null}
+              </CardBody>
+              {program.targetGroups.length > 0 ? (
+                <CardFooter className="flex-col items-start gap-2">
+                  <Eyebrow as="p">{dict.programs.targetGroups}</Eyebrow>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {program.targetGroups.map((group) => (
+                      <li key={group}>
+                        <Badge tone="neutral">{dict.enums.targetGroup[group]}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </CardFooter>
+              ) : null}
+            </Card>
+          ))}
+        </Grid>
+      </Container>
     </Section>
   );
 }
 
-function FeaturedWork({
+// ── 5. Verified figures ──────────────────────────────────────────────────
+
+function ImpactStrip({
+  locale,
+  dict,
+  metrics,
+}: {
+  locale: Locale;
+  dict: Dictionary;
+  metrics: Awaited<ReturnType<typeof listMetrics>>;
+}) {
+  if (metrics.length === 0) return null;
+  const statusLabel = { verified: dict.impact.verified, reported: dict.impact.reported, target: dict.impact.target };
+
+  return (
+    <Section labelledBy="home-impact" bounded={false}>
+      <Container>
+        <HomeSectionHeading
+          id="home-impact"
+          index={3}
+          title={dict.home.impactTitle}
+          lead={dict.home.impactLead}
+          href={localePath(locale, '/impact')}
+          linkLabel={dict.common.viewAll}
+        />
+        <StatGroup labelledBy="home-impact" className="lg:grid-cols-4">
+          {metrics.slice(0, 4).map((metric) => (
+            <Stat
+              key={metric.id}
+              as="li"
+              locale={locale}
+              value={formatNumber(metric.value, locale)}
+              unit={metric.unit}
+              label={metric.label ?? ''}
+              prefix={metric.displayPrefix === '+' || metric.displayPrefix === '~' ? metric.displayPrefix : null}
+              period={{
+                start: metric.periodStart,
+                end: metric.periodEnd,
+                label: formatPeriod(metric.periodStart, metric.periodEnd, locale),
+              }}
+              verification={{
+                status: metric.status,
+                label: statusLabel[metric.status],
+                source: metric.verificationSource,
+              }}
+            />
+          ))}
+        </StatGroup>
+        <p className="mbs-6 text-caption text-mono-muted">{dict.homePage.metricsFootnote}</p>
+      </Container>
+    </Section>
+  );
+}
+
+// ── 6. Where we work ─────────────────────────────────────────────────────
+
+function WhereWeWork({
+  locale,
+  dict,
+  governorates,
+}: {
+  locale: Locale;
+  dict: Dictionary;
+  governorates: { key: string; count: number }[];
+}) {
+  const rows = governorates.filter((row): row is { key: keyof Dictionary['enums']['governorate']; count: number } =>
+    row.key in dict.enums.governorate,
+  );
+  if (rows.length === 0) return null;
+
+  return (
+    <Section tone="alt" labelledBy="home-where" bounded={false}>
+      <Container className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+        <div>
+          <HomeSectionHeading id="home-where" index={4} title={dict.homePage.whereWeWorkTitle} lead={dict.homePage.whereWeWorkLead} />
+          <ButtonLink href={localePath(locale, '/projects')} tone="marked" pendingMark>
+            {dict.nav.projects}
+          </ButtonLink>
+        </div>
+        <RuledList as="ol" bounded>
+          {rows.map((row, index) => (
+            <RuledListItem key={row.key} className="justify-between">
+              <span className="flex items-baseline gap-4">
+                <Bidi className="font-mono text-eyebrow text-mono-muted">{String(index + 1).padStart(2, '0')}</Bidi>
+                <span className="text-body font-medium text-ink">{dict.enums.governorate[row.key]}</span>
+              </span>
+              <span className="font-mono text-caption text-ink-70 tabular-nums">
+                <Bidi>{formatNumber(row.count, locale)}</Bidi> {dict.homePage.projectsUnit}
+              </span>
+            </RuledListItem>
+          ))}
+        </RuledList>
+      </Container>
+    </Section>
+  );
+}
+
+// ── 7. Selected projects ─────────────────────────────────────────────────
+
+function FeaturedProjects({
   locale,
   dict,
   projects,
@@ -447,68 +412,71 @@ function FeaturedWork({
   dict: Dictionary;
   projects: Awaited<ReturnType<typeof listFeaturedProjects>>;
 }) {
-  const [leadProject, ...secondary] = projects;
-  if (!leadProject) return null;
-
-  const period = formatPeriod(leadProject.startDate, leadProject.endDate, locale);
+  if (projects.length === 0) return null;
   const stateLabel = {
     planned: dict.projects.statePlanned,
     active: dict.projects.stateActive,
     completed: dict.projects.stateCompleted,
-  }[leadProject.state];
+  } as const;
+  const stateTone = { planned: 'planned', active: 'active', completed: 'complete' } as const;
 
   return (
-    <Section labelledBy="home-projects" className="bg-paper-alt">
-      <div className="container-content">
-        <SectionHeading id="home-projects" title={dict.projects.title} lead={dict.projects.lead} />
-        <article className="grid gap-6 border-bs-2 border-ink pbs-6 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.72fr)] md:items-center">
-          <div className="max-w-2xl">
-            <p className="eyebrow">{leadProject.programTitle}</p>
-            <h3 className="mbs-3 text-h2 font-semibold text-ink">
-              <Link href={localePath(locale, `/projects/${leadProject.slug}`)} className="text-ink no-underline">
-                {leadProject.title}
-              </Link>
-            </h3>
-            {leadProject.summary ? <p className="measure-lead mbs-4 text-body-large text-ink-70">{leadProject.summary}</p> : null}
-            <div className="mbs-5 flex flex-wrap items-center gap-3">
-              <Badge tone={leadProject.state === "active" ? "active" : leadProject.state === "completed" ? "complete" : "planned"}>
-                {stateLabel}
-              </Badge>
-              {period ? <span className="font-mono text-caption text-mono-muted"><DateText locale={locale}>{period}</DateText></span> : null}
-            </div>
-            <TextLink href={localePath(locale, `/projects/${leadProject.slug}`)} locale={locale}>
-              {dict.common.readMore}
-            </TextLink>
-          </div>
-          <MediaFrame
-            media={leadProject}
-            sizes="(min-width: 1024px) 430px, (min-width: 768px) 42vw, 100vw"
-            className="aspect-[16/10]"
-          />
-        </article>
-        {secondary.length > 0 ? (
-          <ul className="mbs-6 grid gap-4 md:grid-cols-2">
-            {secondary.map((project) => (
-              <li key={project.id} className="interactive-surface border-bs border-rule pbs-4">
-                <p className="eyebrow">{project.programTitle}</p>
-                <Link href={localePath(locale, `/projects/${project.slug}`)} className="mbs-2 block text-h4 font-semibold text-ink no-underline">
-                  {project.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        <div className="mbs-8">
-          <TextLink href={localePath(locale, "/projects")} locale={locale}>
-            {dict.common.viewAll}
-          </TextLink>
-        </div>
-      </div>
+    <Section labelledBy="home-projects" bounded={false}>
+      <Container>
+        <HomeSectionHeading
+          id="home-projects"
+          index={5}
+          title={dict.projects.title}
+          lead={dict.projects.lead}
+          href={localePath(locale, '/projects')}
+          linkLabel={dict.common.viewAll}
+        />
+        <Grid as="ul" cols={2} gap={6}>
+          {projects.map((project) => {
+            const period = formatPeriod(project.startDate, project.endDate, locale);
+            return (
+              <Card as="li" key={project.id} interactive>
+                {project.heroPath ? (
+                  <CardMedia>
+                    <Figure
+                      image={{ src: mediaSrc(project.heroPath), blurDataURL: project.heroBlur ?? undefined }}
+                      alt={project.heroAlt ?? project.title ?? ''}
+                      sizes="(min-width: 1180px) 560px, (min-width: 640px) 50vw, 100vw"
+                    />
+                  </CardMedia>
+                ) : null}
+                <CardBody>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {project.programTitle ? <Eyebrow as="p">{project.programTitle}</Eyebrow> : null}
+                    <Badge tone={stateTone[project.state]}>{stateLabel[project.state]}</Badge>
+                    {period ? (
+                      <DateText locale={locale} className="font-mono text-eyebrow text-mono-muted">
+                        {period}
+                      </DateText>
+                    ) : null}
+                  </div>
+                  <h3 className="mbs-3 text-h3 font-semibold text-ink">
+                    <Link
+                      href={localePath(locale, `/projects/${project.slug}`)}
+                      className="text-ink no-underline after:absolute after:inset-0 hover:text-gold-700"
+                    >
+                      {project.title}
+                    </Link>
+                  </h3>
+                  {project.summary ? <p className="mbs-3 line-clamp-3 text-small text-ink-70">{project.summary}</p> : null}
+                </CardBody>
+              </Card>
+            );
+          })}
+        </Grid>
+      </Container>
     </Section>
   );
 }
 
-function HumanStory({
+// ── 8. From the field ────────────────────────────────────────────────────
+
+function FeaturedStory({
   locale,
   dict,
   story,
@@ -518,93 +486,49 @@ function HumanStory({
   story: Awaited<ReturnType<typeof listStories>>[number] | null;
 }) {
   if (!story) return null;
+  const href = localePath(locale, `/impact/stories/${story.slug}`);
 
   return (
-    <Section labelledBy="home-story" className="bg-paper">
-      <div className="container-content grid gap-6 md:grid-cols-[0.72fr_1fr] md:items-center">
-        <MediaFrame
-          media={story}
-          sizes="(min-width: 768px) 38vw, 100vw"
-          className="aspect-[4/3]"
-        />
-        <article className="border-bs-2 border-gold-600 pbs-6">
-          <p className="eyebrow">{dict.impact.storiesTitle}</p>
+    <Section tone="inverse" labelledBy="home-story" bounded={false}>
+      <Container className="grid gap-10 lg:grid-cols-[1.25fr_0.75fr] lg:gap-16">
+        <div>
+          <Eyebrow as="p" className="mbe-3 text-paper/80">
+            {String(6).padStart(2, '0')} · {dict.home.storiesTitle}
+          </Eyebrow>
+          <h2 id="home-story" className="text-h2 font-semibold text-paper">
+            {story.title}
+          </h2>
+          <Rule weight="mark" as="span" className="mbs-4" />
           {story.quote ? (
-            <blockquote className="mbs-4 text-h3 font-semibold leading-relaxed text-ink">{story.quote}</blockquote>
-          ) : (
-            <h2 className="mbs-4 text-h2 font-semibold text-ink">{story.title}</h2>
-          )}
-          {story.summary ? <p className="measure-lead mbs-4 text-body-large text-ink-70">{story.summary}</p> : null}
-          {story.quoteAttribution ? <p className="mbs-4 text-caption text-ink-55">{story.quoteAttribution}</p> : null}
-          <div className="mbs-6">
-            <TextLink href={localePath(locale, `/impact/stories/${story.slug}`)} locale={locale}>
-              {dict.common.readMore}
-            </TextLink>
-          </div>
-        </article>
-      </div>
+            <blockquote className="mbs-6 text-lead text-paper">
+              <p>{story.quote}</p>
+              {story.quoteAttribution ? <footer className="mbs-3 text-small text-paper/80">— {story.quoteAttribution}</footer> : null}
+            </blockquote>
+          ) : story.summary ? (
+            <p className="measure-lead mbs-6 text-lead text-paper">{story.summary}</p>
+          ) : null}
+          <p className="mbs-8">
+            <ButtonLink href={href} tone="secondary" className="border-paper text-paper hover:bg-navy-700 hover:text-paper" pendingMark>
+              {dict.homePage.storyCta}
+            </ButtonLink>
+          </p>
+        </div>
+        {story.heroPath ? (
+          <Figure
+            image={{ src: mediaSrc(story.heroPath), blurDataURL: story.heroBlur ?? undefined }}
+            alt={story.heroAlt ?? story.title ?? ''}
+            ratio="portrait"
+            sizes="(min-width: 1180px) 400px, (min-width: 1024px) 35vw, 100vw"
+          />
+        ) : null}
+      </Container>
     </Section>
   );
 }
 
-function LatestNews({
-  locale,
-  dict,
-  posts,
-}: {
-  locale: Locale;
-  dict: Dictionary;
-  posts: Awaited<ReturnType<typeof listPosts>>["items"];
-}) {
-  const [leadPost, ...secondary] = posts.slice(0, 3);
-  if (!leadPost) return null;
+// ── 9. Partners ──────────────────────────────────────────────────────────
 
-  const categoryLabel = {
-    news: dict.news.categoryNews,
-    statement: dict.news.categoryStatement,
-    announcement: dict.news.categoryAnnouncement,
-  }[leadPost.category];
-
-  return (
-    <Section labelledBy="home-news" className="bg-paper">
-      <div className="container-content">
-        <SectionHeading id="home-news" title={dict.home.latestTitle} />
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(18rem,0.75fr)]">
-          <article className="interactive-surface border-bs-2 border-ink pbs-5">
-            <p className="eyebrow">{categoryLabel}</p>
-            <h3 className="mbs-3 text-h2 font-semibold text-ink">
-              <Link href={localePath(locale, `/news/${leadPost.slug}`)} className="text-ink no-underline">
-                {leadPost.title}
-              </Link>
-            </h3>
-            {leadPost.excerpt ? <p className="measure-lead mbs-4 text-small text-ink-70">{leadPost.excerpt}</p> : null}
-            {leadPost.publishedAt ? (
-              <time dateTime={leadPost.publishedAt.toISOString()} className="mbs-5 block font-mono text-caption text-mono-muted">
-                <DateText locale={locale}>{formatDate(leadPost.publishedAt, locale)}</DateText>
-              </time>
-            ) : null}
-          </article>
-          <ul className="grid gap-4">
-            {secondary.map((post) => (
-              <li key={post.id} className="border-bs border-rule pbs-4">
-                <Link href={localePath(locale, `/news/${post.slug}`)} className="text-h4 font-semibold text-ink no-underline">
-                  {post.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="mbs-8">
-          <TextLink href={localePath(locale, "/news")} locale={locale}>
-            {dict.common.viewAll}
-          </TextLink>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-function PartnersStrip({
+function PartnersGrid({
   locale,
   dict,
   partners,
@@ -614,198 +538,176 @@ function PartnersStrip({
   partners: Awaited<ReturnType<typeof listPartners>>;
 }) {
   if (partners.length === 0) return null;
-  const featured = partners.filter((partner) => partner.isFeatured).slice(0, 10);
-  const shown = featured.length > 0 ? featured : partners.slice(0, 10);
-  const logos = shown.filter((partner) => partner.logoPath);
+  const featured = partners.filter((partner) => partner.isFeatured);
+  const shown = (featured.length > 0 ? featured : partners).slice(0, 8);
 
   return (
-    <Section labelledBy="home-partners" className="bg-paper-alt">
-      <div className="container-content">
-        <SectionHeading id="home-partners" title={dict.home.partnersTitle} />
-        {logos.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-px bg-rule sm:grid-cols-3 lg:grid-cols-5">
-            {shown.map((partner) => (
-              <li key={partner.id} className="flex min-h-28 items-center justify-center bg-paper p-4">
-                {partner.logoPath ? (
-                  <Image
-                    src={mediaSrc(partner.logoPath)}
-                    alt={partner.logoAlt ?? partner.name ?? ""}
-                    width={180}
-                    height={88}
-                    sizes="(min-width: 1024px) 180px, 45vw"
-                    className="max-h-16 w-auto max-w-full object-contain"
-                  />
-                ) : (
-                  <span className="text-center text-small font-medium text-ink-70">{partner.name}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <ul className="flex flex-wrap gap-x-8 gap-y-3 text-small text-ink-70">
-            {shown.map((partner) => (
-              <li key={partner.id}>{partner.name}</li>
-            ))}
-          </ul>
-        )}
-        <div className="mbs-8">
-          <TextLink href={localePath(locale, "/partners")} locale={locale}>
-            {dict.common.viewAll}
-          </TextLink>
-        </div>
-      </div>
+    <Section labelledBy="home-partners" bounded={false}>
+      <Container>
+        <HomeSectionHeading
+          id="home-partners"
+          index={7}
+          title={dict.home.partnersTitle}
+          href={localePath(locale, '/partners')}
+          linkLabel={dict.common.viewAll}
+        />
+        <ul className="grid grid-cols-2 gap-px rule-section bg-rule sm:grid-cols-3 lg:grid-cols-4">
+          {shown.map((partner) => (
+            <li key={partner.id}>
+              <LogoTile
+                image={partner.logoPath ? { src: mediaSrc(partner.logoPath) } : null}
+                name={partner.name ?? ''}
+                href={visibleText(partner.website)}
+              />
+            </li>
+          ))}
+        </ul>
+        {shown.some((partner) => !partner.logoPath) ? (
+          <p className="mbs-4 text-caption text-mono-muted">{dict.partners.logoWithheld}</p>
+        ) : null}
+      </Container>
     </Section>
   );
 }
 
-function VerifySection({
+// ── 10. Get involved ─────────────────────────────────────────────────────
+
+function GetInvolvedPanels({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+  return (
+    <Section tone="alt" labelledBy="home-involved" bounded={false}>
+      <Container>
+        <HomeSectionHeading id="home-involved" index={8} title={dict.homePage.getInvolvedTitle} lead={dict.homePage.getInvolvedLead} />
+        <InvolvementCards locale={locale} dict={dict} headingLevel={3} />
+      </Container>
+    </Section>
+  );
+}
+
+// ── 11. Latest ───────────────────────────────────────────────────────────
+
+function LatestNews({
   locale,
   dict,
-  channels,
+  posts,
 }: {
   locale: Locale;
   dict: Dictionary;
-  channels: NonNullable<Awaited<ReturnType<typeof getOrganization>>>["officialChannels"];
+  posts: Awaited<ReturnType<typeof listPosts>>['items'];
 }) {
-  const officialChannels = channels.filter((channel) => channel.is_official).slice(0, 4);
+  if (posts.length === 0) return null;
+  const categoryLabel = {
+    news: dict.news.categoryNews,
+    statement: dict.news.categoryStatement,
+    announcement: dict.news.categoryAnnouncement,
+  } as const;
+  const categoryTone = { news: 'neutral', statement: 'info', announcement: 'active' } as const;
 
   return (
-    <Section labelledBy="home-verify" className="bg-paper">
-      <div className="container-content">
-        <div className="grid gap-6 border-bs-2 border-ink pbs-6 md:grid-cols-[0.8fr_1fr] md:items-start">
-          <SectionHeading
-            id="home-verify"
-            title={dict.home.verifyTitle}
-            lead={dict.home.verifyLead}
-            className="mbe-0"
-          />
-          <div>
-            {officialChannels.length === 0 ? (
-              <p className="text-small text-ink-70">{dict.states.emptyBody}</p>
-            ) : (
-              <ul className="grid gap-3 sm:grid-cols-2">
-                {officialChannels.map((channel) => (
-                  <li key={`${channel.platform}:${channel.handle}`} className="border-bs border-rule pbs-3">
-                    <p className="text-small font-medium text-ink">{channel.platform}</p>
-                    <a href={channel.url} rel="noopener noreferrer me" target="_blank" className="font-mono text-caption">
-                      <Bidi>{channel.handle}</Bidi>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mbs-6">
-              <TextLink href={localePath(locale, "/verify")} locale={locale}>
-                {dict.verify.title}
-              </TextLink>
-            </div>
+    <Section labelledBy="home-news" bounded={false}>
+      <Container>
+        <HomeSectionHeading
+          id="home-news"
+          index={9}
+          title={dict.home.latestTitle}
+          href={localePath(locale, '/news')}
+          linkLabel={dict.common.viewAll}
+        />
+        <RuledList bounded>
+          {posts.map((post) => (
+            <RuledListItem key={post.id} className="grid gap-x-6 gap-y-1 sm:grid-cols-[140px_120px_minmax(0,1fr)]">
+              {post.publishedAt ? (
+                <time dateTime={post.publishedAt.toISOString()} className="font-mono text-caption text-mono-muted">
+                  <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
+                </time>
+              ) : (
+                <span />
+              )}
+              <span>
+                <Badge tone={categoryTone[post.category]}>{categoryLabel[post.category]}</Badge>
+              </span>
+              <Link href={localePath(locale, `/news/${post.slug}`)} className="text-body font-medium text-ink no-underline hover:text-gold-700">
+                {post.title}
+              </Link>
+            </RuledListItem>
+          ))}
+        </RuledList>
+      </Container>
+    </Section>
+  );
+}
+
+// ── 12. Verify block ─────────────────────────────────────────────────────
+
+function VerifyBlock({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+  return (
+    <Section spacing="tight" bounded={false} labelledBy="home-verify">
+      <Container>
+        <Panel tone="gold" className="flex flex-wrap items-center justify-between gap-6 border-bs-2 border-bs-gold-600">
+          <div className="max-w-2xl">
+            <Heading level={2} size="h3" id="home-verify">
+              {dict.home.verifyTitle}
+            </Heading>
+            <p className="mbs-2 text-small text-ink-70">{dict.home.verifyLead}</p>
           </div>
-        </div>
-      </div>
+          <div className="flex flex-wrap gap-3">
+            <ButtonLink href={localePath(locale, '/verify')} tone="primary" pendingMark>
+              {dict.channels.barCta}
+            </ButtonLink>
+            <ButtonLink href={`${localePath(locale, '/verify')}#report`} tone="secondary">
+              {dict.verify.reportTitle}
+              <Icon name="arrow" size={16} />
+            </ButtonLink>
+          </div>
+        </Panel>
+      </Container>
     </Section>
   );
 }
 
-function FinalCta({
-  locale,
-  dict,
-  org,
-}: {
-  locale: Locale;
-  dict: Dictionary;
-  org: Awaited<ReturnType<typeof getOrganization>>;
-}) {
-  const cta = org?.footerCta;
-  const hasCmsCta =
-    cta?.enabled &&
-    isVisibleText(cta.title) &&
-    isVisibleText(cta.description) &&
-    isVisibleText(cta.buttonLabel) &&
-    isVisibleText(cta.url);
+// ── Page ─────────────────────────────────────────────────────────────────
 
-  return (
-    <section className="bg-ink text-paper">
-      <div className="container-content grid gap-6 py-10 md:grid-cols-[1fr_auto] md:items-center md:py-12">
-        <div className="max-w-2xl">
-          <p className="eyebrow text-gold-600">{dict.nav.support}</p>
-          <h2 className="mbs-3 text-h2 font-semibold text-paper">
-            {hasCmsCta ? cta.title : dict.nav.partner}
-          </h2>
-          <p className="text-small text-paper/70">
-            {hasCmsCta ? cta.description : (org?.shortDescription ?? org?.mission)}
-          </p>
-        </div>
-        <ButtonLink
-          href={hasCmsCta ? hrefForCta(locale, cta.url ?? "") : localePath(locale, "/get-involved/partner")}
-          external={Boolean(hasCmsCta && cta.url && /^https?:\/\//i.test(cta.url))}
-          tone="marked"
-          className="border-paper text-paper hover:bg-paper hover:text-ink"
-        >
-          {hasCmsCta ? cta.buttonLabel : dict.nav.partner}
-        </ButtonLink>
-      </div>
-    </section>
-  );
-}
-
-export default async function HomePage({ params }: PageProps<"/[locale]">) {
+export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [dict, org, programs, posts, featuredProjects, partners, featuredStories] =
+  const [dict, org, programs, metrics, facets, featuredProjects, partners, featuredStories, posts] =
     await Promise.all([
       getDictionary(locale),
       getOrganization(locale),
       listPrograms(locale),
-      listPosts(locale, { limit: 3 }),
+      listMetrics(locale, { status: 'verified', featuredOnly: true }),
+      getProjectFacets(),
       listFeaturedProjects(locale, 2),
       listPartners(locale),
       listStories(locale, { limit: 1, featuredOnly: true }),
+      listPosts(locale, { limit: 3 }),
     ]);
 
-  const recentStories = featuredStories.length > 0 ? [] : await listStories(locale, { limit: 1 });
-  const story = featuredStories[0] ?? recentStories[0] ?? null;
-  const heroPrograms: ProgrammeHeroItem[] = programs.flatMap((program) => {
-    const title = visibleText(program.title);
-    const slug = visibleText(program.slug);
-    if (!title || !slug) return [];
-
-    return [{
-      id: program.id,
-      href: localePath(locale, `/programs/${slug}`),
-      title,
-      summary: visibleText(program.tagline),
-      imageSrc: program.heroPath ? mediaSrc(program.heroPath) : null,
-      imageAlt: program.heroAlt,
-      imageBlur: program.heroBlur,
-      accentToken: program.accentToken,
-    }];
-  });
-  const displayedHeroPrograms = completeHeroProgrammes(locale, heroPrograms);
-  const identityName =
-    visibleText(org?.shortName) ??
-    visibleText(org?.legalName) ??
-    visibleText(org?.acronym);
+  const story = featuredStories[0] ?? (await listStories(locale, { limit: 1 }))[0] ?? null;
+  const shownMetrics = metrics.length > 0 ? metrics : await listMetrics(locale, { status: 'verified' });
+  const memberships = partners.filter((partner) => partner.type === 'network' || partner.type === 'membership');
 
   return (
     <>
-      <ProgrammeHeroCarousel
+      <Hero locale={locale} dict={dict} org={org ?? null} />
+      <CredibilityStrip
         locale={locale}
-        programmes={displayedHeroPrograms}
-        identity={{
-          acronym: visibleText(org?.acronym),
-          name: identityName,
-          label: dict.home.heroEyebrow,
-        }}
+        dict={dict}
+        org={org ?? null}
+        governorates={facets.byGovernorate.length}
+        partners={partners.length}
+        memberships={memberships.length}
       />
-      <ImpactStrip locale={locale} dict={dict} org={org} />
-      <ProgramsOverview locale={locale} dict={dict} programs={programs} />
-      <FeaturedWork locale={locale} dict={dict} projects={featuredProjects} />
-      <HumanStory locale={locale} dict={dict} story={story} />
+      <AboutTeaser locale={locale} dict={dict} org={org ?? null} />
+      <ProgramsGrid locale={locale} dict={dict} programs={programs} />
+      <ImpactStrip locale={locale} dict={dict} metrics={shownMetrics} />
+      <WhereWeWork locale={locale} dict={dict} governorates={facets.byGovernorate} />
+      <FeaturedProjects locale={locale} dict={dict} projects={featuredProjects} />
+      <FeaturedStory locale={locale} dict={dict} story={story} />
+      <PartnersGrid locale={locale} dict={dict} partners={partners} />
+      <GetInvolvedPanels locale={locale} dict={dict} />
       <LatestNews locale={locale} dict={dict} posts={posts.items} />
-      <PartnersStrip locale={locale} dict={dict} partners={partners} />
-      <VerifySection locale={locale} dict={dict} channels={org?.officialChannels ?? []} />
-      <FinalCta locale={locale} dict={dict} org={org} />
+      <VerifyBlock locale={locale} dict={dict} />
     </>
   );
 }

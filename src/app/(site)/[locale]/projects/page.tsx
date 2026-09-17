@@ -1,39 +1,35 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { paginationRange } from '@/lib/utils';
-import { ProjectCard } from '@/components/content/cards';
+import { ProjectCard, projectStateLabel } from '@/components/content/cards';
+import { ContentBreadcrumbs } from '@/components/content/page-chrome';
 import { ProjectFilterPanel } from '@/components/content/project-filters';
-import { SectionHeading } from '@/components/ui/primitives';
-import { EmptyState } from '@/components/ui/states';
+import { getSiteName } from '@/components/content/site';
+import { CollectionPageJsonLd } from '@/components/seo/json-ld';
+import { Badge } from '@/components/ui/badge';
+import { Bidi } from '@/components/ui/bidi';
+import { ButtonLink } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Container, Grid, PageHeader } from '@/components/ui/layout';
+import { Pagination } from '@/components/ui/pagination';
+import { Meta } from '@/components/ui/typography';
 import { governorate, programKey, projectStatus, themeTag } from '@/db/schema/enums';
 import type { Governorate, ProjectStatus, ThemeTag } from '@/db/schema/enums';
 import { getProjectFacets, listProjects, type ProjectFilters } from '@/db/queries/projects';
-import { isLocale, localePath } from '@/lib/i18n/config';
-import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { formatNumber } from '@/lib/format';
+import { isLocale, localePath, type Locale } from '@/lib/i18n/config';
+import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
+import { buildMetadata, withPagination } from '@/lib/seo/metadata';
 
 export const revalidate = 3600;
 
-export async function generateMetadata({
-  params,
-}: PageProps<'/[locale]/projects'>): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isLocale(locale)) return {};
-  const dict = await getDictionary(locale);
-  return {
-    title: dict.projects.title,
-    description: dict.projects.lead,
-    alternates: {
-      canonical: `/${locale}/projects`,
-      languages: { ar: '/ar/projects', en: '/en/projects' },
-    },
-  };
-}
+type SearchParams = Record<string, string | string[] | undefined>;
 
 /** Query strings are user input. Anything not a known enum member is dropped. */
-function readFilters(searchParams: Record<string, string | string[] | undefined>): ProjectFilters {
+function readFilters(searchParams: SearchParams): ProjectFilters {
+  // Repeated keys (`gov=a&gov=b`, what the GET form posts) and comma lists
+  // (`gov=a,b`, what the canonical and the pagination links carry) both parse.
   const many = (value: string | string[] | undefined): string[] =>
-    value === undefined ? [] : Array.isArray(value) ? value : [value];
+    (value === undefined ? [] : Array.isArray(value) ? value : [value]).flatMap((v) => v.split(','));
 
   const keep = <T extends string>(values: string[], allowed: readonly T[]): T[] =>
     values.filter((v): v is T => (allowed as readonly string[]).includes(v));
@@ -53,27 +49,81 @@ function readFilters(searchParams: Record<string, string | string[] | undefined>
   };
 }
 
+/** The active facets as query parameters — for the canonical and the prev/next links. */
+function filterParams(filters: ProjectFilters): Record<string, string | undefined> {
+  return {
+    program: filters.program,
+    state: filters.state,
+    gov: filters.governorates?.length ? filters.governorates.join(',') : undefined,
+    theme: filters.themes?.length ? filters.themes.join(',') : undefined,
+    year: filters.year ? String(filters.year) : undefined,
+  };
+}
+
 /** Rebuilds the query string for a page link, preserving every active facet. */
-function pageHref(
-  locale: 'ar' | 'en',
-  filters: ProjectFilters,
-  page: number,
-): string {
+function pageHref(locale: Locale, filters: ProjectFilters, page: number): string {
   const query = new URLSearchParams();
-  if (filters.program) query.set('program', filters.program);
-  if (filters.state) query.set('state', filters.state);
-  for (const g of filters.governorates ?? []) query.append('gov', g);
-  for (const t of filters.themes ?? []) query.append('theme', t);
-  if (filters.year) query.set('year', String(filters.year));
+  for (const [key, value] of Object.entries(filterParams(filters))) {
+    if (value) query.set(key, value);
+  }
   if (page > 1) query.set('page', String(page));
   const qs = query.toString();
   return localePath(locale, `/projects${qs ? `?${qs}` : ''}`);
 }
 
-export default async function ProjectsPage({
-  params,
-  searchParams,
-}: PageProps<'/[locale]/projects'>) {
+function hasActiveFilters(filters: ProjectFilters): boolean {
+  return Boolean(
+    filters.program ||
+      filters.state ||
+      filters.year ||
+      filters.governorates?.length ||
+      filters.themes?.length,
+  );
+}
+
+/** The applied facets as chips, so the reader sees what the URL says. */
+function activeFilterChips(filters: ProjectFilters, dict: Dictionary): string[] {
+  const enumLabel = (group: keyof Dictionary['enums'], key: string) =>
+    (dict.enums[group] as Record<string, string>)[key] ?? key;
+  return [
+    ...(filters.program ? [enumLabel('program', filters.program)] : []),
+    ...(filters.state ? [projectStateLabel(filters.state, dict)] : []),
+    ...(filters.governorates ?? []).map((g) => enumLabel('governorate', g)),
+    ...(filters.themes ?? []).map((t) => enumLabel('theme', t)),
+    ...(filters.year ? [String(filters.year)] : []),
+  ];
+}
+
+export async function generateMetadata({ params, searchParams }: PageProps<'/[locale]/projects'>): Promise<Metadata> {
+  const [{ locale }, rawSearch] = await Promise.all([params, searchParams]);
+  if (!isLocale(locale)) return {};
+  const filters = readFilters(rawSearch);
+  const [dict, siteName, result] = await Promise.all([
+    getDictionary(locale),
+    getSiteName(locale),
+    listProjects(locale, filters),
+  ]);
+
+  // SEO-009: the canonical carries the active filters, and each page
+  // canonicalises to itself.
+  return withPagination(
+    buildMetadata({
+      locale,
+      path: '/projects',
+      title: dict.projects.title,
+      description: dict.projects.lead,
+      siteName,
+    }),
+    {
+      page: result.page,
+      hasNext: result.page < result.totalPages,
+      hasPrev: result.page > 1,
+      params: filterParams(filters),
+    },
+  );
+}
+
+export default async function ProjectsPage({ params, searchParams }: PageProps<'/[locale]/projects'>) {
   const [{ locale }, rawSearch] = await Promise.all([params, searchParams]);
   if (!isLocale(locale)) notFound();
 
@@ -85,86 +135,94 @@ export default async function ProjectsPage({
     getProjectFacets(),
   ]);
 
-  const hasFilters = Boolean(
-    filters.program ||
-      filters.state ||
-      filters.year ||
-      filters.governorates?.length ||
-      filters.themes?.length,
-  );
+  const filtered = hasActiveFilters(filters);
+  const chips = activeFilterChips(filters, dict);
 
   return (
-    <div className="container-content section-gap">
-      <SectionHeading as="h1" title={dict.projects.title} lead={dict.projects.lead} />
+    <Container className="section-gap">
+      <CollectionPageJsonLd
+        name={dict.projects.title}
+        description={dict.projects.lead}
+        url={pageHref(locale, filters, result.page)}
+        locale={locale}
+        items={result.items.map((project) => ({
+          name: project.title,
+          url: localePath(locale, `/projects/${project.slug}`),
+        }))}
+      />
 
-      <div className="grid gap-8 md:grid-cols-[280px_1fr]">
-        <ProjectFilterPanel
-          locale={locale}
-          dict={dict}
-          facets={facets}
-          filters={filters}
-          total={result.total}
-        />
+      <PageHeader
+        title={dict.projects.title}
+        lede={dict.projects.lead}
+        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.projects.title }]} />}
+      />
 
-        <div>
+      <div className="grid gap-10 md:grid-cols-[17.5rem_minmax(0,1fr)] md:gap-14">
+        <ProjectFilterPanel locale={locale} dict={dict} facets={facets} filters={filters} total={result.total} />
+
+        <div className="min-w-0">
+          {/* The result count is a live region: after a no-JS GET the page
+              reloads anyway, but with client navigation the number changing
+              is the only confirmation the filter took. */}
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 border-be border-rule pbe-4"
+            aria-live="polite"
+          >
+            <Meta as="p">
+              <Bidi>{formatNumber(result.total, locale)}</Bidi> {dict.projects.results}
+            </Meta>
+            {chips.length > 0 ? (
+              <ul className="flex flex-wrap gap-2" aria-label={dict.filters.activeFilters}>
+                {chips.map((chip) => (
+                  <li key={chip}>
+                    <Badge tone="info" uppercase={false}>
+                      {chip}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+
           {result.items.length === 0 ? (
             <EmptyState
+              className="mbs-6"
               title={dict.states.emptyTitle}
               // An empty filtered list and an empty database are different
               // problems, and telling them apart is the difference between
               // "loosen your filters" and "there is nothing here yet".
-              body={hasFilters ? dict.states.emptyFiltered : dict.states.emptyBody}
+              body={filtered ? dict.states.emptyFiltered : dict.states.emptyBody}
+              action={
+                filtered ? (
+                  <ButtonLink href={localePath(locale, '/projects')} tone="secondary" size="sm">
+                    {dict.projects.clearFilters}
+                  </ButtonLink>
+                ) : null
+              }
             />
           ) : (
             <>
-              <ul className="grid gap-6 sm:grid-cols-2">
+              <Grid as="ul" cols={2} className="mbs-6">
                 {result.items.map((project) => (
-                  <li key={project.id}>
+                  <li key={project.id} className="flex">
                     <ProjectCard project={project} locale={locale} dict={dict} />
                   </li>
                 ))}
-              </ul>
+              </Grid>
 
-              {result.totalPages > 1 ? (
-                <nav aria-label={dict.a11y.pagination} className="mbs-10">
-                  <ul className="flex flex-wrap items-center gap-2">
-                    {paginationRange(result.page, result.totalPages).map((token, index) =>
-                      token === 'gap' ? (
-                        <li
-                          key={`gap-${index}`}
-                          aria-hidden="true"
-                          className="px-2 py-1 font-mono text-caption text-mono-muted"
-                        >
-                          …
-                        </li>
-                      ) : (
-                        <li key={token}>
-                          <Link
-                            href={pageHref(locale, filters, token)}
-                            aria-current={token === result.page ? 'page' : undefined}
-                            aria-label={
-                              token === result.page
-                                ? `${dict.a11y.currentPage} ${token}`
-                                : `${dict.common.page} ${token}`
-                            }
-                            className={
-                              token === result.page
-                                ? 'rule-edge border-ink bg-ink px-3 py-1 font-mono text-caption text-paper no-underline'
-                                : 'rule-edge px-3 py-1 font-mono text-caption text-ink no-underline hover:bg-paper-alt'
-                            }
-                          >
-                            {token}
-                          </Link>
-                        </li>
-                      ),
-                    )}
-                  </ul>
-                </nav>
-              ) : null}
+              <Pagination
+                page={result.page}
+                totalPages={result.totalPages}
+                hrefFor={(page) => pageHref(locale, filters, page)}
+                label={dict.a11y.pagination}
+                previousLabel={dict.common.previous}
+                nextLabel={dict.common.next}
+                pageLabel={(page) => `${dict.common.page} ${page}`}
+              />
             </>
           )}
         </div>
       </div>
-    </div>
+    </Container>
   );
 }

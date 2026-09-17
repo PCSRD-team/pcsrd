@@ -1,46 +1,52 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/ui/feedback';
+import { Container } from '@/components/ui/layout';
+
 /**
  * Route-group error boundary.
  *
- * A Client Component because React requires it — an error boundary needs
- * `componentDidCatch`, which has no server equivalent.
+ * **A Client Component because React requires it** — an error boundary needs
+ * `componentDidCatch`, which has no server equivalent. It is the only client
+ * file among the core routes.
  *
  * The copy is passed in through neither props nor a dictionary: an error
  * boundary renders when something upstream already failed, so it cannot depend
  * on a fetch succeeding. Both languages are shown, which is the honest answer
  * when the locale itself may be what failed to resolve.
  */
-export default function SiteError({ reset }: { error: Error; reset: () => void }) {
+export default function SiteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="container-content section-gap">
-      <div className="rule-edge border-gold-600 bg-gold-050 p-8">
-        <h1 className="text-h2 font-semibold text-ink" lang="ar" dir="rtl">
-          تعذّر عرض هذه الصفحة
-        </h1>
-        <p className="mbs-3 text-small text-ink-70" lang="ar" dir="rtl">
-          حدث خطأ غير متوقّع. حاول مجدداً، وإن تكرّر فأخبرنا.
-        </p>
-
-        <hr className="mbs-6 border-bs border-rule" />
-
-        <h2 className="mbs-6 text-h3 font-semibold text-ink" lang="en" dir="ltr">
-          This page could not be shown
-        </h2>
-        <p className="mbs-2 text-small text-ink-70" lang="en" dir="ltr">
-          Something went wrong. Please try again.
-        </p>
-
-        <button
-          type="button"
-          onClick={reset}
-          className="mbs-8 bg-navy-700 px-6 py-3 text-small font-medium text-paper hover:bg-navy-900"
-        >
-          <span lang="ar" dir="rtl">
-            إعادة المحاولة
-          </span>
-        </button>
+    <Container size="narrow" className="section-gap">
+      <div className="grid gap-6 md:grid-cols-2">
+        <div lang="ar" dir="rtl">
+          <ErrorState
+            title="تعذّر عرض هذه الصفحة"
+            body="حدث خطأ غير متوقّع. حاول مجدداً، وإن تكرّر فأخبرنا."
+            reference={error.digest ?? null}
+            referenceLabel="رقم المرجع"
+            action={
+              <Button type="button" onClick={reset}>
+                إعادة المحاولة
+              </Button>
+            }
+          />
+        </div>
+        <div lang="en" dir="ltr">
+          <ErrorState
+            title="This page could not be shown"
+            body="Something went wrong. Please try again, and let us know if it keeps happening."
+            reference={error.digest ?? null}
+            referenceLabel="Reference"
+            action={
+              <Button type="button" onClick={reset} tone="secondary">
+                Try again
+              </Button>
+            }
+          />
+        </div>
       </div>
-    </div>
+    </Container>
   );
 }

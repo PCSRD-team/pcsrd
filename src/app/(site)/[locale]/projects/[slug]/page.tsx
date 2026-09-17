@@ -1,209 +1,290 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { projectStateLabel } from '@/components/content/cards';
+import { mediaImage, mediaSrc } from '@/components/content/media';
+import { ContentBreadcrumbs, ProjectsRail, TranslationNotice } from '@/components/content/page-chrome';
 import { RichText } from '@/components/content/rich-text';
+import { getSiteName, toTranslationStatus } from '@/components/content/site';
+import { ProjectJsonLd } from '@/components/seo/json-ld';
+import { Badge } from '@/components/ui/badge';
 import { DateText } from '@/components/ui/bidi';
-import { Badge, DefinitionList, Panel, Prose, Section, SectionHeading } from '@/components/ui/primitives';
-import { UntranslatedNotice } from '@/components/ui/states';
-import { getProjectBySlug, listProjectSlugs } from '@/db/queries/projects';
-import { publicEnv } from '@/lib/env.public';
-import { formatPeriod, storageUrl } from '@/lib/format';
-import { LOCALES, isLocale, localePath } from '@/lib/i18n/config';
-import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { ButtonLink } from '@/components/ui/button';
+import { DefinitionList } from '@/components/ui/definition-list';
+import { Figure } from '@/components/ui/figure';
+import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
+import { Eyebrow, Prose } from '@/components/ui/typography';
+import { getProjectBySlug, listProjectSlugs, listProjects } from '@/db/queries/projects';
 import { prerenderData } from '@/lib/build-time';
+import { formatPeriod } from '@/lib/format';
+import { isLocale, localePath } from '@/lib/i18n/config';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { buildMetadata } from '@/lib/seo/metadata';
 
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const slugs = await prerenderData('project slugs', () => listProjectSlugs(), []);
-  return LOCALES.flatMap((locale) =>
-    slugs.map((row) => ({ locale, slug: locale === 'ar' ? row.slugAr : row.slugEn })),
-  );
+  const rows = await prerenderData('static params projects', () => listProjectSlugs(), []);
+  return rows.flatMap((row) => [
+    { locale: 'ar', slug: row.slugAr },
+    ...(row.translationStatus === 'ar_only' ? [] : [{ locale: 'en', slug: row.slugEn }]),
+  ]);
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<'/[locale]/projects/[slug]'>): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<'/[locale]/projects/[slug]'>): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isLocale(locale)) return {};
-  const project = await getProjectBySlug(slug, locale);
+  const [project, siteName, slugs] = await Promise.all([
+    getProjectBySlug(slug, locale),
+    getSiteName(locale),
+    // The detail query resolves `isTranslated` for one locale only; the
+    // builder needs the raw status so the Arabic page of an `ar_only`
+    // record also omits the `en` hreflang. The slug list (cached, small)
+    // carries it.
+    listProjectSlugs(),
+  ]);
   if (!project) return {};
+  const translationStatus =
+    toTranslationStatus(slugs.find((row) => row.slugAr === project.slugAr)?.translationStatus) ??
+    (project.isTranslated ? undefined : 'ar_only');
 
-  return {
-    title: project.seoTitle ?? project.title ?? undefined,
-    description: project.seoDescription ?? project.summary ?? undefined,
-    robots: project.noIndex ? { index: false, follow: false } : undefined,
-    alternates: {
-      canonical: `/${locale}/projects/${slug}`,
-      languages: {
-        ar: `/ar/projects/${project.slugAr}`,
-        en: `/en/projects/${project.slugEn}`,
-      },
-    },
-  };
+  return buildMetadata({
+    locale,
+    path: { ar: `/projects/${project.slugAr}`, en: `/projects/${project.slugEn}` },
+    title: project.seoTitle ?? project.title ?? siteName,
+    description: project.seoDescription ?? project.summary,
+    siteName,
+    translationStatus,
+    noIndex: project.noIndex,
+  });
 }
 
 const STATE_TONE = { active: 'active', completed: 'complete', planned: 'planned' } as const;
+
+/** Arabic comma for Arabic lists, Latin comma for English. */
+const listSeparator = (locale: 'ar' | 'en') => (locale === 'ar' ? '، ' : ', ');
 
 export default async function ProjectPage({ params }: PageProps<'/[locale]/projects/[slug]'>) {
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [dict, project] = await Promise.all([
-    getDictionary(locale),
-    getProjectBySlug(slug, locale),
-  ]);
+  const [dict, project] = await Promise.all([getDictionary(locale), getProjectBySlug(slug, locale)]);
   if (!project) notFound();
 
-  const stateLabel = {
-    planned: dict.projects.statePlanned,
-    active: dict.projects.stateActive,
-    completed: dict.projects.stateCompleted,
-  }[project.state];
+  // Related projects: the same programme, minus this one. The rail reads
+  // from the cached list query, so it costs nothing on a warm cache.
+  const siblings = project.program
+    ? await listProjects(locale, { program: project.program.key, page: 1 })
+    : null;
+  const related = (siblings?.items ?? []).filter((item) => item.id !== project.id).slice(0, 3);
 
-  const govLabel = (key: string) =>
-    (dict.enums.governorate as Record<string, string>)[key] ?? key;
+  const govLabel = (key: string) => (dict.enums.governorate as Record<string, string>)[key] ?? key;
   const themeLabel = (key: string) => (dict.enums.theme as Record<string, string>)[key] ?? key;
+  const separator = listSeparator(locale);
+  const period = formatPeriod(project.startDate, project.endDate, locale);
+  const hero = mediaImage(project.hero?.path, project.hero?.blur, project.hero);
+  const url = localePath(locale, `/projects/${slug}`);
 
   return (
-    <div className="container-content section-gap">
-      {!project.isTranslated ? (
-        <UntranslatedNotice
-          title={dict.states.untranslatedTitle}
-          body={dict.states.untranslatedBody}
-        />
-      ) : null}
+    <Container className="section-gap">
+      <ProjectJsonLd
+        name={project.title}
+        description={project.summary}
+        url={url}
+        locale={locale}
+        startDate={project.startDate}
+        endDate={project.endDate}
+        areaServed={project.governorates.map(govLabel)}
+        funders={project.donors.map((donor) => ({ name: donor.name, url: donor.website }))}
+        image={
+          project.hero
+            ? {
+                url: mediaSrc(project.hero.path),
+                width: project.hero.width,
+                height: project.hero.height,
+                alt: project.hero.alt,
+              }
+            : null
+        }
+      />
 
-      {project.program ? (
-        <p className="eyebrow mbe-4">
-          <Link href={localePath(locale, `/programs/${project.program.slug}`)}>
-            {project.program.title}
-          </Link>
-        </p>
-      ) : null}
+      <TranslationNotice
+        locale={locale}
+        dict={dict}
+        isTranslated={project.isTranslated}
+        arabicPath={`/projects/${project.slugAr}`}
+      />
 
-      <h1 className="text-h1 font-semibold text-ink">{project.title}</h1>
-      <span className="rule-mark mbs-5 block" aria-hidden="true" />
-
-      {project.summary ? (
-        <p className="measure-lead mbs-6 text-lead text-ink-70">{project.summary}</p>
-      ) : null}
-
-      {project.hero ? (
-        <div className="mbs-10 relative aspect-[16/9] overflow-hidden bg-paper-alt">
-          <Image
-            src={storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, 'media', project.hero.path)}
-            alt={project.hero.alt ?? ''}
-            fill
-            sizes="(min-width: 1180px) 1180px, 100vw"
-            placeholder={project.hero.blur ? 'blur' : 'empty'}
-            blurDataURL={project.hero.blur ?? undefined}
-            className="object-cover"
-            // `priority` was deprecated in Next 16; `preload` says what it does.
-            preload
+      <article className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:gap-18">
+        <div className="min-w-0">
+          <PageHeader
+            breadcrumbs={
+              <ContentBreadcrumbs
+                locale={locale}
+                dict={dict}
+                trail={[{ label: dict.projects.title, path: '/projects' }, { label: project.title ?? '' }]}
+              />
+            }
+            eyebrow={project.program?.title ?? undefined}
+            title={project.title ?? ''}
+            lede={project.summary}
+            meta={
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge tone={STATE_TONE[project.state]} dot>
+                  {projectStateLabel(project.state, dict)}
+                </Badge>
+                {project.program ? (
+                  <Link
+                    href={localePath(locale, `/programs/${project.program.slug}`)}
+                    className="text-caption text-ink-70"
+                  >
+                    {dict.contentUi.inProgram} {project.program.title}
+                  </Link>
+                ) : null}
+              </div>
+            }
           />
-        </div>
-      ) : null}
 
-      {/* The record: period, status, locations, partners. This is what a
-          due-diligence reader came for, so it sits above the narrative. */}
-      <Section labelledBy="project-record">
-        <SectionHeading id="project-record" title={dict.about.identity} />
-        <Panel>
+          {hero ? (
+            <Figure
+              image={hero}
+              alt={project.hero?.alt ?? ''}
+              decorative={!project.hero?.alt}
+              sizes="(min-width: 1180px) 760px, (min-width: 1024px) 60vw, 100vw"
+              preload
+            />
+          ) : null}
+
+          {project.objective ? (
+            <Section labelledBy="project-objective">
+              <SectionHeading id="project-objective" title={dict.projects.objective} />
+              <Prose>
+                <RichText doc={project.objective} />
+              </Prose>
+            </Section>
+          ) : null}
+
+          {project.activities ? (
+            <Section labelledBy="project-activities">
+              <SectionHeading id="project-activities" title={dict.projects.activities} />
+              <Prose>
+                <RichText doc={project.activities} />
+              </Prose>
+            </Section>
+          ) : null}
+
+          {project.outcomes ? (
+            <Section labelledBy="project-outcomes">
+              <SectionHeading id="project-outcomes" title={dict.projects.outcomes} />
+              <Prose>
+                <RichText doc={project.outcomes} />
+              </Prose>
+            </Section>
+          ) : null}
+
+          {project.gallery.length > 0 ? (
+            <Section labelledBy="project-gallery">
+              <SectionHeading id="project-gallery" title={dict.projects.gallery} />
+              <Grid as="ul" cols={3} gap={4}>
+                {project.gallery.map((item) => (
+                  <li key={item.path}>
+                    {/* `alt` is the media asset's own — `alt_ar` is NOT NULL in
+                        the schema, so a published image always has one. */}
+                    <Figure
+                      image={mediaImage(item.path, item.blur, item)}
+                      alt={item.alt ?? ''}
+                      ratio="portrait"
+                      sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 100vw"
+                      caption={item.caption}
+                    />
+                  </li>
+                ))}
+              </Grid>
+            </Section>
+          ) : null}
+        </div>
+
+        {/* The record: period, status, locations, partners. This is what a
+            due-diligence reader came for, so it opens with the 2px rule and
+            sits beside the narrative rather than under it. */}
+        <aside aria-labelledby="project-record" className="rule-section pbs-5 lg:sticky lg:inset-bs-6 lg:self-start">
+          <Eyebrow id="project-record" as="p">
+            {dict.about.identity}
+          </Eyebrow>
           <DefinitionList
+            layout="ruled"
+            labelledBy="project-record"
+            className="mbs-3"
             items={[
-              { term: dict.projects.state, value: <Badge tone={STATE_TONE[project.state]}>{stateLabel}</Badge> },
               {
                 term: dict.projects.period,
-                value: formatPeriod(project.startDate, project.endDate, locale) ? (
-                  <DateText locale={locale}>{formatPeriod(project.startDate, project.endDate, locale)}</DateText>
-                ) : null,
+                value: period ? <DateText locale={locale}>{period}</DateText> : null,
+              },
+              {
+                term: dict.projects.governorate,
+                value: project.governorates.length ? project.governorates.map(govLabel).join(separator) : null,
               },
               {
                 term: dict.projects.locations,
-                value:
-                  project.governorates.length || project.localities.length
-                    ? [...project.governorates.map(govLabel), ...project.localities].join('، ')
-                    : null,
+                value: project.localities.length ? project.localities.join(separator) : null,
               },
               {
                 term: dict.projects.theme,
-                value: project.themes.length ? project.themes.map(themeLabel).join('، ') : null,
+                value: project.themes.length ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {project.themes.map((theme) => (
+                      <li key={theme}>
+                        <Badge tone="neutral" uppercase={false}>
+                          {themeLabel(theme)}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null,
               },
               {
                 term: dict.projects.implementingPartners,
                 value: project.implementingPartners.length
-                  ? project.implementingPartners.map((p) => p.name).join('، ')
+                  ? project.implementingPartners.map((p) => p.name).join(separator)
                   : null,
               },
               {
                 term: dict.projects.donors,
-                value: project.donors.length
-                  ? project.donors.map((p) => p.name).join('، ')
-                  : null,
+                value: project.donors.length ? project.donors.map((p) => p.name).join(separator) : null,
               },
             ]}
           />
-        </Panel>
-      </Section>
+          <div className="mbs-6 flex flex-wrap gap-3">
+            <ButtonLink href={localePath(locale, '/contact')} tone="primary" size="sm">
+              {dict.nav.contact}
+            </ButtonLink>
+            {project.program ? (
+              <ButtonLink href={localePath(locale, `/programs/${project.program.slug}`)} tone="quiet" size="sm">
+                {dict.contentUi.toProgram}
+              </ButtonLink>
+            ) : null}
+          </div>
+        </aside>
+      </article>
 
-      {project.objective ? (
-        <Section labelledBy="project-objective">
-          <SectionHeading id="project-objective" title={dict.projects.objective} />
-          <Prose>
-            <RichText doc={project.objective} />
-          </Prose>
-        </Section>
-      ) : null}
-
-      {project.activities ? (
-        <Section labelledBy="project-activities">
-          <SectionHeading id="project-activities" title={dict.projects.activities} />
-          <Prose>
-            <RichText doc={project.activities} />
-          </Prose>
-        </Section>
-      ) : null}
-
-      {project.outcomes ? (
-        <Section labelledBy="project-outcomes">
-          <SectionHeading id="project-outcomes" title={dict.projects.outcomes} />
-          <Prose>
-            <RichText doc={project.outcomes} />
-          </Prose>
-        </Section>
-      ) : null}
-
-      {project.gallery.length > 0 ? (
-        <Section labelledBy="project-gallery">
-          <SectionHeading id="project-gallery" title={dict.projects.gallery} />
-          <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {project.gallery.map((item) => (
-              <li key={item.path}>
-                <figure>
-                  <div className="relative aspect-[4/3] overflow-hidden bg-paper-alt">
-                    <Image
-                      src={storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, 'media', item.path)}
-                      alt={item.alt ?? ''}
-                      fill
-                      sizes="(min-width: 768px) 380px, 100vw"
-                      placeholder={item.blur ? 'blur' : 'empty'}
-                      blurDataURL={item.blur ?? undefined}
-                      className="object-cover"
-                    />
-                  </div>
-                  {item.caption ? (
-                    <figcaption className="mbs-2 text-caption text-ink-55">
-                      {item.caption}
-                    </figcaption>
-                  ) : null}
-                </figure>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : null}
-    </div>
+      <ProjectsRail
+        locale={locale}
+        dict={dict}
+        projects={related}
+        title={dict.contentUi.relatedProjects}
+        id="project-related"
+        actions={
+          project.program ? (
+            <ButtonLink
+              href={localePath(locale, `/projects?program=${encodeURIComponent(project.program.key)}`)}
+              tone="marked"
+              size="sm"
+            >
+              {dict.common.viewAll}
+            </ButtonLink>
+          ) : null
+        }
+      />
+    </Container>
   );
 }
