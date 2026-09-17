@@ -8,6 +8,8 @@ import {
   submitPartnership,
   submitVolunteer,
 } from '@/actions/public/forms';
+import { FieldRow } from '@/components/ui/field';
+import { Notice } from '@/components/ui/notice';
 import {
   AGE_BANDS,
   AVAILABILITY,
@@ -25,7 +27,6 @@ import {
   CheckboxGroup,
   FileField,
   type FormDict,
-  Honeypot,
   type OptionLabels,
   SelectField,
   TextArea,
@@ -34,7 +35,16 @@ import {
 import { FormShell } from './form-shell';
 
 /**
- * The six public forms.
+ * The six public forms — each one declares its fields and nothing else.
+ *
+ * The shell owns everything they share: the locale, the honeypot, the result
+ * region, the captcha and the submit. The field wrappers own the dictionary
+ * resolution and the value restore. What is left here is the *shape* of each
+ * form, which is the only thing that differs.
+ *
+ * Client Component because it renders inside `FormShell`'s render prop, and a
+ * function cannot cross the server → client boundary. It holds no state and
+ * no effects of its own.
  *
  * Option **values** come from the Zod schemas, so a value the server would
  * reject cannot be offered in the UI. Option **labels** come from a `labels`
@@ -43,43 +53,43 @@ import { FormShell } from './form-shell';
  * available.
  */
 
-const opts = (values: readonly string[], labels: OptionLabels) =>
-  values.map((value) => ({ value, label: labels[value] ?? value }));
-
-// ── Contact ──────────────────────────────────────────────────────────────
-
-export function ContactForm({
-  dict,
-  locale,
-  labels,
-}: {
+type PublicFormProps = {
   dict: FormDict;
   locale: Locale;
   labels: OptionLabels;
-}) {
+};
+
+const opts = (values: readonly string[], labels: OptionLabels) =>
+  values.map((value) => ({ value, label: labels[value] ?? value }));
+
+const CV_ACCEPT =
+  '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+// ── Contact ──────────────────────────────────────────────────────────────
+
+export function ContactForm({ dict, locale, labels }: PublicFormProps) {
   return (
     <FormShell action={submitContact} dict={dict} locale={locale}>
-      {(errors) => (
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Honeypot />
-          <TextField name="name" label={dict.forms.name} dict={dict} required errors={errors} autoComplete="name" />
-          <TextField name="email" label={dict.forms.email} dict={dict} type="email" required errors={errors} autoComplete="email" />
-          <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" errors={errors} autoComplete="tel" />
-          <SelectField
-            name="enquiryType"
-            label={dict.forms.enquiryType}
-            dict={dict}
-            options={opts(ENQUIRY_TYPES, labels)}
-            defaultValue="general"
-            errors={errors}
-          />
-          <div className="sm:col-span-2">
-            <TextField name="subject" label={dict.forms.subject} dict={dict} required errors={errors} />
-          </div>
-          <div className="sm:col-span-2">
-            <TextArea name="message" label={dict.forms.message} dict={dict} required rows={5} errors={errors} />
-          </div>
-        </div>
+      {(state) => (
+        <>
+          <FieldRow>
+            <TextField name="name" label={dict.forms.name} dict={dict} required state={state} autoComplete="name" />
+            <TextField name="email" label={dict.forms.email} dict={dict} type="email" required state={state} autoComplete="email" />
+          </FieldRow>
+          <FieldRow>
+            <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" state={state} autoComplete="tel" />
+            <SelectField
+              name="enquiryType"
+              label={dict.forms.enquiryType}
+              dict={dict}
+              options={opts(ENQUIRY_TYPES, labels)}
+              defaultValue="general"
+              state={state}
+            />
+          </FieldRow>
+          <TextField name="subject" label={dict.forms.subject} dict={dict} required state={state} />
+          <TextArea name="message" label={dict.forms.message} dict={dict} required rows={5} state={state} />
+        </>
       )}
     </FormShell>
   );
@@ -88,57 +98,52 @@ export function ContactForm({
 // ── Complaint (CFM) ──────────────────────────────────────────────────────
 
 /**
- * Every identity field is optional and the anonymity notice is shown before
- * them, not after. A complainant deciding whether it is safe to file reads the
- * top of the form, not the small print under the submit button.
+ * Every identity field is optional and the confidentiality notice is shown
+ * before them, not after. A complainant deciding whether it is safe to file
+ * reads the top of the form, not the small print under the submit button.
  */
-export function ComplaintForm({
-  dict,
-  locale,
-  labels,
-}: {
-  dict: FormDict;
-  locale: Locale;
-  labels: OptionLabels;
-}) {
+export function ComplaintForm({ dict, locale, labels }: PublicFormProps) {
   return (
     <FormShell action={submitComplaint} dict={dict} locale={locale}>
-      {(errors) => (
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Honeypot />
-          <div className="rounded-xl border border-gold-600/45 bg-gold-050 p-4 sm:col-span-2">
-            <p className="text-small text-ink">{dict.forms.anonymousNotice}</p>
-          </div>
+      {(state) => (
+        <>
+          <Notice tone="warning" title={dict.formsUi.confidentialTitle} live="off">
+            {dict.forms.anonymousNotice}
+          </Notice>
 
-          <SelectField
-            name="category"
-            label={dict.forms.category}
-            dict={dict}
-            options={opts(COMPLAINT_CATEGORIES, labels)}
-            required
-            errors={errors}
-          />
-          <TextField name="incidentDate" label={dict.forms.incidentDate} dict={dict} type="date" errors={errors} />
-          <TextField name="location" label={dict.forms.location} dict={dict} errors={errors} />
-          <div className="sm:col-span-2">
-            <TextArea name="description" label={dict.forms.description} dict={dict} required rows={6} errors={errors} />
-          </div>
-          <div className="sm:col-span-2">
-            <TextField name="relatedProject" label={dict.forms.relatedProject} dict={dict} errors={errors} />
-          </div>
+          <FieldRow>
+            <SelectField
+              name="category"
+              label={dict.forms.category}
+              dict={dict}
+              options={opts(COMPLAINT_CATEGORIES, labels)}
+              required
+              state={state}
+            />
+            <TextField name="incidentDate" label={dict.forms.incidentDate} dict={dict} type="date" state={state} />
+          </FieldRow>
+          <FieldRow>
+            <TextField name="location" label={dict.forms.location} dict={dict} state={state} />
+            <TextField name="relatedProject" label={dict.forms.relatedProject} dict={dict} state={state} />
+          </FieldRow>
+          <TextArea name="description" label={dict.forms.description} dict={dict} required rows={6} state={state} />
 
-          <TextField name="name" label={dict.forms.name} dict={dict} errors={errors} autoComplete="off" />
-          <TextField name="email" label={dict.forms.email} dict={dict} type="email" errors={errors} autoComplete="off" />
-          <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" errors={errors} autoComplete="off" />
-          <SelectField
-            name="contactPreference"
-            label={dict.forms.contactPreference}
-            dict={dict}
-            options={opts(['none', 'email', 'phone'], labels)}
-            defaultValue="none"
-            errors={errors}
-          />
-        </div>
+          <FieldRow>
+            <TextField name="name" label={dict.forms.name} dict={dict} state={state} autoComplete="off" />
+            <TextField name="email" label={dict.forms.email} dict={dict} type="email" state={state} autoComplete="off" />
+          </FieldRow>
+          <FieldRow>
+            <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" state={state} autoComplete="off" />
+            <SelectField
+              name="contactPreference"
+              label={dict.forms.contactPreference}
+              dict={dict}
+              options={opts(['none', 'email', 'phone'], labels)}
+              defaultValue="none"
+              state={state}
+            />
+          </FieldRow>
+        </>
       )}
     </FormShell>
   );
@@ -146,48 +151,45 @@ export function ComplaintForm({
 
 // ── Partnership ──────────────────────────────────────────────────────────
 
-export function PartnershipForm({
-  dict,
-  locale,
-  labels,
-}: {
-  dict: FormDict;
-  locale: Locale;
-  labels: OptionLabels;
-}) {
+export function PartnershipForm({ dict, locale, labels }: PublicFormProps) {
   return (
     <FormShell action={submitPartnership} dict={dict} locale={locale}>
-      {(errors) => (
+      {(state) => (
         <>
-          <Honeypot />
-          <TextField name="organizationName" label={dict.forms.organizationName} dict={dict} required errors={errors} />
-          <SelectField
-            name="organizationType"
-            label={dict.forms.organizationType}
-            dict={dict}
-            options={opts(ORGANIZATION_TYPES, labels)}
-            required
-            errors={errors}
-          />
+          <FieldRow>
+            <TextField name="organizationName" label={dict.forms.organizationName} dict={dict} required state={state} autoComplete="organization" />
+            <SelectField
+              name="organizationType"
+              label={dict.forms.organizationType}
+              dict={dict}
+              options={opts(ORGANIZATION_TYPES, labels)}
+              required
+              state={state}
+            />
+          </FieldRow>
           <TextField
             name="country"
             label={dict.forms.country}
             dict={dict}
             required
-            errors={errors}
+            state={state}
             autoComplete="country"
-            hint="ISO 3166-1 alpha-2"
+            hint={dict.formsUi.countryHint}
           />
-          <TextField name="contactName" label={dict.forms.name} dict={dict} required errors={errors} autoComplete="name" />
-          <TextField name="role" label={dict.forms.role} dict={dict} required errors={errors} />
-          <TextField name="email" label={dict.forms.email} dict={dict} type="email" required errors={errors} autoComplete="email" />
-          <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" errors={errors} autoComplete="tel" />
+          <FieldRow>
+            <TextField name="contactName" label={dict.forms.name} dict={dict} required state={state} autoComplete="name" />
+            <TextField name="role" label={dict.forms.role} dict={dict} required state={state} autoComplete="organization-title" />
+          </FieldRow>
+          <FieldRow>
+            <TextField name="email" label={dict.forms.email} dict={dict} type="email" required state={state} autoComplete="email" />
+            <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" state={state} autoComplete="tel" />
+          </FieldRow>
           <CheckboxGroup
             name="interest"
             legend={dict.forms.interest}
             options={opts(PARTNERSHIP_INTERESTS, labels)}
             dict={dict}
-            errors={errors}
+            state={state}
             required
           />
           <CheckboxGroup
@@ -195,9 +197,9 @@ export function PartnershipForm({
             legend={dict.forms.programsOfInterest}
             options={opts(PROGRAM_KEYS, labels)}
             dict={dict}
-            errors={errors}
+            state={state}
           />
-          <TextArea name="message" label={dict.forms.message} dict={dict} required errors={errors} />
+          <TextArea name="message" label={dict.forms.message} dict={dict} required state={state} />
         </>
       )}
     </FormShell>
@@ -207,29 +209,24 @@ export function PartnershipForm({
 // ── Volunteer ────────────────────────────────────────────────────────────
 
 /** Age band, not date of birth. Governorate, not address. No national ID. */
-export function VolunteerForm({
-  dict,
-  locale,
-  labels,
-}: {
-  dict: FormDict;
-  locale: Locale;
-  labels: OptionLabels;
-}) {
+export function VolunteerForm({ dict, locale, labels }: PublicFormProps) {
   return (
     <FormShell action={submitVolunteer} dict={dict} locale={locale}>
-      {(errors) => (
+      {(state) => (
         <>
-          <Honeypot />
-          <TextField name="name" label={dict.forms.name} dict={dict} required errors={errors} autoComplete="name" />
-          <TextField name="email" label={dict.forms.email} dict={dict} type="email" required errors={errors} autoComplete="email" />
-          <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" required errors={errors} autoComplete="tel" />
-          <SelectField name="ageBand" label={dict.forms.ageBand} dict={dict} options={opts(AGE_BANDS, labels)} required errors={errors} />
-          <SelectField name="governorate" label={dict.forms.governorate} dict={dict} options={opts(GOVERNORATES, labels)} required errors={errors} />
-          <CheckboxGroup name="areas" legend={dict.forms.areas} options={opts(VOLUNTEER_AREAS, labels)} dict={dict} errors={errors} required />
-          <SelectField name="availability" label={dict.forms.availability} dict={dict} options={opts(AVAILABILITY, labels)} defaultValue="flexible" errors={errors} />
-          <TextArea name="experience" label={dict.forms.experience} dict={dict} rows={4} errors={errors} />
-          <TextArea name="motivation" label={dict.forms.motivation} dict={dict} required errors={errors} />
+          <TextField name="name" label={dict.forms.name} dict={dict} required state={state} autoComplete="name" />
+          <FieldRow>
+            <TextField name="email" label={dict.forms.email} dict={dict} type="email" required state={state} autoComplete="email" />
+            <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" required state={state} autoComplete="tel" />
+          </FieldRow>
+          <FieldRow>
+            <SelectField name="ageBand" label={dict.forms.ageBand} dict={dict} options={opts(AGE_BANDS, labels)} required state={state} />
+            <SelectField name="governorate" label={dict.forms.governorate} dict={dict} options={opts(GOVERNORATES, labels)} required state={state} />
+          </FieldRow>
+          <CheckboxGroup name="areas" legend={dict.forms.areas} options={opts(VOLUNTEER_AREAS, labels)} dict={dict} state={state} required />
+          <SelectField name="availability" label={dict.forms.availability} dict={dict} options={opts(AVAILABILITY, labels)} defaultValue="flexible" state={state} />
+          <TextArea name="experience" label={dict.forms.experience} dict={dict} rows={4} state={state} />
+          <TextArea name="motivation" label={dict.forms.motivation} dict={dict} required state={state} />
         </>
       )}
     </FormShell>
@@ -238,29 +235,26 @@ export function VolunteerForm({
 
 // ── Fraud report ─────────────────────────────────────────────────────────
 
-export function FraudReportForm({
-  dict,
-  locale,
-  labels,
-}: {
-  dict: FormDict;
-  locale: Locale;
-  labels: OptionLabels;
-}) {
+export function FraudReportForm({ dict, locale, labels }: PublicFormProps) {
   return (
     <FormShell action={submitFraudReport} dict={dict} locale={locale}>
-      {(errors) => (
+      {(state) => (
         <>
-          <Honeypot />
-          <SelectField name="channel" label={dict.forms.channel} dict={dict} options={opts(FRAUD_CHANNELS, labels)} required errors={errors} />
-          <TextField name="identifier" label={dict.forms.identifier} dict={dict} required errors={errors} />
-          <TextField name="evidenceUrl" label={dict.forms.evidenceUrl} dict={dict} type="url" errors={errors} />
-          <TextField name="occurredOn" label={dict.forms.occurredOn} dict={dict} type="date" errors={errors} />
-          <TextArea name="description" label={dict.forms.description} dict={dict} required errors={errors} />
+          <FieldRow>
+            <SelectField name="channel" label={dict.forms.channel} dict={dict} options={opts(FRAUD_CHANNELS, labels)} required state={state} />
+            <TextField name="identifier" label={dict.forms.identifier} dict={dict} required state={state} />
+          </FieldRow>
+          <FieldRow>
+            <TextField name="evidenceUrl" label={dict.forms.evidenceUrl} dict={dict} type="url" state={state} />
+            <TextField name="occurredOn" label={dict.forms.occurredOn} dict={dict} type="date" state={state} />
+          </FieldRow>
+          <TextArea name="description" label={dict.forms.description} dict={dict} required state={state} />
 
-          <TextField name="reporterName" label={dict.forms.name} dict={dict} errors={errors} />
-          <TextField name="reporterEmail" label={dict.forms.email} dict={dict} type="email" errors={errors} />
-          <TextField name="reporterPhone" label={dict.forms.phone} dict={dict} type="tel" errors={errors} />
+          <TextField name="reporterName" label={dict.forms.name} dict={dict} state={state} autoComplete="name" />
+          <FieldRow>
+            <TextField name="reporterEmail" label={dict.forms.email} dict={dict} type="email" state={state} autoComplete="email" />
+            <TextField name="reporterPhone" label={dict.forms.phone} dict={dict} type="tel" state={state} autoComplete="tel" />
+          </FieldRow>
         </>
       )}
     </FormShell>
@@ -270,11 +264,9 @@ export function FraudReportForm({
 // ── Job application ──────────────────────────────────────────────────────
 
 /**
- * The only form that carries a file.
- *
- * `encType` is set explicitly: React sets it for a Server Action form, but this
- * form must also work **before hydration**, and a native submit without
- * `multipart/form-data` posts the filename instead of the file.
+ * The only form that carries a file. React sets `multipart/form-data` on any
+ * form whose action is a function, in the server-rendered markup too, so the
+ * file posts correctly before hydration.
  *
  * The accept list is a convenience for the file picker, not a check. The real
  * validation reads magic bytes on the server, because both the extension and
@@ -290,30 +282,26 @@ export function JobApplicationForm({
   vacancyId: string;
 }) {
   return (
-    <FormShell
-      action={submitJobApplication}
-      dict={dict}
-      locale={locale}
-      encType="multipart/form-data"
-    >
-      {(errors) => (
+    <FormShell action={submitJobApplication} dict={dict} locale={locale}>
+      {(state) => (
         <>
-          <Honeypot />
           <input type="hidden" name="vacancyId" value={vacancyId} />
-          <TextField name="name" label={dict.forms.name} dict={dict} required errors={errors} autoComplete="name" />
-          <TextField name="email" label={dict.forms.email} dict={dict} type="email" required errors={errors} autoComplete="email" />
-          <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" required errors={errors} autoComplete="tel" />
+          <TextField name="name" label={dict.forms.name} dict={dict} required state={state} autoComplete="name" />
+          <FieldRow>
+            <TextField name="email" label={dict.forms.email} dict={dict} type="email" required state={state} autoComplete="email" />
+            <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" required state={state} autoComplete="tel" />
+          </FieldRow>
           <FileField
             name="cv"
             label={dict.forms.cv}
             dict={dict}
             hint={dict.forms.cvHint}
             required
-            errors={errors}
-            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            state={state}
+            accept={CV_ACCEPT}
           />
-          <TextArea name="coverNote" label={dict.forms.coverNote} dict={dict} rows={5} errors={errors} />
-          <TextField name="portfolioUrl" label={dict.forms.portfolioUrl} dict={dict} type="url" errors={errors} />
+          <TextArea name="coverNote" label={dict.forms.coverNote} dict={dict} rows={5} state={state} />
+          <TextField name="portfolioUrl" label={dict.forms.portfolioUrl} dict={dict} type="url" state={state} autoComplete="url" />
         </>
       )}
     </FormShell>

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { formSubmissions, profiles } from '@/db/schema';
 import type { Db } from '@/db';
 import { AppError } from '@/lib/errors';
+import { decryptPayload } from '@/lib/security/crypto';
 import type { Actor } from '@/services/_shared/actor';
 import {
   countNewSubmissions,
@@ -116,6 +117,40 @@ describe('createSubmission', () => {
     // The ciphertext must not contain the plaintext anywhere in it.
     expect(row.payloadEncrypted!.toString('utf8')).not.toContain('safeguarding');
     expect(row.payloadEncrypted!.toString('utf8')).not.toContain('redacted');
+
+    // The row names the key that produced it, and that id opens it through
+    // the key ring — the two halves of a rotation that loses nothing.
+    expect(row.payloadKeyId).toBe(process.env.SUBMISSION_ENC_KEY_ID);
+    expect(decryptPayload(row.payloadEncrypted!, row.payloadKeyId)).toEqual({
+      category: 'safeguarding',
+      description: 'redacted',
+    });
+  });
+
+  it('a fraud report is an ordinary submission (02-API §5.3): hashed IP, plaintext payload', async () => {
+    // Only the CFM complaint is confidential. A report of an impostor page is
+    // not a complaint about the organisation, and the reporter's contact is
+    // optional in the schema rather than blanked by the service.
+    const created = await createSubmission(db(), {
+      type: 'fraud_report',
+      locale: 'ar',
+      payload: { channel: 'facebook', identifier: 'fake-page' },
+      ip: '203.0.113.9',
+      userAgent: 'Mozilla/5.0',
+    });
+
+    const row = row1(
+      await getDb()
+        .select()
+        .from(formSubmissions)
+        .where(eq(formSubmissions.id, (await idOf(created.reference)))),
+    );
+
+    expect(row.isSensitive).toBe(false);
+    expect(row.ipHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(row.payload).toEqual({ channel: 'facebook', identifier: 'fake-page' });
+    expect(row.payloadEncrypted).toBeNull();
+    expect(row.payloadKeyId).toBeNull();
   });
 
   it('applies the retention table per type', async () => {

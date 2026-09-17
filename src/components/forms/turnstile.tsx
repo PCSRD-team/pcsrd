@@ -1,7 +1,9 @@
 'use client';
 
 import Script from 'next/script';
+import { Notice } from '@/components/ui/notice';
 import { publicEnv } from '@/lib/env.public';
+import type { FormDict } from './fields';
 
 /**
  * The Turnstile widget.
@@ -15,12 +17,23 @@ import { publicEnv } from '@/lib/env.public';
  * filling in a form, and the pages carrying forms are also the pages a
  * beneficiary on a slow connection is most likely to open.
  *
- * With JavaScript disabled the widget never renders and no token is posted. The
- * action then fails the captcha check rather than accepting the submission —
- * failing closed. That is a real limitation of the no-JS path, and the right
- * trade: the alternative is an unprotected write endpoint.
+ * ## Without JavaScript — the decision
+ *
+ * The widget cannot render and no token is posted. 02-API §5.1 is explicit
+ * that a missing or failed token is **rejected** (`fail('captcha', …)`), and
+ * the action keeps that: it does not fall back to "rate limit + honeypot
+ * only", because that would make disabling JavaScript the documented way
+ * around the captcha on the one write path a stranger has. What degrades
+ * instead is the *explanation*: the `<noscript>` block below renders where the
+ * widget would, in the page's language, before the visitor types a word. The
+ * fields still validate server-side on that path (the action validates before
+ * it verifies), so a no-JavaScript visitor gets real field feedback and one
+ * honest captcha message — never a silent discard.
+ *
+ * `live="off"` on that notice: it is page content, not a response to
+ * anything the visitor did.
  */
-export function Turnstile({ locale }: { locale: 'ar' | 'en' }) {
+export function Turnstile({ locale, dict }: { locale: 'ar' | 'en'; dict: FormDict }) {
   return (
     <>
       <Script
@@ -33,6 +46,11 @@ export function Turnstile({ locale }: { locale: 'ar' | 'en' }) {
         data-language={locale}
         data-theme="light"
       />
+      <noscript>
+        <Notice tone="warning" live="off">
+          {dict.formsUi.noScriptCaptcha}
+        </Notice>
+      </noscript>
     </>
   );
 }
