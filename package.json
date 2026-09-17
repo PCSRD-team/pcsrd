@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint",
     "lint:css": "stylelint \"src/**/*.css\"",
     "db:generate": "drizzle-kit generate",
@@ -15,10 +15,17 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
     "test:unit": "vitest run --project unit --passWithNoTests",
-    "test:int": "vitest run --project integration --passWithNoTests"
+    "test:int": "vitest run --project integration --passWithNoTests",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:a11y": "playwright test a11y.spec.ts",
+    "test:visual": "playwright test visual.spec.ts",
+    "test:visual:update": "playwright test visual.spec.ts --update-snapshots",
+    "lhci": "lhci autorun --config=lighthouserc.cjs"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",
+    "@sentry/nextjs": "^10.74.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "@tiptap/extension-link": "^3.30.2",
@@ -41,7 +48,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@electric-sql/pglite": "^0.5.5",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

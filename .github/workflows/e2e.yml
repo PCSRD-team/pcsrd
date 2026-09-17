@@ -1,0 +1,138 @@
+name: E2E
+
+# Real-browser tests against a production build (`next start`) and a real
+# Postgres built from this branch's own migrations — `docs/spec/06-BUILD-PLAN.md
+# §10`. Separate from `ci.yml` so a browser failure is reported as a browser
+# failure, and so the build-and-lint job stays fast.
+#
+# The `env:` and `services:` blocks are copies of the ones in `ci.yml` and must
+# stay in step with them: every value is a placeholder shaped to satisfy
+# `src/lib/env.ts`, never a secret. The forms suite submits *invalid* data
+# only, so the placeholder Resend / Upstash / Turnstile values are never
+# reached — and if they were, they would fail closed.
+
+on:
+  pull_request:
+
+env:
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+  DIRECT_URL: postgresql://postgres:postgres@localhost:5432/postgres
+  SUPABASE_SERVICE_ROLE_KEY: ci-canary-service-role-3f8a1c94d6b27e05
+  RESEND_API_KEY: re_ci_placeholder
+  MAIL_FROM: ci@example.invalid
+  MAIL_TO_GENERAL: ci@example.invalid
+  MAIL_TO_PARTNERSHIP: ci@example.invalid
+  MAIL_TO_HR: ci@example.invalid
+  MAIL_TO_SENSITIVE: ci@example.invalid
+  TURNSTILE_SECRET_KEY: ci-placeholder-turnstile-secret
+  UPSTASH_REDIS_REST_URL: https://placeholder.upstash.invalid
+  UPSTASH_REDIS_REST_TOKEN: ci-placeholder-upstash-token
+  IP_HASH_SALT: ci-placeholder-ip-hash-salt-at-least-32-chars
+  SUBMISSION_ENC_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+  SUBMISSION_ENC_KEY_ID: ci
+  CRON_SECRET: ci-placeholder-cron-secret
+  NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.invalid
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+  NEXT_PUBLIC_SITE_URL: http://localhost:3100
+  NEXT_PUBLIC_DEFAULT_LOCALE: ar
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+  NEXT_PUBLIC_WHATSAPP_NUMBER: '970000000000'
+  # Playwright and Lighthouse both talk to this one server.
+  PORT: '3100'
+  CI: 'true'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Same as ci.yml: filename order with psql, so the SQL itself is tested
+      # and the run stays independent of the drizzle journal.
+      - name: Apply migrations to the CI database
+        run: |
+          for f in drizzle/*.sql; do
+            echo "  applying $f"
+            psql "$DIRECT_URL" -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+
+      # The seed writes only `TODO(org)` placeholders and the three fixed
+      # programmes, through DIRECT_URL — no secret involved. It gives the list
+      # pages something other than an empty state to render.
+      - name: Seed placeholder content
+        run: npm run db:seed
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # One production server for the whole job. Playwright's `webServer` has
+      # `reuseExistingServer: true`, and lighthouserc.cjs probes the same URL.
+      - name: Start next start on :3100
+        run: |
+          nohup npx next start --port 3100 > next-start.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:3100/robots.txt; then
+              echo "server up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::next start did not answer within 60s"; cat next-start.log; exit 1
+
+      # `--ignore-snapshots` until Linux baselines are committed: the
+      # screenshots under tests/e2e/__screenshots__ are keyed by platform, and
+      # a missing baseline is otherwise a failure. Generate them with
+      # `npm run test:visual:update` on a Linux machine (or from the artifact of
+      # the step below) and drop the flag.
+      - name: E2E (all projects)
+        run: npm run test:e2e -- --ignore-snapshots
+
+      - name: Accessibility (axe, WCAG 2.2 AA, both locales)
+        if: always()
+        run: npm run test:a11y -- --reporter=list,html
+
+      - name: Visual regression (Linux baselines)
+        if: always()
+        continue-on-error: true
+        run: npm run test:visual -- --update-snapshots=missing
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            tests/e2e/__screenshots__/
+          retention-days: 14
+
+      - name: Lighthouse CI (budgets from 03-FRONTEND §9)
+        if: always()
+        run: npm run lhci
+
+      - name: Server log
+        if: failure()
+        run: tail -n 200 next-start.log
