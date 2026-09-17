@@ -42,13 +42,17 @@ export async function validateCvUpload(file: File): Promise<CvUpload> {
 
   // .doc is a compound OLE container; file-type reports it as
   // application/x-cfb, which is correct but not what the allow-list names.
-  const mime =
-    sniffed?.mime === 'application/x-cfb' && file.name.toLowerCase().endsWith('.doc')
-      ? 'application/msword'
-      : sniffed?.mime;
+  //
+  // That is the one place the filename is consulted, and only to *narrow* an
+  // already-sniffed container type — a `.pdf` extension on a PE executable
+  // (`MZ…`) still sniffs as `application/x-msdownload` and is refused.
+  const isLegacyDoc =
+    sniffed?.mime === 'application/x-cfb' && file.name.toLowerCase().endsWith('.doc');
+  const mime = isLegacyDoc ? 'application/msword' : sniffed?.mime;
 
   if (!mime || !CV_MIME.has(mime)) return { ok: false, reason: 'bad_type' };
-  return { ok: true, buffer, mime, ext: sniffed?.ext ?? 'bin' };
+  // The stored extension follows the sniffed type, never the upload's name.
+  return { ok: true, buffer, mime, ext: isLegacyDoc ? 'doc' : (sniffed?.ext ?? 'bin') };
 }
 
 export type ImageUpload =

@@ -4,12 +4,17 @@ import { after } from 'next/server';
 import { headers } from 'next/headers';
 import { db } from '@/db';
 import type { LocaleCode, SubmissionType } from '@/db/schema/enums';
-import { type ActionResult, err, ok, runAction } from '@/lib/errors';
-import { getClientIp } from '@/lib/security/ip';
+import { type ActionErr, type ActionOk, err, ok, runAction } from '@/lib/errors';
+import { getClientIp, hashIp } from '@/lib/security/ip';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { verifyTurnstile } from '@/lib/security/turnstile';
 import { validateCvUpload, storagePath } from '@/lib/security/upload';
-import { fieldErrorsFrom, formDataToObject } from '@/lib/validation/common';
+import {
+  type FormValues,
+  echoFormValues,
+  fieldErrorsFrom,
+  formDataToObject,
+} from '@/lib/validation/common';
 import {
   PARTNERSHIP_MULTI,
   VOLUNTEER_MULTI,
@@ -20,37 +25,62 @@ import {
   partnershipSchema,
   volunteerSchema,
 } from '@/lib/validation/forms';
-import { createSubmission } from '@/services/submission/submission.service';
+import { createSubmission, isSensitiveType } from '@/services/submission/submission.service';
 import type { z } from 'zod';
 
 /**
  * The six public forms.
  *
- * Each is the same five steps in the same order:
+ * Each is the same pipeline in the same order:
  *
- *     rate limit → validate → honeypot → Turnstile → persist → notify
+ *     honeypot → rate limit → validate (Zod) → Turnstile → upload → persist → notify
  *
- * **Persist before notify**, always. Email is the least reliable link in the
- * chain, and a lost partnership enquiry is the most expensive failure this site
- * can produce. `after()` runs the mail once the response is already on its way,
- * so a Resend outage delays nothing and loses nothing.
+ * - **Honeypot first.** It costs nothing and a bot that fills it should not
+ *   spend a Redis round trip or a slot in a real visitor's shared-IP window.
+ * - **Rate limit before validation** (02-API §5.1), keyed on the *hashed*
+ *   address so the window key written to Upstash is opaque (audit SEC-006).
+ * - **Validate before Turnstile.** The spec orders it this way and it is what
+ *   keeps the no-JavaScript path honest: a visitor without the widget still
+ *   gets field-level feedback, and only a form that would otherwise be
+ *   accepted is turned away by the captcha — with one clear message, not a
+ *   validation error on a field they cannot see.
+ * - **Turnstile is rejected, not skipped, when the token is missing.** 02-API
+ *   §5.1 fails closed and this file follows it; `turnstile.tsx` renders a
+ *   `<noscript>` notice so the visitor learns that before they type. A missing
+ *   token never falls back to "rate limit + honeypot only" — that would make
+ *   "disable JavaScript" the documented way around the captcha.
+ * - **Persist before notify**, always. Email is the least reliable link in the
+ *   chain, and a lost partnership enquiry is the most expensive failure this
+ *   site can produce. `after()` runs the mail once the response is already on
+ *   its way, so a Resend outage delays nothing and loses nothing.
  *
  * There is no business logic here. Every `if` is about HTTP or validation; the
  * decisions about what is confidential, what gets hashed and how long anything
- * is kept live in the submission service.
+ * is kept live in the submission service. The one rule this file *reads* from
+ * the service — `isSensitiveType` — is used only to keep a complainant's
+ * address out of the Cloudflare request, which is a transport concern.
+ *
+ * On failure the result carries `values`: the submitted strings, minus the
+ * envelope and any file, so the re-rendered form keeps what was typed. That
+ * is the whole of the no-JavaScript retry path — the page is rendered again by
+ * the server and every control's `defaultValue` comes from here.
  */
 
-export type SubmissionResult = ActionResult<{ reference: string }>;
+export type SubmissionFailure = ActionErr & { values?: FormValues };
+export type SubmissionResult = ActionOk<{ reference: string }> | SubmissionFailure;
 
 /** A honeypot hit gets a normal-looking success. Telling a bot it was caught
  *  teaches whoever wrote it what to change. */
 const DECOY: SubmissionResult = { ok: true, data: { reference: 'PCS-000000' } };
 
+/** The honeypot's field name. `Honeypot` in the form shell renders the same one. */
+const HONEYPOT_FIELD = 'website';
+
 type Pipeline<TSchema extends z.ZodType> = {
   schema: TSchema;
   type: SubmissionType;
   multi?: readonly string[];
-  /** Extra work between validation and persistence — currently only uploads. */
+  /** Extra work between the captcha and persistence — currently only uploads. */
   prepare?: (
     input: z.infer<TSchema>,
     formData: FormData,
@@ -61,18 +91,22 @@ async function submit<TSchema extends z.ZodType>(
   formData: FormData,
   pipeline: Pipeline<TSchema>,
 ): Promise<SubmissionResult> {
-  return runAction(async () => {
+  const honeypot = formData.get(HONEYPOT_FIELD);
+  if (typeof honeypot === 'string' && honeypot.length > 0) return DECOY;
+
+  const result = await runAction<{ reference: string }>(async () => {
     const ip = await getClientIp();
+    const sensitive = isSensitiveType(pipeline.type);
 
     const limiter = pipeline.type === 'job' ? 'upload' : 'form';
-    const rate = await checkRateLimit(limiter, ip);
+    const rate = await checkRateLimit(limiter, hashIp(ip) ?? 'unknown');
     if (!rate.success) return err('rate_limited', 'errors.rateLimited');
 
     const fields = formDataToObject(formData, pipeline.multi ?? []);
 
     // Cloudflare's widget injects its hidden input as `cf-turnstile-response`.
     // The schema names the field `turnstileToken`, so without this rename every
-    // one of the six forms fails validation on a field the visitor cannot see.
+    // one of the six forms would post a token the schema never sees.
     fields.turnstileToken = formData.get('cf-turnstile-response') ?? '';
 
     const parsed = pipeline.schema.safeParse(fields);
@@ -86,9 +120,9 @@ async function submit<TSchema extends z.ZodType>(
       locale: LocaleCode;
     };
 
-    if (input.website) return DECOY;
-
-    if (!(await verifyTurnstile(input.turnstileToken, ip))) {
+    // A complainant's address goes to no third party: `remoteip` is optional
+    // in Cloudflare's siteverify API and omitted for a sensitive type.
+    if (!(await verifyTurnstile(input.turnstileToken, sensitive ? undefined : ip))) {
       return err('captcha', 'errors.captcha');
     }
 
@@ -126,6 +160,9 @@ async function submit<TSchema extends z.ZodType>(
 
     return ok({ reference: created.reference }, 'forms.success');
   });
+
+  if (result.ok) return result;
+  return { ...result, values: echoFormValues(formData, pipeline.multi ?? []) };
 }
 
 export async function submitPartnership(
@@ -198,9 +235,11 @@ export async function submitJobApplication(
  *
  * Identical in shape to the others, and that is the point: the confidentiality
  * rules are not restated here. `createSubmission` sees `type: 'complaint'`,
- * looks it up in its own table, and zeroes the IP hash and user agent before
- * the insert. **No analytics event fires** — there is nothing to opt out of,
- * because nothing is dispatched.
+ * looks it up in its own table, zeroes the IP hash and user agent and encrypts
+ * the payload before the insert — and `app.submit_form` does all three again.
+ * **No analytics event fires** — there is nothing to opt out of, because
+ * nothing is dispatched. `tests/integration/submission.test.ts` asserts the
+ * stored row.
  */
 export async function submitComplaint(
   _prev: SubmissionResult | null,

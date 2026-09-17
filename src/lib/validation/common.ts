@@ -75,7 +75,50 @@ export const slugSchema = z
  */
 export const honeypot = z.string().max(0).optional();
 
-export const turnstileToken = z.string().min(1, { message: 'errors.captcha' });
+/**
+ * The Turnstile token, as the widget posts it.
+ *
+ * Deliberately **not** `min(1)`. Presence is not validation — it is the
+ * captcha step, and `verifyTurnstile('')` already fails closed. Requiring it
+ * here would turn a missing token into a *field* error on a field the form
+ * never renders, so a visitor without JavaScript would read "check the
+ * highlighted fields" with nothing highlighted. Validating the fields first
+ * and the token second gives them real field feedback, then one honest
+ * form-level captcha message.
+ */
+export const turnstileToken = z.string().default('');
+
+/**
+ * The submitted values, for re-filling the form after a failed submission.
+ *
+ * Without JavaScript the page is re-rendered by the server and every control
+ * starts empty unless its `defaultValue` is set from this. Repeated fields
+ * (checkbox groups) become arrays; files are never echoed, because a browser
+ * will not re-fill a file input from markup anyway and the bytes have no
+ * business in a rendered page.
+ */
+export type FormValues = Record<string, string | string[]>;
+
+/** Fields that are transport, not content, and must not be echoed back. */
+const ENVELOPE_FIELDS = new Set(['website', 'cf-turnstile-response', 'locale']);
+
+/** A defensive cap: the longest field on any form allows 4 000 characters. */
+const MAX_ECHO_CHARS = 8_000;
+
+export function echoFormValues(formData: FormData, multi: readonly string[] = []): FormValues {
+  const out: FormValues = {};
+  for (const key of new Set(formData.keys())) {
+    if (ENVELOPE_FIELDS.has(key) || key.startsWith('$')) continue;
+    const strings = formData
+      .getAll(key)
+      .filter((v): v is string => typeof v === 'string')
+      .map((v) => v.slice(0, MAX_ECHO_CHARS));
+    const [first] = strings;
+    if (first === undefined) continue;
+    out[key] = multi.includes(key) || strings.length > 1 ? strings : first;
+  }
+  return out;
+}
 
 // ── FormData → object ────────────────────────────────────────────────────
 

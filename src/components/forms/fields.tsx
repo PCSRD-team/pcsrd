@@ -1,30 +1,54 @@
-import type { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
 import type { FieldErrors } from '@/lib/errors';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
+import type { FormValues } from '@/lib/validation/common';
+import { Field, describedBy as kitDescribedBy } from '@/components/ui/field';
+import {
+  CheckboxGroup as KitCheckboxGroup,
+  FileInput,
+  Honeypot,
+  Input,
+  type Option,
+  Select,
+  Textarea,
+} from '@/components/ui/inputs';
 
 /**
  * The slice of the dictionary a form needs.
  *
- * These components run inside a Client Component (the form shell needs
- * `useActionState`), so whatever is passed here is serialised into the page.
- * Narrowing it to four sections keeps every other route's copy out of the
- * browser bundle.
+ * These components render inside the form shell, which is a Client Component
+ * (it needs `useActionState`), so whatever is passed here is serialised into
+ * the page. Narrowing it to five sections keeps every other route's copy out
+ * of the browser bundle.
  */
-export type FormDict = Pick<Dictionary, 'common' | 'forms' | 'errors' | 'states'>;
+export type FormDict = Pick<Dictionary, 'common' | 'forms' | 'errors' | 'states' | 'formsUi'>;
 
 /** Option label lookup, keyed by the schema value it labels. */
 export type OptionLabels = Record<string, string>;
 
 /**
- * Form fields.
+ * What a failed submission leaves behind for the next render: the errors per
+ * field, as dictionary keys, and the values the visitor typed. The shell
+ * builds one of these and each field reads its own entry.
+ */
+export type FieldState = {
+  errors?: FieldErrors;
+  values?: FormValues;
+};
+
+/**
+ * Form fields — thin wrappers over the kit.
  *
- * All Server Components. A form built from these submits with a plain POST when
- * JavaScript is unavailable, which is rule 7 — and on a slow or filtered
+ * The kit (`@/components/ui/field`, `inputs`) owns the markup, the `control`
+ * styling and the id contract (`name`, `name-hint`, `name-error`). What these
+ * add is the dictionary layer: errors arrive from the action as **keys**,
+ * because the server has no locale, and are resolved here at the last
+ * possible moment; and a failed submission's `values` are threaded back into
+ * `defaultValue` so a plain POST without JavaScript re-renders the form with
+ * what the visitor typed — rule 7.
+ *
+ * Nothing here is a Client Component. A form built from these submits with a
+ * plain POST when JavaScript is unavailable, and on a slow or filtered
  * connection in Gaza that is not an edge case.
- *
- * Errors arrive as **dictionary keys** from the action, because the server has
- * no locale. Resolution happens here, at the last possible moment.
  */
 
 /** Walks `errors.field.tooShort` to its string. Unknown keys render verbatim,
@@ -36,327 +60,224 @@ export function resolveKey(dict: FormDict, key: string): string {
   return typeof value === 'string' ? value : key;
 }
 
+/** The field's errors as rendered text, or `undefined` when it has none. */
+export function resolveErrors(
+  dict: FormDict,
+  errors: FieldErrors | undefined,
+  name: string,
+): string[] | undefined {
+  const keys = errors?.[name];
+  if (!keys?.length) return undefined;
+  return keys.map((key) => resolveKey(dict, key));
+}
+
 /**
- * The ids `FieldShell` renders, joined for `aria-describedby`.
- *
- * `FieldShell` centralised the *rendering* of hints and errors and left the
- * *association* to each control — so only `TextField` and `FileField` ever wired
- * it. `<textarea>` and `<select>` set `aria-invalid` and no `aria-describedby`,
- * which announces a field as invalid while giving no reason: worse than
- * silence. That covered `message`, `description`, `experience`, `motivation`,
- * `coverNote` and every enquiry, category and governorate select on the six
- * public forms — WCAG 2.2 SC 3.3.1 and SC 1.3.1.
- *
- * One helper rather than a repeated expression, because the repeated expression
- * is exactly what went missing.
+ * The ids the kit `Field` renders, joined for `aria-describedby`. Kept for
+ * callers that wire a custom control; the wrappers below get it from the kit.
  */
 export function describedBy(name: string, hint: string | undefined, errors?: FieldErrors) {
-  return (
-    [hint ? `${name}-hint` : null, errors?.[name] ? `${name}-error` : null]
-      .filter(Boolean)
-      .join(' ') || undefined
-  );
+  return kitDescribedBy(name, hint, errors?.[name]);
 }
 
-function FieldShell({
-  name,
-  label,
-  hint,
-  required,
-  errors,
-  dict,
-  children,
-}: {
+/**
+ * The field that should receive focus after a failed submission: the first
+ * one with an error, in the order the schema reported them — which is the
+ * order the fields are declared. Rendered as `autoFocus`, which React emits
+ * as the `autofocus` attribute on the server, so a no-JavaScript re-render
+ * lands the visitor on the problem. With JavaScript on, the element already
+ * exists and React does not re-focus it; focus stays on the submit button,
+ * which is also acceptable.
+ */
+export function firstErrorField(errors: FieldErrors | undefined): string | undefined {
+  if (!errors) return undefined;
+  return Object.keys(errors).find((key) => key !== '_form' && errors[key]?.length);
+}
+
+function stringValue(values: FormValues | undefined, name: string): string | undefined {
+  const value = values?.[name];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function listValue(values: FormValues | undefined, name: string): string[] | undefined {
+  const value = values?.[name];
+  if (value === undefined) return undefined;
+  return Array.isArray(value) ? value : [value];
+}
+
+/** What every wrapper below has in common. */
+type FieldProps = {
   name: string;
   label: string;
+  dict: FormDict;
   hint?: string;
   required?: boolean;
-  errors?: FieldErrors;
-  dict: FormDict;
-  children: ReactNode;
-}) {
-  const messages = errors?.[name] ?? [];
+  state?: FieldState;
+};
 
-  return (
-    <div className="space-y-2">
-      <label htmlFor={name} className="block text-small font-medium text-ink">
-        {label}
-        {required ? (
-          <span className="ms-1 text-gold-700" aria-hidden="true">
-            *
-          </span>
-        ) : (
-          <span className="ms-2 font-mono text-eyebrow text-mono-muted">
-            {dict.common.optional}
-          </span>
-        )}
-      </label>
-
-      {hint ? (
-        <p id={`${name}-hint`} className="text-caption text-ink-55">
-          {hint}
-        </p>
-      ) : null}
-
-      {children}
-
-      {messages.length ? (
-        <p id={`${name}-error`} className="text-caption text-gold-700" role="alert">
-          {messages.map((key) => resolveKey(dict, key)).join(' ')}
-        </p>
-      ) : null}
-    </div>
-  );
+/** The three things a wrapper derives from `state` for its `name`. */
+function fieldBits({ name, dict, state, hint }: FieldProps) {
+  return {
+    error: resolveErrors(dict, state?.errors, name),
+    autoFocus: firstErrorField(state?.errors) === name || undefined,
+    hint,
+  };
 }
 
-const controlClass =
-  'block min-h-12 w-full rounded-xl border border-rule-control bg-white px-4 py-3 text-small text-ink outline-none motion-standard transition-[border-color,box-shadow,background-color] ' +
-  'hover:border-navy-700/45 focus:border-navy-700 focus:shadow-[0_0_0_4px_rgb(37_66_132/0.10)] aria-invalid:border-gold-600';
-
 export function TextField({
-  name,
-  label,
-  dict,
   type = 'text',
-  hint,
-  required,
-  errors,
   defaultValue,
   autoComplete,
   inputMode,
-}: {
-  name: string;
-  label: string;
-  dict: FormDict;
+  ...props
+}: FieldProps & {
   type?: 'text' | 'email' | 'tel' | 'url' | 'date';
-  hint?: string;
-  required?: boolean;
-  errors?: FieldErrors;
   defaultValue?: string;
   autoComplete?: string;
   inputMode?: 'text' | 'email' | 'tel' | 'url' | 'numeric';
 }) {
+  const { name, label, dict, required, state } = props;
+  const { error, hint, autoFocus } = fieldBits(props);
   return (
-    <FieldShell name={name} label={label} hint={hint} required={required} errors={errors} dict={dict}>
-      <input
-        id={name}
+    <Field
+      name={name}
+      label={label}
+      hint={hint}
+      error={error}
+      required={required}
+      optionalLabel={dict.common.optional}
+    >
+      <Input
         name={name}
         type={type}
+        hint={hint}
+        error={error}
         required={required}
-        defaultValue={defaultValue}
+        defaultValue={stringValue(state?.values, name) ?? defaultValue}
         autoComplete={autoComplete}
         inputMode={inputMode}
-        aria-invalid={errors?.[name] ? true : undefined}
-        aria-describedby={describedBy(name, hint, errors)}
-        // Latin text in an otherwise-RTL form: an email or a URL typed into a
-        // right-aligned field is unreadable while being typed.
-        dir={type === 'email' || type === 'url' || type === 'tel' ? 'ltr' : undefined}
-        className={cn(controlClass, (type === 'email' || type === 'url' || type === 'tel') && 'text-start')}
+        autoFocus={autoFocus}
       />
-    </FieldShell>
+    </Field>
   );
 }
 
 export function TextArea({
-  name,
-  label,
-  dict,
-  hint,
-  required,
-  errors,
   rows = 6,
   defaultValue,
-}: {
-  name: string;
-  label: string;
-  dict: FormDict;
-  hint?: string;
-  required?: boolean;
-  errors?: FieldErrors;
-  rows?: number;
-  defaultValue?: string;
-}) {
+  ...props
+}: FieldProps & { rows?: number; defaultValue?: string }) {
+  const { name, label, dict, required, state } = props;
+  const { error, hint, autoFocus } = fieldBits(props);
   return (
-    <FieldShell name={name} label={label} hint={hint} required={required} errors={errors} dict={dict}>
-      <textarea
-        id={name}
+    <Field
+      name={name}
+      label={label}
+      hint={hint}
+      error={error}
+      required={required}
+      optionalLabel={dict.common.optional}
+    >
+      <Textarea
         name={name}
         rows={rows}
+        hint={hint}
+        error={error}
         required={required}
-        defaultValue={defaultValue}
-        aria-invalid={errors?.[name] ? true : undefined}
-        aria-describedby={describedBy(name, hint, errors)}
-        className={controlClass}
+        defaultValue={stringValue(state?.values, name) ?? defaultValue}
+        autoFocus={autoFocus}
       />
-    </FieldShell>
+    </Field>
   );
 }
 
 export function SelectField({
-  name,
-  label,
-  dict,
   options,
-  required,
-  errors,
   defaultValue,
-  hint,
-}: {
-  name: string;
-  label: string;
-  dict: FormDict;
-  options: { value: string; label: string }[];
-  required?: boolean;
-  errors?: FieldErrors;
-  defaultValue?: string;
-  hint?: string;
-}) {
+  ...props
+}: FieldProps & { options: Option[]; defaultValue?: string }) {
+  const { name, label, dict, required, state } = props;
+  const { error, hint, autoFocus } = fieldBits(props);
   return (
-    <FieldShell name={name} label={label} hint={hint} required={required} errors={errors} dict={dict}>
-      <select
-        id={name}
-        name={name}
-        required={required}
-        defaultValue={defaultValue ?? ''}
-        aria-invalid={errors?.[name] ? true : undefined}
-        aria-describedby={describedBy(name, hint, errors)}
-        className={controlClass}
-      >
-        <option value="" disabled>
-          —
-        </option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </FieldShell>
-  );
-}
-
-export function CheckboxGroup({
-  name,
-  legend,
-  options,
-  errors,
-  dict,
-  required,
-}: {
-  name: string;
-  legend: string;
-  options: { value: string; label: string }[];
-  errors?: FieldErrors;
-  dict: FormDict;
-  required?: boolean;
-}) {
-  const messages = errors?.[name] ?? [];
-  return (
-    <fieldset
-      aria-invalid={messages.length ? true : undefined}
-      aria-describedby={messages.length ? `${name}-error` : undefined}
+    <Field
+      name={name}
+      label={label}
+      hint={hint}
+      error={error}
+      required={required}
+      optionalLabel={dict.common.optional}
     >
-      <legend className="text-small font-medium text-ink">
-        {legend}
-        {required ? (
-          <span className="ms-1 text-gold-700" aria-hidden="true">
-            *
-          </span>
-        ) : null}
-      </legend>
-      <ul className="mbs-3 grid gap-2 sm:grid-cols-2">
-        {options.map((option) => (
-          <li key={option.value}>
-            <label className="flex items-center gap-3 text-small text-ink">
-              <input
-                type="checkbox"
-                name={name}
-                value={option.value}
-                className="size-4 accent-navy-700"
-              />
-              {option.label}
-            </label>
-          </li>
-        ))}
-      </ul>
-      {messages.length ? (
-        <p id={`${name}-error`} className="mbs-2 text-caption text-gold-700" role="alert">
-          {messages.map((key) => resolveKey(dict, key)).join(' ')}
-        </p>
-      ) : null}
-    </fieldset>
-  );
-}
-
-export function FileField({
-  name,
-  label,
-  dict,
-  accept,
-  hint,
-  required,
-  errors,
-}: {
-  name: string;
-  label: string;
-  dict: FormDict;
-  accept?: string;
-  hint?: string;
-  required?: boolean;
-  errors?: FieldErrors;
-}) {
-  return (
-    <FieldShell name={name} label={label} hint={hint} required={required} errors={errors} dict={dict}>
-      <input
-        id={name}
+      <Select
         name={name}
-        type="file"
-        accept={accept}
+        options={options}
+        hint={hint}
+        error={error}
         required={required}
-        aria-invalid={errors?.[name] ? true : undefined}
-        aria-describedby={
-          [hint ? `${name}-hint` : null, errors?.[name] ? `${name}-error` : null]
-            .filter(Boolean)
-            .join(' ') || undefined
-        }
-        className="block w-full text-small text-ink file:me-4 file:rule-edge file:bg-paper-alt file:px-4 file:py-2 file:text-small file:text-ink"
+        defaultValue={stringValue(state?.values, name) ?? defaultValue}
+        autoFocus={autoFocus}
       />
-    </FieldShell>
+    </Field>
   );
 }
 
 /**
- * The honeypot.
- *
- * Hidden from the viewport **and** from the accessibility tree, so a screen
- * reader never announces it and a sighted user never sees it. `tabIndex={-1}`
- * and `autoComplete="off"` keep a browser's autofill from filling it in and
- * turning a real submission into a silent discard.
+ * Several boxes under one name. The kit's `CheckboxGroup` owns the fieldset,
+ * legend and group error; this resolves the keys and restores the ticks.
+ * `autoFocus` has no single control to land on, so the group error's
+ * `role="alert"` carries the announcement instead.
  */
-export function Honeypot() {
+export function CheckboxGroup({
+  legend,
+  options,
+  columns,
+  ...props
+}: Omit<FieldProps, 'label'> & { legend: string; options: Option[]; columns?: 1 | 2 }) {
+  const { name, dict, required, state } = props;
+  const { error, hint } = fieldBits({ ...props, label: legend });
   return (
-    <div aria-hidden="true" className="absolute -inset-x-[9999px] size-px overflow-hidden">
-      <label htmlFor="website">Website</label>
-      <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
-    </div>
+    <KitCheckboxGroup
+      name={name}
+      legend={legend}
+      options={options}
+      hint={hint}
+      error={error}
+      required={required}
+      optionalLabel={dict.common.optional}
+      defaultValue={listValue(state?.values, name)}
+      columns={columns}
+    />
   );
 }
 
-/** The reference number panel shown after a successful submission. */
-export function SubmissionReceipt({
-  reference,
-  dict,
-}: {
-  reference: string;
-  dict: FormDict;
-}) {
+/**
+ * A file input. Nothing is restored after a failure — a browser will not
+ * re-fill a file input from markup — so when the form comes back with errors
+ * the hint says to choose the file again.
+ */
+export function FileField({ accept, ...props }: FieldProps & { accept?: string }) {
+  const { name, label, dict, required, state } = props;
+  const { error, autoFocus } = fieldBits(props);
+  const hint = state?.errors
+    ? [props.hint, dict.formsUi.reselectFile].filter(Boolean).join(' ')
+    : props.hint;
   return (
-    <div className="rule-edge border-gold-600 bg-gold-050 p-6" role="status">
-      <p className="text-small font-medium text-ink">{dict.forms.successWithReference}</p>
-      <p className="mbs-3 font-mono text-h3 text-ink" dir="ltr">
-        {reference}
-      </p>
-      <p className="mbs-3 text-caption text-ink-70">{dict.forms.keepReference}</p>
-    </div>
+    <Field
+      name={name}
+      label={label}
+      hint={hint}
+      error={error}
+      required={required}
+      optionalLabel={dict.common.optional}
+    >
+      <FileInput
+        name={name}
+        accept={accept}
+        hint={hint}
+        error={error}
+        required={required}
+        autoFocus={autoFocus}
+      />
+    </Field>
   );
 }
+
+export { Honeypot };

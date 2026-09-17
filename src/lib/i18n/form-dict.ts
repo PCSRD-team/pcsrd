@@ -16,6 +16,7 @@ export function formSlice(dict: Dictionary): FormDict {
     forms: dict.forms,
     errors: dict.errors,
     states: dict.states,
+    formsUi: dict.formsUi,
   };
 }
 

@@ -2,81 +2,103 @@
 
 import { useActionState } from 'react';
 import type { ReactNode } from 'react';
-import type { ActionResult, FieldErrors } from '@/lib/errors';
-import { type FormDict, SubmissionReceipt, resolveKey } from './fields';
+import type { SubmissionResult } from '@/actions/public/forms';
+import { FormActions, FormStack } from '@/components/ui/field';
+import { SubmissionReceipt } from '@/components/ui/feedback';
+import { LiveRegion, Notice } from '@/components/ui/notice';
+import { SubmitButton } from '@/components/ui/submit-button';
+import { type FieldState, type FormDict, Honeypot, resolveKey } from './fields';
 import { Turnstile } from './turnstile';
 
 /**
- * **A Client Component, and the reason is `useActionState`.**
+ * The one shell behind the six public forms.
  *
- * Progressive enhancement is not lost by this: React submits the form natively
- * before hydration, so the six public forms work with JavaScript disabled —
- * rule 7. What the client adds is showing field errors and the reference number
- * without a full navigation, which matters on a connection where a round trip
- * costs several seconds.
+ * **A Client Component, and the reason is `useActionState`.** It is the only
+ * way React hands an action's return value back to the form — with JavaScript
+ * *and* without it. On a plain POST, React replays the action on the server
+ * and renders this component with the result already in `state`, so field
+ * errors, the typed values and the receipt all appear in server-rendered HTML.
+ * Nothing about that path depends on hydration; what the client adds is doing
+ * it without a full navigation, which matters where a round trip costs
+ * seconds. This is rule 7 kept, not bent.
  *
- * The fields are passed in as a render prop rather than as children, because
- * they need the errors that only exist after a submission.
+ * `method` and `encType` are not set on the `<form>`: React sets both
+ * (`POST`, `multipart/form-data`) for any form whose action is a function and
+ * warns if a caller sets them too. The job application's file therefore
+ * travels correctly before hydration without a prop for it.
+ *
+ * The fields are a render prop rather than children because they need the
+ * state that only exists after a submission. Everything a form has in common
+ * lives here — the locale, the honeypot, the result region, the captcha and
+ * the submit — so a per-form component declares fields and nothing else.
  */
 
-export type SubmissionState = ActionResult<{ reference: string }> | null;
+export type SubmissionState = SubmissionResult | null;
 
 export function FormShell({
   action,
   dict,
   locale,
   submitLabel,
-  encType,
   children,
 }: {
   action: (prev: SubmissionState, formData: FormData) => Promise<SubmissionState>;
   dict: FormDict;
   locale: 'ar' | 'en';
   submitLabel?: string;
-  /** `multipart/form-data` for the one form that carries a file. */
-  encType?: 'multipart/form-data';
-  children: (errors: FieldErrors | undefined) => ReactNode;
+  children: (state: FieldState) => ReactNode;
 }) {
-  const [state, formAction, pending] = useActionState(action, null);
+  const [state, formAction] = useActionState(action, null);
 
   if (state?.ok) {
-    return <SubmissionReceipt reference={state.data.reference} dict={dict} />;
+    return (
+      <SubmissionReceipt
+        title={dict.forms.successWithReference}
+        reference={state.data.reference}
+        body={dict.forms.keepReference}
+      />
+    );
   }
 
-  const errors = state && !state.ok ? state.fieldErrors : undefined;
+  const failure = state && !state.ok ? state : null;
+  const fieldState: FieldState = failure
+    ? { errors: failure.fieldErrors, values: failure.values }
+    : {};
 
   return (
-    <form action={formAction} encType={encType} className="space-y-6" noValidate>
+    // `noValidate`: the server is the validator, and its messages are the
+    // translated ones. The browser's own bubbles would pre-empt them in the
+    // browser's language, not the page's.
+    <form action={formAction} noValidate className="grid gap-6">
       {/* The locale travels with the submission so the acknowledgement email is
           written in the language the sender used, not the language of whoever
           reads the inbox. */}
       <input type="hidden" name="locale" value={locale} />
+      <Honeypot />
 
-      {/* The region itself is always in the DOM; only its contents change.
-          A live region that does not exist when its content arrives is
-          unreliable — assistive technology has nothing to observe until the
-          node appears, and for a polite region it frequently never announces.
-          This one is assertive and usually survives insertion, but "usually" is
-          not what a form-level failure message should depend on. */}
-      <div aria-live="assertive" role="alert">
-        {state && !state.ok ? (
-          <div className="rule-edge border-gold-600 bg-gold-050 p-4">
-            <p className="text-small text-ink">{resolveKey(dict, state.messageKey)}</p>
-          </div>
+      {/* Always in the DOM; only its contents change. A live region that does
+          not exist when its content arrives is unreliable — assistive
+          technology has nothing to observe until the node appears. Assertive:
+          a failed submission must interrupt. The notice inside is `live="off"`
+          so the message is announced once, by the region, not twice. */}
+      <LiveRegion assertive>
+        {failure ? (
+          <Notice tone="danger" live="off">
+            {resolveKey(dict, failure.messageKey)}
+          </Notice>
         ) : null}
-      </div>
+      </LiveRegion>
 
-      {children(errors)}
+      <FormStack>{children(fieldState)}</FormStack>
 
-      <Turnstile locale={locale} />
+      <Turnstile locale={locale} dict={dict} />
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="min-h-12 rounded-xl bg-navy-700 px-7 py-3 text-small font-semibold text-paper shadow-[0_10px_24px_rgb(37_66_132/0.18)] transition hover:bg-navy-900 disabled:opacity-60"
-      >
-        {pending ? dict.common.submitting : (submitLabel ?? dict.common.submit)}
-      </button>
+      <FormActions>
+        <SubmitButton
+          label={submitLabel ?? dict.common.submit}
+          pendingLabel={dict.common.submitting}
+        />
+      </FormActions>
     </form>
   );
 }
