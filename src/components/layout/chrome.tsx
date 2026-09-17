@@ -1,27 +1,37 @@
-﻿import { Suspense, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Bidi } from '@/components/ui/bidi';
+import { ButtonLink, buttonClasses } from '@/components/ui/button';
+import { Container, Rule } from '@/components/ui/layout';
+import { DefinitionList } from '@/components/ui/definition-list';
+import { Icon } from '@/components/ui/icon';
+import { LinkPendingMark } from '@/components/ui/link-pending';
+import { Eyebrow } from '@/components/ui/typography';
 import { publicEnv } from '@/lib/env.public';
 import { storageUrl } from '@/lib/format';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import { type Locale, localePath } from '@/lib/i18n/config';
-import { LanguageSwitcher } from './language-switcher';
-import { PublicNavigation, type PublicNavGroup } from './public-navigation';
 import { buildWhatsAppUrl } from '@/lib/utils';
+import { LanguageSwitcher } from './language-switcher';
 
 /**
- * Persistent chrome.
+ * Persistent chrome — Server Components throughout.
  *
- * Principle 4 of the design direction â€” "two doors, always open" â€” is why the
+ * Principle 4 of the design direction — "two doors, always open" — is why the
  * partnership CTA and the channel-verification link are in the chrome on every
  * page rather than on a landing page each. Those are the two jobs the site
  * exists to do, and a reader who arrives on a project page deep from a search
  * result must still find both.
  *
- * The official-channels bar sits **above** the header and does not collapse
+ * The official-channels bar sits **above** the header row and does not collapse
  * into the mobile menu. Hiding the anti-impersonation link behind a hamburger
  * would defeat its purpose for exactly the audience most at risk.
+ *
+ * The mobile menu is a `<details>` disclosure: it opens and closes with no
+ * JavaScript, which is the same guarantee the six forms make. The only client
+ * code in the chrome is `LanguageSwitcher` (it must read the current URL) and
+ * the kit's `LinkPendingMark` (one hook, `useLinkStatus`).
  */
 
 export type OrganizationChrome = {
@@ -31,6 +41,7 @@ export type OrganizationChrome = {
   acronym: string;
   licenseNumber: string;
   licenseAuthority: string | null;
+  legalForm?: string | null;
   foundedYear: number;
   primaryPhone: string | null;
   additionalPhones: string[];
@@ -63,214 +74,22 @@ export type OrganizationChrome = {
   footerLogoAlt: string | null;
 };
 
-// â”€â”€ Official-channels bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export type ProgramLink = { id: string; slug: string | null; title: string | null };
 
-export function ChannelsBar({
-  locale,
-  dict,
-  org,
-}: {
-  locale: Locale;
-  dict: Dictionary;
-  org: OrganizationChrome | null;
-}) {
-  const phone = visibleText(org?.primaryPhone);
-  const email = visibleText(org?.email);
-  const whatsapp = visibleText(org?.whatsappNumber);
-  const socialLinks = officialSocialLinks(org, whatsapp);
+// ── Shared helpers ────────────────────────────────────────────────────────
 
-  return (
-    <div className="overflow-hidden bg-ink text-paper">
-      <div className="mx-auto flex min-h-10 max-w-[1460px] items-center justify-between gap-4 px-4 py-1 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center gap-4 overflow-hidden">
-          <Suspense fallback={<span className="font-mono text-caption text-paper/70" />}>
-            <LanguageSwitcher
-              locale={locale}
-              label={dict.common.switchToEnglish}
-            />
-          </Suspense>
-          {phone ? (
-            <a
-              href={`tel:${phone}`}
-              className="hidden min-h-8 items-center gap-1.5 text-caption text-paper/82 no-underline hover:text-gold-600 sm:inline-flex"
-            >
-              <ContactGlyph type="phone" />
-              <Bidi>{phone}</Bidi>
-            </a>
-          ) : null}
-          {email ? (
-            <a
-              href={`mailto:${email}`}
-              className="hidden min-h-8 items-center gap-1.5 text-caption text-paper/82 no-underline hover:text-gold-600 md:inline-flex"
-            >
-              <ContactGlyph type="email" />
-              <Bidi>{email}</Bidi>
-            </a>
-          ) : null}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-3">
-          <Link
-            href={localePath(locale, '/verify')}
-            className="hidden min-h-8 items-center gap-1.5 text-caption font-medium text-paper/86 no-underline hover:text-gold-600 sm:inline-flex"
-          >
-            <ShieldGlyph />
-            {dict.channels.barLabel}
-          </Link>
-          {socialLinks.length > 0 ? (
-            <ul className="flex items-center gap-1.5">
-              {socialLinks.slice(0, 5).map((link) => (
-                <li key={`${link.platform}:${link.url}`}>
-                  <SocialIconLink platform={link.platform} url={link.url} variant="utility" />
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function navigationGroups(locale: Locale, dict: Dictionary): PublicNavGroup[] {
-  return [
-    {
-      label: `${dict.nav.programs} / ${dict.nav.projects}`,
-      href: localePath(locale, '/programs'),
-      items: [
-        { label: dict.nav.programs, href: localePath(locale, '/programs') },
-        { label: dict.nav.projects, href: localePath(locale, '/projects') },
-      ],
-    },
-    {
-      label: dict.nav.impact,
-      href: localePath(locale, '/impact'),
-      items: [
-        { label: dict.nav.impact, href: localePath(locale, '/impact') },
-        { label: dict.impact.storiesTitle, href: `${localePath(locale, '/impact')}#impact-stories` },
-      ],
-    },
-    {
-      label: `${dict.nav.news} / ${dict.nav.resources}`,
-      href: localePath(locale, '/news'),
-      items: [
-        { label: dict.nav.news, href: localePath(locale, '/news') },
-        { label: dict.nav.resources, href: localePath(locale, '/resources') },
-      ],
-    },
-  ];
-}
-
-export function SiteHeader({
-  locale,
-  dict,
-  org,
-}: {
-  locale: Locale;
-  dict: Dictionary;
-  org: OrganizationChrome | null;
-}) {
-  const organizationName = visibleText(org?.shortName) ?? visibleText(org?.legalName) ?? visibleText(org?.acronym) ?? 'PCSRD';
-  const logoAlt = visibleText(org?.logoPrimaryAlt) ?? organizationName;
-  const logoSrc =
-    org?.logoPrimaryBucket && org.logoPrimaryPath
-      ? storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, org.logoPrimaryBucket, org.logoPrimaryPath)
-      : '/pcsrd-logo.jpeg';
-
-  return (
-    <header className="sticky inset-bs-0 z-50 overflow-visible border-be border-rule bg-paper shadow-[0_10px_36px_rgb(20_33_63/0.08)]">
-      <div className="mx-auto flex min-h-[6.25rem] max-w-[1460px] items-center justify-between gap-5 px-4 py-3 sm:px-6 lg:px-8">
-        <Link
-          href={localePath(locale, '/')}
-          className="flex min-w-0 max-w-[calc(100%-4rem)] items-center gap-3 text-ink no-underline sm:max-w-sm"
-        >
-          {logoSrc ? (
-            <Image
-              src={logoSrc}
-              alt={logoAlt}
-              width={168}
-              height={72}
-              className="size-16 shrink-0 rounded-full object-contain shadow-[0_4px_16px_rgb(20_33_63/0.12)]"
-              priority
-            />
-          ) : (
-            <span className="inline-flex size-12 shrink-0 items-center justify-center border-2 border-ink font-mono text-label font-semibold tracking-[0.08em]">
-              {visibleText(org?.acronym) ?? 'PCSRD'}
-            </span>
-          )}
-          <span className="min-w-0 flex-1">
-            <span className="line-clamp-2 text-small font-semibold leading-snug sm:block sm:truncate sm:text-h4 sm:leading-tight">
-              {organizationName}
-            </span>
-            <span className="hidden truncate text-caption text-ink-55 sm:block">{dict.home.heroEyebrow}</span>
-          </span>
-        </Link>
-
-        <div className="flex min-w-0 flex-1 items-center justify-end min-[1180px]:justify-center">
-          <PublicNavigation
-            ariaLabel={dict.a11y.mainNav}
-            closeLabel={dict.a11y.closeMenu}
-            cta={{ label: dict.nav.partner, href: localePath(locale, '/get-involved/partner') }}
-            groups={navigationGroups(locale, dict)}
-            home={{ label: dict.nav.home, href: localePath(locale, '/'), exact: true }}
-            links={[
-              { label: dict.nav.about, href: localePath(locale, '/about') },
-              { label: dict.nav.contact, href: localePath(locale, '/contact') },
-            ]}
-            menuLabel={dict.common.menu}
-            openLabel={dict.a11y.openMenu}
-            verify={{ label: dict.nav.verify, href: localePath(locale, '/verify') }}
-          />
-        </div>
-
-        <Link
-          href={localePath(locale, '/get-involved/partner')}
-          className="motion-standard hidden min-h-12 shrink-0 items-center gap-2 rounded-md bg-gold-600 px-6 text-small font-semibold text-paper no-underline shadow-[0_12px_26px_rgb(211_144_15/0.22)] hover:bg-gold-700 hover:text-paper lg:inline-flex"
-        >
-          <HeartGlyph />
-          {dict.nav.partner}
-        </Link>
-      </div>
-    </header>
-  );
-}
-
-// â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-/**
- * The identity record is the single most-reused due-diligence element on the
- * site: a funder checking whether the organisation is real reads exactly these
- * five lines. Every value is read from `organization_settings`, so none of it
- * needs a deploy to correct.
- */
-const QUICK_LINKS: { key: keyof Dictionary['nav']; path: string }[] = [
-  { key: 'about', path: '/about' },
-  { key: 'programs', path: '/programs' },
-  { key: 'projects', path: '/projects' },
-  { key: 'impact', path: '/impact' },
-  { key: 'news', path: '/news' },
-  { key: 'partners', path: '/partners' },
-];
-
-const INVOLVEMENT_LINKS: { label: (dict: Dictionary) => string; path: string }[] = [
-  { label: (dict) => dict.nav.contact, path: '/contact' },
-  { label: (dict) => dict.nav.partner, path: '/get-involved/partner' },
-  { label: (dict) => dict.nav.careers, path: '/careers' },
-  { label: (dict) => dict.footer.complaints, path: '/contact#complaint' },
-];
-
-const LEGAL_LINKS: { label: (dict: Dictionary) => string; path: string }[] = [
-  { label: (dict) => dict.footer.privacy, path: '/legal/privacy' },
-  { label: (dict) => dict.footer.accessibility, path: '/legal/accessibility' },
-  { label: (dict) => dict.footer.terms, path: '/legal/terms' },
-];
-
-function visibleText(value: string | null | undefined) {
+/** A value the organisation has not supplied yet is rendered as absent, not as its placeholder. */
+export function visibleText(value: string | null | undefined): string | null {
   const text = value?.trim();
   if (!text || text.startsWith('TODO(org):')) return null;
   return text;
+}
+
+/** `shortName ?? legalName ?? acronym`, the same resolution `buildMetadata` callers use. */
+export function organizationName(org: OrganizationChrome | null): string {
+  return (
+    visibleText(org?.shortName) ?? visibleText(org?.legalName) ?? visibleText(org?.acronym) ?? ''
+  );
 }
 
 function sameVisibleText(left: string | null | undefined, right: string | null | undefined) {
@@ -288,26 +107,9 @@ function ctaHref(locale: Locale, url: string) {
   return localePath(locale, url.startsWith('/') ? url : `/${url}`);
 }
 
-function developmentFooterCta(locale: Locale) {
-  if (process.env.NODE_ENV === 'production') return null;
-  return locale === 'en'
-    ? {
-        title: 'Stand with communities rebuilding daily life',
-        description:
-          'Development-only preview copy for evaluating the completed footer CTA before the CMS fields are migrated.',
-        buttonLabel: 'Start a partnership',
-        url: '/get-involved/partner',
-      }
-    : {
-        title: 'ساند المجتمعات في استعادة حياتها اليومية',
-        description:
-          'نص معاينة للتطوير فقط لتقييم دعوة التذييل قبل ترحيل حقولها في نظام الإدارة.',
-        buttonLabel: 'ابدأ شراكة',
-        url: '/get-involved/partner',
-      };
-}
-
-function officialSocialLinks(org: OrganizationChrome | null, phone: string | null) {
+/** Official social links: `socials` and `official_channels`, de-duplicated, WhatsApp last. */
+function officialSocialLinks(org: OrganizationChrome | null) {
+  const whatsapp = visibleText(org?.whatsappNumber);
   return [
     ...(org?.socials ?? []).flatMap((link) => {
       const url = visibleText(link.url);
@@ -321,26 +123,29 @@ function officialSocialLinks(org: OrganizationChrome | null, phone: string | nul
         ? [{ platform: channel.platform, url, order: channel.display_order ?? 100 }]
         : [];
     }),
-    ...(phone ? [{ platform: 'whatsapp', url: buildWhatsAppUrl(phone), order: 999 }] : []),
+    ...(whatsapp ? [{ platform: 'whatsapp', url: buildWhatsAppUrl(whatsapp), order: 999 }] : []),
   ]
     .filter(
       (link, index, all) =>
-      all.findIndex(
-        (candidate) =>
-          candidate.url === link.url && candidate.platform.toLowerCase() === link.platform.toLowerCase(),
-      ) === index,
+        all.findIndex(
+          (candidate) =>
+            candidate.url === link.url &&
+            candidate.platform.toLowerCase() === link.platform.toLowerCase(),
+        ) === index,
     )
     .sort((a, b) => a.order - b.order);
 }
 
+/** Platform names are proper nouns, not copy; they are the same in both locales. */
 function platformLabel(platform: string) {
   const normalized = platform.toLowerCase();
-  if (normalized === 'x' || normalized === 'twitter') return 'X / Twitter';
+  if (normalized === 'x' || normalized === 'twitter') return 'X';
   if (normalized === 'youtube') return 'YouTube';
   if (normalized === 'linkedin') return 'LinkedIn';
   if (normalized === 'facebook') return 'Facebook';
   if (normalized === 'instagram') return 'Instagram';
   if (normalized === 'whatsapp') return 'WhatsApp';
+  if (normalized === 'telegram') return 'Telegram';
   return platform;
 }
 
@@ -374,10 +179,12 @@ function SocialGlyph({ platform }: { platform: string }) {
   }
   if (name === 'x' || name === 'twitter') return <path d="M5 5h4.1l3.4 4.8L16.6 5H19l-5.3 6.1L19.4 19h-4.1l-3.8-5.3L7 19H4.6l5.7-6.6z" />;
   if (name === 'whatsapp') return <path d="M12 4.2a7.7 7.7 0 0 0-6.7 11.5L4.4 20l4.4-1.1A7.7 7.7 0 1 0 12 4.2Zm4.5 10.9c-.2.5-1.1 1-1.5 1.1-.4.1-.9.2-3-.6-2.5-1-4.1-3.5-4.2-3.7-.1-.1-1-1.4-1-2.6 0-1.3.6-1.9.9-2.1.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .6l-.4.6c-.1.1-.2.3-.1.5.2.4.8 1.3 1.6 2 .9.8 1.7 1.1 2.1 1.2.2.1.4.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.9.9c.2.1.4.2.4.4 0 .1 0 .4-.1.6Z" />;
+  if (name === 'telegram') return <path d="M4.6 11.2 18.4 5.9c.6-.2 1.2.2 1 .9l-2.3 10.9c-.2.8-.7 1-1.3.6l-3.6-2.6-1.7 1.7c-.2.2-.4.3-.7.3l.2-3.6 6.5-5.9c.3-.3-.1-.4-.4-.2l-8 5-3.4-1.1c-.7-.2-.7-.7.1-1Z" />;
   return <path d="M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm-3.8 7h7.6M12 8.2v7.6" />;
 }
 
-function SocialIconLink({ platform, url, variant = 'footer' }: { platform: string; url: string; variant?: 'footer' | 'utility' }) {
+/** Square, 44px, icon-only link named by the platform. Never a fill; hover darkens the ground. */
+function SocialIconLink({ platform, url, tone }: { platform: string; url: string; tone: 'ink' | 'paper' }) {
   const label = platformLabel(platform);
   return (
     <a
@@ -385,88 +192,191 @@ function SocialIconLink({ platform, url, variant = 'footer' }: { platform: strin
       aria-label={label}
       title={label}
       className={
-        variant === 'utility'
-          ? 'inline-flex size-7 items-center justify-center rounded-full text-paper/86 no-underline transition hover:bg-paper/8 hover:text-gold-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600'
-          : 'inline-flex size-8 items-center justify-center rounded-full border border-paper/25 bg-paper/5 text-paper no-underline transition hover:border-gold-600 hover:bg-gold-050 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600'
+        tone === 'paper'
+          ? 'motion-standard inline-flex min-h-target min-w-target items-center justify-center text-paper no-underline transition-colors hover:bg-navy-900 hover:text-paper'
+          : 'motion-standard inline-flex min-h-target min-w-target items-center justify-center rule-edge text-ink no-underline transition-colors hover:bg-paper-alt hover:text-ink'
       }
       {...externalAttrs(url)}
     >
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5 fill-current stroke-current">
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="icon-16 fill-current stroke-current">
         <SocialGlyph platform={platform} />
       </svg>
     </a>
   );
 }
 
-function ShieldGlyph() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-2">
-      <path d="M12 4 18 6.3v4.5c0 3.8-2.2 6.7-6 8.2-3.8-1.5-6-4.4-6-8.2V6.3L12 4Z" />
-      <path d="m9.5 11.8 1.7 1.7 3.6-3.8" />
-    </svg>
-  );
-}
+// ── Official-channels bar ─────────────────────────────────────────────────
 
-function HeartGlyph() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-2">
-      <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.7A4 4 0 0 1 19 10c0 5.5-7 10-7 10Z" />
-      <path d="M7 15.5h10" />
-    </svg>
-  );
-}
+export function ChannelsBar({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+  const utility = secondaryNavItems(locale, dict);
 
-function ContactGlyph({ type }: { type: 'email' | 'phone' | 'location' }) {
-  if (type === 'email') {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-2">
-        <path d="M4 6.5h16v11H4z" />
-        <path d="m4.5 7 7.5 6 7.5-6" />
-      </svg>
-    );
-  }
-  if (type === 'phone') {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-2">
-        <path d="M8.5 5.5 6.8 7.2c-.7.7-.6 2 .2 3.5a17.4 17.4 0 0 0 6.3 6.3c1.5.8 2.8.9 3.5.2l1.7-1.7-3-3-1.5 1.4c-.9-.4-1.8-1-2.7-1.9-.9-.9-1.5-1.8-1.9-2.7l1.4-1.5z" />
-      </svg>
-    );
-  }
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-2">
-      <path d="M12 21s6-5.3 6-10a6 6 0 0 0-12 0c0 4.7 6 10 6 10Z" />
-      <circle cx="12" cy="11" r="2" />
-    </svg>
-  );
-}
+    <nav aria-label={dict.siteChrome.channelsBarNav} className="bg-ink text-paper">
+      <Container className="flex min-h-11 items-center justify-between gap-4">
+        <p className="flex min-w-0 items-center gap-3 text-caption">
+          <span aria-hidden="true" className="inline-block size-2 shrink-0 border-2 border-gold-600" />
+          <span className="hidden truncate md:inline">{dict.channels.barText}</span>
+          <Link
+            href={localePath(locale, '/verify')}
+            className="inline-flex min-h-target shrink-0 items-center gap-1.5 border-be-2 border-gold-600 font-medium text-paper no-underline hover:text-gold-050"
+          >
+            <Icon name="check" size={16} />
+            <span className="hidden sm:inline">{dict.channels.barCta}</span>
+            <span className="sm:hidden">{dict.nav.verify}</span>
+            <LinkPendingMark />
+          </Link>
+        </p>
 
-function ContactRow({
-  icon,
-  children,
-}: {
-  icon: 'email' | 'phone' | 'location';
-  children: ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-3">
-      <span className="mbs-0.5 shrink-0 text-gold-600">
-        <ContactGlyph type={icon} />
-      </span>
-      <span className="min-w-0">{children}</span>
-    </li>
-  );
-}
-
-function FooterLinkList({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <nav aria-label={title}>
-      <h2 className="eyebrow mbe-5 text-gold-600">{title}</h2>
-      <ul className="space-y-3 text-small text-paper/82">{children}</ul>
+        <div className="flex shrink-0 items-center gap-4">
+          <ul className="hidden items-center gap-4 text-caption lg:flex">
+            {utility.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className="inline-flex min-h-target items-center text-paper no-underline hover:text-gold-050 hover:underline">
+                  {item.label}
+                  <LinkPendingMark />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Suspense fallback={<span className="inline-block min-h-target min-w-16" />}>
+            <LanguageSwitcher locale={locale} label={dict.common.switchToEnglish} />
+          </Suspense>
+        </div>
+      </Container>
     </nav>
   );
 }
 
-export function SiteFooter({
+// ── Header ────────────────────────────────────────────────────────────────
+
+type NavItem = { label: string; href: string };
+
+/**
+ * The IA of the main navigation (design: header nav). The two "doors" —
+ * verify and partner — are rendered apart from it, on every page.
+ */
+function mainNavItems(locale: Locale, dict: Dictionary): NavItem[] {
+  return [
+    { label: dict.nav.about, href: localePath(locale, '/about') },
+    { label: dict.nav.programs, href: localePath(locale, '/programs') },
+    { label: dict.nav.projects, href: localePath(locale, '/projects') },
+    { label: dict.nav.impact, href: localePath(locale, '/impact') },
+    { label: dict.nav.news, href: localePath(locale, '/news') },
+    { label: dict.nav.partners, href: localePath(locale, '/partners') },
+  ];
+}
+
+/** Utility routes: the channels bar on desktop, the mobile menu otherwise. */
+function secondaryNavItems(locale: Locale, dict: Dictionary): NavItem[] {
+  return [
+    { label: dict.nav.careers, href: localePath(locale, '/careers') },
+    { label: dict.nav.resources, href: localePath(locale, '/resources') },
+    { label: dict.nav.contact, href: localePath(locale, '/contact') },
+  ];
+}
+
+/** The `/about` cluster, as the footer's "organisation" column. */
+function aboutNavItems(locale: Locale, dict: Dictionary): NavItem[] {
+  return [
+    { label: dict.nav.about, href: localePath(locale, '/about') },
+    { label: dict.aboutPages.visionMissionTitle, href: localePath(locale, '/about/vision-mission') },
+    { label: dict.about.governance, href: localePath(locale, '/about/governance') },
+    { label: dict.about.strategy, href: localePath(locale, '/about/strategy') },
+    { label: dict.about.membership, href: localePath(locale, '/about/memberships') },
+  ];
+}
+
+function NavLink({ item, className }: { item: NavItem; className?: string }) {
+  return (
+    <Link
+      href={item.href}
+      className={
+        className ??
+        'motion-standard relative inline-flex min-h-target items-center px-2 text-small text-ink no-underline transition-colors hover:text-gold-700'
+      }
+    >
+      {item.label}
+      <LinkPendingMark />
+    </Link>
+  );
+}
+
+function VerifyLink({ locale, dict, className }: { locale: Locale; dict: Dictionary; className?: string }) {
+  return (
+    <ButtonLink href={localePath(locale, '/verify')} tone="marked" size="sm" pendingMark className={className}>
+      {dict.nav.verify}
+    </ButtonLink>
+  );
+}
+
+function PartnerCta({ locale, dict, className }: { locale: Locale; dict: Dictionary; className?: string }) {
+  return (
+    <ButtonLink href={localePath(locale, '/get-involved/partner')} tone="primary" size="sm" pendingMark className={className}>
+      {dict.nav.partner}
+    </ButtonLink>
+  );
+}
+
+/**
+ * The mobile disclosure. `<details>` gives open/close, keyboard operation and
+ * `aria-expanded` semantics natively, with JavaScript off. The panel is
+ * absolutely positioned under the header row so the header keeps its height.
+ */
+function MobileNav({ locale, dict, items }: { locale: Locale; dict: Dictionary; items: NavItem[] }) {
+  return (
+    <details className="group lg:hidden">
+      <summary
+        className={buttonClasses({
+          tone: 'quiet',
+          size: 'sm',
+          className: 'cursor-pointer list-none rule-edge [&::-webkit-details-marker]:hidden',
+        })}
+      >
+        <span className="group-open:hidden">
+          <Icon name="menu" size={20} />
+        </span>
+        <span className="hidden group-open:inline">
+          <Icon name="close" size={20} />
+        </span>
+        <span>{dict.common.menu}</span>
+      </summary>
+      <div className="absolute start-0 end-0 inset-bs-full z-40 max-h-[calc(100dvh-7rem)] overflow-y-auto rule-section bg-paper">
+        <Container className="pbs-2 pbe-6">
+          <nav aria-label={dict.a11y.mainNav}>
+            <ul className="border-be border-rule">
+              {[{ label: dict.nav.home, href: localePath(locale, '/') }, ...items].map((item) => (
+                <li key={item.href} className="border-bs border-rule">
+                  <NavLink
+                    item={item}
+                    className="motion-standard relative flex min-h-12 items-center text-body text-ink no-underline transition-colors hover:text-gold-700"
+                  />
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <nav aria-label={dict.siteChrome.secondaryNav} className="mbs-4">
+            <ul className="flex flex-wrap gap-x-5 gap-y-1">
+              {secondaryNavItems(locale, dict).map((item) => (
+                <li key={item.href}>
+                  <NavLink
+                    item={item}
+                    className="motion-standard relative inline-flex min-h-target items-center text-small text-ink-70 no-underline transition-colors hover:text-gold-700"
+                  />
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="mbs-4 flex flex-wrap gap-3 border-bs border-rule pbs-4">
+            <VerifyLink locale={locale} dict={dict} />
+            <PartnerCta locale={locale} dict={dict} />
+          </div>
+        </Container>
+      </div>
+    </details>
+  );
+}
+
+export function SiteHeader({
   locale,
   dict,
   org,
@@ -475,251 +385,342 @@ export function SiteFooter({
   dict: Dictionary;
   org: OrganizationChrome | null;
 }) {
-  const year = new Date().getUTCFullYear();
-  const acronym = visibleText(org?.acronym);
-  const organizationName =
-    [visibleText(org?.legalName), visibleText(org?.shortName)].find(
-      (value) => value && !sameVisibleText(value, acronym),
-    ) ?? null;
-  const copyrightName = organizationName ?? acronym;
-  const description = visibleText(org?.shortDescription);
-  const licenseNumber = visibleText(org?.licenseNumber);
-  const phone = visibleText(org?.primaryPhone);
-  const additionalPhones = (org?.additionalPhones ?? []).flatMap((item) => {
-    const value = visibleText(item);
-    return value ? [value] : [];
-  });
-  const whatsapp = visibleText(org?.whatsappNumber);
-  const email = visibleText(org?.email);
-  const secondaryEmail = visibleText(org?.secondaryEmail);
-  const address = visibleText(org?.address);
-  const foundedYear = org?.foundedYear && org.foundedYear > 1900 ? String(org.foundedYear) : null;
-  const logoAlt = visibleText(org?.footerLogoAlt) ?? visibleText(org?.logoPrimaryAlt) ?? organizationName ?? acronym ?? '';
+  const name = organizationName(org);
+  const logoAlt = visibleText(org?.logoPrimaryAlt) ?? name;
   const logoSrc =
-    org?.footerLogoBucket && org.footerLogoPath
-      ? storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, org.footerLogoBucket, org.footerLogoPath)
-      : null;
-  const ctaTitle = visibleText(org?.footerCta?.title);
-  const ctaDescription = visibleText(org?.footerCta?.description);
-  const ctaButtonLabel = visibleText(org?.footerCta?.buttonLabel);
-  const ctaUrl = visibleText(org?.footerCta?.url);
-  const ctaData =
-    org?.footerCta?.enabled && ctaTitle && ctaDescription && ctaButtonLabel && ctaUrl
-      ? { title: ctaTitle, description: ctaDescription, buttonLabel: ctaButtonLabel, url: ctaUrl }
-      : org?.footerCta?.fieldsAvailable
-        ? null
-        : developmentFooterCta(locale);
-  const socialLinks = [
-    ...(org?.socials ?? []).flatMap((link) => {
-      const url = visibleText(link.url);
-      return link.is_official && link.visible !== false && url
-        ? [{ platform: link.platform, url, order: link.display_order ?? 100 }]
-        : [];
-    }),
-    ...(org?.officialChannels ?? []).flatMap((channel) => {
-      const url = visibleText(channel.url);
-      return channel.is_official && channel.visible !== false && url
-        ? [{ platform: channel.platform, url, order: channel.display_order ?? 100 }]
-        : [];
-    }),
-    ...(whatsapp ? [{ platform: 'whatsapp', url: buildWhatsAppUrl(whatsapp), order: 999 }] : []),
-  ]
-    .filter(
-      (link, index, all) =>
-      all.findIndex(
-        (candidate) =>
-          candidate.url === link.url && candidate.platform.toLowerCase() === link.platform.toLowerCase(),
-      ) === index,
-    )
-    .sort((a, b) => a.order - b.order);
-  const ctaGridClass =
-    locale === 'ar'
-      ? 'md:grid-cols-[minmax(14rem,0.3fr)_minmax(0,0.65fr)]'
-      : 'md:grid-cols-[minmax(0,0.65fr)_minmax(14rem,0.3fr)]';
+    org?.logoPrimaryBucket && org.logoPrimaryPath
+      ? storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, org.logoPrimaryBucket, org.logoPrimaryPath)
+      : '/pcsrd-logo.jpeg';
+  const items = mainNavItems(locale, dict);
 
   return (
-    <footer className="mbs-auto overflow-hidden bg-paper-ground text-paper">
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 1440 48"
-        className="block h-9 w-full text-ink md:h-11"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M0 18C430 30 850 4 1440 18V48H0Z"
-          fill="currentColor"
-        />
-      </svg>
-      <div className="relative bg-ink">
-        <div className="container-content relative pbe-6 md:pbe-8">
-          {ctaData ? (
-            <section className="mx-auto max-w-[1052px] py-6 md:py-8">
-              <div className={`grid gap-6 md:items-center md:gap-12 ${ctaGridClass}`} dir="ltr">
-                <div className={`max-w-2xl ${locale === 'ar' ? 'md:order-2' : 'md:order-1'}`} dir={locale}>
-                  <p className="eyebrow mbe-2 text-gold-600">{dict.nav.support}</p>
-                  <h2 className="text-h3 font-semibold leading-tight text-paper md:text-h2">{ctaData.title}</h2>
-                  <p className="mbs-2 text-small leading-7 text-paper/66">{ctaData.description}</p>
-                </div>
-                <a
-                  href={ctaHref(locale, ctaData.url)}
-                  className={`inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-sm border border-gold-600 bg-navy-900/35 px-6 py-2.5 text-small font-medium text-paper no-underline transition hover:bg-navy-700/65 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600 md:max-w-64 ${locale === 'ar' ? 'md:order-1' : 'md:order-2'}`}
-                  {...externalAttrs(ctaData.url)}
-                >
-                  {locale === 'ar' ? <span aria-hidden="true">‹</span> : null}
-                  {ctaData.buttonLabel}
-                  {locale === 'en' ? <span aria-hidden="true">›</span> : null}
-                </a>
-              </div>
-            </section>
-          ) : null}
-
-          <div
-            className="mx-auto grid max-w-[1052px] gap-8 border-bs border-paper/12 py-10 md:grid-cols-2 md:gap-x-10 md:gap-y-9 lg:grid-cols-[1.45fr_0.75fr_0.8fr_1fr] lg:gap-x-12"
-            dir="ltr"
+    <header className="sticky inset-bs-0 z-50">
+      <ChannelsBar locale={locale} dict={dict} />
+      <div className="relative border-be border-rule bg-paper">
+        <Container className="flex min-h-20 items-center justify-between gap-4 py-2">
+          <Link
+            href={localePath(locale, '/')}
+            aria-label={`${name} — ${dict.siteChrome.homeLinkLabel}`}
+            className="flex min-w-0 items-center gap-3 text-ink no-underline"
           >
-            <section className="max-w-2xl" dir={locale}>
-              <h2 className="eyebrow mbe-5 text-gold-600">{dict.footer.brandTitle}</h2>
-              <div className="space-y-5">
-                <div className="inline-flex min-h-12 max-w-72 items-center text-paper">
-                  {logoSrc ? (
-                    <Image
-                      src={logoSrc}
-                      alt={logoAlt}
-                      width={260}
-                      height={96}
-                      className="max-h-20 w-auto max-w-full object-contain"
-                    />
-                  ) : (
-                    <span className="border-be border-gold-600/80 pbe-1 font-mono text-small font-semibold tracking-[0.16em] text-paper/80 uppercase">
-                      {acronym}
-                    </span>
-                  )}
-                </div>
-                {organizationName ? (
-                  <p className="text-h3 font-semibold leading-tight text-paper">{organizationName}</p>
-                ) : null}
-                {description ? <p className="max-w-md text-small leading-7 text-paper/68">{description}</p> : null}
-              </div>
+            <Image
+              src={logoSrc}
+              alt={logoAlt}
+              width={112}
+              height={48}
+              sizes="112px"
+              preload
+              className="h-12 w-auto shrink-0 object-contain"
+            />
+            <span className="min-w-0">
+              <span className="block truncate text-small font-semibold leading-tight sm:text-body">{name}</span>
+              <span className="hidden truncate text-caption text-ink-55 sm:block">{dict.home.heroEyebrow}</span>
+            </span>
+          </Link>
 
-              <ul className="mbs-5 space-y-2.5 text-small text-paper/74">
-                {email ? (
-                  <ContactRow icon="email">
-                    <a className="text-paper underline hover:text-gold-600" href={`mailto:${email}`}>
-                      <Bidi>{email}</Bidi>
-                    </a>
-                  </ContactRow>
-                ) : null}
-                {secondaryEmail ? (
-                  <ContactRow icon="email">
-                    <span className="text-paper/55">{dict.footer.secondaryEmail}: </span>
-                    <a className="text-paper underline hover:text-gold-600" href={`mailto:${secondaryEmail}`}>
-                      <Bidi>{secondaryEmail}</Bidi>
-                    </a>
-                  </ContactRow>
-                ) : null}
-                {phone ? (
-                  <ContactRow icon="phone">
-                    <a className="text-paper underline hover:text-gold-600" href={`tel:${phone}`}>
-                      <Bidi>{phone}</Bidi>
-                    </a>
-                  </ContactRow>
-                ) : null}
-                {additionalPhones.map((item) => (
-                  <ContactRow key={item} icon="phone">
-                    <a className="text-paper underline hover:text-gold-600" href={`tel:${item}`}>
-                      <Bidi>{item}</Bidi>
-                    </a>
-                  </ContactRow>
-                ))}
-                {address ? <ContactRow icon="location">{address}</ContactRow> : null}
-              </ul>
-
-              {licenseNumber || foundedYear ? (
-                <p className="text-caption text-paper/48">
-                  {foundedYear ? (
-                    <>
-                      {dict.about.foundedYear} <Bidi>{foundedYear}</Bidi>
-                    </>
-                  ) : null}
-                  {foundedYear && licenseNumber ? <span aria-hidden="true"> · </span> : null}
-                  {licenseNumber ? (
-                    <>
-                      {dict.about.licenseNumber} <Bidi>{licenseNumber}</Bidi>
-                    </>
-                  ) : null}
-                </p>
-              ) : null}
-            </section>
-
-            <div dir={locale}>
-              <FooterLinkList title={dict.footer.quickLinksTitle}>
-                {QUICK_LINKS.map((item) => (
-                  <li key={item.path}>
-                    <Link className="text-paper no-underline hover:text-gold-600" href={localePath(locale, item.path)}>
-                      {dict.nav[item.key]}
-                    </Link>
-                  </li>
-                ))}
-              </FooterLinkList>
-            </div>
-
-            <div dir={locale}>
-              <FooterLinkList title={dict.footer.getInvolvedTitle}>
-                {INVOLVEMENT_LINKS.map((item) => (
-                  <li key={item.path}>
-                    <Link className="text-paper no-underline hover:text-gold-600" href={localePath(locale, item.path)}>
-                      {item.label(dict)}
-                    </Link>
-                  </li>
-                ))}
-              </FooterLinkList>
-            </div>
-
-            <section dir={locale}>
-              <h2 className="eyebrow mbe-5 text-gold-600">{dict.footer.contactTitle}</h2>
-              {socialLinks.length > 0 ? (
-                <ul className="mbe-4 flex flex-nowrap gap-2.5">
-                  {socialLinks.map((link) => (
-                    <li key={`${link.platform}:${link.url}`}>
-                      <SocialIconLink platform={link.platform} url={link.url} />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mbe-5 text-small leading-7 text-paper/62">{dict.footer.noSocialLinks}</p>
-              )}
-              <Link
-                href={localePath(locale, '/verify')}
-                className="inline-flex min-h-9 items-center border-be border-gold-600 text-caption text-paper/78 no-underline hover:text-gold-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600"
-              >
-                {dict.nav.verify}
-              </Link>
-            </section>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-bs border-paper/15 bg-ink">
-        <div
-          className="container-content flex flex-col gap-3 py-3 text-caption text-paper/58 md:flex-row md:items-center md:justify-between md:py-3.5"
-          dir={locale}
-        >
-          <p>
-            © <Bidi>{String(year)}</Bidi> {copyrightName ?? ''} - {dict.footer.rights}
-          </p>
-          <nav aria-label={dict.footer.legalTitle}>
-            <ul className="flex flex-wrap gap-x-5 gap-y-2">
-              {LEGAL_LINKS.map((item) => (
-                <li key={item.path}>
-                  <Link className="text-paper/72 no-underline hover:text-gold-600" href={localePath(locale, item.path)}>
-                    {item.label(dict)}
-                  </Link>
+          <nav aria-label={dict.a11y.mainNav} className="hidden lg:block">
+            <ul className="flex items-center gap-1">
+              {items.map((item) => (
+                <li key={item.href}>
+                  <NavLink item={item} />
                 </li>
               ))}
             </ul>
           </nav>
-        </div>
+
+          <div className="hidden shrink-0 items-center gap-3 lg:flex">
+            <VerifyLink locale={locale} dict={dict} />
+            <PartnerCta locale={locale} dict={dict} />
+          </div>
+
+          <MobileNav locale={locale} dict={dict} items={items} />
+        </Container>
       </div>
+    </header>
+  );
+}
+
+// ── Footer ────────────────────────────────────────────────────────────────
+
+function FooterLinkList({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <nav aria-label={title}>
+      <Eyebrow as="p" className="mbe-4 text-paper">
+        {title}
+      </Eyebrow>
+      <ul className="space-y-2 text-small">{children}</ul>
+    </nav>
+  );
+}
+
+function FooterLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className="motion-standard text-paper no-underline transition-colors hover:text-gold-050 hover:underline">
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * The identity record is the single most-reused due-diligence element on the
+ * site: a funder checking whether the organisation is real reads exactly these
+ * lines. Every value is read from `organization_settings`, so none of it
+ * needs a deploy to correct.
+ */
+export function SiteFooter({
+  locale,
+  dict,
+  org,
+  programs = [],
+}: {
+  locale: Locale;
+  dict: Dictionary;
+  org: OrganizationChrome | null;
+  programs?: ProgramLink[];
+}) {
+  const year = new Date().getUTCFullYear();
+  const acronym = visibleText(org?.acronym);
+  const legalName = visibleText(org?.legalName);
+  const shortName = visibleText(org?.shortName);
+  const displayName = [legalName, shortName].find((value) => value && !sameVisibleText(value, acronym)) ?? acronym;
+  const description = visibleText(org?.shortDescription);
+  const licenseNumber = visibleText(org?.licenseNumber);
+  const licenseAuthority = visibleText(org?.licenseAuthority);
+  const legalForm = visibleText(org?.legalForm);
+  const foundedYear = org?.foundedYear && org.foundedYear > 1900 ? String(org.foundedYear) : null;
+  const phones = [visibleText(org?.primaryPhone), ...(org?.additionalPhones ?? []).map(visibleText)].filter(
+    (value): value is string => Boolean(value),
+  );
+  const whatsapp = visibleText(org?.whatsappNumber);
+  const emails = [visibleText(org?.email), visibleText(org?.secondaryEmail)].filter(
+    (value): value is string => Boolean(value),
+  );
+  const address = visibleText(org?.address);
+  const logoAlt = visibleText(org?.footerLogoAlt) ?? visibleText(org?.logoPrimaryAlt) ?? displayName ?? '';
+  const logoSrc =
+    org?.footerLogoBucket && org.footerLogoPath
+      ? storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, org.footerLogoBucket, org.footerLogoPath)
+      : null;
+  const officialChannels = (org?.officialChannels ?? [])
+    .filter((channel) => channel.is_official && channel.visible !== false && visibleText(channel.url))
+    .sort((a, b) => (a.display_order ?? 100) - (b.display_order ?? 100))
+    .slice(0, 6);
+  const socialLinks = officialSocialLinks(org);
+
+  const ctaTitle = visibleText(org?.footerCta?.title);
+  const ctaDescription = visibleText(org?.footerCta?.description);
+  const ctaButtonLabel = visibleText(org?.footerCta?.buttonLabel);
+  const ctaUrl = visibleText(org?.footerCta?.url);
+  const cta =
+    org?.footerCta?.enabled && ctaTitle && ctaButtonLabel && ctaUrl
+      ? { title: ctaTitle, description: ctaDescription, buttonLabel: ctaButtonLabel, url: ctaUrl }
+      : null;
+
+  const programLinks = programs.flatMap((program) => {
+    const title = visibleText(program.title);
+    const slug = visibleText(program.slug);
+    return title && slug ? [{ id: program.id, title, href: localePath(locale, `/programs/${slug}`) }] : [];
+  });
+
+  return (
+    <footer className="mbs-auto bg-ink text-paper">
+      {cta ? (
+        <div className="border-be border-paper/20">
+          <Container className="flex flex-wrap items-center justify-between gap-6 py-8">
+            <div className="max-w-2xl">
+              <Eyebrow as="p" className="mbe-2 text-paper">
+                {dict.nav.support}
+              </Eyebrow>
+              <p className="text-h3 font-semibold text-paper">{cta.title}</p>
+              {cta.description ? <p className="mbs-2 text-small text-paper">{cta.description}</p> : null}
+            </div>
+            <ButtonLink
+              href={ctaHref(locale, cta.url)}
+              external={!cta.url.startsWith('/')}
+              tone="secondary"
+              className="border-paper text-paper hover:bg-navy-900 hover:text-paper"
+            >
+              {cta.buttonLabel}
+            </ButtonLink>
+          </Container>
+        </div>
+      ) : null}
+
+      <Container className="grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <section aria-labelledby="footer-identity">
+          <Eyebrow as="p" id="footer-identity" className="mbe-4 text-paper">
+            {dict.footer.identityTitle}
+          </Eyebrow>
+          {logoSrc ? (
+            <Image src={logoSrc} alt={logoAlt} width={200} height={72} sizes="200px" className="mbe-4 h-16 w-auto object-contain" />
+          ) : null}
+          {displayName ? <p className="text-h4 font-semibold text-paper">{displayName}</p> : null}
+          {description ? <p className="mbs-2 max-w-md text-small text-paper">{description}</p> : null}
+
+          <div className="mbs-5 text-paper [&_dd]:text-paper [&_dt]:text-paper/80">
+            <DefinitionList
+              layout="stack"
+              items={[
+                { term: dict.about.legalName, value: legalName },
+                { term: dict.about.licenseNumber, value: licenseNumber ? <Bidi>{licenseNumber}</Bidi> : null },
+                { term: dict.about.licenseAuthority, value: licenseAuthority },
+                { term: dict.about.legalForm, value: legalForm },
+                { term: dict.about.foundedYear, value: foundedYear ? <Bidi>{foundedYear}</Bidi> : null },
+              ]}
+            />
+          </div>
+        </section>
+
+        <FooterLinkList title={dict.footer.brandTitle}>
+          {aboutNavItems(locale, dict).map((item) => (
+            <li key={item.href}>
+              <FooterLink href={item.href}>{item.label}</FooterLink>
+            </li>
+          ))}
+        </FooterLinkList>
+
+        <div className="space-y-8">
+          <FooterLinkList title={dict.footer.quickLinksTitle}>
+            {[
+              ...mainNavItems(locale, dict).slice(1),
+              { label: dict.nav.resources, href: localePath(locale, '/resources') },
+              { label: dict.nav.careers, href: localePath(locale, '/careers') },
+            ].map((item) => (
+              <li key={item.href}>
+                <FooterLink href={item.href}>{item.label}</FooterLink>
+              </li>
+            ))}
+          </FooterLinkList>
+          {programLinks.length > 0 ? (
+            <FooterLinkList title={dict.footer.programsTitle}>
+              {programLinks.map((program) => (
+                <li key={program.id}>
+                  <FooterLink href={program.href}>{program.title}</FooterLink>
+                </li>
+              ))}
+            </FooterLinkList>
+          ) : null}
+        </div>
+
+        <div className="space-y-8">
+          <section aria-labelledby="footer-contact">
+            <Eyebrow as="p" id="footer-contact" className="mbe-4 text-paper">
+              {dict.footer.contactTitle}
+            </Eyebrow>
+            <ul className="space-y-2 text-small">
+              {phones.map((phone) => (
+                <li key={phone} className="flex items-center gap-2">
+                  <Icon name="phone" size={16} />
+                  <a href={`tel:${phone}`} className="text-paper hover:text-gold-050">
+                    <Bidi>{phone}</Bidi>
+                  </a>
+                </li>
+              ))}
+              {whatsapp ? (
+                <li className="flex flex-wrap items-center gap-2">
+                  <Icon name="phone" size={16} />
+                  <span className="text-paper/80">{dict.siteChrome.whatsapp}</span>
+                  <a href={buildWhatsAppUrl(whatsapp)} className="text-paper hover:text-gold-050" {...externalAttrs('https://wa.me')}>
+                    <Bidi>{whatsapp}</Bidi>
+                  </a>
+                </li>
+              ) : null}
+              {emails.map((email) => (
+                <li key={email} className="flex items-center gap-2">
+                  <Icon name="mail" size={16} />
+                  <a href={`mailto:${email}`} className="text-paper hover:text-gold-050">
+                    <Bidi>{email}</Bidi>
+                  </a>
+                </li>
+              ))}
+              {address ? (
+                <li className="flex items-start gap-2">
+                  <Icon name="pin" size={16} className="mbs-1" />
+                  <span className="text-paper">{address}</span>
+                </li>
+              ) : null}
+              {[
+                { label: dict.nav.contact, href: localePath(locale, '/contact') },
+                { label: dict.nav.partner, href: localePath(locale, '/get-involved/partner') },
+                { label: dict.getInvolved.volunteerTitle, href: localePath(locale, '/get-involved/volunteer') },
+                { label: dict.nav.support, href: localePath(locale, '/get-involved/support') },
+                { label: dict.footer.complaints, href: `${localePath(locale, '/contact')}#complaint` },
+              ].map((item) => (
+                <li key={item.href}>
+                  <FooterLink href={item.href}>{item.label}</FooterLink>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section aria-labelledby="footer-channels">
+            <Eyebrow as="p" id="footer-channels" className="mbe-4 text-paper">
+              {dict.footer.channelsTitle}
+            </Eyebrow>
+            {officialChannels.length > 0 ? (
+              <ul className="space-y-2 text-small">
+                {officialChannels.map((channel) => (
+                  <li key={`${channel.platform}:${channel.handle}`} className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-paper/80">{platformLabel(channel.platform)}</span>
+                    <a
+                      href={channel.url}
+                      className="font-mono text-caption text-paper no-underline hover:text-gold-050 hover:underline"
+                      {...externalAttrs(channel.url)}
+                    >
+                      <Bidi>{channel.handle}</Bidi>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-small text-paper/80">{dict.footer.noSocialLinks}</p>
+            )}
+            {socialLinks.length > 0 ? (
+              <ul className="mbs-3 flex flex-wrap">
+                {socialLinks.map((link) => (
+                  <li key={`${link.platform}:${link.url}`}>
+                    <SocialIconLink platform={link.platform} url={link.url} tone="paper" />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <p className="mbs-4">
+              <Link
+                href={localePath(locale, '/verify')}
+                className="inline-flex min-h-target items-center border-be-2 border-gold-600 text-small font-medium text-paper no-underline hover:text-gold-050"
+              >
+                {dict.nav.verify}
+              </Link>
+            </p>
+          </section>
+        </div>
+      </Container>
+
+      <Rule className="border-paper/20" />
+      <Container className="flex flex-col gap-3 py-4 text-caption text-paper md:flex-row md:items-center md:justify-between">
+        <p>
+          © <Bidi>{String(year)}</Bidi> {displayName ?? ''} — {dict.footer.rights}
+        </p>
+        <nav aria-label={dict.footer.legalTitle}>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+            {[
+              { label: dict.footer.privacy, href: localePath(locale, '/legal/privacy') },
+              { label: dict.footer.accessibility, href: localePath(locale, '/legal/accessibility') },
+              { label: dict.footer.terms, href: localePath(locale, '/legal/terms') },
+            ].map((item) => (
+              <li key={item.href}>
+                <FooterLink href={item.href}>{item.label}</FooterLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </Container>
     </footer>
   );
 }

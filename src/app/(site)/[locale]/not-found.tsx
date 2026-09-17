@@ -1,41 +1,75 @@
 import Link from 'next/link';
+import { Panel, RuledList, RuledListItem } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
+import { Container } from '@/components/ui/layout';
+import { Eyebrow } from '@/components/ui/typography';
 
 /**
  * The 404.
  *
- * `not-found.tsx` cannot read `params`, so it does not know the locale. Both
- * languages are shown rather than guessing — and each block carries its own
- * `lang` and `dir`, so a screen reader announces each in the right voice
- * instead of reading Arabic with English phonemes.
+ * `not-found.tsx` cannot read `params`, so it does not know the locale and
+ * cannot open a dictionary. Both languages are shown rather than guessing —
+ * and each block carries its own `lang` and `dir`, so a screen reader
+ * announces each in the right voice instead of reading Arabic with English
+ * phonemes. This is the one page whose copy lives in code, for that reason.
  */
+const COPY = {
+  ar: {
+    title: 'الصفحة غير موجودة',
+    body: 'قد يكون الرابط قديماً أو أن الصفحة أُزيلت.',
+    links: [
+      { label: 'الرئيسية', href: '/ar' },
+      { label: 'من نحن', href: '/ar/about' },
+      { label: 'قنواتنا الرسمية', href: '/ar/verify' },
+      { label: 'تواصل معنا', href: '/ar/contact' },
+    ],
+  },
+  en: {
+    title: 'Page not found',
+    body: 'The link may be out of date, or the page may have been removed.',
+    links: [
+      { label: 'Home', href: '/en' },
+      { label: 'About', href: '/en/about' },
+      { label: 'Official channels', href: '/en/verify' },
+      { label: 'Contact', href: '/en/contact' },
+    ],
+  },
+} as const;
+
+function NotFoundBlock({ locale, heading: Heading }: { locale: 'ar' | 'en'; heading: 'h1' | 'h2' }) {
+  const copy = COPY[locale];
+  return (
+    <div lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <Heading className={Heading === 'h1' ? 'text-h2 font-semibold text-ink' : 'text-h3 font-semibold text-ink'}>
+        {copy.title}
+      </Heading>
+      <p className="mbs-2 text-small text-ink-70">{copy.body}</p>
+      <RuledList className="mbs-4">
+        {copy.links.map((link) => (
+          <RuledListItem key={link.href} className="py-0">
+            <Link href={link.href} className="inline-flex min-h-target items-center gap-2 no-underline hover:underline">
+              {link.label}
+              <Icon name="arrow" size={16} />
+            </Link>
+          </RuledListItem>
+        ))}
+      </RuledList>
+    </div>
+  );
+}
+
 export default function NotFound() {
   return (
-    <div className="container-content section-gap">
-      <div className="rule-edge bg-paper p-8">
-        <p className="eyebrow">404</p>
-
-        <h1 className="mbs-4 text-h2 font-semibold text-ink" lang="ar" dir="rtl">
-          الصفحة غير موجودة
-        </h1>
-        <p className="mbs-3 text-small text-ink-70" lang="ar" dir="rtl">
-          قد يكون الرابط قديماً أو أن الصفحة أُزيلت.
-        </p>
-        <p className="mbs-4" lang="ar" dir="rtl">
-          <Link href="/ar">الرئيسية</Link>
-        </p>
-
-        <hr className="mbs-8 border-bs border-rule" />
-
-        <h2 className="mbs-8 text-h3 font-semibold text-ink" lang="en" dir="ltr">
-          Page not found
-        </h2>
-        <p className="mbs-2 text-small text-ink-70" lang="en" dir="ltr">
-          The link may be out of date, or the page may have been removed.
-        </p>
-        <p className="mbs-4" lang="en" dir="ltr">
-          <Link href="/en">Home</Link>
-        </p>
-      </div>
-    </div>
+    <Container size="narrow" className="section-gap">
+      <Panel padding="lg" className="rule-section">
+        <Eyebrow as="p" className="mbe-4">
+          <span dir="ltr">404</span>
+        </Eyebrow>
+        <div className="grid gap-10 md:grid-cols-2">
+          <NotFoundBlock locale="ar" heading="h1" />
+          <NotFoundBlock locale="en" heading="h2" />
+        </div>
+      </Panel>
+    </Container>
   );
 }

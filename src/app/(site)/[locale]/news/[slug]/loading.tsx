@@ -1,4 +1,4 @@
-import { DetailPageSkeleton } from '@/components/ui/states';
+import { DetailPageSkeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return <DetailPageSkeleton />;

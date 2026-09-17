@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { LinkPendingMark } from '@/components/ui/link-pending';
 import { type Locale, otherLocale } from '@/lib/i18n/config';
 import { cn } from '@/lib/utils';
 
 /**
- * **A client component, deliberately.**
+ * **A client component, deliberately** (03-FRONTEND §4 allow-list).
  *
  * The switcher has to preserve the reader's current path *and* their query —
  * a funder who has filtered the project list to Rafah and 2025 must not lose
@@ -32,26 +33,19 @@ export function LanguageSwitcher({ locale, label, className }: { locale: Locale;
     <Link
       href={href}
       hrefLang={target}
+      lang={target}
       // The other locale is a different render of a page most visitors never
       // open; prefetching it doubles the work for no benefit.
       prefetch={false}
-      // `inline-flex` + `min-h-11` rather than padding alone: WCAG 2.2 SC 2.5.8
-      // wants 24x24 and the design system asks for 44px, and this link sits
-      // `gap-4` from its neighbour — under the 24px offset that would let the
-      // spacing exception rescue a smaller target. It was ~23.2px.
+      // `min-h-target` keeps the 44px target the design system asks for; the
+      // 1px paper edge is the only decoration — square, like every control.
       className={cn(
-        'motion-standard group inline-flex min-h-9 items-center gap-2 rounded-full border border-paper/30 bg-paper/8 px-3 font-mono text-caption font-medium text-paper no-underline transition hover:border-gold-600 hover:bg-paper/14 hover:text-gold-600',
+        'motion-standard relative inline-flex min-h-target items-center border border-paper/40 px-3 font-mono text-caption font-medium text-paper no-underline transition-colors hover:border-gold-600 hover:text-gold-050',
         className,
       )}
     >
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-[1.8]">
-        <circle cx="12" cy="12" r="8.5" />
-        <path d="M3.8 12h16.4M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5M12 3.5C9.8 5.8 8.7 8.6 8.7 12s1.1 6.2 3.3 8.5" />
-      </svg>
-      <span>{label}</span>
-      <span aria-hidden="true" className="transition-transform duration-200 group-hover:-translate-x-0.5 rtl:group-hover:translate-x-0.5">
-        {locale === 'ar' ? '←' : '→'}
-      </span>
+      {label}
+      <LinkPendingMark />
     </Link>
   );
 }

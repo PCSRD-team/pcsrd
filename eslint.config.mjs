@@ -17,6 +17,11 @@ const eslintConfig = defineConfig([
     // Ours:
     "drizzle/**",
     "docs/**",
+    // Playwright's own artefacts. The HTML reporter writes a bundled trace
+    // viewer here; linting it reports thousands of problems in code nobody
+    // in this repository wrote. Both directories are gitignored.
+    "playwright-report/**",
+    "test-results/**",
   ]),
 
   // ── RTL: logical CSS properties only ─────────────────────────────────

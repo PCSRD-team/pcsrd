@@ -1,51 +1,55 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { postCategoryLabel } from '@/components/content/cards';
+import { mediaImage, mediaSrc } from '@/components/content/media';
+import { ContentBreadcrumbs, TranslationNotice } from '@/components/content/page-chrome';
 import { RichText } from '@/components/content/rich-text';
+import { getSiteName, toTranslationStatus } from '@/components/content/site';
 import { ArticleJsonLd } from '@/components/seo/json-ld';
 import { DateText } from '@/components/ui/bidi';
-import { Prose } from '@/components/ui/primitives';
-import { UntranslatedNotice } from '@/components/ui/states';
+import { Figure } from '@/components/ui/figure';
+import { Container, PageHeader } from '@/components/ui/layout';
+import { Meta, Prose } from '@/components/ui/typography';
 import { getPostBySlug, listPostSlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
-import { publicEnv } from '@/lib/env.public';
-import { formatDate, storageUrl } from '@/lib/format';
-import { LOCALES, isLocale } from '@/lib/i18n/config';
+import { formatDate } from '@/lib/format';
+import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { buildMetadata } from '@/lib/seo/metadata';
 
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const slugs = await prerenderData('post slugs', () => listPostSlugs(), []);
-  return LOCALES.flatMap((locale) =>
-    slugs.map((row) => ({ locale, slug: locale === 'ar' ? row.slugAr : row.slugEn })),
-  );
+  const rows = await prerenderData('static params posts', () => listPostSlugs(), []);
+  return rows.flatMap((row) => [
+    { locale: 'ar', slug: row.slugAr },
+    ...(row.translationStatus === 'ar_only' ? [] : [{ locale: 'en', slug: row.slugEn }]),
+  ]);
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<'/[locale]/news/[slug]'>): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<'/[locale]/news/[slug]'>): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isLocale(locale)) return {};
-  const post = await getPostBySlug(slug, locale);
+  const [post, siteName] = await Promise.all([getPostBySlug(slug, locale), getSiteName(locale)]);
   if (!post) return {};
 
-  return {
-    title: (locale === 'ar' ? post.seoTitleAr : post.seoTitleEn) ?? post.title ?? undefined,
-    description:
-      (locale === 'ar' ? post.seoDescriptionAr : post.seoDescriptionEn) ??
-      post.excerpt ??
-      undefined,
-    robots: post.noIndex ? { index: false, follow: false } : undefined,
-    alternates: {
-      canonical: `/${locale}/news/${slug}`,
-      languages: { ar: `/ar/news/${post.slugAr}`, en: `/en/news/${post.slugEn}` },
-    },
-    openGraph: {
-      type: 'article',
-      publishedTime: post.publishedAt?.toISOString(),
-    },
-  };
+  // SEO-013: the English SEO title is read on English pages, falling back to Arabic.
+  const seoTitle = locale === 'ar' ? post.seoTitleAr : post.seoTitleEn?.trim() || post.seoTitleAr;
+  const seoDescription =
+    locale === 'ar' ? post.seoDescriptionAr : post.seoDescriptionEn?.trim() || post.seoDescriptionAr;
+
+  return buildMetadata({
+    locale,
+    path: { ar: `/news/${post.slugAr}`, en: `/news/${post.slugEn}` },
+    title: seoTitle ?? post.title ?? siteName,
+    description: seoDescription ?? post.excerpt,
+    siteName,
+    type: 'article',
+    publishedTime: post.publishedAt,
+    modifiedTime: post.updatedAt,
+    translationStatus: toTranslationStatus(post.translationStatus),
+    noIndex: post.noIndex,
+  });
 }
 
 export default async function PostPage({ params }: PageProps<'/[locale]/news/[slug]'>) {
@@ -55,66 +59,77 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
   const [dict, post] = await Promise.all([getDictionary(locale), getPostBySlug(slug, locale)]);
   if (!post) notFound();
 
-  const categoryLabel = {
-    news: dict.news.categoryNews,
-    statement: dict.news.categoryStatement,
-    announcement: dict.news.categoryAnnouncement,
-  }[post.category];
+  const hero = mediaImage(post.hero?.path, post.hero?.blur, post.hero);
+  const showUpdated =
+    post.publishedAt && post.updatedAt.getTime() - post.publishedAt.getTime() > 24 * 60 * 60 * 1000;
 
   return (
-    <article className="container-content section-gap">
+    <Container size="narrow" className="section-gap">
       <ArticleJsonLd
         title={post.title}
         description={post.excerpt}
-        publishedAt={post.publishedAt}
-        url={`${publicEnv.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')}/${locale}/news/${slug}`}
+        url={localePath(locale, `/news/${slug}`)}
         locale={locale}
+        publishedAt={post.publishedAt}
+        updatedAt={post.updatedAt}
+        image={
+          post.hero
+            ? { url: mediaSrc(post.hero.path), width: post.hero.width, height: post.hero.height, alt: post.hero.alt }
+            : null
+        }
       />
 
-      {!post.isTranslated ? (
-        <UntranslatedNotice
-          title={dict.states.untranslatedTitle}
-          body={dict.states.untranslatedBody}
+      <TranslationNotice locale={locale} dict={dict} isTranslated={post.isTranslated} arabicPath={`/news/${post.slugAr}`} />
+
+      <article>
+        <PageHeader
+          breadcrumbs={
+            <ContentBreadcrumbs
+              locale={locale}
+              dict={dict}
+              trail={[{ label: dict.news.title, path: '/news' }, { label: post.title ?? '' }]}
+            />
+          }
+          eyebrow={postCategoryLabel(post.category, dict)}
+          title={post.title ?? ''}
+          lede={post.excerpt}
+          meta={
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {post.publishedAt ? (
+                <Meta as="p">
+                  {dict.news.publishedOn}{' '}
+                  <time dateTime={post.publishedAt.toISOString()}>
+                    <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
+                  </time>
+                </Meta>
+              ) : null}
+              {showUpdated ? (
+                <Meta as="p">
+                  {dict.contentUi.updatedOn}{' '}
+                  <time dateTime={post.updatedAt.toISOString()}>
+                    <DateText locale={locale}>{formatDate(post.updatedAt, locale)}</DateText>
+                  </time>
+                </Meta>
+              ) : null}
+            </div>
+          }
         />
-      ) : null}
 
-      <div className="flex flex-wrap items-center gap-4">
-        <p className="eyebrow">{categoryLabel}</p>
-        {post.publishedAt ? (
-          <time
-            dateTime={post.publishedAt.toISOString()}
-            className="font-mono text-caption text-mono-muted"
-          >
-            <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
-          </time>
-        ) : null}
-      </div>
-
-      <h1 className="mbs-4 text-h1 font-semibold text-ink">{post.title}</h1>
-      <span className="rule-mark mbs-5 block" aria-hidden="true" />
-
-      {post.excerpt ? (
-        <p className="measure-lead mbs-6 text-lead text-ink-70">{post.excerpt}</p>
-      ) : null}
-
-      {post.hero ? (
-        <div className="mbs-10 relative aspect-[16/9] overflow-hidden bg-paper-alt">
-          <Image
-            src={storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, 'media', post.hero.path)}
-            alt={post.hero.alt ?? ''}
-            fill
-            sizes="(min-width: 1180px) 1180px, 100vw"
-            placeholder={post.hero.blur ? 'blur' : 'empty'}
-            blurDataURL={post.hero.blur ?? undefined}
-            className="object-cover"
+        {hero ? (
+          <Figure
+            image={hero}
+            alt={post.hero?.alt ?? ''}
+            decorative={!post.hero?.alt}
+            sizes="(min-width: 760px) 760px, 100vw"
             preload
+            className="mbe-10"
           />
-        </div>
-      ) : null}
+        ) : null}
 
-      <Prose className="mbs-10">
-        <RichText doc={post.body} />
-      </Prose>
-    </article>
+        <Prose measure="reading">
+          <RichText doc={post.body} />
+        </Prose>
+      </article>
+    </Container>
   );
 }
