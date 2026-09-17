@@ -1,23 +1,23 @@
 'use client';
+// Client Component: `useActionState` places a rejected save's errors on the
+// fields that caused them. The form still submits natively before hydration.
 
 import { useActionState } from 'react';
 import type { EntityResult } from '@/actions/admin/entity-forms';
 import { BilingualField } from '@/components/admin/bilingual-field';
-import {
-  CheckboxField,
-  EnumSelect,
-  Field,
-  PublishBar,
-  fieldDescribedBy,
-  inputClass,
-} from '@/components/admin/controls';
+import { PublishBar, SaveBar } from '@/components/admin/controls';
 import { GalleryPicker } from '@/components/admin/gallery-picker';
-import { RichTextEditor } from '@/components/admin/rich-text-editor';
 import { MediaPicker } from '@/components/admin/media-picker';
+import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { describedBy, Field, FieldRow } from '@/components/ui/field';
+import { Checkbox, Input, Select, Textarea } from '@/components/ui/inputs';
+import { Stack } from '@/components/ui/layout';
+import { Notice } from '@/components/ui/notice';
 import { ADMIN_OPTIONS } from '@/lib/admin-options';
 import type { RichText } from '@/db/schema/_shared';
 import type { ContentStatus } from '@/db/schema/enums';
 import { type AdminFormDict, resolveAdminKey } from './admin-dict';
+import { adminUi } from './admin-ui-dict';
 
 /**
  * The editor for every content entity except projects.
@@ -103,239 +103,236 @@ export function ContentForm({
 
   const str = (key: string) => (values[key] as string | null | undefined) ?? '';
   const doc = (key: string) => (values[key] as RichText | null | undefined) ?? null;
+  const f = adminUi.form;
 
   return (
-    <form action={formAction} className="space-y-8">
-      {values.id ? <input type="hidden" name="id" value={String(values.id)} /> : null}
+    <form action={formAction}>
+      <Stack gap={8}>
+        {values.id ? <input type="hidden" name="id" value={String(values.id)} /> : null}
 
-      {bannerText ? (
-        <div className="rule-edge border-gold-600 bg-gold-050 p-4" role="alert">
-          <p className="text-small text-ink">{bannerText}</p>
-          {formLevel.map((text) => (
-            <p key={text} className="mbs-1 text-caption text-ink">
-              {text}
-            </p>
-          ))}
-        </div>
-      ) : null}
+        {bannerText ? (
+          <Notice tone="danger" title={formLevel.length ? bannerText : undefined}>
+            {formLevel.length ? (
+              formLevel.map((text) => <p key={text}>{text}</p>)
+            ) : (
+              bannerText
+            )}
+          </Notice>
+        ) : null}
 
-      {fields.map((field) => {
-        switch (field.kind) {
-          case 'bilingual':
-            return (
-              <BilingualField
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                required={field.required}
-                multiline={field.multiline}
-                hint={field.hint}
-                maxLength={field.max ? { ar: field.max, en: field.max } : undefined}
-                defaultAr={str(`${field.name}Ar`)}
-                defaultEn={str(`${field.name}En`)}
-                errorAr={firstError(`${field.name}Ar`)}
-                errorEn={firstError(`${field.name}En`)}
-              />
-            );
-
-          case 'richtext':
-            return (
-              <div key={field.name} className="grid gap-6 md:grid-cols-2">
-                <RichTextEditor
-                  name={`${field.name}Ar`}
-                  label={field.labelAr}
-                  defaultValue={doc(`${field.name}Ar`)}
-                />
-                <RichTextEditor
-                  name={`${field.name}En`}
-                  label={field.labelEn}
-                  dir="ltr"
-                  defaultValue={doc(`${field.name}En`)}
-                />
-              </div>
-            );
-
-          case 'text':
-            return (
-              <Field
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                hint={field.hint}
-                error={firstError(field.name)}
-                required={field.required}
-              >
-                <input
-                  id={field.name}
+        {fields.map((field) => {
+          switch (field.kind) {
+            case 'bilingual':
+              return (
+                <BilingualField
+                  key={field.name}
                   name={field.name}
-                  type={field.type ?? 'text'}
+                  label={field.label}
                   required={field.required}
-                  defaultValue={str(field.name)}
-                  aria-invalid={firstError(field.name) ? true : undefined}
-                  aria-describedby={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
-                  className={inputClass}
+                  multiline={field.multiline}
+                  hint={field.hint}
+                  maxLength={field.max ? { ar: field.max, en: field.max } : undefined}
+                  defaultAr={str(`${field.name}Ar`)}
+                  defaultEn={str(`${field.name}En`)}
+                  errorAr={firstError(`${field.name}Ar`)}
+                  errorEn={firstError(`${field.name}En`)}
                 />
-              </Field>
-            );
+              );
 
-          case 'textarea':
-            return (
-              <Field
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                hint={field.hint}
-                error={firstError(field.name)}
-              >
-                <textarea
-                  id={field.name}
+            case 'richtext':
+              return (
+                <FieldRow key={field.name}>
+                  <RichTextEditor
+                    name={`${field.name}Ar`}
+                    label={field.labelAr}
+                    defaultValue={doc(`${field.name}Ar`)}
+                  />
+                  <RichTextEditor
+                    name={`${field.name}En`}
+                    label={field.labelEn}
+                    dir="ltr"
+                    defaultValue={doc(`${field.name}En`)}
+                  />
+                </FieldRow>
+              );
+
+            case 'text':
+              return (
+                <Field
+                  key={field.name}
                   name={field.name}
-                  rows={3}
-                  defaultValue={str(field.name)}
-                  aria-invalid={firstError(field.name) ? true : undefined}
-                  aria-describedby={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
-                  className={inputClass}
+                  label={field.label}
+                  hint={field.hint}
+                  error={firstError(field.name)}
+                  required={field.required}
+                >
+                  <Input
+                    name={field.name}
+                    type={field.type ?? 'text'}
+                    required={field.required}
+                    defaultValue={str(field.name)}
+                    hint={field.hint}
+                    error={firstError(field.name)}
+                  />
+                </Field>
+              );
+
+            case 'textarea':
+              return (
+                <Field
+                  key={field.name}
+                  name={field.name}
+                  label={field.label}
+                  hint={field.hint}
+                  error={firstError(field.name)}
+                >
+                  <Textarea
+                    name={field.name}
+                    rows={3}
+                    defaultValue={str(field.name)}
+                    hint={field.hint}
+                    error={firstError(field.name)}
+                  />
+                </Field>
+              );
+
+            case 'select':
+              return (
+                <Field
+                  key={field.name}
+                  name={field.name}
+                  label={field.label}
+                  hint={field.hint}
+                  error={firstError(field.name)}
+                  required={field.required}
+                >
+                  <Select
+                    name={field.name}
+                    options={field.options}
+                    required={field.required}
+                    multiple={field.multiple}
+                    hint={field.hint}
+                    error={firstError(field.name)}
+                    defaultValue={
+                      field.multiple
+                        ? ((values[field.name] as string[] | undefined) ?? [])
+                        : str(field.name)
+                    }
+                  />
+                </Field>
+              );
+
+            case 'checkbox':
+              return (
+                <Checkbox
+                  key={field.name}
+                  name={field.name}
+                  label={field.label}
+                  hint={field.hint}
+                  error={firstError(field.name)}
+                  defaultChecked={Boolean(values[field.name])}
                 />
-              </Field>
-            );
+              );
 
-          case 'select':
-            return (
-              <EnumSelect
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                options={field.options}
-                required={field.required}
-                multiple={field.multiple}
-                hint={field.hint}
-                error={firstError(field.name)}
-                defaultValue={
-                  field.multiple
-                    ? ((values[field.name] as string[] | undefined) ?? [])
-                    : str(field.name)
-                }
+            case 'gallery':
+              return (
+                <GalleryPicker
+                  key={field.name}
+                  name={field.name}
+                  label={field.label}
+                  hint={field.hint}
+                  initial={(values[field.name] as string[] | undefined) ?? []}
+                />
+              );
+
+            case 'media':
+              return (
+                <Field
+                  key={field.name}
+                  name={field.name}
+                  label={field.label}
+                  hint={field.hint}
+                  error={firstError(field.name)}
+                >
+                  <MediaPicker
+                    name={field.name}
+                    initialValue={str(field.name)}
+                    kind={field.assetKind ?? 'image'}
+                    invalid={Boolean(firstError(field.name))}
+                    describedBy={describedBy(field.name, field.hint, firstError(field.name))}
+                  />
+                </Field>
+              );
+          }
+        })}
+
+        {includeSeo ? (
+          <details className="rule-edge bg-paper p-6">
+            <summary className="cursor-pointer text-small font-medium text-ink">{f.seo}</summary>
+            <Stack gap={6} className="mbs-5">
+              <BilingualField
+                name="seoTitle"
+                label={f.seoTitle}
+                maxLength={{ ar: 60, en: 60 }}
+                hint={f.seoTitleHint}
+                defaultAr={str('seoTitleAr')}
+                defaultEn={str('seoTitleEn')}
               />
-            );
-
-          case 'checkbox':
-            return (
-              <CheckboxField
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                hint={field.hint}
-                error={firstError(field.name)}
-                defaultChecked={Boolean(values[field.name])}
+              <BilingualField
+                name="seoDescription"
+                label={f.seoDescription}
+                multiline
+                maxLength={{ ar: 160, en: 160 }}
+                defaultAr={str('seoDescriptionAr')}
+                defaultEn={str('seoDescriptionEn')}
               />
-            );
-
-          case 'gallery':
-            return (
-              <GalleryPicker
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                hint={field.hint}
-                initial={(values[field.name] as string[] | undefined) ?? []}
-              />
-            );
-
-          case 'media':
-            return (
               <Field
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                hint={field.hint}
-                error={firstError(field.name)}
+                name="ogMediaId"
+                label={f.ogImage}
+                hint={f.ogImageHint}
+                error={firstError('ogMediaId')}
               >
                 <MediaPicker
-                  name={field.name}
-                  initialValue={str(field.name)}
-                  kind={field.assetKind ?? 'image'}
-                  invalid={Boolean(firstError(field.name))}
-                  describedBy={fieldDescribedBy(field.name, field.hint, firstError(field.name))}
+                  name="ogMediaId"
+                  initialValue={str('ogMediaId')}
+                  kind="image"
+                  invalid={Boolean(firstError('ogMediaId'))}
+                  describedBy={describedBy('ogMediaId', f.ogImageHint, firstError('ogMediaId'))}
                 />
               </Field>
-            );
-        }
-      })}
+              <Checkbox name="noIndex" label={f.noIndex} defaultChecked={Boolean(values.noIndex)} />
+            </Stack>
+          </details>
+        ) : null}
 
-      {includeSeo ? (
-        <details className="rule-edge rounded-lg bg-paper p-5 shadow-[0_10px_28px_rgb(20_33_63/0.04)]">
-          <summary className="cursor-pointer text-small font-medium text-ink">
-            تحسين محركات البحث
-          </summary>
-          <div className="mbs-5 space-y-6">
-            <BilingualField
-              name="seoTitle"
-              label="عنوان SEO"
-              maxLength={{ ar: 60, en: 60 }}
-              hint="العربية أطول بنحو 10% لكل حرف."
-              defaultAr={str('seoTitleAr')}
-              defaultEn={str('seoTitleEn')}
+        {bar === 'publish' && translation ? (
+          <Field
+            name="translationStatus"
+            label={f.translationStatus}
+            hint={f.translationStatusHint}
+            error={firstError('translationStatus')}
+          >
+            <Select
+              name="translationStatus"
+              options={[...ADMIN_OPTIONS.translationStatus]}
+              defaultValue={str('translationStatus') || 'ar_only'}
+              hint={f.translationStatusHint}
+              error={firstError('translationStatus')}
             />
-            <BilingualField
-              name="seoDescription"
-              label="وصف SEO"
-              multiline
-              maxLength={{ ar: 160, en: 160 }}
-              defaultAr={str('seoDescriptionAr')}
-              defaultEn={str('seoDescriptionEn')}
-            />
-            <Field
-              name="ogMediaId"
-              label="صورة المشاركة (Open Graph)"
-              hint="تظهر عند مشاركة الرابط. إن تُركت فارغة تُستخدم صورة المؤسسة الافتراضية."
-              error={firstError('ogMediaId')}
-            >
-              <MediaPicker
-                name="ogMediaId"
-                initialValue={str('ogMediaId')}
-                kind="image"
-                invalid={Boolean(firstError('ogMediaId'))}
-                describedBy={fieldDescribedBy('ogMediaId', 'hint', firstError('ogMediaId'))}
-              />
-            </Field>
-            <CheckboxField
-              name="noIndex"
-              label="منع الفهرسة"
-              defaultChecked={Boolean(values.noIndex)}
-            />
-          </div>
-        </details>
-      ) : null}
+          </Field>
+        ) : null}
 
-      {bar === 'publish' && translation ? (
-        <EnumSelect
-          name="translationStatus"
-          label="حالة الترجمة"
-          options={[...ADMIN_OPTIONS.translationStatus]}
-          defaultValue={str('translationStatus') || 'ar_only'}
-          hint="تُحدَّد يدوياً. الموقع يعرض المحتوى العربي للقارئ الإنجليزي ما لم تكن الترجمة مراجَعة."
-          error={firstError('translationStatus')}
-        />
-      ) : null}
-
-      <fieldset disabled={pending}>
-        {bar === 'publish' ? (
-          <PublishBar
-            status={(values.status as ContentStatus | undefined) ?? 'draft'}
-            canPublish={canPublish}
-          />
-        ) : (
-          <div className="sticky inset-be-0 z-20 mbs-10 flex flex-wrap items-center gap-3 border border-rule bg-paper p-4">
-            <div className="flex-1" />
-            <button
-              type="submit"
-              className="bg-navy-700 px-5 py-2 text-small font-medium text-paper hover:bg-navy-900"
-            >
-              {dict.admin.form.save}
-            </button>
-          </div>
-        )}
-      </fieldset>
+        <fieldset disabled={pending}>
+          {bar === 'publish' ? (
+            <PublishBar
+              status={(values.status as ContentStatus | undefined) ?? 'draft'}
+              canPublish={canPublish}
+            />
+          ) : (
+            <SaveBar label={dict.admin.form.save} />
+          )}
+        </fieldset>
+      </Stack>
     </form>
   );
 }

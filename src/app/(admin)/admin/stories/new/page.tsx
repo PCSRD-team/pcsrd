@@ -1,5 +1,6 @@
 import { saveStoryForm } from '@/actions/admin/entity-forms';
 import { adminFormDict } from '@/components/admin/admin-dict';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import { ContentForm } from '@/components/admin/content-form';
 import { storyFields } from '@/components/admin/field-configs';
 import { AdminHeader } from '@/components/admin/shell';
@@ -22,7 +23,7 @@ export default async function Page() {
 
   return (
     <>
-      <AdminHeader title="قصة جديدة" />
+      <AdminHeader title={adminUi.entity.newStory} />
       <ContentForm
         action={saveStoryForm}
         fields={storyFields(options)}

@@ -1,11 +1,14 @@
 import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
-import { adminFormDict } from '@/components/admin/admin-dict';
+import { adminDict, adminFormDict } from '@/components/admin/admin-dict';
+import { translationStatusFrom } from '@/components/admin/bilingual-field';
+import { DateCell, StatusBadge, TranslationBadge } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { ProjectForm } from '@/components/admin/project-form';
-import { DeleteAction } from '@/components/admin/row-actions';
+import { DeletePanel } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
-import { TranslationBadge } from '@/components/admin/controls';
+import { Cluster } from '@/components/ui/layout';
+import { Meta } from '@/components/ui/typography';
 import { db } from '@/db';
 import { getAdminRow, listRelationOptions } from '@/db/queries/admin';
 import { readAsActor } from '@/db/session';
@@ -14,7 +17,6 @@ import type { Project } from '@/db/schema/projects';
 import { requireAuth } from '@/lib/auth/guard';
 import { ADMIN_OPTIONS } from '@/lib/admin-options';
 import { can } from '@/services/_shared/permissions';
-import { translationStatusFrom } from '@/components/admin/bilingual-field';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,8 +56,15 @@ export default async function EditProjectPage({
     <>
       <AdminHeader
         title={row.titleAr}
-        description={`آخر تعديل — ${row.updatedAt.toISOString().slice(0, 10)}`}
-        action={<TranslationBadge partial={translation.partial} />}
+        meta={
+          <Cluster gap={3}>
+            <StatusBadge status={row.status} />
+            <TranslationBadge partial={translation.partial} />
+            <Meta as="span">
+              {adminDict.form.lastEdited} <DateCell value={row.updatedAt} />
+            </Meta>
+          </Cluster>
+        }
       />
 
       <Flash searchParams={search} />
@@ -112,16 +121,14 @@ export default async function EditProjectPage({
         }}
       />
 
-      <div className="mbs-8">
-        <DeleteAction
-          entity="project"
-          id={id}
-          status={row.status}
-          actor={actor}
-          returnTo="/admin/projects"
-          label={row.titleAr}
-        />
-      </div>
+      <DeletePanel
+        entity="project"
+        id={id}
+        status={row.status}
+        actor={actor}
+        returnTo="/admin/projects"
+        label={row.titleAr}
+      />
     </>
   );
 }

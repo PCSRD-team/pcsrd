@@ -4,11 +4,18 @@ import { notFound } from 'next/navigation';
 import { removeMedia } from '@/actions/admin/catalog';
 import { saveMediaForm } from '@/actions/admin/entity-forms';
 import { adminDict, adminFormDict } from '@/components/admin/admin-dict';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import { ContentForm } from '@/components/admin/content-form';
 import { MEDIA_FIELDS } from '@/components/admin/field-configs';
 import { Flash } from '@/components/admin/flash';
 import { AdminHeader } from '@/components/admin/shell';
-import { Bidi } from '@/components/ui/bidi';
+import { Bidi, Code, DateText } from '@/components/ui/bidi';
+import { Button, ButtonLink, buttonClasses } from '@/components/ui/button';
+import { Panel, RuledList, RuledListItem } from '@/components/ui/card';
+import { DefinitionList } from '@/components/ui/definition-list';
+import { Grid, Rule, Stack } from '@/components/ui/layout';
+import { Notice } from '@/components/ui/notice';
+import { Caption, Heading } from '@/components/ui/typography';
 import { getAdminMedia, getMediaUsage } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 import { publicEnv } from '@/lib/env.public';
@@ -41,15 +48,15 @@ export default async function MediaDetailPage({ params, searchParams }: PageProp
         title={asset.altAr}
         description={t.edit}
         action={
-          <Link href="/admin/media" className="text-small">
+          <ButtonLink href="/admin/media" tone="quiet">
             {adminDict.form.back}
-          </Link>
+          </ButtonLink>
         }
       />
 
       <Flash searchParams={search} />
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <Grid cols="sidebar" gap={8}>
         <div>
           <ContentForm
             action={saveMediaForm}
@@ -62,108 +69,113 @@ export default async function MediaDetailPage({ params, searchParams }: PageProp
           />
         </div>
 
-        <aside className="space-y-6">
-          <div className={`rule-edge bg-paper p-4 ${blocked ? 'border-gold-600' : ''}`}>
+        <Stack as="aside" gap={6}>
+          <Panel as="section" padding="sm" labelledBy="media-details" className={blocked ? 'border-destructive' : undefined}>
+            <Heading level={2} size="h4" id="media-details" className="sr-only">
+              {adminUi.media.details}
+            </Heading>
             <div className="relative aspect-[4/3] bg-paper-alt">
               {asset.kind === 'image' ? (
                 <Image
                   src={storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, asset.bucket, asset.path)}
                   alt={asset.altAr}
                   fill
-                  sizes="400px"
+                  sizes="(min-width: 1024px) 33vw, 100vw"
                   className="object-contain"
                 />
               ) : (
-                <div className="flex size-full items-center justify-center font-mono text-caption text-mono-muted">
-                  <Bidi>{asset.mimeType}</Bidi>
+                <div className="flex size-full items-center justify-center">
+                  <Code className="text-caption text-mono-muted">{asset.mimeType}</Code>
                 </div>
               )}
             </div>
-            <dl className="mbs-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-caption">
-              <dt className="text-ink-55">{t.file}</dt>
-              <dd className="truncate font-mono">
-                <Bidi>{asset.path}</Bidi>
-              </dd>
-              {asset.width ? (
-                <>
-                  <dt className="text-ink-55">{t.dimensions}</dt>
-                  <dd className="font-mono">
-                    <Bidi>{`${asset.width}×${asset.height}`}</Bidi>
-                  </dd>
-                </>
-              ) : null}
-              <dt className="text-ink-55">{t.size}</dt>
-              <dd className="font-mono">
-                <Bidi>{formatFileSize(asset.fileSize, 'ar')}</Bidi>
-              </dd>
-              <dt className="text-ink-55">{t.uploaded}</dt>
-              <dd>
-                <time dateTime={asset.createdAt.toISOString()}>
-                  {formatDate(asset.createdAt, 'ar', { year: 'numeric', month: 'short', day: 'numeric' })}
-                </time>
-              </dd>
-            </dl>
+            <DefinitionList
+              layout="stack"
+              className="mbs-4"
+              items={[
+                { term: t.file, value: <Code className="break-all text-caption">{asset.path}</Code> },
+                {
+                  term: t.dimensions,
+                  value: asset.width ? <Code className="text-caption">{`${asset.width}×${asset.height}`}</Code> : null,
+                },
+                { term: t.size, value: <Bidi className="font-mono text-caption">{formatFileSize(asset.fileSize, 'ar')}</Bidi> },
+                {
+                  term: t.uploaded,
+                  value: (
+                    <time dateTime={asset.createdAt.toISOString()} className="text-caption">
+                      <DateText locale="ar">
+                        {formatDate(asset.createdAt, 'ar', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </DateText>
+                    </time>
+                  ),
+                },
+              ]}
+            />
             {blocked ? (
-              <p className="mbs-3 text-caption text-gold-700">
+              <Notice tone="warning" live="off" className="mbs-4">
                 {t.fields.hasIdentifiableMinors} — {t.consent[asset.consent]}
-              </p>
+              </Notice>
             ) : null}
             {!asset.exifStripped && asset.kind === 'image' ? (
-              <p className="mbs-1 text-caption text-gold-700">{t.exifNotStripped}</p>
+              <Notice tone="warning" live="off" className="mbs-2">
+                {t.exifNotStripped}
+              </Notice>
             ) : null}
-          </div>
+          </Panel>
 
-          <section className="rule-edge bg-paper p-4">
-            <h2 className="text-small font-semibold text-ink">{t.usage}</h2>
-            <span className="rule-mark mbs-2 mbe-3 block" aria-hidden="true" />
+          <Panel as="section" padding="sm" labelledBy="media-usage">
+            <Heading level={2} size="h4" id="media-usage">
+              {t.usage}
+            </Heading>
+            <Rule weight="mark" as="span" className="mbs-2 mbe-3" />
             {usage.length === 0 ? (
-              <p className="text-caption text-ink-55">{t.notUsed}</p>
+              <Caption>{t.notUsed}</Caption>
             ) : (
-              <ul className="space-y-2 text-caption">
+              <RuledList>
                 {usage.map((row, index) => {
                   const kind =
                     (t.usageEntity as Record<string, string>)[row.entityType] ?? row.entityType;
                   const text = row.title ? `${kind}: ${row.title}` : kind;
                   return (
-                    <li key={`${row.entityType}-${row.entityId ?? 'org'}-${row.field}-${index}`}>
-                      {row.href ? <Link href={row.href}>{text}</Link> : text}{' '}
-                      <span className="font-mono text-mono-muted">
-                        <Bidi>{row.field}</Bidi>
-                      </span>
-                    </li>
+                    <RuledListItem
+                      key={`${row.entityType}-${row.entityId ?? 'org'}-${row.field}-${index}`}
+                      className="gap-2 text-caption"
+                    >
+                      {row.href ? <Link href={row.href}>{text}</Link> : text}
+                      <Code className="text-mono-muted">{row.field}</Code>
+                    </RuledListItem>
                   );
                 })}
-              </ul>
+              </RuledList>
             )}
-          </section>
+          </Panel>
 
           {canDelete ? (
-            <section className="rule-edge border-gold-600 bg-paper p-4">
-              <h2 className="text-small font-semibold text-ink">{t.delete}</h2>
-              <p className="mbs-2 text-caption text-ink-55">
-                {usage.length > 0 ? t.usageHint : t.deleteHint}
-              </p>
+            <Panel as="section" padding="sm" labelledBy="media-delete" className="border-destructive/40">
+              <Heading level={2} size="h4" id="media-delete">
+                {t.delete}
+              </Heading>
+              <Caption className="mbs-2">{usage.length > 0 ? t.usageHint : t.deleteHint}</Caption>
               {usage.length === 0 ? (
                 <details className="mbs-3">
-                  <summary className="rule-edge inline-block cursor-pointer list-none px-3 py-1 text-caption text-ink hover:bg-paper-alt">
+                  <summary
+                    className={buttonClasses({ tone: 'secondary', size: 'sm', className: 'cursor-pointer list-none' })}
+                  >
                     {adminDict.form.delete}
                   </summary>
                   <form action={removeMedia} className="mbs-3">
                     <input type="hidden" name="id" value={asset.id} />
                     <input type="hidden" name="returnTo" value={`/admin/media/${asset.id}`} />
-                    <button
-                      type="submit"
-                      className="rule-edge border-gold-600 px-3 py-1 text-caption text-gold-700 hover:bg-gold-050"
-                    >
+                    <Button type="submit" size="sm" tone="danger">
                       {adminDict.form.confirmDelete}
-                    </button>
+                    </Button>
                   </form>
                 </details>
               ) : null}
-            </section>
+            </Panel>
           ) : null}
-        </aside>
-      </div>
+        </Stack>
+      </Grid>
     </>
   );
 }

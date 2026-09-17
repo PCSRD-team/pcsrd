@@ -1,9 +1,16 @@
-import Link from 'next/link';
-import { DataTable, Pagination, StatusBadge, TimeCell } from '@/components/admin/controls';
+import { adminDict } from '@/components/admin/admin-dict';
+import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { AdminPagination, DateCell, STATUS_LABEL, StatusBadge } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { RowActions } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
-import { adminDict } from '@/components/admin/admin-dict';
+import { Bidi } from '@/components/ui/bidi';
+import { Button, ButtonLink } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Field } from '@/components/ui/field';
+import { Input, Select } from '@/components/ui/inputs';
+import { Cluster } from '@/components/ui/layout';
+import { Table } from '@/components/ui/table';
 import { type AdminEntity, listAdminRows } from '@/db/queries/admin';
 import { contentStatus, type ContentStatus } from '@/db/schema/enums';
 import type { Actor } from '@/services/_shared/actor';
@@ -23,22 +30,16 @@ export const ENTITY_META: Record<
   AdminEntity,
   { title: string; path: string; canCreate: boolean }
 > = {
-  program: { title: 'البرامج', path: 'programs', canCreate: false },
-  project: { title: 'المشاريع', path: 'projects', canCreate: true },
-  post: { title: 'الأخبار', path: 'posts', canCreate: true },
-  story: { title: 'القصص', path: 'stories', canCreate: true },
-  vacancy: { title: 'الوظائف', path: 'vacancies', canCreate: true },
-  publication: { title: 'الإصدارات', path: 'publications', canCreate: true },
-  page: { title: 'الصفحات', path: 'pages', canCreate: true },
+  program: { title: adminUi.nav.programs, path: 'programs', canCreate: false },
+  project: { title: adminUi.nav.projects, path: 'projects', canCreate: true },
+  post: { title: adminUi.nav.posts, path: 'posts', canCreate: true },
+  story: { title: adminUi.nav.stories, path: 'stories', canCreate: true },
+  vacancy: { title: adminUi.nav.vacancies, path: 'vacancies', canCreate: true },
+  publication: { title: adminUi.nav.publications, path: 'publications', canCreate: true },
+  page: { title: adminUi.nav.pages, path: 'pages', canCreate: true },
 };
 
 const STATUS_OPTIONS = contentStatus.enumValues;
-const STATUS_LABEL: Record<ContentStatus, string> = {
-  draft: 'مسودة',
-  in_review: 'قيد المراجعة',
-  published: 'منشور',
-  archived: 'مؤرشف',
-};
 
 export async function EntityListPage({
   actor,
@@ -50,6 +51,7 @@ export async function EntityListPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const meta = ENTITY_META[entity];
+  const t = adminUi.list;
 
   const one = (value: string | string[] | undefined) =>
     Array.isArray(value) ? value[0] : value;
@@ -76,78 +78,82 @@ export async function EntityListPage({
     return `/admin/${meta.path}${qs ? `?${qs}` : ''}`;
   };
 
+  const filtered = Boolean(search || status);
+
   return (
     <>
       <AdminHeader
         title={meta.title}
-        description={`${result.total} عنصر`}
+        description={fill(t.itemCount, { n: result.total })}
         action={
           meta.canCreate ? (
-            <Link
-              href={`/admin/${meta.path}/new`}
-              className="bg-navy-700 px-5 py-2 text-small font-medium text-paper no-underline hover:bg-navy-900"
-            >
-              إضافة
-            </Link>
+            <ButtonLink href={`/admin/${meta.path}/new`}>{adminDict.form.add}</ButtonLink>
           ) : undefined
         }
       />
 
       <Flash searchParams={searchParams} />
 
-      <form method="get" className="mbe-6 flex flex-wrap items-end gap-3">
-        <div>
-          <label htmlFor="q" className="eyebrow">
-            بحث
-          </label>
-          <input
-            id="q"
-            name="q"
-            defaultValue={search ?? ''}
-            className="mbs-1 rule-edge bg-paper px-3 py-2 text-small"
-          />
-        </div>
-        <div>
-          <label htmlFor="status" className="eyebrow">
-            الحالة
-          </label>
-          <select
-            id="status"
-            name="status"
-            defaultValue={status ?? ''}
-            className="mbs-1 rule-edge bg-paper px-3 py-2 text-small"
-          >
-            <option value="">الكل</option>
-            {STATUS_OPTIONS.map((value) => (
-              <option key={value} value={value}>
-                {STATUS_LABEL[value]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" className="rule-edge px-4 py-2 text-small hover:bg-paper-alt">
-          تصفية
-        </button>
-        {search || status ? (
-          <Link href={`/admin/${meta.path}`} className="text-small">
-            إزالة التصفية
-          </Link>
-        ) : null}
+      <form method="get" className="mbe-6">
+        <Cluster gap={3} align="end">
+          <Field name="q" label={t.search} className="min-w-48">
+            <Input name="q" type="search" defaultValue={search ?? ''} />
+          </Field>
+          <Field name="status" label={t.status} className="min-w-40">
+            <Select
+              name="status"
+              defaultValue={status ?? ''}
+              placeholder={t.all}
+              options={STATUS_OPTIONS.map((value) => ({ value, label: STATUS_LABEL[value] }))}
+            />
+          </Field>
+          <Button type="submit" tone="secondary">
+            {t.filter}
+          </Button>
+          {filtered ? (
+            <ButtonLink href={`/admin/${meta.path}`} tone="quiet">
+              {t.clearFilter}
+            </ButtonLink>
+          ) : null}
+        </Cluster>
       </form>
 
-      <DataTable
+      <Table
+        caption={meta.title}
+        captionHidden
         rows={result.items}
         rowHref={(row) => `/admin/${meta.path}/${row.id}`}
-        empty={search || status ? 'لا نتائج مطابقة.' : 'لا يوجد محتوى بعد.'}
+        empty={
+          <EmptyState
+            title={filtered ? t.noResults : t.empty}
+            body={filtered ? t.noResultsBody : t.emptyBody}
+            action={
+              filtered ? (
+                <ButtonLink href={`/admin/${meta.path}`} tone="secondary">
+                  {t.clearFilter}
+                </ButtonLink>
+              ) : meta.canCreate ? (
+                <ButtonLink href={`/admin/${meta.path}/new`}>{adminDict.form.add}</ButtonLink>
+              ) : undefined
+            }
+          />
+        }
         columns={[
-          { key: 'title', header: 'العنوان', cell: (row) => row.title },
-          { key: 'status', header: 'الحالة', cell: (row) => <StatusBadge status={row.status} /> },
-          { key: 'slug', header: 'المسار', numeric: true, cell: (row) => row.slugAr },
+          { key: 'title', header: t.columns.title, rowHeader: true, cell: (row) => row.title },
+          { key: 'status', header: t.columns.status, cell: (row) => <StatusBadge status={row.status} /> },
+          {
+            key: 'slug',
+            header: t.columns.slug,
+            numeric: true,
+            align: 'start',
+            cell: (row) => <Bidi>{row.slugAr}</Bidi>,
+          },
           {
             key: 'updated',
-            header: 'آخر تعديل',
+            header: t.columns.updatedAt,
             numeric: true,
-            cell: (row) => <TimeCell value={row.updatedAt} />,
+            align: 'start',
+            cell: (row) => <DateCell value={row.updatedAt} />,
           },
           {
             key: 'actions',
@@ -167,7 +173,7 @@ export async function EntityListPage({
         ]}
       />
 
-      <Pagination page={result.page} totalPages={result.totalPages} hrefFor={hrefFor} />
+      <AdminPagination page={result.page} totalPages={result.totalPages} hrefFor={hrefFor} />
     </>
   );
 }

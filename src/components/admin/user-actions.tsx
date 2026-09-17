@@ -3,6 +3,9 @@ import {
   changeUserRole,
   changeUserSensitiveAccess,
 } from '@/actions/admin/catalog';
+import { Button, buttonClasses } from '@/components/ui/button';
+import { Cluster } from '@/components/ui/layout';
+import { Caption } from '@/components/ui/typography';
 import type { Profile } from '@/db/schema/profiles';
 import { ADMIN_OPTIONS } from '@/lib/admin-options';
 import type { Actor } from '@/services/_shared/actor';
@@ -17,19 +20,20 @@ import { adminDict } from './admin-dict';
  * only be rendering a refusal. Sensitive access on one's own row is refused
  * here for the same reason it is granted per person by policy: it is not a
  * thing one grants oneself.
+ *
+ * The role select is a native `<select className="control">` rather than the
+ * kit's `Select`: the kit derives the control's `id` from `name`, and one
+ * `role` select per row would produce duplicate ids. The `control` utility
+ * is the same one the kit wears.
  */
-
-const button = 'rule-edge px-3 py-1 text-caption text-ink hover:bg-paper-alt whitespace-nowrap';
-const marked = 'rule-edge border-gold-600 px-3 py-1 text-caption text-gold-700 hover:bg-gold-050 whitespace-nowrap';
-
 export function UserActions({ user, actor }: { user: Profile; actor: Actor }) {
   const t = adminDict.users;
   if (user.id === actor.id) {
-    return <span className="text-caption text-ink-55">{t.selfHint}</span>;
+    return <Caption as="span">{t.selfHint}</Caption>;
   }
 
   return (
-    <div className="flex flex-wrap items-start gap-2">
+    <Cluster gap={2} align="start">
       <form action={changeUserRole} className="flex items-center gap-1">
         <input type="hidden" name="userId" value={user.id} />
         <label htmlFor={`role-${user.id}`} className="sr-only">
@@ -39,7 +43,7 @@ export function UserActions({ user, actor }: { user: Profile; actor: Actor }) {
           id={`role-${user.id}`}
           name="role"
           defaultValue={user.role}
-          className="rule-edge bg-paper px-2 py-1 text-caption"
+          className="control w-auto min-w-36 text-caption"
         >
           {ADMIN_OPTIONS.userRole.map((option) => (
             <option key={option.value} value={option.value}>
@@ -47,41 +51,43 @@ export function UserActions({ user, actor }: { user: Profile; actor: Actor }) {
             </option>
           ))}
         </select>
-        <button type="submit" className={button}>
+        <Button type="submit" size="sm" tone="secondary">
           {t.setRole}
-        </button>
+        </Button>
       </form>
 
       <form action={changeUserSensitiveAccess}>
         <input type="hidden" name="userId" value={user.id} />
         <input type="hidden" name="value" value={user.canViewSensitive ? 'false' : 'true'} />
-        <button type="submit" className={user.canViewSensitive ? marked : button}>
+        <Button type="submit" size="sm" tone={user.canViewSensitive ? 'marked' : 'secondary'}>
           {user.canViewSensitive ? t.revokeSensitive : t.grantSensitive}
-        </button>
+        </Button>
       </form>
 
       {user.isActive ? (
         <details>
-          <summary className={`${marked} inline-block cursor-pointer list-none`}>
+          <summary
+            className={buttonClasses({ tone: 'danger', size: 'sm', className: 'cursor-pointer list-none' })}
+          >
             {t.deactivate}
           </summary>
           <form action={changeUserActive} className="mbs-2">
             <input type="hidden" name="userId" value={user.id} />
             <input type="hidden" name="value" value="false" />
-            <button type="submit" className={marked}>
+            <Button type="submit" size="sm" tone="danger">
               {t.confirmDeactivate}
-            </button>
+            </Button>
           </form>
         </details>
       ) : (
         <form action={changeUserActive}>
           <input type="hidden" name="userId" value={user.id} />
           <input type="hidden" name="value" value="true" />
-          <button type="submit" className={button}>
+          <Button type="submit" size="sm" tone="secondary">
             {t.reactivate}
-          </button>
+          </Button>
         </form>
       )}
-    </div>
+    </Cluster>
   );
 }

@@ -1,11 +1,16 @@
 import { notFound } from 'next/navigation';
 import { saveVacancyForm } from '@/actions/admin/entity-forms';
 import { adminFormDict } from '@/components/admin/admin-dict';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import { ContentForm } from '@/components/admin/content-form';
+import { StatusBadge } from '@/components/admin/controls';
 import { VACANCY_FIELDS } from '@/components/admin/field-configs';
 import { Flash } from '@/components/admin/flash';
-import { DeleteAction } from '@/components/admin/row-actions';
+import { DeletePanel } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
+import { Bidi } from '@/components/ui/bidi';
+import { Cluster } from '@/components/ui/layout';
+import { Meta } from '@/components/ui/typography';
 import { getAdminRow } from '@/db/queries/admin';
 import type { ContentStatus } from '@/db/schema/enums';
 import { requireAuth } from '@/lib/auth/guard';
@@ -19,14 +24,27 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/v
   const row = await getAdminRow(actor, 'vacancy', id);
   if (!row) notFound();
   const values = row as Record<string, unknown>;
-  const title = String(values.titleAr ?? 'وظيفة');
+  const title = String(values.titleAr ?? adminUi.entity.fallbackVacancy);
+  const status = values.status as ContentStatus;
   // `posted_at` is set once on creation and never posted by the form — the
   // service keeps it. Shown here so the editor can see what the site shows.
   const postedAt = typeof values.postedAt === 'string' ? values.postedAt : null;
 
   return (
     <>
-      <AdminHeader title={title} description={postedAt ? `نُشرت في ${postedAt}` : undefined} />
+      <AdminHeader
+        title={title}
+        meta={
+          <Cluster gap={3}>
+            <StatusBadge status={status} />
+            {postedAt ? (
+              <Meta as="span">
+                {adminUi.entity.postedAt} <Bidi>{postedAt}</Bidi>
+              </Meta>
+            ) : null}
+          </Cluster>
+        }
+      />
 
       <Flash searchParams={search} />
 
@@ -39,17 +57,7 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/v
         dict={adminFormDict()}
       />
 
-      {/* Its own form, outside the editor: a form cannot nest in a form. */}
-      <div className="mbs-8">
-        <DeleteAction
-          entity="vacancy"
-          id={id}
-          status={values.status as ContentStatus}
-          actor={actor}
-          returnTo="/admin/vacancies"
-          label={title}
-        />
-      </div>
+      <DeletePanel entity="vacancy" id={id} status={status} actor={actor} returnTo="/admin/vacancies" label={title} />
     </>
   );
 }

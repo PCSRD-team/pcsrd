@@ -1,9 +1,12 @@
 import { removeRedirect } from '@/actions/admin/catalog';
 import { adminDict, adminFormDict } from '@/components/admin/admin-dict';
-import { DataTable } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { RedirectForm } from '@/components/admin/redirect-form';
 import { AdminHeader } from '@/components/admin/shell';
+import { Bidi } from '@/components/ui/bidi';
+import { Button, buttonClasses } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Table } from '@/components/ui/table';
 import { listAdminRedirects } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 import { assertCan } from '@/services/_shared/permissions';
@@ -35,30 +38,44 @@ export default async function RedirectsPage({ searchParams }: PageProps<'/admin/
         <RedirectForm dict={adminFormDict()} />
       </div>
 
-      <DataTable
+      <Table
+        caption={t.title}
+        captionHidden
         rows={rows}
-        empty={t.empty}
+        empty={<EmptyState title={t.empty} body={t.description} />}
         columns={[
-          { key: 'source', header: t.source, numeric: true, cell: (r) => r.sourcePath },
-          { key: 'destination', header: t.destination, numeric: true, cell: (r) => r.destinationPath },
+          {
+            key: 'source',
+            header: t.source,
+            numeric: true,
+            align: 'start',
+            rowHeader: true,
+            cell: (r) => <Bidi>{r.sourcePath}</Bidi>,
+          },
+          {
+            key: 'destination',
+            header: t.destination,
+            numeric: true,
+            align: 'start',
+            cell: (r) => <Bidi>{r.destinationPath}</Bidi>,
+          },
           { key: 'code', header: t.code, numeric: true, cell: (r) => r.statusCode },
           {
             key: 'actions',
             header: adminDict.form.actions,
             cell: (r) => (
               <details>
-                <summary className="rule-edge inline-block cursor-pointer list-none px-3 py-1 text-caption text-ink hover:bg-paper-alt whitespace-nowrap">
+                <summary
+                  className={buttonClasses({ tone: 'secondary', size: 'sm', className: 'cursor-pointer list-none' })}
+                >
                   {adminDict.form.delete}
                 </summary>
                 <form action={removeRedirect} className="mbs-2">
                   <input type="hidden" name="id" value={r.id} />
                   <input type="hidden" name="returnTo" value="/admin/redirects" />
-                  <button
-                    type="submit"
-                    className="rule-edge border-gold-600 px-3 py-1 text-caption text-gold-700 hover:bg-gold-050 whitespace-nowrap"
-                  >
+                  <Button type="submit" size="sm" tone="danger">
                     {adminDict.form.confirmDelete}
-                  </button>
+                  </Button>
                 </form>
               </details>
             ),

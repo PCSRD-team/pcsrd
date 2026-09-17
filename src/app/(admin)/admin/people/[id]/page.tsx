@@ -4,7 +4,7 @@ import { adminFormDict } from '@/components/admin/admin-dict';
 import { ContentForm } from '@/components/admin/content-form';
 import { PERSON_FIELDS } from '@/components/admin/field-configs';
 import { Flash } from '@/components/admin/flash';
-import { DeleteAction } from '@/components/admin/row-actions';
+import { DeletePanel } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
 import { getAdminPerson } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
@@ -34,9 +34,7 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/p
         dict={adminFormDict()}
       />
 
-      <div className="mbs-8">
-        <DeleteAction entity="person" id={id} actor={actor} returnTo="/admin/people" label={row.nameAr} />
-      </div>
+      <DeletePanel entity="person" id={id} actor={actor} returnTo="/admin/people" label={row.nameAr} />
     </>
   );
 }

@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
 import { saveStoryForm } from '@/actions/admin/entity-forms';
 import { adminFormDict } from '@/components/admin/admin-dict';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import { ContentForm } from '@/components/admin/content-form';
+import { StatusBadge } from '@/components/admin/controls';
 import { storyFields } from '@/components/admin/field-configs';
 import { Flash } from '@/components/admin/flash';
-import { DeleteAction } from '@/components/admin/row-actions';
+import { DeletePanel } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
 import { getAdminGallery, getAdminRow, listRelationOptions } from '@/db/queries/admin';
 import type { ContentStatus } from '@/db/schema/enums';
@@ -33,11 +35,12 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/s
   // The gallery is a junction, not a column; it rides along as `gallery` so
   // the form can post it back in order.
   const values: Record<string, unknown> = { ...(row as Record<string, unknown>), gallery };
-  const title = String(values.titleAr ?? 'قصة');
+  const title = String(values.titleAr ?? adminUi.entity.fallbackStory);
+  const status = values.status as ContentStatus;
 
   return (
     <>
-      <AdminHeader title={title} />
+      <AdminHeader title={title} meta={<StatusBadge status={status} />} />
 
       <Flash searchParams={search} />
 
@@ -50,17 +53,7 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/s
         dict={adminFormDict()}
       />
 
-      {/* Its own form, outside the editor: a form cannot nest in a form. */}
-      <div className="mbs-8">
-        <DeleteAction
-          entity="story"
-          id={id}
-          status={values.status as ContentStatus}
-          actor={actor}
-          returnTo="/admin/stories"
-          label={title}
-        />
-      </div>
+      <DeletePanel entity="story" id={id} status={status} actor={actor} returnTo="/admin/stories" label={title} />
     </>
   );
 }

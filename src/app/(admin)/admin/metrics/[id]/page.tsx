@@ -4,8 +4,10 @@ import { adminFormDict } from '@/components/admin/admin-dict';
 import { ContentForm } from '@/components/admin/content-form';
 import { metricFields } from '@/components/admin/field-configs';
 import { Flash } from '@/components/admin/flash';
-import { DeleteAction } from '@/components/admin/row-actions';
+import { DeletePanel } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
+import { Bidi } from '@/components/ui/bidi';
+import { Meta } from '@/components/ui/typography';
 import { getAdminMetric, listRelationOptions } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 import { can } from '@/services/_shared/permissions';
@@ -24,7 +26,14 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/m
 
   return (
     <>
-      <AdminHeader title={row.labelAr} description={`${row.periodStart} → ${row.periodEnd}`} />
+      <AdminHeader
+        title={row.labelAr}
+        meta={
+          <Meta>
+            <Bidi>{`${row.periodStart} → ${row.periodEnd}`}</Bidi>
+          </Meta>
+        }
+      />
 
       <Flash searchParams={search} />
 
@@ -41,9 +50,7 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/m
         dict={adminFormDict()}
       />
 
-      <div className="mbs-8">
-        <DeleteAction entity="metric" id={id} actor={actor} returnTo="/admin/metrics" label={row.labelAr} />
-      </div>
+      <DeletePanel entity="metric" id={id} actor={actor} returnTo="/admin/metrics" label={row.labelAr} />
     </>
   );
 }
