@@ -42,8 +42,19 @@ const serverSchema = z.object({
 
   // ── Anti-abuse ───────────────────────────────────────────────────────
   TURNSTILE_SECRET_KEY: z.string().min(1),
-  UPSTASH_REDIS_REST_URL: z.string().min(1),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+  /**
+   * Optional here, required outside development by `src/lib/security/rate-limit.ts`,
+   * which refuses to build a limiter without them and only degrades to a no-op
+   * — with a warning on every call — when `NODE_ENV` is `development`.
+   *
+   * The check lives there rather than here because a contributor running the
+   * site locally should not need an Upstash account to open a page, and
+   * because a rule about *when* a limiter may be absent belongs next to the
+   * limiter. Requiring them at parse time made that no-op unreachable: the
+   * process threw before the branch could run.
+   */
+  UPSTASH_REDIS_REST_URL: z.string().min(1).optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 
   // ── Privacy ──────────────────────────────────────────────────────────
   /** A short salt is a broken salt, so the length is checked, not just presence. */
