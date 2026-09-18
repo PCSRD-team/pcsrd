@@ -182,7 +182,13 @@ export async function getSubmission(
     const row = found.row;
     if (row.isSensitive) assertCanViewSensitive(actor);
 
-    const payload = row.payloadEncrypted ? decryptPayload(row.payloadEncrypted) : row.payload;
+    // The row names the key that encrypted it. Passing it is what makes
+    // rotation possible: after a rotation the current key cannot decrypt an
+    // older row, and defaulting to it would fail on exactly the complaints
+    // that were filed before the change.
+    const payload = row.payloadEncrypted
+      ? decryptPayload(row.payloadEncrypted, row.payloadKeyId)
+      : row.payload;
 
     if (row.isSensitive) {
       await writeAudit(tx, actor, {
