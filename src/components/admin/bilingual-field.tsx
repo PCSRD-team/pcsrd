@@ -5,7 +5,8 @@
 
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { describedBy, FieldError, FieldRow, Fieldset } from '@/components/ui/field';
+import { FieldError, FieldRow, Fieldset } from '@/components/ui/field';
+import { Input, Textarea } from '@/components/ui/inputs';
 import { Eyebrow } from '@/components/ui/typography';
 import { cn } from '@/lib/utils';
 import { adminUi } from './admin-ui-dict';
@@ -29,11 +30,11 @@ import { adminUi } from './admin-ui-dict';
  * 5. **A character count against the SEO limit**, because Arabic runs about ten
  *    percent longer per character and a title that fits in English will not.
  *
- * The controls are native elements wearing the kit's `control` utility
- * rather than the kit's `Input`: that component derives `id` from `name`,
- * and these ids come from `useId` so the same field can appear twice on a
- * page (the SEO title and the title, say) without a collision. The
- * `describedBy`/`aria-invalid` contract is the same one the kit follows.
+ * The controls are the kit's `Input`/`Textarea` with an explicit `id`: the
+ * ids come from `useId` so the same field can appear twice on a page (the
+ * SEO title and the title, say) without a collision, while `name` stays the
+ * posted `…Ar` / `…En` pair. The kit derives everything else — the
+ * `describedBy`/`aria-invalid` contract — from that id.
  */
 
 function Meta({
@@ -94,9 +95,31 @@ export function BilingualField({
   const id = useId();
   const t = adminUi.bilingual;
 
-  const Control = multiline ? 'textarea' : 'input';
-  const shared = { rows: multiline ? 4 : undefined } as { rows?: number };
-  const controlClass = cn('control mbs-1', multiline && 'min-h-24 resize-y');
+  /**
+   * One control per locale, chosen by `multiline` — the kit's `Textarea`
+   * already carries `resize-y`, so only the shorter minimum height is
+   * restated here.
+   */
+  const control = (locale: 'ar' | 'en') => {
+    const props = {
+      id: `${id}-${locale}`,
+      name: locale === 'ar' ? `${name}Ar` : `${name}En`,
+      dir: locale === 'ar' ? ('rtl' as const) : ('ltr' as const),
+      lang: locale,
+      required: locale === 'ar' ? required : undefined,
+      value: locale === 'ar' ? ar : en,
+      error: locale === 'ar' ? errorAr : errorEn,
+      className: cn('mbs-1', locale === 'en' && 'text-start'),
+    };
+    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      (locale === 'ar' ? setAr : setEn)(e.target.value);
+
+    return multiline ? (
+      <Textarea {...props} rows={4} className={cn(props.className, 'min-h-24')} onChange={onChange} />
+    ) : (
+      <Input {...props} onChange={onChange} />
+    );
+  };
 
   return (
     <Fieldset name={id} legend={label} hint={hint} required={required}>
@@ -105,21 +128,7 @@ export function BilingualField({
           <Eyebrow as="span" className="block">
             <label htmlFor={`${id}-ar`}>{t.arabic}</label>
           </Eyebrow>
-          <Control
-            {...shared}
-            id={`${id}-ar`}
-            name={`${name}Ar`}
-            dir="rtl"
-            lang="ar"
-            required={required}
-            value={ar}
-            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-              setAr(e.target.value)
-            }
-            aria-invalid={errorAr ? true : undefined}
-            aria-describedby={describedBy(`${id}-ar`, undefined, errorAr)}
-            className={controlClass}
-          />
+          {control('ar')}
           <Meta id={`${id}-ar`} length={ar.length} max={maxLength?.ar} error={errorAr} />
         </div>
 
@@ -132,20 +141,7 @@ export function BilingualField({
               {t.copyFromArabic}
             </Button>
           </div>
-          <Control
-            {...shared}
-            id={`${id}-en`}
-            name={`${name}En`}
-            dir="ltr"
-            lang="en"
-            value={en}
-            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-              setEn(e.target.value)
-            }
-            aria-invalid={errorEn ? true : undefined}
-            aria-describedby={describedBy(`${id}-en`, undefined, errorEn)}
-            className={cn(controlClass, 'text-start')}
-          />
+          {control('en')}
           <Meta id={`${id}-en`} length={en.length} max={maxLength?.en} error={errorEn} />
         </div>
       </FieldRow>

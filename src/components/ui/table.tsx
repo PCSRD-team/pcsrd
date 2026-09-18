@@ -55,6 +55,23 @@ function alignOf<T>(column: Column<T>): string {
   return styles.align[align];
 }
 
+/**
+ * The row-actions column.
+ *
+ * A column of buttons has no header worth reading — "Actions" above a row of
+ * "Edit / Publish / Delete" is noise on screen — but a `<th>` that is empty
+ * leaves a screen-reader user hearing the cell's *column* as blank while
+ * navigating a grid. So the header is rendered and visually hidden, which is
+ * the only combination that satisfies both. The label is a prop: the kit
+ * carries no copy of its own.
+ *
+ * Paired, not independent: `actions` without `actionsLabel` is the unlabelled
+ * column this exists to prevent, so the type refuses it.
+ */
+type RowActionsSlot<T> =
+  | { actions?: undefined; actionsLabel?: undefined }
+  | { actions: (row: T) => ReactNode; actionsLabel: string };
+
 export function Table<T extends { id: string | number }>({
   caption,
   captionHidden,
@@ -63,6 +80,8 @@ export function Table<T extends { id: string | number }>({
   empty,
   rowHref,
   rowKey = (row) => row.id,
+  actions,
+  actionsLabel,
   className,
 }: {
   caption: string;
@@ -75,7 +94,7 @@ export function Table<T extends { id: string | number }>({
   rowHref?: (row: T) => string;
   rowKey?: (row: T) => string | number;
   className?: string;
-}) {
+} & RowActionsSlot<T>) {
   if (rows.length === 0) {
     return typeof empty === 'string' ? (
       <div className={styles.empty} role="status">
@@ -101,6 +120,11 @@ export function Table<T extends { id: string | number }>({
                 {column.header}
               </th>
             ))}
+            {actions ? (
+              <th scope="col" className={cn(styles.th, styles.align.start)}>
+                <span className="sr-only">{actionsLabel}</span>
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
@@ -133,6 +157,9 @@ export function Table<T extends { id: string | number }>({
                   </Cell>
                 );
               })}
+              {actions ? (
+                <td className={cn(styles.td, styles.align.start)}>{actions(row)}</td>
+              ) : null}
             </tr>
           ))}
         </tbody>

@@ -20,10 +20,20 @@ import * as schema from './schema';
  *   database is snake_case. Drizzle does the mapping so no column needs its
  *   name restated.
  */
+/**
+ * `max: 1` is a serverless rule, and a build is not serverless. `next build`
+ * prerenders pages in several worker processes, each rendering a page that
+ * issues its queries with `Promise.all` — on one connection those serialise,
+ * and against a database a continent away that is the difference between a
+ * page building in seconds and exceeding the generation timeout. The pool is
+ * still small, and it exists only for the duration of the build.
+ */
+const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
+
 function createClient() {
   return postgres(serverEnv.DATABASE_URL, {
     prepare: false,
-    max: 1,
+    max: isBuild ? 8 : 1,
     idle_timeout: 20,
     connect_timeout: 15,
   });

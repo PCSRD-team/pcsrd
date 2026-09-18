@@ -4,6 +4,7 @@ import {
   changeUserSensitiveAccess,
 } from '@/actions/admin/catalog';
 import { Button, buttonClasses } from '@/components/ui/button';
+import { Select } from '@/components/ui/inputs';
 import { Cluster } from '@/components/ui/layout';
 import { Caption } from '@/components/ui/typography';
 import type { Profile } from '@/db/schema/profiles';
@@ -21,10 +22,9 @@ import { adminDict } from './admin-dict';
  * here for the same reason it is granted per person by policy: it is not a
  * thing one grants oneself.
  *
- * The role select is a native `<select className="control">` rather than the
- * kit's `Select`: the kit derives the control's `id` from `name`, and one
- * `role` select per row would produce duplicate ids. The `control` utility
- * is the same one the kit wears.
+ * The role select is the kit's `Select` with an explicit `id`: every row
+ * posts the same `role` name, so the id cannot be derived from it without
+ * one `id="role"` per user in the table.
  */
 export function UserActions({ user, actor }: { user: Profile; actor: Actor }) {
   const t = adminDict.users;
@@ -39,18 +39,14 @@ export function UserActions({ user, actor }: { user: Profile; actor: Actor }) {
         <label htmlFor={`role-${user.id}`} className="sr-only">
           {t.role}
         </label>
-        <select
+        <Select
           id={`role-${user.id}`}
           name="role"
           defaultValue={user.role}
-          className="control w-auto min-w-36 text-caption"
-        >
-          {ADMIN_OPTIONS.userRole.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          placeholder={null}
+          options={ADMIN_OPTIONS.userRole}
+          className="w-auto min-w-36 text-caption"
+        />
         <Button type="submit" size="sm" tone="secondary">
           {t.setRole}
         </Button>

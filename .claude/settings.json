@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk '{print $5,$9}')",
+      "Bash(grep -v \"^0\\\\|^ $\")",
+      "PowerShell(npm run lint 2>&1)"
+    ]
+  }
+}

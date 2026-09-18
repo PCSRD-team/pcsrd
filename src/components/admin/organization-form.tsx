@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Code } from '@/components/ui/bidi';
 import { Panel } from '@/components/ui/card';
 import { describedBy, Field, FieldError, FieldRow } from '@/components/ui/field';
-import { Checkbox, Input, Textarea } from '@/components/ui/inputs';
+import { Checkbox, Input, Select, Textarea } from '@/components/ui/inputs';
 import { Section, Stack } from '@/components/ui/layout';
 import { LiveRegion, Notice } from '@/components/ui/notice';
 import { Caption, Heading } from '@/components/ui/typography';
@@ -119,32 +119,28 @@ function compactOfficialRows(rows: OfficialChannelRow[]) {
 
 /**
  * The channel rows are controlled and *not* posted — the hidden JSON inputs
- * are — so their controls are native elements wearing the kit's `control`
- * utilities rather than the kit's `Input`/`Select`, which would carry a
- * `name` into the request.
+ * beside them are. So every control here takes an `id` and no `name`: the
+ * kit's controls, with the one prop that keeps them out of the request.
  */
+const PLATFORM_SELECT_OPTIONS = PLATFORM_OPTIONS.map(([value, label]) => ({ value, label }));
+
 function PlatformSelect({
   value,
   onChange,
-  name,
+  id,
 }: {
   value: string;
   onChange: (value: string) => void;
-  name: string;
+  id: string;
 }) {
   return (
-    <select
-      id={name}
+    <Select
+      id={id}
       value={value}
       onChange={(event) => onChange(event.currentTarget.value)}
-      className="control"
-    >
-      {PLATFORM_OPTIONS.map(([value, label]) => (
-        <option key={value} value={value}>
-          {label}
-        </option>
-      ))}
-    </select>
+      placeholder={null}
+      options={PLATFORM_SELECT_OPTIONS}
+    />
   );
 }
 
@@ -158,15 +154,11 @@ function RowToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex min-h-target items-center gap-2 text-caption text-ink">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.currentTarget.checked)}
-        className="control-choice"
-      />
-      {label}
-    </label>
+    <Checkbox
+      label={label}
+      checked={checked}
+      onChange={(event) => onChange(event.currentTarget.checked)}
+    />
   );
 }
 
@@ -254,30 +246,29 @@ function SocialChannelsEditor({
               <div className="grid gap-3 md:grid-cols-[1fr_1.6fr_0.55fr_auto]">
                 <Field name={`social-platform-${index}`} label={t.platform}>
                   <PlatformSelect
-                    name={`social-platform-${index}`}
+                    id={`social-platform-${index}`}
                     value={row.platform}
                     onChange={(platform) => updateSocial(index, { platform })}
                   />
                 </Field>
                 <Field name={`social-url-${index}`} label={t.url}>
-                  <input
+                  <Input
                     id={`social-url-${index}`}
                     value={row.url}
                     onChange={(event) => updateSocial(index, { url: event.currentTarget.value })}
                     dir="ltr"
                     inputMode="url"
-                    className="control text-start"
+                    className="text-start"
                   />
                 </Field>
                 <Field name={`social-order-${index}`} label={t.order}>
-                  <input
+                  <Input
                     id={`social-order-${index}`}
                     value={row.display_order}
                     onChange={(event) => updateSocial(index, { display_order: Number(event.currentTarget.value) })}
                     type="number"
                     min="0"
                     dir="ltr"
-                    className="control text-start"
                   />
                 </Field>
                 <div className="flex flex-col justify-end gap-2">
@@ -334,39 +325,38 @@ function SocialChannelsEditor({
               <div className="grid gap-3 md:grid-cols-[1fr_1fr_1.4fr_0.55fr_auto]">
                 <Field name={`official-platform-${index}`} label={t.platform}>
                   <PlatformSelect
-                    name={`official-platform-${index}`}
+                    id={`official-platform-${index}`}
                     value={row.platform}
                     onChange={(platform) => updateOfficial(index, { platform })}
                   />
                 </Field>
                 <Field name={`official-handle-${index}`} label={t.handle}>
-                  <input
+                  <Input
                     id={`official-handle-${index}`}
                     value={row.handle}
                     onChange={(event) => updateOfficial(index, { handle: event.currentTarget.value })}
                     dir="ltr"
-                    className="control text-start"
+                    className="text-start"
                   />
                 </Field>
                 <Field name={`official-url-${index}`} label={t.url}>
-                  <input
+                  <Input
                     id={`official-url-${index}`}
                     value={row.url}
                     onChange={(event) => updateOfficial(index, { url: event.currentTarget.value })}
                     dir="ltr"
                     inputMode="url"
-                    className="control text-start"
+                    className="text-start"
                   />
                 </Field>
                 <Field name={`official-order-${index}`} label={t.order}>
-                  <input
+                  <Input
                     id={`official-order-${index}`}
                     value={row.display_order}
                     onChange={(event) => updateOfficial(index, { display_order: Number(event.currentTarget.value) })}
                     type="number"
                     min="0"
                     dir="ltr"
-                    className="control text-start"
                   />
                 </Field>
                 <div className="flex flex-col justify-end gap-2">

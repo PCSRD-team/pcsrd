@@ -147,6 +147,18 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
   const alternateLocale =
     translated && isTranslatedFor(other, input.translationStatus) ? [ogLocale(other)] : undefined;
 
+  /**
+   * The `images` key is **omitted**, not set to `undefined`, when this route
+   * has no explicit image.
+   *
+   * Next merges a route's file-convention `opengraph-image` into the metadata
+   * only when the page's own metadata does not declare images, and the test it
+   * uses is `source.openGraph.hasOwnProperty('images')` — a key present with
+   * the value `undefined` counts as declared. Spreading `{ images: undefined }`
+   * therefore suppressed the generated card on every route at once: the twelve
+   * `opengraph-image` segments were built and never referenced, and no page
+   * emitted `og:image`.
+   */
   const openGraphBase = {
     title: input.title,
     description,
@@ -154,7 +166,7 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
     siteName,
     locale: ogLocale(locale),
     alternateLocale,
-    images,
+    ...(images ? { images } : {}),
   };
 
   const openGraph: Metadata['openGraph'] =
@@ -175,11 +187,14 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
       languages,
     },
     openGraph,
+    // Same omission rule as `openGraph.images` above: an absent key lets the
+    // file-convention `twitter-image` fill it in, and Next also copies
+    // `openGraph.images` across when Twitter declares none.
     twitter: {
       card: 'summary_large_image',
       title: input.title,
       description,
-      images: images?.map((image) => image.url),
+      ...(images ? { images: images.map((image) => image.url) } : {}),
     },
   };
 

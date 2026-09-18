@@ -6,9 +6,9 @@ import { useId, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Panel } from '@/components/ui/card';
 import { Field, FieldError, FieldRow } from '@/components/ui/field';
+import { Input, Textarea } from '@/components/ui/inputs';
 import { Stack } from '@/components/ui/layout';
 import { Caption, Heading } from '@/components/ui/typography';
-import { cn } from '@/lib/utils';
 import { adminUi, fill } from './admin-ui-dict';
 
 export type TitledBlock = {
@@ -21,14 +21,11 @@ export type TitledBlock = {
 export type BilingualLine = { text_ar: string; text_en?: string | null };
 
 /**
- * The row controls are native elements wearing the kit's `control` utility,
- * not the kit's `Input`/`Textarea`. Those carry a `name` and would be posted
- * with the form; these rows are *not* posted — the hidden JSON input is — so
- * they must stay nameless. The `Field` around each still supplies the label
- * and the id contract.
+ * The row controls are the kit's `Input`/`Textarea` with an `id` and **no
+ * `name`**: these rows are not posted — the hidden JSON input beside them is
+ * — so a name would silently add one field per row to the request. The
+ * `Field` around each supplies the label against that same id.
  */
-const control = 'control';
-const controlLtr = 'control text-start';
 
 /** The heading row of an editor: its name and the add button. */
 function EditorHeader({
@@ -85,7 +82,7 @@ export function StringListEditor({
         {items.map((item, index) => (
           <div key={index} className="flex items-end gap-3">
             <Field name={`${name}-${index}`} label={fill(t.item, { n: index + 1 })} className="flex-1">
-              <input
+              <Input
                 id={`${name}-${index}`}
                 value={item}
                 placeholder={placeholder}
@@ -95,7 +92,7 @@ export function StringListEditor({
                     rows.map((row, rowIndex) => (rowIndex === index ? event.currentTarget.value : row)),
                   )
                 }
-                className={dir === 'ltr' ? controlLtr : control}
+                className={dir === 'ltr' ? 'text-start' : undefined}
               />
             </Field>
             <Button
@@ -173,39 +170,38 @@ export function TitledBlocksEditor({
               </div>
               <FieldRow>
                 <Field name={`${name}-title-ar-${index}`} label={t.titleAr} required>
-                  <input
+                  <Input
                     id={`${name}-title-ar-${index}`}
                     value={item.title_ar}
                     onChange={(e) => update(index, { title_ar: e.currentTarget.value })}
-                    className={control}
                   />
                 </Field>
                 <Field name={`${name}-title-en-${index}`} label={t.titleEn}>
-                  <input
+                  <Input
                     id={`${name}-title-en-${index}`}
                     value={item.title_en ?? ''}
                     onChange={(e) => update(index, { title_en: e.currentTarget.value })}
                     dir="ltr"
-                    className={controlLtr}
+                    className="text-start"
                   />
                 </Field>
                 <Field name={`${name}-body-ar-${index}`} label={t.bodyAr}>
-                  <textarea
+                  <Textarea
                     id={`${name}-body-ar-${index}`}
                     rows={3}
                     value={item.body_ar ?? ''}
                     onChange={(e) => update(index, { body_ar: e.currentTarget.value })}
-                    className={cn(control, 'resize-y')}
+                    className="min-h-24"
                   />
                 </Field>
                 <Field name={`${name}-body-en-${index}`} label={t.bodyEn}>
-                  <textarea
+                  <Textarea
                     id={`${name}-body-en-${index}`}
                     rows={3}
                     value={item.body_en ?? ''}
                     onChange={(e) => update(index, { body_en: e.currentTarget.value })}
                     dir="ltr"
-                    className={cn(controlLtr, 'resize-y')}
+                    className="min-h-24 text-start"
                   />
                 </Field>
               </FieldRow>
@@ -258,22 +254,22 @@ export function BilingualLinesEditor({
           <Panel key={index} tone="alt" padding="sm">
             <div className="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]">
               <Field name={`${name}-ar-${index}`} label={t.textAr} required>
-                <textarea
+                <Textarea
                   id={`${name}-ar-${index}`}
                   rows={2}
                   value={item.text_ar}
                   onChange={(e) => update(index, { text_ar: e.currentTarget.value })}
-                  className={cn(control, 'resize-y')}
+                  className="min-h-20"
                 />
               </Field>
               <Field name={`${name}-en-${index}`} label={t.textEn}>
-                <textarea
+                <Textarea
                   id={`${name}-en-${index}`}
                   rows={2}
                   value={item.text_en ?? ''}
                   onChange={(e) => update(index, { text_en: e.currentTarget.value })}
                   dir="ltr"
-                  className={cn(controlLtr, 'resize-y')}
+                  className="min-h-20 text-start"
                 />
               </Field>
               <Button

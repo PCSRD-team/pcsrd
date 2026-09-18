@@ -6,10 +6,12 @@ import Image from 'next/image';
 import { useEffect, useId, useState } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Panel } from '@/components/ui/card';
+import { Dialog, DialogBody } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
+import { Input } from '@/components/ui/inputs';
 import { Cluster } from '@/components/ui/layout';
 import { Notice } from '@/components/ui/notice';
-import { Caption, Heading, Meta } from '@/components/ui/typography';
+import { Caption, Meta } from '@/components/ui/typography';
 import { formatFileSize } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { adminUi, fill } from './admin-ui-dict';
@@ -34,9 +36,9 @@ type ListResponse = {
 };
 
 /**
- * The picker's search box is a native `<input className="control">`, not the
- * kit's `Input`: it sits inside the content form, and a kit input would
- * carry a `name` and be posted with it. It has no name on purpose.
+ * The picker's search box is the kit's `Input` with an `id` and **no
+ * `name`**: it sits inside the content form, and a named control would be
+ * posted with it. Nameless is the point, not an omission.
  */
 export function MediaPickerImpl({
   name,
@@ -166,132 +168,113 @@ export function MediaPickerImpl({
       </Panel>
 
       {open ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-navy-900/60 p-4"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setOpen(false);
-          }}
+        <Dialog
+          title={t.dialogTitle}
+          titleId={`${name}-picker-title`}
+          description={kind === 'document' ? t.dialogHintFile : t.dialogHintImage}
+          onDismiss={() => setOpen(false)}
+          close={
+            <IconButton label={t.close} tone="secondary" onClick={() => setOpen(false)}>
+              <Icon name="close" />
+            </IconButton>
+          }
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`${name}-picker-title`}
-            className="max-h-[90vh] w-full max-w-5xl overflow-y-auto"
-          >
-            <Panel as="section" tone="paper" padding="md">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <Heading level={2} size="h3" id={`${name}-picker-title`}>
-                    {t.dialogTitle}
-                  </Heading>
-                  <Caption className="mbs-1">
-                    {kind === 'document' ? t.dialogHintFile : t.dialogHintImage}
-                  </Caption>
-                </div>
-                <IconButton label={t.close} tone="secondary" onClick={() => setOpen(false)}>
-                  <Icon name="close" />
-                </IconButton>
-              </div>
+          <DialogBody className="flex gap-2">
+            <label htmlFor={searchId} className="sr-only">
+              {t.searchLabel}
+            </label>
+            <Input
+              id={searchId}
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  runSearch();
+                }
+              }}
+              placeholder={t.searchPlaceholder}
+              className="flex-1"
+            />
+            <Button type="button" tone="secondary" onClick={runSearch}>
+              {t.search}
+            </Button>
+          </DialogBody>
 
-              <div className="mbs-5 flex gap-2">
-                <label htmlFor={searchId} className="sr-only">
-                  {t.searchLabel}
-                </label>
-                <input
-                  id={searchId}
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.currentTarget.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      runSearch();
-                    }
-                  }}
-                  placeholder={t.searchPlaceholder}
-                  className="control flex-1"
-                />
-                <Button type="button" tone="secondary" onClick={runSearch}>
-                  {t.search}
-                </Button>
-              </div>
-
-              <div className="mbs-5">
-                {error ? <Notice tone="danger">{error}</Notice> : null}
-                {loading ? <Caption className="py-12 text-center">{t.loading}</Caption> : null}
-                {!loading && !error && items.length === 0 ? (
-                  <Caption className="py-12 text-center">{t.noMatches}</Caption>
-                ) : null}
-                {!loading && items.length ? (
-                  <ul className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-                    {items.map((item) => {
-                      const blocked = item.hasIdentifiableMinors && item.consent !== 'obtained';
-                      return (
-                        <li key={item.id}>
-                          <button
-                            type="button"
-                            disabled={blocked}
-                            onClick={() => {
-                              setValue(item.id);
-                              setSelected(item);
-                              setOpen(false);
-                            }}
-                            className="interactive-surface rule-edge w-full bg-white p-2 text-start motion-standard transition-colors hover:border-navy-700 disabled:cursor-not-allowed disabled:opacity-55"
-                          >
-                            <span className="relative block aspect-[4/3] overflow-hidden bg-paper-alt">
-                              {item.kind === 'image' ? (
-                                <Image src={item.url} alt={item.altAr} fill sizes="220px" className="object-cover" />
-                              ) : (
-                                <span className="flex size-full items-center justify-center px-2 text-center font-mono text-caption text-ink-55">
-                                  {item.mimeType}
-                                </span>
-                              )}
+          <DialogBody>
+            {error ? <Notice tone="danger">{error}</Notice> : null}
+            {loading ? <Caption className="py-12 text-center">{t.loading}</Caption> : null}
+            {!loading && !error && items.length === 0 ? (
+              <Caption className="py-12 text-center">{t.noMatches}</Caption>
+            ) : null}
+            {!loading && items.length ? (
+              <ul className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                {items.map((item) => {
+                  const blocked = item.hasIdentifiableMinors && item.consent !== 'obtained';
+                  return (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        disabled={blocked}
+                        onClick={() => {
+                          setValue(item.id);
+                          setSelected(item);
+                          setOpen(false);
+                        }}
+                        className="interactive-surface rule-edge w-full bg-white p-2 text-start motion-standard transition-colors hover:border-navy-700 disabled:cursor-not-allowed disabled:opacity-55"
+                      >
+                        <span className="relative block aspect-[4/3] overflow-hidden bg-paper-alt">
+                          {item.kind === 'image' ? (
+                            <Image src={item.url} alt={item.altAr} fill sizes="220px" className="object-cover" />
+                          ) : (
+                            <span className="flex size-full items-center justify-center px-2 text-center font-mono text-caption text-ink-55">
+                              {item.mimeType}
                             </span>
-                            <span className="mbs-2 block line-clamp-2 text-caption text-ink">{item.altAr}</span>
-                            {blocked ? (
-                              <span className="block text-eyebrow text-destructive">{t.blocked}</span>
-                            ) : null}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : null}
-              </div>
+                          )}
+                        </span>
+                        <span className="mbs-2 block line-clamp-2 text-caption text-ink">{item.altAr}</span>
+                        {blocked ? (
+                          <span className="block text-eyebrow text-destructive">{t.blocked}</span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </DialogBody>
 
-              {totalPages > 1 ? (
-                <Cluster gap={3} justify="center" className="mbs-5">
-                  <Button
-                    type="button"
-                    tone="secondary"
-                    size="sm"
-                    disabled={page <= 1 || loading}
-                    onClick={() => {
-                      setLoading(true);
-                      setPage((current) => current - 1);
-                    }}
-                  >
-                    {adminUi.pagination.previous}
-                  </Button>
-                  <Caption as="span">{fill(t.pageOf, { page, total: totalPages })}</Caption>
-                  <Button
-                    type="button"
-                    tone="secondary"
-                    size="sm"
-                    disabled={page >= totalPages || loading}
-                    onClick={() => {
-                      setLoading(true);
-                      setPage((current) => current + 1);
-                    }}
-                  >
-                    {adminUi.pagination.next}
-                  </Button>
-                </Cluster>
-              ) : null}
-            </Panel>
-          </div>
-        </div>
+          {totalPages > 1 ? (
+            <Cluster gap={3} justify="center" className="mbs-5">
+              <Button
+                type="button"
+                tone="secondary"
+                size="sm"
+                disabled={page <= 1 || loading}
+                onClick={() => {
+                  setLoading(true);
+                  setPage((current) => current - 1);
+                }}
+              >
+                {adminUi.pagination.previous}
+              </Button>
+              <Caption as="span">{fill(t.pageOf, { page, total: totalPages })}</Caption>
+              <Button
+                type="button"
+                tone="secondary"
+                size="sm"
+                disabled={page >= totalPages || loading}
+                onClick={() => {
+                  setLoading(true);
+                  setPage((current) => current + 1);
+                }}
+              >
+                {adminUi.pagination.next}
+              </Button>
+            </Cluster>
+          ) : null}
+        </Dialog>
       ) : null}
     </>
   );

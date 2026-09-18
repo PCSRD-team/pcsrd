@@ -123,6 +123,18 @@ export async function EntityListPage({
         captionHidden
         rows={result.items}
         rowHref={(row) => `/admin/${meta.path}/${row.id}`}
+        actionsLabel={adminDict.form.actions}
+        actions={(row) => (
+          <RowActions
+            entity={entity}
+            id={row.id}
+            status={row.status}
+            actor={actor}
+            returnTo={`/admin/${meta.path}`}
+            label={row.title}
+            allowDelete={meta.canCreate}
+          />
+        )}
         empty={
           <EmptyState
             title={filtered ? t.noResults : t.empty}
@@ -154,21 +166,6 @@ export async function EntityListPage({
             numeric: true,
             align: 'start',
             cell: (row) => <DateCell value={row.updatedAt} />,
-          },
-          {
-            key: 'actions',
-            header: adminDict.form.actions,
-            cell: (row) => (
-              <RowActions
-                entity={entity}
-                id={row.id}
-                status={row.status}
-                actor={actor}
-                returnTo={`/admin/${meta.path}`}
-                label={row.title}
-                allowDelete={meta.canCreate}
-              />
-            ),
           },
         ]}
       />
