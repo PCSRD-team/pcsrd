@@ -145,7 +145,12 @@ describe('buildMetadata — Open Graph and Twitter', () => {
       type: 'website',
     });
     expect(meta.twitter).toMatchObject({ card: 'summary_large_image', title: 'عنوان' });
-    expect(meta.openGraph && 'images' in meta.openGraph ? meta.openGraph.images : null).toBeUndefined();
+    // The key must be ABSENT, not undefined. Next merges a route's
+    // file-convention `opengraph-image` only when the page's own metadata does
+    // not declare images, and it tests that with `hasOwnProperty('images')` —
+    // so `{ images: undefined }` silently suppresses every generated card.
+    expect(meta.openGraph && 'images' in meta.openGraph).toBe(false);
+    expect(meta.twitter && 'images' in meta.twitter).toBe(false);
   });
 
   it('emits article times only for articles', () => {
