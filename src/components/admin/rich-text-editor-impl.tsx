@@ -8,6 +8,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useId, useState } from 'react';
 import { IconButton } from '@/components/ui/button';
+import { Icon, type IconName } from '@/components/ui/icon';
 import type { RichText } from '@/db/schema/_shared';
 import { adminUi } from './admin-ui-dict';
 
@@ -23,15 +24,28 @@ import { adminUi } from './admin-ui-dict';
  * The document is stored as JSON rather than HTML, which is what lets the
  * renderer stay a Server Component with no `dangerouslySetInnerHTML`.
  *
- * The toolbar is a row of the kit's `IconButton`s. The kit's `Icon` set has
- * no formatting glyphs, so each button shows its label as text; the
- * accessible name and the visible label are the same word.
+ * The toolbar is a row of the kit's `IconButton`s wearing the kit's editor
+ * glyphs. Each glyph is `aria-hidden`; the accessible name is the dictionary
+ * word, and `aria-pressed` carries the state — a toggle that is only a
+ * darker ground is not a state anyone can hear.
  */
 
 type ToolbarKey = keyof Pick<
   typeof adminUi.richText,
   'bold' | 'italic' | 'h2' | 'h3' | 'bulletList' | 'orderedList' | 'blockquote' | 'link'
 >;
+
+/** Each toolbar key is also an icon name; the toolbar is the mapping. */
+const TOOLBAR_ICON = {
+  bold: 'bold',
+  italic: 'italic',
+  h2: 'h2',
+  h3: 'h3',
+  bulletList: 'bulletList',
+  orderedList: 'orderedList',
+  blockquote: 'blockquote',
+  link: 'link',
+} as const satisfies Record<ToolbarKey, IconName>;
 
 export function RichTextEditorImpl({
   name,
@@ -96,9 +110,8 @@ export function RichTextEditorImpl({
       tone={active ? 'primary' : 'quiet'}
       aria-pressed={active}
       onClick={onClick}
-      className="font-mono text-eyebrow"
     >
-      {t[key]}
+      <Icon name={TOOLBAR_ICON[key]} />
     </IconButton>
   );
 

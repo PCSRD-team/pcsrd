@@ -71,6 +71,13 @@ const styles = {
     /** Sidebar layout: content column + a narrower aside from `lg`. */
     sidebar: 'grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]',
   },
+  /** The visual step of a heading, independent of which element draws it. */
+  headingSize: {
+    h1: 'text-h1',
+    h2: 'text-h2',
+    h3: 'text-h3',
+    h4: 'text-h4',
+  },
   rule: {
     /** 1px `rule` — container edge, list separator. */
     edge: 'border-bs border-rule',
@@ -199,22 +206,55 @@ export function Cluster({
   );
 }
 
-/** Responsive grid — single column on the design's base viewport, then up. */
+/**
+ * Responsive grid — single column on the design's base viewport, then up.
+ *
+ * `as="ul"`/`as="ol"` carries a **list role that `display: grid` removes**:
+ * Safari/VoiceOver drops the implicit role from a flex or grid container, so
+ * a grid of cards stops announcing "list, 6 items" and every card loses its
+ * position. Restating `role="list"` is the documented fix, and it is stated
+ * here rather than at twenty call sites. Pass `role` to override — `"group"`
+ * for a grid that is a labelled group, `"none"` when the grouping is purely
+ * visual.
+ *
+ * A list with a role needs a name: pass `label` or `labelledBy`, the same
+ * pair `Section` and `Panel` take.
+ */
 export function Grid({
   children,
   cols = 3,
   gap = 6,
   as: Tag = 'div',
+  role,
+  label,
+  labelledBy,
   className,
+  id,
 }: {
   children: ReactNode;
   cols?: keyof typeof styles.cols;
   gap?: Gap;
   as?: BlockTag;
+  /** Defaults to `list` for `ul`/`ol`, nothing otherwise. */
+  role?: 'list' | 'group' | 'region' | 'none' | 'presentation';
+  /** `aria-label` — the grid's accessible name when no heading names it. */
+  label?: string;
+  /** `aria-labelledby` — the id of the heading that names it. Prefer this. */
+  labelledBy?: string;
   className?: string;
+  id?: string;
 }) {
+  const isList = Tag === 'ul' || Tag === 'ol';
   return (
-    <Tag className={cn('grid', styles.cols[cols], styles.gap[gap], className)}>{children}</Tag>
+    <Tag
+      id={id}
+      role={role ?? (isList ? 'list' : undefined)}
+      aria-label={label}
+      aria-labelledby={labelledBy}
+      className={cn('grid', styles.cols[cols], styles.gap[gap], className)}
+    >
+      {children}
+    </Tag>
   );
 }
 
@@ -250,12 +290,21 @@ export function Rule({
  * The mark is the third rule weight and has one meaning: this is a section
  * heading. It is a `<span>` rather than a border on the heading so its width
  * stays 88px regardless of how long the text is.
+ *
+ * **`as` is the outline, `size` is the drawing** — the same separation
+ * `Heading` makes. A section that is the third level of a page is still an
+ * `h3` in the document outline while reading at `h2` size, and a subsection
+ * that is an `h2` may need to read smaller than the one above it. Tying the
+ * two together forced call sites to choose between a correct outline and a
+ * correct page, and they chose the page. `size` defaults to `as`, so nothing
+ * that does not pass it changes.
  */
 export function SectionHeading({
   eyebrow,
   title,
   lead,
   as: Tag = 'h2',
+  size,
   id,
   className,
   actions,
@@ -263,25 +312,23 @@ export function SectionHeading({
   eyebrow?: string;
   title: string;
   lead?: string | null;
+  /** The element, i.e. the position in the document outline. */
   as?: 'h1' | 'h2' | 'h3';
+  /** The visual size, independent of the element. Defaults to matching `as`. */
+  size?: 'h1' | 'h2' | 'h3' | 'h4';
   id?: string;
   className?: string;
   /** A link or button rendered on the inline-end side of the heading row. */
   actions?: ReactNode;
 }) {
+  const visual = size ?? Tag;
   return (
     <div className={cn('mbe-8', className)}>
       {eyebrow ? <Eyebrow className="mbe-3">{eyebrow}</Eyebrow> : null}
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Tag
-            id={id}
-            className={cn(
-              'font-semibold text-ink',
-              Tag === 'h1' ? 'text-h1' : Tag === 'h2' ? 'text-h2' : 'text-h3',
-            )}
-          >
+          <Tag id={id} className={cn('font-semibold text-ink', styles.headingSize[visual])}>
             {title}
           </Tag>
           <Rule weight="mark" as="span" className="mbs-3" />

@@ -14,19 +14,46 @@ import { describedBy, errorText, Fieldset } from './field';
  * `name` + `hint` + `error`, the same three things the `Field` around it
  * renders, so the association cannot drift. Pass `hint` and `error` to both
  * — the field renders them, the control references them.
+ *
+ * Two escapes from that derivation, both of them load-bearing:
+ *
+ * `id` **wins over the id derived from `name`**. A repeated row posts the
+ * same name once per row (a `role` select per user), and a field whose ids
+ * come from `useId()` cannot name itself after the field it posts. Without
+ * the override those screens produce duplicate ids, which is a WCAG 4.1.1
+ * failure and silently mis-targets every `<label for>` after the first.
+ *
+ * `name` is **optional**. A control that must not be posted — a search box
+ * inside a content form, a channel row that travels as one hidden JSON
+ * input — is still a control and still deserves the field contract. Omitting
+ * `name` is how a call site says "this value is not part of the request";
+ * it is not an oversight, and giving such a control a name would silently
+ * add a field to the submission.
  */
 
 /** Text typed left-to-right whatever the page direction: an address, a URL, a number. */
 const latinTypes = new Set(['email', 'url', 'tel', 'number', 'password']);
 
 type CommonControl = {
-  name: string;
+  /** The posted field name. Omit for a control that is deliberately not posted. */
+  name?: string;
+  /** Overrides the id derived from `name`. Pass it whenever `name` is absent or repeated. */
+  id?: string;
   /** Truthy when the field renders a hint; only the id is derived from it. */
   hint?: unknown;
   /** The error, or errors, the field renders. */
   error?: string | string[] | null;
   className?: string;
 };
+
+/**
+ * The id the field contract hangs off: the explicit one, else the name.
+ * `undefined` when a control has neither — a self-labelling checkbox, say —
+ * in which case nothing that needs an id is rendered at all.
+ */
+function controlIdOf(id: string | undefined, name: string | undefined) {
+  return id ?? name;
+}
 
 // ── Input ────────────────────────────────────────────────────────────────
 
@@ -37,6 +64,7 @@ type NativeInput = Omit<
 
 export function Input({
   name,
+  id,
   hint,
   error,
   className,
@@ -46,17 +74,18 @@ export function Input({
 }: NativeInput & CommonControl) {
   const message = errorText(error);
   const latin = latinTypes.has(type);
+  const controlId = controlIdOf(id, name);
   return (
     <input
       {...rest}
-      id={name}
+      id={controlId}
       name={name}
       type={type}
       // Latin text in an otherwise-RTL form: an email or a URL typed into a
       // right-aligned field is unreadable while being typed.
       dir={dir ?? (latin ? 'ltr' : undefined)}
       aria-invalid={message ? true : undefined}
-      aria-describedby={describedBy(name, hint, message)}
+      aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
       className={cn('control', latin && 'text-start', className)}
     />
   );
@@ -71,6 +100,7 @@ type NativeTextarea = Omit<
 
 export function Textarea({
   name,
+  id,
   hint,
   error,
   className,
@@ -78,14 +108,15 @@ export function Textarea({
   ...rest
 }: NativeTextarea & CommonControl) {
   const message = errorText(error);
+  const controlId = controlIdOf(id, name);
   return (
     <textarea
       {...rest}
-      id={name}
+      id={controlId}
       name={name}
       rows={rows}
       aria-invalid={message ? true : undefined}
-      aria-describedby={describedBy(name, hint, message)}
+      aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
       className={cn('control min-h-32 resize-y', className)}
     />
   );
@@ -107,28 +138,35 @@ type NativeSelect = Omit<
  */
 export function Select({
   name,
+  id,
   hint,
   error,
   className,
   options,
   placeholder = '—',
   multiple,
+  value,
   defaultValue,
   required,
   ...rest
 }: NativeSelect & CommonControl & { options: Option[]; placeholder?: string | null }) {
   const message = errorText(error);
+  const controlId = controlIdOf(id, name);
   return (
     <select
       {...rest}
-      id={name}
+      id={controlId}
       name={name}
       multiple={multiple}
       required={required}
-      defaultValue={defaultValue ?? (multiple ? undefined : '')}
+      value={value}
+      // A single select falls back to the empty placeholder option so it opens
+      // on "—" rather than the first real choice. A *controlled* select gets
+      // neither fallback: React refuses `value` and `defaultValue` together.
+      defaultValue={value === undefined ? (defaultValue ?? (multiple ? undefined : '')) : undefined}
       size={multiple ? Math.min(Math.max(options.length, 2), 6) : undefined}
       aria-invalid={message ? true : undefined}
-      aria-describedby={describedBy(name, hint, message)}
+      aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
       className={cn('control', className)}
     >
       {!multiple && placeholder !== null ? (
@@ -166,7 +204,8 @@ export function Checkbox({
   id,
   ...rest
 }: NativeChoice & {
-  name: string;
+  /** Omit for a controlled box that is not posted — a row toggle behind a JSON field. */
+  name?: string;
   label: ReactNode;
   hint?: string;
   error?: string | string[] | null;
@@ -174,7 +213,7 @@ export function Checkbox({
   /** Defaults to `name`; pass when several boxes share a name. */
   id?: string;
 }) {
-  const controlId = id ?? name;
+  const controlId = controlIdOf(id, name);
   const message = errorText(error);
   return (
     <div className={cn('space-y-1', className)}>
@@ -185,18 +224,22 @@ export function Checkbox({
           name={name}
           type="checkbox"
           aria-invalid={message ? true : undefined}
-          aria-describedby={describedBy(controlId, hint, message)}
+          aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
           className="control-choice mbs-1"
         />
         <span>{label}</span>
       </label>
       {hint ? (
-        <p id={`${controlId}-hint`} className="ps-8 text-caption text-ink-55">
+        <p id={controlId ? `${controlId}-hint` : undefined} className="ps-8 text-caption text-ink-55">
           {hint}
         </p>
       ) : null}
       {message ? (
-        <p id={`${controlId}-error`} role="alert" className="ps-8 text-caption text-destructive">
+        <p
+          id={controlId ? `${controlId}-error` : undefined}
+          role="alert"
+          className="ps-8 text-caption text-destructive"
+        >
           {message}
         </p>
       ) : null}
@@ -352,6 +395,7 @@ export function RadioGroup({
  */
 export function FileInput({
   name,
+  id,
   hint,
   error,
   className,
@@ -359,16 +403,17 @@ export function FileInput({
   ...rest
 }: Omit<NativeInput, 'type' | 'dir'> & CommonControl) {
   const message = errorText(error);
+  const controlId = controlIdOf(id, name);
   return (
     <input
       {...rest}
-      id={name}
+      id={controlId}
       name={name}
       type="file"
       accept={accept}
       dir="ltr"
       aria-invalid={message ? true : undefined}
-      aria-describedby={describedBy(name, hint, message)}
+      aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
       className={cn('control-file text-start', className)}
     />
   );

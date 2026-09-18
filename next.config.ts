@@ -52,6 +52,13 @@ const config: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
+  // Prerendering reads the database, and the database is in Tokyo. A page that
+  // issues a dozen cached queries over a long round trip can exceed the 60s
+  // default from a distant network without anything being wrong — the first
+  // build attempt failed on the homepage for exactly that reason while the
+  // other 50 pages succeeded. This is a build-time budget, not a runtime one.
+  staticPageGenerationTimeout: 240,
+
   experimental: {
     optimizePackageImports: ['lucide-react'],
     serverActions: {

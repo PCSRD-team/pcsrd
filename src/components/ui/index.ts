@@ -34,6 +34,7 @@ export { Icon, iconNames, type IconName, type IconSize } from './icon';
 
 // Data display
 export { Panel, Card, CardBody, CardFooter, CardMedia, RuledList, RuledListItem } from './card';
+export { Dialog, DialogBody } from './dialog';
 export {
   Badge,
   StatusBadge,
