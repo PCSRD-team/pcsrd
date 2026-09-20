@@ -3,48 +3,49 @@ import { Panel, RuledList, RuledListItem } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { Container } from '@/components/ui/layout';
 import { Eyebrow } from '@/components/ui/typography';
+import { DIR, type Locale, localePath } from '@/lib/i18n/config';
+import { ar } from '@/lib/i18n/dictionaries/ar';
+import { en } from '@/lib/i18n/dictionaries/en';
 
 /**
  * The body of the 404, shared by the two places that can render one.
  *
  * `not-found.tsx` cannot read `params`, so it does not know the locale and
- * cannot open a dictionary. Both languages are shown rather than guessing —
- * and each block carries its own `lang` and `dir`, so a screen reader
+ * cannot pick *one* dictionary. Both languages are shown rather than guessing
+ * — and each block carries its own `lang` and `dir`, so a screen reader
  * announces each in the right voice instead of reading Arabic with English
- * phonemes. This is the one page whose copy lives in code, for that reason.
+ * phonemes. This is the one page that renders two locales at once, for that
+ * reason; the words themselves still come from the dictionaries (RULE 5).
+ *
+ * A Server Component, so importing both dictionaries costs the browser
+ * nothing. `DIR` and `localePath` supply the direction and the hrefs, so a
+ * third locale would extend `DICTIONARIES` and nothing else.
  *
  * It is a component rather than a page because the two callers need different
  * wrappers: the locale route's 404 renders inside a layout that already emits
  * `<html>` and the site chrome, while the app-level 404 has no layout above it
  * at all and must emit its own document.
  */
-const COPY = {
-  ar: {
-    title: 'الصفحة غير موجودة',
-    body: 'قد يكون الرابط قديماً أو أن الصفحة أُزيلت.',
-    links: [
-      { label: 'الرئيسية', href: '/ar' },
-      { label: 'من نحن', href: '/ar/about' },
-      { label: 'قنواتنا الرسمية', href: '/ar/verify' },
-      { label: 'تواصل معنا', href: '/ar/contact' },
-    ],
-  },
-  en: {
-    title: 'Page not found',
-    body: 'The link may be out of date, or the page may have been removed.',
-    links: [
-      { label: 'Home', href: '/en' },
-      { label: 'About', href: '/en/about' },
-      { label: 'Official channels', href: '/en/verify' },
-      { label: 'Contact', href: '/en/contact' },
-    ],
-  },
-} as const;
+const DICTIONARIES = { ar, en } as const;
 
-function NotFoundBlock({ locale, heading: Heading }: { locale: 'ar' | 'en'; heading: 'h1' | 'h2' }) {
-  const copy = COPY[locale];
+function copyFor(locale: Locale) {
+  const dict = DICTIONARIES[locale];
+  return {
+    title: dict.states.notFoundTitle,
+    body: dict.states.notFoundBody,
+    links: [
+      { label: dict.nav.home, href: localePath(locale, '/') },
+      { label: dict.nav.about, href: localePath(locale, '/about') },
+      { label: dict.verify.title, href: localePath(locale, '/verify') },
+      { label: dict.nav.contact, href: localePath(locale, '/contact') },
+    ],
+  };
+}
+
+function NotFoundBlock({ locale, heading: Heading }: { locale: Locale; heading: 'h1' | 'h2' }) {
+  const copy = copyFor(locale);
   return (
-    <div lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+    <div lang={locale} dir={DIR[locale]}>
       <Heading
         className={
           Heading === 'h1' ? 'text-h2 font-semibold text-ink' : 'text-h3 font-semibold text-ink'

@@ -17,15 +17,27 @@ export const DIR: Record<Locale, 'rtl' | 'ltr'> = { ar: 'rtl', en: 'ltr' };
 /** `lang` attribute and `Content-Language`. */
 export const HTML_LANG: Record<Locale, string> = { ar: 'ar', en: 'en' };
 
-export const LOCALE_LABEL: Record<Locale, string> = { ar: 'العربية', en: 'English' };
-
 export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
 }
 
-/** The other locale — the language switcher never needs more than this. */
+/**
+ * Every locale except this one, in `LOCALES` order.
+ *
+ * The switcher in the chrome renders one alternative because there is one;
+ * with a third locale it renders a list and nothing here changes.
+ */
+export function otherLocales(locale: Locale): Locale[] {
+  return LOCALES.filter((candidate) => candidate !== locale);
+}
+
+/**
+ * The first alternative locale. Derived from `LOCALES` rather than written as
+ * `locale === 'ar' ? 'en' : 'ar'`, so adding a locale does not silently make
+ * this function lie about a two-way choice.
+ */
 export function otherLocale(locale: Locale): Locale {
-  return locale === 'ar' ? 'en' : 'ar';
+  return otherLocales(locale)[0] ?? DEFAULT_LOCALE;
 }
 
 /**
@@ -45,9 +57,14 @@ export function localePath(locale: Locale, path: string): string {
 }
 
 /**
- * Picks a locale from an `Accept-Language` header, falling back to Arabic.
- * Deliberately simple: the header is a hint for the first visit only, and a
- * cookie overrides it from then on.
+ * Picks a locale from an `Accept-Language` header, falling back to the
+ * default. Deliberately simple: the header is a hint for the first visit
+ * only, and a cookie overrides it from then on.
+ *
+ * The match walks `LOCALES` rather than naming them, so a locale added to
+ * that tuple is negotiated without touching this function. `ar-PS` matches
+ * `ar` because a tag may carry a region; the ranking is the visitor's, and
+ * the first tag that matches any locale wins.
  */
 export function negotiateLocale(acceptLanguage: string | null): Locale {
   if (!acceptLanguage) return DEFAULT_LOCALE;
@@ -63,8 +80,10 @@ export function negotiateLocale(acceptLanguage: string | null): Locale {
     .sort((a, b) => b.q - a.q);
 
   for (const { tag } of ranked) {
-    if (tag.startsWith('ar')) return 'ar';
-    if (tag.startsWith('en')) return 'en';
+    const match = LOCALES.find(
+      (locale) => tag === locale || tag.startsWith(`${locale}-`),
+    );
+    if (match) return match;
   }
   return DEFAULT_LOCALE;
 }

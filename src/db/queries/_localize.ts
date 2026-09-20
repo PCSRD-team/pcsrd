@@ -38,17 +38,6 @@ export function pick<T extends Record<string, unknown>>(
   return english && english.trim() !== '' ? english : arabic;
 }
 
-/** The JSON-valued twin of `pick`, for TipTap document columns. */
-export function pickJson<TValue>(
-  row: Record<string, unknown>,
-  base: string,
-  locale: Locale,
-): TValue | null {
-  const arabic = (row[`${base}Ar`] ?? null) as TValue | null;
-  if (locale === 'ar') return arabic;
-  return ((row[`${base}En`] ?? null) as TValue | null) ?? arabic;
-}
-
 /**
  * True when the requested locale genuinely has content of its own.
  *

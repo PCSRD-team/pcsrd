@@ -40,8 +40,10 @@ export default defineConfig<E2EOptions>({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
   // The dev server compiles routes on first hit; a burst of parallel first
-  // hits makes every one of them slow. Two workers is the sweet spot locally.
-  workers: process.env.CI ? 2 : 2,
+  // hits makes every one of them slow, and the CI runner has two cores. Two
+  // either way — this used to be written `process.env.CI ? 2 : 2`, which reads
+  // like a decision and is not one.
+  workers: 2,
   reporter: [['list'], ['html', { open: 'never' }]],
   timeout: 60_000,
   expect: {

@@ -20,7 +20,7 @@ import { notFound } from '@/lib/errors';
 import type { Actor } from '../_shared/actor';
 import { writeAudit } from '../_shared/audit';
 import { one } from '../_shared/one';
-import { computeDiff } from '../_shared/diff';
+import { computeDiff, valuesEqual } from '../_shared/diff';
 import { assertCan } from '../_shared/permissions';
 import {
   assertCanTransition,
@@ -439,11 +439,9 @@ export async function updateOrganization(
   actor: Actor,
   input: OrganizationInput,
 ): Promise<void> {
-  const touchesRestricted = Object.keys(input).some(
-    (key) => !CONTACT_FIELDS.has(key as keyof OrganizationInput),
-  );
-  if (touchesRestricted) assertCan(actor, 'org.settings');
-  else assertCan(actor, 'org.settings.contact');
+  // The floor, before anything is read: nobody without at least the contact
+  // capability gets as far as loading the row.
+  assertCan(actor, 'org.settings.contact');
 
   await withActor(db, actor, async (tx) => {
     const [existing] = await tx
@@ -452,6 +450,23 @@ export async function updateOrganization(
       .where(eq(organizationSettings.id, true))
       .limit(1);
     if (!existing) throw notFound('organization_settings');
+
+    // The full capability is required for a restricted field that actually
+    // **changes**, not for one that merely appears in the payload.
+    //
+    // The settings form is one form: it posts the legal name and the licence
+    // number alongside the phone number, because a partial form would have to
+    // decide per role which inputs to render and then fail differently
+    // depending on what the browser sent. Keying the check on "was this
+    // mentioned" therefore refused every save a content manager ever made,
+    // including one that touched nothing but the office hours — a screen they
+    // are explicitly entitled to and could not use.
+    const changesRestricted = (Object.keys(input) as (keyof OrganizationInput)[]).some(
+      (key) =>
+        !CONTACT_FIELDS.has(key) &&
+        !valuesEqual(input[key], (existing as Record<string, unknown>)[key]),
+    );
+    if (changesRestricted) assertCan(actor, 'org.settings');
 
     const row = one(
       await tx

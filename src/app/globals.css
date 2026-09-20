@@ -248,7 +248,11 @@
    An `overflow-x-auto` list shows no scrollbar at rest on a touch device, so
    nav items past the fold are invisible with nothing to suggest they exist.
    The fade is the affordance; `scroll-snap` on the items does the rest.
-   Logical, so it works in both directions without a mirrored variant. */
+
+   `to left` is physical, and deliberately so: `to inline-end` in a gradient
+   is not supported widely enough to rely on. It needs no mirrored variant
+   because the gradient is symmetric — the same 1.5rem fade at both edges —
+   so the physical keyword and a logical one would draw the identical mask. */
 @utility scroll-fade {
   mask-image: linear-gradient(
     to left,
@@ -547,8 +551,11 @@
   border-color: var(--color-destructive);
 }
 
-/* `<select>` keeps the native arrow but loses the native chrome. */
+/* `<select>` keeps the native arrow but loses the native chrome.
+   A select opens a menu, so it is genuinely clickable and says so — the UA
+   gives it a text caret otherwise, which reads as an editable field. */
 select.control {
+  cursor: pointer;
   padding-inline-end: 2.5rem;
   appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2314213F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
@@ -562,17 +569,26 @@ select.control {
 }
 
 select.control[multiple] {
+  cursor: default;
   padding-inline-end: 0.875rem;
   background-image: none;
 }
 
-/* Checkbox and radio: native controls, square, ink-tinted. */
+/* Checkbox and radio: native controls, square, ink-tinted.
+   The box and the label that activates it both carry the pointer; a disabled
+   one carries `not-allowed` instead, so the state is legible before the
+   click rather than after it. */
 @utility control-choice {
   inline-size: 1.125rem;
   block-size: 1.125rem;
   flex: 0 0 auto;
   margin: 0;
+  cursor: pointer;
   accent-color: var(--color-navy-700);
+}
+
+.control-choice:disabled {
+  cursor: not-allowed;
 }
 
 /* Native file input: the button half gets the secondary-button treatment. */

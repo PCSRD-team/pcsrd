@@ -162,6 +162,8 @@ export function Avatar({
       )}
     >
       {image ? (
+        // The frame is 32/44/64px; `64px` is the largest of the three, so the
+        // optimiser never fetches a candidate wider than the biggest slot.
         <Image src={image.src} alt={name} fill sizes="64px" className="object-cover" />
       ) : (
         <span aria-hidden="true">{initialsOf(name)}</span>
@@ -189,11 +191,14 @@ export function LogoTile({
   className?: string;
 }) {
   const inner = image ? (
+    // The tile is a 3:2 box in a 2/3/4-column grid: ~226px at the 1180px
+    // content width, a third of the viewport from `sm`, half of it below.
+    // The previous 180px cap under-fetched every desktop tile.
     <Image
       src={image.src}
       alt={name}
       fill
-      sizes="(min-width: 1024px) 180px, 40vw"
+      sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
       className="object-contain p-4"
     />
   ) : (

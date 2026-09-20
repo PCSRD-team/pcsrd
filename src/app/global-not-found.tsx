@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { fontVariables } from '@/app/fonts';
 import { NotFoundBody } from '@/components/layout/not-found-body';
-import { DEFAULT_LOCALE } from '@/lib/i18n/config';
+import { DEFAULT_LOCALE, DIR } from '@/lib/i18n/config';
+import { ar } from '@/lib/i18n/dictionaries/ar';
+import { en } from '@/lib/i18n/dictionaries/en';
 import './globals.css';
 
 /**
@@ -30,13 +32,16 @@ import './globals.css';
  * table, the content or the connection is the thing that is wrong.
  */
 export const metadata: Metadata = {
-  title: 'الصفحة غير موجودة · Page not found',
+  // Both locales, for the same reason the body shows both: the URL that
+  // brought a visitor here names no locale. The words come from the
+  // dictionaries, not from this file (RULE 5).
+  title: `${ar.states.notFoundTitle} · ${en.states.notFoundTitle}`,
   robots: { index: false, follow: false },
 };
 
 export default function GlobalNotFound() {
   return (
-    <html lang={DEFAULT_LOCALE} dir="rtl">
+    <html lang={DEFAULT_LOCALE} dir={DIR[DEFAULT_LOCALE]}>
       <body
         className={`${fontVariables} flex min-h-screen flex-col justify-center bg-paper-ground antialiased`}
       >

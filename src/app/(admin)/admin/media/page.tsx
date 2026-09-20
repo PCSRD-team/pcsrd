@@ -11,7 +11,7 @@ import { Button, ButtonLink } from '@/components/ui/button';
 import { Card, CardBody, CardFooter, CardMedia } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/feedback';
 import { Field } from '@/components/ui/field';
-import { Checkbox, Input } from '@/components/ui/inputs';
+import { Checkbox, Input, Select } from '@/components/ui/inputs';
 import { Cluster, Grid } from '@/components/ui/layout';
 import { Caption, Meta } from '@/components/ui/typography';
 import { listAdminMedia } from '@/db/queries/admin';
@@ -27,16 +27,36 @@ export default async function MediaPage({ searchParams }: PageProps<'/admin/medi
 
   const needsConsent = one(search.needsConsent) === '1';
   const q = one(search.q)?.trim() || undefined;
+  const rawKind = one(search.kind);
+  const kind = rawKind === 'image' || rawKind === 'document' ? rawKind : undefined;
   const page = Number(one(search.page));
 
   const result = await listAdminMedia(actor, {
     search: q,
     needsConsent,
+    kind,
     page: Number.isInteger(page) && page > 0 ? page : 1,
   });
 
   const t = adminUi.media;
   const consentLabel = adminDict.media.consent;
+  const filtered = Boolean(q || kind || needsConsent);
+
+  /**
+   * Page 2 has to carry the filter. Without this the pagination silently
+   * dropped `q`, `kind` and `needsConsent`, so the second page of a filtered
+   * library was the second page of the *whole* library — a control that
+   * contradicts the one above it.
+   */
+  const hrefFor = (n: number) => {
+    const query = new URLSearchParams();
+    if (q) query.set('q', q);
+    if (kind) query.set('kind', kind);
+    if (needsConsent) query.set('needsConsent', '1');
+    if (n > 1) query.set('page', String(n));
+    const qs = query.toString();
+    return qs ? `/admin/media?${qs}` : '/admin/media';
+  };
 
   return (
     <>
@@ -51,15 +71,41 @@ export default async function MediaPage({ searchParams }: PageProps<'/admin/medi
           <Field name="q" label={t.search} className="min-w-64 flex-1">
             <Input name="q" type="search" defaultValue={q ?? ''} placeholder={t.searchPlaceholder} />
           </Field>
+          <Field name="kind" label={t.kind} className="min-w-40">
+            <Select
+              name="kind"
+              defaultValue={kind ?? ''}
+              placeholder={adminUi.list.all}
+              options={[
+                { value: 'image', label: t.image },
+                { value: 'document', label: t.document },
+              ]}
+            />
+          </Field>
           <Checkbox name="needsConsent" value="1" label={t.needsConsent} defaultChecked={needsConsent} />
           <Button type="submit" tone="secondary">
             {adminUi.list.filter}
           </Button>
+          {filtered ? (
+            <ButtonLink href="/admin/media" tone="quiet">
+              {adminUi.list.clearFilter}
+            </ButtonLink>
+          ) : null}
         </Cluster>
       </form>
 
       {result.items.length === 0 ? (
-        <EmptyState title={t.empty} body={t.emptyBody} />
+        <EmptyState
+          title={filtered ? t.noResults : t.empty}
+          body={filtered ? t.noResultsBody : t.emptyBody}
+          action={
+            filtered ? (
+              <ButtonLink href="/admin/media" tone="secondary">
+                {adminUi.list.clearFilter}
+              </ButtonLink>
+            ) : undefined
+          }
+        />
       ) : (
         <Grid as="ul" cols={4} gap={5}>
           {result.items.map((asset) => {
@@ -93,7 +139,12 @@ export default async function MediaPage({ searchParams }: PageProps<'/admin/medi
                     <Badge tone={asset.kind === 'image' ? 'info' : 'neutral'}>
                       {asset.kind === 'image' ? t.image : t.document}
                     </Badge>
-                    <Meta as="span">{formatFileSize(asset.fileSize, 'ar')}</Meta>
+                    {/* `1.2 MB` is a Latin run beside an Arabic badge in an
+                        RTL column; without the isolate the unit crosses the
+                        boundary and renders `MB 1.2`. */}
+                    <Meta as="span">
+                      <Bidi>{formatFileSize(asset.fileSize, 'ar')}</Bidi>
+                    </Meta>
                   </Cluster>
                   <p className="mbs-2 line-clamp-2 text-caption font-medium text-ink">{asset.altAr}</p>
                   <Meta className="mbs-1">
@@ -129,11 +180,7 @@ export default async function MediaPage({ searchParams }: PageProps<'/admin/medi
         </Grid>
       )}
 
-      <AdminPagination
-        page={result.page}
-        totalPages={result.totalPages}
-        hrefFor={(n) => (n > 1 ? `/admin/media?page=${n}` : '/admin/media')}
-      />
+      <AdminPagination page={result.page} totalPages={result.totalPages} hrefFor={hrefFor} />
     </>
   );
 }

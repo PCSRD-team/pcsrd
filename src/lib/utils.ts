@@ -79,13 +79,6 @@ export function buildWhatsAppUrl(number: string, message?: string): string {
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
-/** Clamps a 1-based page number. */
-export function clampPage(value: unknown, totalPages = Number.MAX_SAFE_INTEGER): number {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return 1;
-  return Math.min(Math.max(1, Math.floor(n)), Math.max(1, totalPages));
-}
-
 /**
  * The page numbers to render in a pagination control.
  *

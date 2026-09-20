@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
+import { alias, type PgColumn } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
 import {
   impactMetrics,
@@ -8,11 +8,14 @@ import {
   pages,
   partners,
   people,
+  postMedia,
   posts,
+  programMedia,
   programs,
   projects,
   publications,
   stories,
+  storyMedia,
   vacancies,
 } from '@/db/schema';
 import type { PostCategory, VacancyType } from '@/db/schema/enums';
@@ -41,6 +44,36 @@ const hero = {
   heroBlur: mediaAssets.blurDataUrl,
 };
 const footerLogoMedia = alias(mediaAssets, 'footer_logo_media');
+
+/**
+ * The ordered gallery behind one of the three `*_media` junctions.
+ *
+ * `project_media` had a public reader from the start; `post_media`,
+ * `story_media` and `program_media` did not, so a gallery an editor arranged
+ * in the CMS was stored, re-read by the editor and rendered nowhere. This is
+ * the read half of that; the detail templates decide whether to draw it.
+ */
+async function galleryFor(
+  junction: typeof postMedia | typeof storyMedia | typeof programMedia,
+  ownerColumn: PgColumn,
+  ownerId: string,
+  locale: Locale,
+) {
+  return db
+    .select({
+      path: mediaAssets.path,
+      alt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+      caption: pickCol(mediaAssets.captionAr, mediaAssets.captionEn, locale),
+      credit: mediaAssets.credit,
+      blur: mediaAssets.blurDataUrl,
+      width: mediaAssets.width,
+      height: mediaAssets.height,
+    })
+    .from(junction)
+    .innerJoin(mediaAssets, eq(mediaAssets.id, junction.mediaId))
+    .where(eq(ownerColumn, ownerId))
+    .orderBy(junction.displayOrder);
+}
 
 // ── Organisation ─────────────────────────────────────────────────────────
 
@@ -206,7 +239,7 @@ export async function _getProgramBySlug(slug: string, locale: Locale) {
   if (!row) return null;
 
   const en = locale === 'en';
-  const [heroRow, projectCount] = await Promise.all([
+  const [heroRow, projectCount, gallery] = await Promise.all([
     row.heroMediaId
       ? db
           .select({
@@ -224,6 +257,7 @@ export async function _getProgramBySlug(slug: string, locale: Locale) {
       .select({ count: sql<number>`count(*)::int` })
       .from(projects)
       .where(and(eq(projects.programId, row.id), eq(projects.status, 'published'))),
+    galleryFor(programMedia, programMedia.programId, row.id, locale),
   ]);
 
   return {
@@ -243,6 +277,7 @@ export async function _getProgramBySlug(slug: string, locale: Locale) {
     howToAccess: en ? (row.howToAccessEn ?? row.howToAccessAr) : row.howToAccessAr,
     isTranslated: hasLocale(row, locale),
     hero: heroRow[0] ?? null,
+    gallery,
     projectCount: projectCount[0]?.count ?? 0,
   };
 }
@@ -276,7 +311,17 @@ export const POSTS_PER_PAGE = 12;
 
 export async function _listPosts(
   locale: Locale,
-  options: { category?: PostCategory; page?: number; limit?: number } = {},
+  options: {
+    category?: PostCategory;
+    page?: number;
+    limit?: number;
+    /**
+     * `posts.is_featured`, the same shape `_listStories` and `_listMetrics`
+     * carry. The column had a checkbox in the admin and no reader at all, so
+     * marking a post as featured did nothing anywhere on the site.
+     */
+    featuredOnly?: boolean;
+  } = {},
 ) {
   const page = Math.max(1, options.page ?? 1);
   const perPage = options.limit ?? POSTS_PER_PAGE;
@@ -287,6 +332,7 @@ export async function _listPosts(
   const where = and(
     eq(posts.status, 'published'),
     options.category ? eq(posts.category, options.category) : undefined,
+    options.featuredOnly ? eq(posts.isFeatured, true) : undefined,
   );
 
   let rows;
@@ -377,19 +423,22 @@ export async function _getPostBySlug(slug: string, locale: Locale) {
   if (!row) return null;
 
   const en = locale === 'en';
-  const heroRow = row.heroMediaId
-    ? await db
-        .select({
-          path: mediaAssets.path,
-          alt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-          blur: mediaAssets.blurDataUrl,
-          width: mediaAssets.width,
-          height: mediaAssets.height,
-        })
-        .from(mediaAssets)
-        .where(eq(mediaAssets.id, row.heroMediaId))
-        .limit(1)
-    : [];
+  const [heroRow, gallery] = await Promise.all([
+    row.heroMediaId
+      ? db
+          .select({
+            path: mediaAssets.path,
+            alt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+            blur: mediaAssets.blurDataUrl,
+            width: mediaAssets.width,
+            height: mediaAssets.height,
+          })
+          .from(mediaAssets)
+          .where(eq(mediaAssets.id, row.heroMediaId))
+          .limit(1)
+      : Promise.resolve([]),
+    galleryFor(postMedia, postMedia.postId, row.id, locale),
+  ]);
 
   return {
     ...row,
@@ -398,6 +447,7 @@ export async function _getPostBySlug(slug: string, locale: Locale) {
     body: en ? (row.bodyEn ?? row.bodyAr) : row.bodyAr,
     isTranslated: hasLocale(row, locale),
     hero: heroRow[0] ?? null,
+    gallery,
   };
 }
 
@@ -476,6 +526,25 @@ export async function _getStoryBySlug(slug: string, locale: Locale) {
   if (!row) return null;
 
   const en = locale === 'en';
+  // The hero was selected for the *list* and never for the detail, so a story
+  // page could not render the image its own row points at.
+  const [heroRow, gallery] = await Promise.all([
+    row.heroMediaId
+      ? db
+          .select({
+            path: mediaAssets.path,
+            alt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+            blur: mediaAssets.blurDataUrl,
+            width: mediaAssets.width,
+            height: mediaAssets.height,
+          })
+          .from(mediaAssets)
+          .where(eq(mediaAssets.id, row.heroMediaId))
+          .limit(1)
+      : Promise.resolve([]),
+    galleryFor(storyMedia, storyMedia.storyId, row.id, locale),
+  ]);
+
   return {
     ...row,
     title: en ? (row.titleEn?.trim() || row.titleAr) : row.titleAr,
@@ -486,6 +555,8 @@ export async function _getStoryBySlug(slug: string, locale: Locale) {
       ? (row.quoteAttributionEn?.trim() || row.quoteAttributionAr)
       : row.quoteAttributionAr,
     isTranslated: hasLocale(row, locale),
+    hero: heroRow[0] ?? null,
+    gallery,
   };
 }
 
@@ -590,6 +661,7 @@ export async function _listPublications(locale: Locale) {
   return db
     .select({
       id: publications.id,
+      isFeatured: publications.isFeatured,
       slug: slugCol(publications.slugAr, publications.slugEn, locale),
       type: publications.type,
       title: pickCol(publications.titleAr, publications.titleEn, locale),
@@ -606,7 +678,15 @@ export async function _listPublications(locale: Locale) {
       eq(mediaAssets.id, locale === 'en' ? publications.fileEnId : publications.fileArId),
     )
     .where(eq(publications.status, 'published'))
-    .orderBy(asc(publications.displayOrder), desc(publications.publishedYear));
+    // `is_featured` had a checkbox in the admin and no reader anywhere: an
+    // editor could mark a report as featured and nothing about the resources
+    // page changed. It is the first sort key rather than a separate section,
+    // because the register is one ruled list.
+    .orderBy(
+      desc(publications.isFeatured),
+      asc(publications.displayOrder),
+      desc(publications.publishedYear),
+    );
 }
 
 export const listPublications = cached(_listPublications, ['publications:list'], {

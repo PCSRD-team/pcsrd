@@ -18,10 +18,7 @@ export const site_contentAr = {
   contentUi: {
     noImage: 'لا توجد صورة',
     readStory: 'اقرأ القصة',
-    readPost: 'اقرأ الخبر',
-    viewProject: 'عرض المشروع',
     viewVacancy: 'تفاصيل الشاغر',
-    exploreProgram: 'اكتشف البرنامج',
     toProgram: 'إلى صفحة البرنامج',
     viewArabicOriginal: 'اعرض النسخة العربية',
     updatedOn: 'آخر تحديث',
@@ -36,14 +33,11 @@ export const site_contentAr = {
     methodTarget: 'رقم مستهدف في الخطة، وليس نتيجة محقّقة.',
     generalMetrics: 'أرقام عامة',
     storiesLead: 'قصص من الميدان، بموافقة أصحابها أو مع إخفاء هويتهم.',
-    quoteFrom: 'من',
-    galleryCredit: 'تصوير',
     programmeProjectsCount: 'مشروع',
     relatedProjects: 'مشاريع ذات صلة',
     inProgram: 'ضمن برنامج',
     closedNotice: 'أُغلق باب التقديم لهذا الشاغر. الشواغر المفتوحة حالياً معروضة في صفحة الوظائف.',
     backToCareers: 'كل الشواغر',
-    fileUnavailable: 'الملف غير متاح',
     year: 'السنة',
     file: 'الملف',
     download: 'تنزيل الملف',
@@ -51,8 +45,6 @@ export const site_contentAr = {
 
   /** `<caption>` text for every data table in the content routes. */
   tableCaptions: {
-    projectRecord: 'سجل المشروع: الحالة والفترة ومناطق التنفيذ والشركاء',
-    vacancyDetails: 'تفاصيل الشاغر: مكان العمل ونوع التعاقد والمواعيد',
     openVacancies: 'الشواغر المفتوحة مرتّبة بحسب آخر موعد للتقديم',
     publications: 'الإصدارات المنشورة مع سنة النشر وحجم الملف',
   },
@@ -63,8 +55,6 @@ export const site_contentAr = {
     all: 'الكل',
     activeFilters: 'التصفية الفعّالة',
     newsCategories: 'تصنيف الأخبار',
-    resultsLabel: 'عدد النتائج',
-    projectsOf: 'مشاريع',
   },
 } satisfies Record<string, Record<string, unknown>>;
 
@@ -74,10 +64,7 @@ export const site_contentEn: Shape = {
   contentUi: {
     noImage: 'No image',
     readStory: 'Read the story',
-    readPost: 'Read more',
-    viewProject: 'View project',
     viewVacancy: 'Vacancy details',
-    exploreProgram: 'Explore the programme',
     toProgram: 'Programme page',
     viewArabicOriginal: 'View the Arabic original',
     updatedOn: 'Last updated',
@@ -92,22 +79,17 @@ export const site_contentEn: Shape = {
     methodTarget: 'A figure planned for, not a result achieved.',
     generalMetrics: 'General figures',
     storiesLead: 'Stories from the field, told with consent or with identities withheld.',
-    quoteFrom: 'From',
-    galleryCredit: 'Photo',
     programmeProjectsCount: 'projects',
     relatedProjects: 'Related projects',
     inProgram: 'Part of',
     closedNotice: 'Applications for this position have closed. Open positions are listed on the careers page.',
     backToCareers: 'All vacancies',
-    fileUnavailable: 'File unavailable',
     year: 'Year',
     file: 'File',
     download: 'Download file',
   },
 
   tableCaptions: {
-    projectRecord: 'Project record: status, period, locations and partners',
-    vacancyDetails: 'Vacancy details: location, contract type and dates',
     openVacancies: 'Open vacancies, ordered by application deadline',
     publications: 'Published documents with year and file size',
   },
@@ -117,7 +99,5 @@ export const site_contentEn: Shape = {
     all: 'All',
     activeFilters: 'Active filters',
     newsCategories: 'News category',
-    resultsLabel: 'Results',
-    projectsOf: 'projects',
   },
 };

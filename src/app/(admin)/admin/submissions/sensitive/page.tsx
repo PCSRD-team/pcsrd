@@ -1,4 +1,4 @@
-import { SubmissionListPage } from '@/components/admin/submission-list';
+import { SubmissionListPage, submissionFilters } from '@/components/admin/submission-list';
 import { requireSensitiveAccess } from '@/lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
@@ -13,13 +13,6 @@ export const dynamic = 'force-dynamic';
  */
 export default async function Page({ searchParams }: PageProps<'/admin/submissions/sensitive'>) {
   const [actor, search] = await Promise.all([requireSensitiveAccess(), searchParams]);
-  const page = Number(Array.isArray(search.page) ? search.page[0] : search.page);
 
-  return (
-    <SubmissionListPage
-      actor={actor}
-      sensitive
-      page={Number.isInteger(page) && page > 0 ? page : 1}
-    />
-  );
+  return <SubmissionListPage actor={actor} sensitive {...submissionFilters(search)} />;
 }

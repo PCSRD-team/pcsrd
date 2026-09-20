@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ProjectCard } from '@/components/content/cards';
 import { organizationName, visibleText } from '@/components/layout/chrome';
 import { Badge } from '@/components/ui/badge';
 import { Bidi, DateText } from '@/components/ui/bidi';
 import { ButtonLink } from '@/components/ui/button';
-import { Card, CardBody, CardFooter, CardMedia, Panel, RuledList, RuledListItem } from '@/components/ui/card';
+import { Card, CardBody, CardFooter, Panel, RuledList, RuledListItem } from '@/components/ui/card';
 import { DefinitionList } from '@/components/ui/definition-list';
 import { Figure, LogoTile } from '@/components/ui/figure';
 import { Icon } from '@/components/ui/icon';
@@ -99,20 +100,14 @@ function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Or
     <Section as="section" bounded={false} labelledBy="home-hero" className="bg-paper">
       <Container className="grid items-center gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
         <div>
+          {/* The eyebrow used to repeat the founding year and the licence
+              number, both of which the identity ledger eight lines below
+              states again — with their terms, which the eyebrow could not
+              carry. The same two facts twice inside one screenful reads as a
+              rendering bug to a due-diligence officer, not as emphasis. The
+              ledger is the one that keeps them. */}
           <Eyebrow as="p" className="mbe-3">
             {dict.home.heroEyebrow}
-            {foundedYear ? (
-              <>
-                {' · '}
-                {dict.about.foundedYear} <Bidi>{foundedYear}</Bidi>
-              </>
-            ) : null}
-            {licenseNumber ? (
-              <>
-                {' · '}
-                {dict.about.licenseNumber} <Bidi>{licenseNumber}</Bidi>
-              </>
-            ) : null}
           </Eyebrow>
           <h1 id="home-hero" className="text-h1 font-semibold text-ink text-balance md:text-display-ar">
             {name}
@@ -149,8 +144,12 @@ function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Or
           alt=""
           decorative
           ratio="wide"
+          // The LCP element of the site's busiest page, and the only `preload`
+          // on it.
           preload
-          sizes="(min-width: 1180px) 540px, (min-width: 1024px) 46vw, 100vw"
+          // 0.92 of the two-column split, less the 64px gap: ~455px at the
+          // 1180px content width, not the 540px the old hint claimed.
+          sizes="(min-width: 1180px) 460px, (min-width: 1024px) 44vw, 100vw"
           className="rule-edge"
         />
       </Container>
@@ -413,12 +412,6 @@ function FeaturedProjects({
   projects: Awaited<ReturnType<typeof listFeaturedProjects>>;
 }) {
   if (projects.length === 0) return null;
-  const stateLabel = {
-    planned: dict.projects.statePlanned,
-    active: dict.projects.stateActive,
-    completed: dict.projects.stateCompleted,
-  } as const;
-  const stateTone = { planned: 'planned', active: 'active', completed: 'complete' } as const;
 
   return (
     <Section labelledBy="home-projects" bounded={false}>
@@ -431,43 +424,24 @@ function FeaturedProjects({
           href={localePath(locale, '/projects')}
           linkLabel={dict.common.viewAll}
         />
-        <Grid as="ul" cols={2} gap={6}>
-          {projects.map((project) => {
-            const period = formatPeriod(project.startDate, project.endDate, locale);
-            return (
-              <Card as="li" key={project.id} interactive>
-                {project.heroPath ? (
-                  <CardMedia>
-                    <Figure
-                      image={{ src: mediaSrc(project.heroPath), blurDataURL: project.heroBlur ?? undefined }}
-                      alt={project.heroAlt ?? project.title ?? ''}
-                      sizes="(min-width: 1180px) 560px, (min-width: 640px) 50vw, 100vw"
-                    />
-                  </CardMedia>
-                ) : null}
-                <CardBody>
-                  <div className="flex flex-wrap items-center gap-3">
-                    {project.programTitle ? <Eyebrow as="p">{project.programTitle}</Eyebrow> : null}
-                    <Badge tone={stateTone[project.state]}>{stateLabel[project.state]}</Badge>
-                    {period ? (
-                      <DateText locale={locale} className="font-mono text-eyebrow text-mono-muted">
-                        {period}
-                      </DateText>
-                    ) : null}
-                  </div>
-                  <h3 className="mbs-3 text-h3 font-semibold text-ink">
-                    <Link
-                      href={localePath(locale, `/projects/${project.slug}`)}
-                      className="text-ink no-underline after:absolute after:inset-0 hover:text-gold-700"
-                    >
-                      {project.title}
-                    </Link>
-                  </h3>
-                  {project.summary ? <p className="mbs-3 line-clamp-3 text-small text-ink-70">{project.summary}</p> : null}
-                </CardBody>
-              </Card>
-            );
-          })}
+        {/* `ProjectCard` from the shared kit, not a second drawing of it.
+            The local copy rendered the same six things — hero, programme
+            eyebrow, state badge, period, title, summary — in a different
+            order, with its own state-tone map and its own `sizes`, and had
+            already drifted: no `fallbackLabel`, so a project with no hero
+            collapsed the image slot here while every other list on the site
+            kept the designed no-image frame. */}
+        <Grid as="ul" cols={2} gap={6} labelledBy="home-projects">
+          {projects.map((project) => (
+            <li key={project.id} className="flex">
+              <ProjectCard
+                project={project}
+                locale={locale}
+                dict={dict}
+                sizes="(min-width: 1180px) 515px, (min-width: 640px) 50vw, 100vw"
+              />
+            </li>
+          ))}
         </Grid>
       </Container>
     </Section>

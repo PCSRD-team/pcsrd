@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/programs
   return buildMetadata({
     locale,
     path: { ar: `/programs/${program.slugAr}`, en: `/programs/${program.slugEn}` },
-    title: seoTitle ?? program.title ?? siteName,
+    title: seoTitle?.trim() || program.title?.trim() || siteName,
     description: seoDescription ?? program.tagline,
     siteName,
     translationStatus: toTranslationStatus(program.translationStatus),
@@ -127,7 +127,9 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
           image={mediaImage(program.hero?.path, program.hero?.blur, program.hero)}
           alt={program.hero?.alt ?? ''}
           decorative={!program.hero?.alt}
-          sizes="(min-width: 1180px) 560px, (min-width: 768px) 48vw, 100vw"
+          sizes="(min-width: 1180px) 500px, (min-width: 768px) 46vw, 100vw"
+          // The LCP element on this route: the largest thing above the fold on
+          // a desktop viewport. The only `preload` on the page.
           preload
           fallbackLabel={dict.contentUi.noImage}
         />
@@ -152,11 +154,15 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
       {program.eligibility || program.howToAccess ? (
         <Section labelledBy="program-access" tone="alt" className="px-5 md:px-8">
           <SectionHeading id="program-access" title={dict.programs.howToAccess} />
+          {/* Each panel had an eyebrow and a heading carrying the identical
+              string — "الأهلية" over "الأهلية" — so the section printed its
+              two labels four times between them. The heading stays (it is the
+              one in the document outline); the eyebrow that only echoed it is
+              gone. */}
           <Grid cols={2}>
             {program.eligibility ? (
               <Panel as="article" tone="paper">
-                <Eyebrow>{dict.programs.eligibility}</Eyebrow>
-                <Heading level={3} size="h3" className="mbs-2">
+                <Heading level={3} size="h3">
                   {dict.programs.eligibility}
                 </Heading>
                 <Prose className="mbs-4">
@@ -166,8 +172,7 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
             ) : null}
             {program.howToAccess ? (
               <Panel as="article" tone="gold">
-                <Eyebrow>{dict.programs.howToAccess}</Eyebrow>
-                <Heading level={3} size="h3" className="mbs-2">
+                <Heading level={3} size="h3">
                   {dict.programs.howToAccess}
                 </Heading>
                 <Prose className="mbs-4">

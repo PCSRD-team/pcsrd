@@ -31,9 +31,14 @@ export const ar = {
     submit: 'إرسال',
     submitting: 'جارٍ الإرسال…',
     download: 'تنزيل',
-    externalLink: 'رابط خارجي',
     language: 'اللغة',
     switchToEnglish: 'English',
+    /**
+     * What joins the items of an inline list. Punctuation is copy: Arabic
+     * takes `،` and English takes `,`, and a component that decides that with
+     * a ternary is a component holding copy.
+     */
+    listSeparator: '، ',
   },
 
   nav: {
@@ -77,7 +82,6 @@ export const ar = {
     eligibility: 'من يستفيد',
     howToAccess: 'كيف تصل إلى الخدمة',
     objectives: 'الأهداف المحدّدة',
-    interventions: 'التدخّلات الرئيسية',
     sustainability: 'الاستدامة',
     targetGroups: 'الفئات المستهدفة',
     projectsInProgram: 'مشاريع هذا البرنامج',
@@ -148,7 +152,6 @@ export const ar = {
     lead: 'هذه هي القنوات الوحيدة التي نتحدّث من خلالها.',
     channel: 'القناة',
     handle: 'المعرّف',
-    lastVerified: 'آخر تحقّق',
     official: 'رسمي',
     notOurs: 'ليس تابعاً لنا',
     reportTitle: 'أبلغ عن انتحال صفة',
@@ -230,7 +233,6 @@ export const ar = {
     description: 'الوصف',
     relatedProject: 'المشروع ذو الصلة',
     contactPreference: 'كيف تفضّل أن نتواصل معك',
-    contactNone: 'لا أرغب بالتواصل',
     anonymousNotice:
       'يمكنك تقديم هذه الشكوى دون ذكر اسمك. لا نسجّل عنوان جهازك ولا بيانات متصفحك مع الشكاوى.',
     channel: 'القناة',
@@ -259,9 +261,6 @@ export const ar = {
     emptyTitle: 'لا يوجد محتوى بعد',
     emptyBody: 'سيظهر المحتوى هنا فور نشره.',
     emptyFiltered: 'لا نتائج مطابقة لهذه التصفية.',
-    errorTitle: 'تعذّر عرض هذا القسم',
-    errorBody: 'حدث خطأ غير متوقّع. حاول تحديث الصفحة.',
-    retry: 'إعادة المحاولة',
     notFoundTitle: 'الصفحة غير موجودة',
     notFoundBody: 'قد يكون الرابط قديماً أو أن الصفحة أُزيلت.',
     untranslatedTitle: 'هذه الصفحة غير مترجَمة بعد',
@@ -401,7 +400,6 @@ export const ar = {
       confirmDelete: 'تأكيد الحذف',
       deleteHint: 'الحذف نهائي ولا يمكن التراجع عنه.',
       deletePublishedHint: 'أوقف نشر العنصر قبل حذفه.',
-      cancel: 'إلغاء',
       actions: 'إجراءات',
       add: 'إضافة',
       back: 'رجوع إلى القائمة',
@@ -471,17 +469,6 @@ export const ar = {
       uploaded: 'رُفع في',
       exifNotStripped: 'بيانات EXIF لم تُجرَّد',
       openDetail: 'التفاصيل',
-      fields: {
-        altAr: 'النص البديل (عربي)',
-        altEn: 'Alt text (English)',
-        captionAr: 'التعليق (عربي)',
-        captionEn: 'Caption (English)',
-        credit: 'المصدر / حقوق الصورة',
-        consent: 'حالة الموافقة',
-        consentReference: 'مرجع الموافقة',
-        hasIdentifiableMinors: 'تُظهر قُصّراً يمكن التعرّف عليهم',
-        minorsHint: 'إن فُعّل، لا يُنشر أي محتوى يستخدم هذا الوسيط قبل توثيق الموافقة.',
-      },
       consent: {
         not_required: 'لا تلزم موافقة',
         obtained: 'مُوثَّقة',
@@ -644,12 +631,8 @@ export const ar = {
 
   a11y: {
     mainNav: 'التنقّل الرئيسي',
-    footerNav: 'روابط التذييل',
     breadcrumb: 'مسار التصفّح',
     pagination: 'ترقيم الصفحات',
-    currentPage: 'الصفحة الحالية',
-    openMenu: 'فتح القائمة',
-    closeMenu: 'إغلاق القائمة',
     filterPanel: 'لوحة التصفية',
   },
 };

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Badge, VerificationBadge } from '@/components/ui/badge';
-import { Bidi, DateText } from '@/components/ui/bidi';
+import { DateText } from '@/components/ui/bidi';
 import { Card, CardBody, CardFooter, CardMedia } from '@/components/ui/card';
 import { Figure } from '@/components/ui/figure';
 import { Stat } from '@/components/ui/stat';
@@ -65,10 +65,18 @@ export function ProjectCard({
   project,
   locale,
   dict,
+  sizes = CARD_SIZES,
 }: {
   project: ProjectCardRecord;
   locale: Locale;
   dict: Dictionary;
+  /**
+   * The default assumes the three-up grid this card appears in most often
+   * (~335px at the 1180px content width). A two-up grid gives it ~515px, so
+   * the one caller that lays it out two-up passes its own hint rather than
+   * every other list over-fetching to cover it.
+   */
+  sizes?: string;
 }) {
   const period = formatPeriod(project.startDate, project.endDate, locale);
   const href = localePath(locale, `/projects/${project.slug}`);
@@ -80,7 +88,7 @@ export function ProjectCard({
           image={mediaImage(project.heroPath, project.heroBlur)}
           alt={project.heroAlt ?? ''}
           decorative={!project.heroAlt}
-          sizes={CARD_SIZES}
+          sizes={sizes}
           fallbackLabel={dict.contentUi.noImage}
         />
       </CardMedia>
@@ -257,104 +265,11 @@ export function vacancyTypeLabel(type: 'job' | 'volunteer', dict: Dictionary): s
   return type === 'job' ? dict.contentUi.vacancyJob : dict.contentUi.vacancyVolunteer;
 }
 
-export function VacancyCard({
-  vacancy,
-  locale,
-  dict,
-}: {
-  vacancy: {
-    id: string;
-    slug: string;
-    type: 'job' | 'volunteer';
-    title: string | null;
-    location: string | null;
-    deadline: string;
-  };
-  locale: Locale;
-  dict: Dictionary;
-}) {
-  const href = localePath(locale, `/careers/${vacancy.slug}`);
-
-  return (
-    <Card as="li" interactive padding="sm" className="w-full sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-      <CardBody>
-        <Eyebrow as="span">{vacancyTypeLabel(vacancy.type, dict)}</Eyebrow>
-        <Heading level={3} size="h4" className="mbs-1">
-          <Link href={href} className={titleLink}>
-            {vacancy.title}
-          </Link>
-        </Heading>
-        {vacancy.location ? <p className="mbs-1 text-small text-ink-55">{vacancy.location}</p> : null}
-      </CardBody>
-      <Meta as="p" className="shrink-0">
-        {dict.careers.deadline}:{' '}
-        <time dateTime={vacancy.deadline}>
-          <DateText locale={locale}>{formatDate(vacancy.deadline, locale)}</DateText>
-        </time>
-      </Meta>
-    </Card>
-  );
-}
-
-// ── Programme ────────────────────────────────────────────────────────────
-
-export function ProgramCard({
-  program,
-  locale,
-  dict,
-  projectCount,
-}: {
-  program: {
-    id: string;
-    key: string;
-    slug: string;
-    title: string | null;
-    tagline: string | null;
-    accentToken: string;
-    heroPath: string | null;
-    heroAlt: string | null;
-    heroBlur: string | null;
-  };
-  locale: Locale;
-  dict: Dictionary;
-  /** Published projects in the programme, when the caller has the count. */
-  projectCount?: number | null;
-}) {
-  const href = localePath(locale, `/programs/${program.slug}`);
-
-  return (
-    // Programme identity is the 2px accent rule in the programme's own
-    // colour — the only colour outside ink/gold/paper on the page, and a
-    // rule rather than a fill, the same discipline as the gold mark.
-    <Card as="article" accent={`var(${program.accentToken})`} interactive className="w-full">
-      <CardMedia>
-        <Figure
-          image={mediaImage(program.heroPath, program.heroBlur)}
-          alt={program.heroAlt ?? ''}
-          decorative={!program.heroAlt}
-          sizes={CARD_SIZES}
-          fallbackLabel={dict.contentUi.noImage}
-        />
-      </CardMedia>
-      <CardBody>
-        <Eyebrow>{dict.programs.title}</Eyebrow>
-        <Heading level={3} size="h3" className="mbs-2">
-          <Link href={href} className={titleLink}>
-            {program.title}
-          </Link>
-        </Heading>
-        {program.tagline ? <p className="mbs-3 text-small text-ink-70">{program.tagline}</p> : null}
-      </CardBody>
-      {typeof projectCount === 'number' ? (
-        <CardFooter>
-          <Meta as="span">
-            <Bidi>{formatNumber(projectCount, locale)}</Bidi> {dict.contentUi.programmeProjectsCount}
-          </Meta>
-        </CardFooter>
-      ) : null}
-    </Card>
-  );
-}
+// The vacancy list and the programme index each draw their own ruled row
+// rather than a card — see `careers/page.tsx` and `programs/page.tsx`. The
+// `VacancyCard` and `ProgramCard` components that used to sit here were left
+// behind by that change with no importer in the tree, so they are gone; the
+// two label helpers they shared with the pages are not.
 
 // ── Story ────────────────────────────────────────────────────────────────
 
@@ -413,18 +328,20 @@ export function StoryCard({
           <p className="mbs-3 line-clamp-3 text-small text-ink-70">{story.summary}</p>
         ) : null}
       </CardBody>
-      <CardFooter>
-        <Link href={href} className="text-small font-medium">
-          {dict.contentUi.readStory}
-        </Link>
-        {story.publishedAt ? (
+      {/* No second "read the story" link. It pointed at the same URL as the
+          title above it, so a keyboard user tabbed twice through one
+          destination and a screen-reader user heard the card's only target
+          announced under two different names. Every other card in this file
+          has exactly one control; this one now matches. */}
+      {story.publishedAt ? (
+        <CardFooter>
           <Meta as="span">
             <time dateTime={story.publishedAt.toISOString()}>
               <DateText locale={locale}>{formatDate(story.publishedAt, locale)}</DateText>
             </time>
           </Meta>
-        ) : null}
-      </CardFooter>
+        </CardFooter>
+      ) : null}
     </Card>
   );
 }

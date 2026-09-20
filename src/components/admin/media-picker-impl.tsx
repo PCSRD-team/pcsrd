@@ -4,6 +4,7 @@
 
 import Image from 'next/image';
 import { useEffect, useId, useState } from 'react';
+import { Bidi } from '@/components/ui/bidi';
 import { Button, IconButton } from '@/components/ui/button';
 import { Panel } from '@/components/ui/card';
 import { Dialog, DialogBody } from '@/components/ui/dialog';
@@ -133,7 +134,9 @@ export function MediaPickerImpl({
             </div>
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-caption font-medium text-ink">{selected.altAr}</p>
-              <Meta className="mbs-1">{formatFileSize(selected.fileSize, 'ar')}</Meta>
+              <Meta className="mbs-1">
+                <Bidi>{formatFileSize(selected.fileSize, 'ar')}</Bidi>
+              </Meta>
             </div>
           </div>
         ) : (

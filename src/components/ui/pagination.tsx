@@ -21,6 +21,8 @@ const styles = {
   page: 'rule-edge bg-paper text-ink hover:bg-paper-alt hover:text-ink',
   current: 'border border-ink bg-ink text-paper',
   arrow: 'rule-edge bg-paper text-ink hover:bg-paper-alt hover:text-ink',
+  /** No previous/next page: dimmed, un-pressable, and the cursor says so. */
+  arrowDisabled: 'rule-edge cursor-not-allowed bg-paper-alt text-ink-55',
   gap: 'inline-flex min-h-target min-w-6 items-center justify-center font-mono text-caption text-mono-muted',
 };
 
@@ -63,7 +65,7 @@ export function Pagination({
               <span className="sr-only sm:not-sr-only">{previousLabel}</span>
             </Link>
           ) : (
-            <span aria-disabled="true" className={cn(styles.link, styles.arrow, 'opacity-40')}>
+            <span aria-disabled="true" className={cn(styles.link, styles.arrowDisabled)}>
               <Icon name="chevron" size={16} className="-scale-x-100 rtl:scale-x-100" />
               <span className="sr-only sm:not-sr-only">{previousLabel}</span>
             </span>
@@ -106,7 +108,7 @@ export function Pagination({
               <Icon name="chevron" size={16} />
             </Link>
           ) : (
-            <span aria-disabled="true" className={cn(styles.link, styles.arrow, 'opacity-40')}>
+            <span aria-disabled="true" className={cn(styles.link, styles.arrowDisabled)}>
               <span className="sr-only sm:not-sr-only">{nextLabel}</span>
               <Icon name="chevron" size={16} />
             </span>

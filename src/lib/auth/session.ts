@@ -45,6 +45,3 @@ export const getCurrentProfile = cache(async (): Promise<Actor | null> => {
 
   return profile ?? null;
 });
-
-/** Profile plus the display fields the admin chrome needs. */
-export const getCurrentProfileDetail = getCurrentProfile;

@@ -120,6 +120,20 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
   const translated = isTranslatedFor(locale, input.translationStatus);
   const description = input.description?.trim() || undefined;
 
+  /**
+   * A blank title is never shippable, so it is caught here as well as at the
+   * call sites.
+   *
+   * Every detail route resolved its title with `seoTitle ?? record.title ??
+   * siteName`, and `??` falls back on `null`/`undefined` but not on `''`. The
+   * SEO columns are empty strings in the database rather than nulls, so every
+   * programme, project, post, story, vacancy and legal page shipped
+   * `<title> — {org}</title>` with an empty `og:title` beside a correctly
+   * populated `twitter:image:alt`. Found by fetching the served HTML, not by
+   * reading the code — which is why the guard lives at the boundary too.
+   */
+  const title = input.title?.trim() || siteName;
+
   const ownUrl = pathFor(input.path, locale);
   const arabicUrl = pathFor(input.path, DEFAULT_LOCALE);
   const canonical = translated ? ownUrl : arabicUrl;
@@ -160,7 +174,7 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
    * emitted `og:image`.
    */
   const openGraphBase = {
-    title: input.title,
+    title,
     description,
     url: canonical,
     siteName,
@@ -180,7 +194,7 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
       : { ...openGraphBase, type: 'website' };
 
   const metadata: Metadata = {
-    title: input.title,
+    title,
     description,
     alternates: {
       canonical,
@@ -192,7 +206,7 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
     // `openGraph.images` across when Twitter declares none.
     twitter: {
       card: 'summary_large_image',
-      title: input.title,
+      title,
       description,
       ...(images ? { images: images.map((image) => image.url) } : {}),
     },

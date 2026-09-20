@@ -5,11 +5,20 @@ import { AdminPagination, DateCell } from '@/components/admin/controls';
 import { AdminHeader } from '@/components/admin/shell';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Bidi, Code } from '@/components/ui/bidi';
+import { Button, ButtonLink } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/feedback';
+import { Field } from '@/components/ui/field';
+import { Select } from '@/components/ui/inputs';
+import { Cluster } from '@/components/ui/layout';
 import { Table } from '@/components/ui/table';
 import { Caption } from '@/components/ui/typography';
 import { listSubmissions } from '@/db/queries/admin';
-import type { SubmissionState, SubmissionType } from '@/db/schema/enums';
+import {
+  type SubmissionState,
+  type SubmissionType,
+  submissionState,
+  submissionType,
+} from '@/db/schema/enums';
 import type { Actor } from '@/services/_shared/actor';
 
 /**
@@ -36,19 +45,66 @@ export function SubmissionStateBadge({ state }: { state: SubmissionState }) {
   return <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>;
 }
 
+/**
+ * Reads the inbox's filters off the query string, once, for both routes.
+ *
+ * A value outside its enum becomes `undefined` rather than reaching the query:
+ * the string is user-controlled and would otherwise be compared against an
+ * enum column, which Postgres refuses with an error rather than an empty list.
+ */
+export function submissionFilters(searchParams: Record<string, string | string[] | undefined>): {
+  page: number;
+  type?: SubmissionType;
+  state?: SubmissionState;
+} {
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const page = Number(one(searchParams.page));
+  const type = one(searchParams.type);
+  const state = one(searchParams.state);
+
+  return {
+    page: Number.isInteger(page) && page > 0 ? page : 1,
+    type: (submissionType.enumValues as readonly string[]).includes(type ?? '')
+      ? (type as SubmissionType)
+      : undefined,
+    state: (submissionState.enumValues as readonly string[]).includes(state ?? '')
+      ? (state as SubmissionState)
+      : undefined,
+  };
+}
+
 export async function SubmissionListPage({
   actor,
   sensitive,
   page,
+  type,
+  state,
 }: {
   actor: Actor;
   sensitive: boolean;
   page: number;
+  type?: SubmissionType;
+  state?: SubmissionState;
 }) {
-  const result = await listSubmissions(actor, { sensitive, page });
+  const result = await listSubmissions(actor, { sensitive, page, type, state });
   const base = sensitive ? '/admin/submissions/sensitive' : '/admin/submissions';
   const t = adminUi.submissions;
+  const list = adminUi.list;
   const title = sensitive ? t.sensitiveTitle : t.title;
+  const filtered = Boolean(type || state);
+
+  // 05-ADMIN §7 lists type and state as the inbox's filters. `is_sensitive`
+  // is not among them and never will be: it is a hard filter on the query, so
+  // the confidential rows are absent from the result set rather than hidden
+  // behind a control someone could flip.
+  const hrefFor = (n: number) => {
+    const query = new URLSearchParams();
+    if (type) query.set('type', type);
+    if (state) query.set('state', state);
+    if (n > 1) query.set('page', String(n));
+    const qs = query.toString();
+    return qs ? `${base}?${qs}` : base;
+  };
 
   return (
     <>
@@ -57,12 +113,59 @@ export async function SubmissionListPage({
         description={sensitive ? t.sensitiveLede : fill(t.count, { n: result.total })}
       />
 
+      <form method="get" className="mbe-6">
+        <Cluster gap={3} align="end">
+          <Field name="type" label={t.filterType} className="min-w-48">
+            <Select
+              name="type"
+              defaultValue={type ?? ''}
+              placeholder={list.all}
+              options={submissionType.enumValues.map((value) => ({
+                value,
+                label: TYPE_LABEL[value],
+              }))}
+            />
+          </Field>
+          <Field name="state" label={t.filterState} className="min-w-40">
+            <Select
+              name="state"
+              defaultValue={state ?? ''}
+              placeholder={list.all}
+              options={submissionState.enumValues.map((value) => ({
+                value,
+                label: STATE_LABEL[value],
+              }))}
+            />
+          </Field>
+          <Button type="submit" tone="secondary">
+            {list.filter}
+          </Button>
+          {filtered ? (
+            <ButtonLink href={base} tone="quiet">
+              {list.clearFilter}
+            </ButtonLink>
+          ) : null}
+        </Cluster>
+      </form>
+
       <Table
         caption={title}
         captionHidden
         rows={result.items}
         rowHref={(row) => `/admin/submissions/${row.id}`}
-        empty={<EmptyState title={t.empty} body={t.emptyBody} />}
+        empty={
+          <EmptyState
+            title={filtered ? t.noResults : t.empty}
+            body={filtered ? t.noResultsBody : t.emptyBody}
+            action={
+              filtered ? (
+                <ButtonLink href={base} tone="secondary">
+                  {list.clearFilter}
+                </ButtonLink>
+              ) : undefined
+            }
+          />
+        }
         columns={[
           {
             key: 'reference',
@@ -99,11 +202,7 @@ export async function SubmissionListPage({
         ]}
       />
 
-      <AdminPagination
-        page={result.page}
-        totalPages={result.totalPages}
-        hrefFor={(n) => (n > 1 ? `${base}?page=${n}` : base)}
-      />
+      <AdminPagination page={result.page} totalPages={result.totalPages} hrefFor={hrefFor} />
 
       {!sensitive ? (
         <Caption className="mbs-6">

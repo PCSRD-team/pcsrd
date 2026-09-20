@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { DIR, type Locale } from '@/lib/i18n/config';
 import { cn } from '@/lib/utils';
 
 /**
@@ -177,10 +178,35 @@ export function TableScroller({ children, className }: { children: ReactNode; cl
   return <div className={cn(styles.scroller, className)}>{children}</div>;
 }
 
-/** A formatted date in a cell, isolated LTR with a machine-readable value. */
-export function TimeCell({ dateTime, children }: { dateTime: string; children: ReactNode }) {
+/**
+ * A formatted date in a cell: isolated from its neighbours, machine-readable,
+ * and reading in the direction of the language it is written in.
+ *
+ * `dir` follows the `locale`, it is not pinned to `ltr`. An Arabic date is
+ * `20 سبتمبر 2026` — three runs whose dominant direction is RTL — so forcing
+ * LTR reorders them and puts the year where an Arabic reader scanning
+ * right-to-left arrives first. That is the same defect `DateText` in
+ * `bidi.tsx` exists to prevent everywhere else; this cell was the last place
+ * still pinning the direction, on `/ar/careers` and every admin list.
+ *
+ * `<time>` is a `<bdi>`-like isolate here only because `dir` on an inline
+ * element establishes one — the point is the isolation, not the direction.
+ */
+export function TimeCell({
+  dateTime,
+  locale = 'ar',
+  children,
+}: {
+  dateTime: string;
+  locale?: Locale;
+  children: ReactNode;
+}) {
   return (
-    <time dateTime={dateTime} dir="ltr" className="font-mono text-caption whitespace-nowrap">
+    <time
+      dateTime={dateTime}
+      dir={DIR[locale]}
+      className="font-mono text-caption whitespace-nowrap"
+    >
       {children}
     </time>
   );

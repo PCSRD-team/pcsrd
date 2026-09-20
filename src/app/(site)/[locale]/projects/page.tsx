@@ -157,7 +157,14 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<'
         breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.projects.title }]} />}
       />
 
-      <div className="grid gap-10 md:grid-cols-[17.5rem_minmax(0,1fr)] md:gap-14">
+      {/* The facet column splits off at `lg`, not `md`.
+          At `md` the page is 768px wide: 640px of content, 280px of which went
+          to the filter panel, leaving a 304px result column that `Grid cols=2`
+          then cut into two 124px cards — a hero, an eyebrow, a title, a
+          summary and a badge each. `Grid`'s two-up starts at `sm` (640px
+          viewport) and has no idea it is inside a narrow column, so the fix is
+          to give it the whole width until there is room for both. */}
+      <div className="grid gap-10 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:gap-14">
         <ProjectFilterPanel locale={locale} dict={dict} facets={facets} filters={filters} total={result.total} />
 
         <div className="min-w-0">

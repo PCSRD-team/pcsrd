@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import type { UserRole } from '@/db/schema/enums';
 import { forbidden, unauthorized } from '@/lib/errors';
 import type { Actor } from '@/services/_shared/actor';
 import { getCurrentProfile } from './session';
@@ -23,11 +22,15 @@ export async function requireAuth(): Promise<Actor> {
   return profile;
 }
 
-export async function requireRole(roles: UserRole[]): Promise<Actor> {
-  const profile = await requireAuth();
-  if (!roles.includes(profile.role)) redirect('/admin?error=forbidden');
-  return profile;
-}
+/**
+ * There is deliberately no `requireRole(roles)` here.
+ *
+ * One existed and had no caller. Role is not what decides an admin action in
+ * this system — `src/services/_shared/permissions.ts` maps a capability to the
+ * roles that hold it, and the service checks the capability. A second,
+ * page-level list of roles would be the same rule written twice in two places
+ * that drift, and the drifting copy is the one that grants too much.
+ */
 
 /** Confidential complaints. Deliberately not derived from role. */
 export async function requireSensitiveAccess(): Promise<Actor> {

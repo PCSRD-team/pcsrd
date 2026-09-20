@@ -37,10 +37,10 @@ env:
   NEXT_PUBLIC_DEFAULT_LOCALE: ar
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
   NEXT_PUBLIC_WHATSAPP_NUMBER: '970000000000'
-  # Playwright and Lighthouse both talk to this one server.
-  PORT: '3100'
-  CI: 'true'
 
+# Playwright and Lighthouse both talk to one server on port 3100. The port is
+# fixed in playwright.config.ts and lighthouserc.cjs; the start step below must
+# agree with them.
 jobs:
   e2e:
     runs-on: ubuntu-latest

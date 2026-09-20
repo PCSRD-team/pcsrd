@@ -44,7 +44,6 @@ const RETENTION_MONTHS: Record<SubmissionType, number> = {
 };
 
 export const isSensitiveType = (type: SubmissionType) => SENSITIVE[type];
-export const retentionMonthsFor = (type: SubmissionType) => RETENTION_MONTHS[type];
 
 export type CreateSubmissionInput = {
   type: SubmissionType;

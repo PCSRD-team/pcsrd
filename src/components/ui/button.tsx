@@ -16,9 +16,26 @@ import { LinkPendingMark } from './link-pending';
  */
 
 const styles = {
+  /**
+   * `cursor-pointer` is stated **here**, not at the call sites.
+   *
+   * A `<button>` and an `<a href>` get a pointer from the UA, but this class
+   * string is also what `buttonClasses()` puts on a `<summary>` and on a
+   * `<label>` — neither of which does — so the affordance has to come from the
+   * shared string or it is missing on exactly the controls that look most like
+   * buttons. `disabled:` and `aria-disabled:` sort after it and win: a real
+   * `disabled` attribute covers `<button>`, `aria-disabled` covers the `<a>`
+   * and `<span>` cases where a `disabled` attribute is not valid markup.
+   *
+   * Four states, and none of them is *only* a colour: hover darkens the
+   * ground, `active` inverts or deepens it, focus is the global two-tone ring
+   * (a structural change), disabled dims and swaps the cursor. No lift and no
+   * scale — those are the design system's, not ours to add.
+   */
   base:
-    'inline-flex min-h-target items-center justify-center gap-2 font-medium no-underline ' +
-    'motion-standard transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+    'inline-flex min-h-target cursor-pointer items-center justify-center gap-2 font-medium no-underline ' +
+    'motion-standard transition-colors disabled:cursor-not-allowed disabled:opacity-60 ' +
+    'aria-disabled:cursor-not-allowed aria-disabled:opacity-60',
   size: {
     sm: 'px-4 py-2 text-caption',
     md: 'px-6 py-3 text-small',
@@ -26,18 +43,21 @@ const styles = {
   },
   tone: {
     /** Navy fill, paper text — the one action a screen is for. */
-    primary: 'bg-navy-700 text-paper hover:bg-navy-900 hover:text-paper',
-    /** 1px navy outline, navy text. */
+    primary: 'bg-navy-700 text-paper hover:bg-navy-900 hover:text-paper active:bg-ink',
+    /** 1px navy outline, navy text; pressing it fills. */
     secondary:
-      'border border-navy-700 bg-transparent text-navy-700 hover:bg-navy-100 hover:text-navy-900',
+      'border border-navy-700 bg-transparent text-navy-700 hover:bg-navy-100 hover:text-navy-900 ' +
+      'active:bg-navy-700 active:text-paper',
     /** No edge; for toolbars and dense rows. */
-    quiet: 'bg-transparent text-ink hover:bg-paper-alt hover:text-ink',
+    quiet: 'bg-transparent text-ink hover:bg-paper-alt hover:text-ink active:bg-rule',
     /** Destructive: outlined, never filled — a red fill is a shout. */
     danger:
-      'border border-destructive/40 bg-transparent text-destructive hover:bg-destructive-soft hover:text-destructive',
+      'border border-destructive/40 bg-transparent text-destructive hover:bg-destructive-soft hover:text-destructive ' +
+      'active:border-destructive',
     /** Gold as a marking colour: a 2px rule under the label, ink text. */
     marked:
-      'border-b-2 border-gold-600 bg-transparent px-1 text-ink hover:bg-gold-050 hover:text-gold-700',
+      'border-b-2 border-gold-600 bg-transparent px-1 text-ink hover:bg-gold-050 hover:text-gold-700 ' +
+      'active:border-gold-700',
   },
   icon: {
     sm: 'min-h-target min-w-target p-2',

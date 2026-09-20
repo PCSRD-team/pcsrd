@@ -329,7 +329,8 @@ function MobileNav({ locale, dict, items }: { locale: Locale; dict: Dictionary; 
         className={buttonClasses({
           tone: 'quiet',
           size: 'sm',
-          className: 'cursor-pointer list-none rule-edge [&::-webkit-details-marker]:hidden',
+          // The pointer comes from `buttonClasses` itself — a <summary> gets none from the UA.
+          className: 'list-none rule-edge [&::-webkit-details-marker]:hidden',
         })}
       >
         <span className="group-open:hidden">
@@ -403,14 +404,22 @@ export function SiteHeader({
             aria-label={`${name} — ${dict.siteChrome.homeLinkLabel}`}
             className="flex min-w-0 items-center gap-3 text-ink no-underline"
           >
+            {/* A fixed 48px square box with `object-contain`.
+                `w-auto` reserved a 112×48 box from the width/height attributes
+                and then collapsed to the uploaded logo's own ratio once it
+                loaded — the organisation's file is square, so the name beside
+                it jumped 64px on every first paint. A declared square box
+                reserves exactly what is drawn, whatever shape the upload is,
+                and `sizes` stops the optimiser fetching a 112px candidate for
+                a 48px slot. Not `preload`: at 48px this is never the LCP
+                element on any page — the hero image or the `h1` is. */}
             <Image
               src={logoSrc}
               alt={logoAlt}
-              width={112}
+              width={48}
               height={48}
-              sizes="112px"
-              preload
-              className="h-12 w-auto shrink-0 object-contain"
+              sizes="48px"
+              className="size-12 shrink-0 object-contain"
             />
             <span className="min-w-0">
               <span className="block truncate text-small font-semibold leading-tight sm:text-body">{name}</span>
@@ -557,8 +566,9 @@ export function SiteFooter({
           <Eyebrow as="p" id="footer-identity" className="mbe-4 text-paper">
             {dict.footer.identityTitle}
           </Eyebrow>
+          {/* Same reserved-square treatment as the header, one step larger. */}
           {logoSrc ? (
-            <Image src={logoSrc} alt={logoAlt} width={200} height={72} sizes="200px" className="mbe-4 h-16 w-auto object-contain" />
+            <Image src={logoSrc} alt={logoAlt} width={64} height={64} sizes="64px" className="mbe-4 size-16 object-contain" />
           ) : null}
           {displayName ? <p className="text-h4 font-semibold text-paper">{displayName}</p> : null}
           {description ? <p className="mbs-2 max-w-md text-small text-paper">{description}</p> : null}

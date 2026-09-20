@@ -1,7 +1,7 @@
 import type { RichText, RichTextNode } from '@/db/schema/_shared';
 import { publicEnv } from '@/lib/env.public';
 import { storageUrl } from '@/lib/format';
-import type { Locale } from '@/lib/i18n/config';
+import { LOCALES, type Locale } from '@/lib/i18n/config';
 
 /**
  * Structured-data builders — pure functions returning plain objects.
@@ -167,7 +167,9 @@ export function organizationJsonLd(org: OrganizationForJsonLd, locale: Locale): 
             contactType: 'general',
             telephone: org.primaryPhone ?? undefined,
             email: org.email ?? undefined,
-            availableLanguage: ['ar', 'en'],
+            // The locales the site is actually published in, not a literal
+            // pair — a locale added to `LOCALES` appears here on its own.
+            availableLanguage: [...LOCALES],
           })
         : undefined,
     // DNH-6: the address is published only when the organisation opted in,

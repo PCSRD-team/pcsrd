@@ -115,7 +115,7 @@ export default async function CareersPage({ params }: PageProps<'/[locale]/caree
             numeric: true,
             align: 'start',
             cell: (vacancy) => (
-              <TimeCell dateTime={vacancy.deadline}>{formatDate(vacancy.deadline, locale)}</TimeCell>
+              <TimeCell dateTime={vacancy.deadline} locale={locale}>{formatDate(vacancy.deadline, locale)}</TimeCell>
             ),
           },
         ]}

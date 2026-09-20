@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { projectStateLabel } from '@/components/content/cards';
 import { mediaImage, mediaSrc } from '@/components/content/media';
@@ -51,7 +50,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/projects
   return buildMetadata({
     locale,
     path: { ar: `/projects/${project.slugAr}`, en: `/projects/${project.slugEn}` },
-    title: project.seoTitle ?? project.title ?? siteName,
+    title: project.seoTitle?.trim() || project.title?.trim() || siteName,
     description: project.seoDescription ?? project.summary,
     siteName,
     translationStatus,
@@ -61,8 +60,6 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/projects
 
 const STATE_TONE = { active: 'active', completed: 'complete', planned: 'planned' } as const;
 
-/** Arabic comma for Arabic lists, Latin comma for English. */
-const listSeparator = (locale: 'ar' | 'en') => (locale === 'ar' ? '، ' : ', ');
 
 export default async function ProjectPage({ params }: PageProps<'/[locale]/projects/[slug]'>) {
   const { locale, slug } = await params;
@@ -80,7 +77,9 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
 
   const govLabel = (key: string) => (dict.enums.governorate as Record<string, string>)[key] ?? key;
   const themeLabel = (key: string) => (dict.enums.theme as Record<string, string>)[key] ?? key;
-  const separator = listSeparator(locale);
+  // Arabic comma for Arabic lists, Latin comma for English — from the
+  // dictionary, not a ternary here.
+  const separator = dict.common.listSeparator;
   const period = formatPeriod(project.startDate, project.endDate, locale);
   const hero = mediaImage(project.hero?.path, project.hero?.blur, project.hero);
   const url = localePath(locale, `/projects/${slug}`);
@@ -128,20 +127,15 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
             eyebrow={project.program?.title ?? undefined}
             title={project.title ?? ''}
             lede={project.summary}
+            // The programme is already the eyebrow directly above this row,
+            // and the record aside carries a real "to the programme" button.
+            // Naming it a third time, as a link one line under the eyebrow
+            // that repeats it, gave the page two controls to the same URL and
+            // the reader the same fact twice.
             meta={
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge tone={STATE_TONE[project.state]} dot>
-                  {projectStateLabel(project.state, dict)}
-                </Badge>
-                {project.program ? (
-                  <Link
-                    href={localePath(locale, `/programs/${project.program.slug}`)}
-                    className="text-caption text-ink-70"
-                  >
-                    {dict.contentUi.inProgram} {project.program.title}
-                  </Link>
-                ) : null}
-              </div>
+              <Badge tone={STATE_TONE[project.state]} dot>
+                {projectStateLabel(project.state, dict)}
+              </Badge>
             }
           />
 
@@ -150,7 +144,12 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
               image={hero}
               alt={project.hero?.alt ?? ''}
               decorative={!project.hero?.alt}
-              sizes="(min-width: 1180px) 760px, (min-width: 1024px) 60vw, 100vw"
+              // The narrative column is 600px at the 1180px content width
+              // (1052px of column, minus the 380px record aside and the 72px
+              // gap), not the 760px the old hint claimed — every desktop load
+              // fetched one candidate step too large.
+              sizes="(min-width: 1180px) 600px, (min-width: 1024px) 55vw, 100vw"
+              // The LCP element on this route, and the only `preload` on it.
               preload
             />
           ) : null}
@@ -194,7 +193,9 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
                       image={mediaImage(item.path, item.blur, item)}
                       alt={item.alt ?? ''}
                       ratio="portrait"
-                      sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 100vw"
+                      // Three-up inside the 600px narrative column, not the
+                      // full content width: ~190px a tile at the top end.
+                      sizes="(min-width: 1180px) 200px, (min-width: 640px) 30vw, 100vw"
                       caption={item.caption}
                     />
                   </li>

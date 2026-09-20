@@ -113,7 +113,7 @@ export default async function MediaDetailPage({ params, searchParams }: PageProp
             />
             {blocked ? (
               <Notice tone="warning" live="off" className="mbs-4">
-                {t.fields.hasIdentifiableMinors} — {t.consent[asset.consent]}
+                {adminUi.fields.media.minors} — {t.consent[asset.consent]}
               </Notice>
             ) : null}
             {!asset.exifStripped && asset.kind === 'image' ? (

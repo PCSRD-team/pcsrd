@@ -392,6 +392,7 @@ export function OrganizationForm({ values }: { values: Values }) {
   const socialRows = normalizeSocialRows(formValues);
   const officialRows = normalizeOfficialRows(formValues);
   const t = adminUi.organization;
+  const fields = adminUi.organization.fields;
 
   const text = (
     name: string,
@@ -464,53 +465,53 @@ export function OrganizationForm({ values }: { values: Values }) {
           }
         >
           <FieldRow>
-            {text('legalNameAr', 'الاسم القانوني (عربي)', { required: true })}
-            {text('legalNameEn', 'الاسم القانوني (إنجليزي)', { required: true, dir: 'ltr' })}
-            {text('shortNameAr', 'الاسم المختصر (عربي)', { required: true })}
-            {text('shortNameEn', 'الاسم المختصر (إنجليزي)', { required: true, dir: 'ltr' })}
-            {text('acronym', 'الاختصار', { required: true, dir: 'ltr' })}
-            {area('shortDescriptionAr', 'وصف مختصر للمؤسسة (عربي)', 'يستخدم في التذييل وشريط التعريف.')}
-            {area('shortDescriptionEn', 'وصف مختصر للمؤسسة (إنجليزي)', 'يستخدم في التذييل وشريط التعريف.')}
-            {text('foundedYear', 'سنة التأسيس', { type: 'number' })}
-            {text('licenseNumber', 'رقم الترخيص', { required: true, dir: 'ltr' })}
-            {text('licenseAuthorityAr', 'جهة الترخيص (عربي)')}
-            {text('licenseAuthorityEn', 'جهة الترخيص (إنجليزي)', { dir: 'ltr' })}
-            {text('legalFormAr', 'الشكل القانوني (عربي)')}
-            {text('legalFormEn', 'الشكل القانوني (إنجليزي)', { dir: 'ltr' })}
-            {media('logoPrimaryId', 'الشعار الأساسي', 'اختر صورة من مكتبة الوسائط.')}
-            {media('footerLogoId', 'شعار التذييل', 'إن تُرك فارغاً يُستخدم الشعار الأساسي.')}
-            {media('logoMonoId', 'الشعار أحادي اللون', 'اختياري للتصاميم الداكنة أو المختصرة.')}
-            {media('defaultOgId', 'صورة المشاركة الافتراضية', 'تستخدمها الصفحات التي لا تملك صورة خاصة.')}
+            {text('legalNameAr', fields.legalNameAr, { required: true })}
+            {text('legalNameEn', fields.legalNameEn, { required: true, dir: 'ltr' })}
+            {text('shortNameAr', fields.shortNameAr, { required: true })}
+            {text('shortNameEn', fields.shortNameEn, { required: true, dir: 'ltr' })}
+            {text('acronym', fields.acronym, { required: true, dir: 'ltr' })}
+            {area('shortDescriptionAr', fields.shortDescriptionAr, fields.shortDescriptionHint)}
+            {area('shortDescriptionEn', fields.shortDescriptionEn, fields.shortDescriptionHint)}
+            {text('foundedYear', fields.foundedYear, { type: 'number' })}
+            {text('licenseNumber', fields.licenseNumber, { required: true, dir: 'ltr' })}
+            {text('licenseAuthorityAr', fields.licenseAuthorityAr)}
+            {text('licenseAuthorityEn', fields.licenseAuthorityEn, { dir: 'ltr' })}
+            {text('legalFormAr', fields.legalFormAr)}
+            {text('legalFormEn', fields.legalFormEn, { dir: 'ltr' })}
+            {media('logoPrimaryId', fields.logoPrimary, fields.logoPrimaryHint)}
+            {media('footerLogoId', fields.footerLogo, fields.footerLogoHint)}
+            {media('logoMonoId', fields.logoMono, fields.logoMonoHint)}
+            {media('defaultOgId', fields.defaultOg, fields.defaultOgHint)}
           </FieldRow>
         </FormSection>
 
         <FormSection title={t.sections.vision}>
           <FieldRow>
-            {area('visionAr', 'الرؤية (عربي)')}
-            {area('visionEn', 'الرؤية (إنجليزي)')}
-            {area('missionAr', 'الرسالة (عربي)')}
-            {area('missionEn', 'الرسالة (إنجليزي)')}
+            {area('visionAr', fields.visionAr)}
+            {area('visionEn', fields.visionEn)}
+            {area('missionAr', fields.missionAr)}
+            {area('missionEn', fields.missionEn)}
           </FieldRow>
         </FormSection>
 
         <FormSection title={t.sections.contact}>
           <FieldRow>
-            {text('primaryPhone', 'الهاتف الأساسي', { dir: 'ltr', hint: 'بصيغة دولية، مثل +970...' })}
-            {text('whatsappNumber', 'رقم واتساب', {
+            {text('primaryPhone', fields.primaryPhone, { dir: 'ltr', hint: fields.primaryPhoneHint })}
+            {text('whatsappNumber', fields.whatsappNumber, {
               dir: 'ltr',
-              hint: 'أرقام فقط دون علامة +، لأنّه مسار wa.me.',
+              hint: fields.whatsappNumberHint,
             })}
-            {text('email', 'البريد الإلكتروني', { dir: 'ltr', type: 'email' })}
-            {text('secondaryEmail', 'بريد إلكتروني إضافي', { dir: 'ltr', type: 'email' })}
-            {text('officeHoursAr', 'ساعات العمل (عربي)')}
-            {text('officeHoursEn', 'ساعات العمل (إنجليزي)', { dir: 'ltr' })}
-            {text('addressAr', 'العنوان (عربي)')}
-            {text('addressEn', 'العنوان (إنجليزي)', { dir: 'ltr' })}
+            {text('email', fields.email, { dir: 'ltr', type: 'email' })}
+            {text('secondaryEmail', fields.secondaryEmail, { dir: 'ltr', type: 'email' })}
+            {text('officeHoursAr', fields.officeHoursAr)}
+            {text('officeHoursEn', fields.officeHoursEn, { dir: 'ltr' })}
+            {text('addressAr', fields.addressAr)}
+            {text('addressEn', fields.addressEn, { dir: 'ltr' })}
           </FieldRow>
           <Checkbox
             name="addressIsPublic"
-            label="إظهار العنوان على الموقع"
-            hint="اترك الخيار مغلقاً إن كان إظهار موقع المكتب يعرّض أحداً للخطر."
+            label={fields.addressPublic}
+            hint={fields.addressPublicHint}
             defaultChecked={Boolean(formValues.addressIsPublic)}
           />
         </FormSection>
@@ -524,29 +525,29 @@ export function OrganizationForm({ values }: { values: Values }) {
 
         <FormSection title={t.sections.footerCta} lede={t.sections.footerCtaLede}>
           <FieldRow>
-            {text('footerCtaTitleAr', 'عنوان الدعوة إلى الإجراء (عربي)')}
-            {text('footerCtaTitleEn', 'عنوان الدعوة إلى الإجراء (إنجليزي)', { dir: 'ltr' })}
-            {area('footerCtaDescriptionAr', 'وصف الدعوة إلى الإجراء (عربي)')}
-            {area('footerCtaDescriptionEn', 'وصف الدعوة إلى الإجراء (إنجليزي)')}
-            {text('footerCtaButtonLabelAr', 'نص الزر (عربي)')}
-            {text('footerCtaButtonLabelEn', 'نص الزر (إنجليزي)', { dir: 'ltr' })}
-            {text('footerCtaUrl', 'رابط الزر', { dir: 'ltr', hint: 'رابط داخلي مثل /contact أو رابط كامل.' })}
+            {text('footerCtaTitleAr', fields.footerCtaTitleAr)}
+            {text('footerCtaTitleEn', fields.footerCtaTitleEn, { dir: 'ltr' })}
+            {area('footerCtaDescriptionAr', fields.footerCtaDescriptionAr)}
+            {area('footerCtaDescriptionEn', fields.footerCtaDescriptionEn)}
+            {text('footerCtaButtonLabelAr', fields.footerCtaButtonLabelAr)}
+            {text('footerCtaButtonLabelEn', fields.footerCtaButtonLabelEn, { dir: 'ltr' })}
+            {text('footerCtaUrl', fields.footerCtaUrl, { dir: 'ltr', hint: fields.footerCtaUrlHint })}
           </FieldRow>
           <Checkbox
             name="footerCtaEnabled"
-            label="تفعيل دعوة التذييل"
-            hint="عند إيقافها لا تعرض الواجهة هذه الدعوة."
+            label={fields.footerCtaEnabled}
+            hint={fields.footerCtaEnabledHint}
             defaultChecked={Boolean(formValues.footerCtaEnabled)}
           />
         </FormSection>
 
         <FormSection title={t.sections.lists} lede={t.sections.listsLede}>
           <Stack gap={6}>
-            <StringListEditor name="alternateNames" label="الأسماء البديلة" initialItems={arrayValue<string>(formValues, 'alternateNames')} placeholder="اسم بديل للمؤسسة" error={firstError('alternateNames')} />
-            <StringListEditor name="additionalPhones" label="الهواتف الإضافية" initialItems={arrayValue<string>(formValues, 'additionalPhones')} placeholder="+970…" dir="ltr" error={firstError('additionalPhones')} />
-            <TitledBlocksEditor name="coreValues" label="القيم" initialItems={arrayValue<TitledBlock>(formValues, 'coreValues')} error={firstError('coreValues')} />
-            <TitledBlocksEditor name="principles" label="المبادئ" initialItems={arrayValue<TitledBlock>(formValues, 'principles')} error={firstError('principles')} />
-            <BilingualLinesEditor name="strategicObjectives" label="الأهداف الاستراتيجية" initialItems={arrayValue<BilingualLine>(formValues, 'strategicObjectives')} error={firstError('strategicObjectives')} />
+            <StringListEditor name="alternateNames" label={fields.alternateNames} initialItems={arrayValue<string>(formValues, 'alternateNames')} placeholder={fields.alternateNamesPlaceholder} error={firstError('alternateNames')} />
+            <StringListEditor name="additionalPhones" label={fields.additionalPhones} initialItems={arrayValue<string>(formValues, 'additionalPhones')} placeholder="+970…" dir="ltr" error={firstError('additionalPhones')} />
+            <TitledBlocksEditor name="coreValues" label={fields.coreValues} initialItems={arrayValue<TitledBlock>(formValues, 'coreValues')} error={firstError('coreValues')} />
+            <TitledBlocksEditor name="principles" label={fields.principles} initialItems={arrayValue<TitledBlock>(formValues, 'principles')} error={firstError('principles')} />
+            <BilingualLinesEditor name="strategicObjectives" label={fields.strategicObjectives} initialItems={arrayValue<BilingualLine>(formValues, 'strategicObjectives')} error={firstError('strategicObjectives')} />
           </Stack>
         </FormSection>
 
