@@ -21,19 +21,27 @@ import * as schema from './schema';
  *   name restated.
  */
 /**
- * `max: 1` is a serverless rule, and a build is not serverless. `next build`
- * prerenders pages in several worker processes, each rendering a page that
- * issues its queries with `Promise.all` — on one connection those serialise,
- * and against a database a continent away that is the difference between a
- * page building in seconds and exceeding the generation timeout. The pool is
- * still small, and it exists only for the duration of the build.
+ * `max: 1` is a **serverless** rule, and neither a build nor `next dev` is
+ * serverless.
+ *
+ * A production invocation handles one request, so one connection is right and
+ * a larger pool would multiply idle connections by the number of warm lambdas.
+ * A build and a development server are the opposite: one long-lived process
+ * serving many requests at once, each page issuing its queries with
+ * `Promise.all`. On a single connection those serialise, and against a
+ * database a continent away the arithmetic is brutal — the first build
+ * exceeded the 60s page timeout, and the browser suite timed out on every
+ * route at 72s with two workers.
+ *
+ * So: a small pool off production, one connection on it.
  */
-const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
+const isSingleRequestRuntime =
+  serverEnv.NODE_ENV === 'production' && process.env.NEXT_PHASE !== 'phase-production-build';
 
 function createClient() {
   return postgres(serverEnv.DATABASE_URL, {
     prepare: false,
-    max: isBuild ? 8 : 1,
+    max: isSingleRequestRuntime ? 1 : 8,
     idle_timeout: 20,
     connect_timeout: 15,
   });

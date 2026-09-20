@@ -61,6 +61,11 @@ const config: NextConfig = {
 
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    // Enables `src/app/global-not-found.tsx`. Without it an unmatched URL gets
+    // Next's built-in 404, whose `<html>` carries no `lang` — WCAG 2.2 SC 3.1.1
+    // at Level A. The convention exists for exactly this shape of app: several
+    // root layouts, and the public one under a top-level dynamic segment.
+    globalNotFound: true,
     serverActions: {
       // The job-application form posts a CV through a Server Action, and the
       // default limit is 1 MB. 4.5 MB is Vercel's platform ceiling; uploads are
