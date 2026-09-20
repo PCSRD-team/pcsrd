@@ -113,8 +113,13 @@ export default async function ProgramsPage({ params }: PageProps<'/[locale]/prog
                   image={mediaImage(program.heroPath, program.heroBlur)}
                   alt={program.heroAlt ?? ''}
                   decorative={!program.heroAlt}
-                  sizes="(min-width: 768px) 416px, 100vw"
+                  // 26rem is the column's *cap*; between 768px and the 1180px
+                  // content width it is narrower than that, so the hint has to
+                  // fall back to a viewport fraction rather than the cap.
+                  sizes="(min-width: 1180px) 416px, (min-width: 768px) 40vw, 100vw"
                   fallbackLabel={dict.contentUi.noImage}
+                  // The first row's image is the LCP element here; the rest are
+                  // below the fold and must not compete with it.
                   preload={index === 0}
                 />
               </li>

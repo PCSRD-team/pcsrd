@@ -15,7 +15,15 @@ import * as schema from '@/db/schema';
  * Using `DIRECT_URL` here is the honest expression of that: seeding is closer
  * to a migration than to a request.
  */
-const client = postgres(process.env.DIRECT_URL!, {
+const directUrl = process.env.DIRECT_URL;
+if (!directUrl) {
+  // `postgres(undefined)` does not fail here — it falls back to libpq-style
+  // defaults and tries `localhost`, so the seed's first error is a refused
+  // connection to a database nobody meant to talk to.
+  throw new Error('DIRECT_URL is not set. Scripts need the owner connection on :5432.');
+}
+
+const client = postgres(directUrl, {
   prepare: false,
   max: 1,
   connect_timeout: 20,

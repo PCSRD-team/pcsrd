@@ -1,4 +1,5 @@
 import { fontVariables } from '@/app/fonts';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import '../../../globals.css';
 
 /**
@@ -10,7 +11,7 @@ import '../../../globals.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'تسجيل الدخول — لوحة التحكم',
+  title: `${adminUi.login.title} — ${adminUi.shell.brand}`,
   robots: { index: false, follow: false },
 };
 

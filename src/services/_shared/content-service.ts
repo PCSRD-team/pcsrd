@@ -1,9 +1,9 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import type { Db, Tx } from '@/db';
 import { withActor } from '@/db/session';
 import type { ContentStatus } from '@/db/schema/enums';
-import { AppError, notFound } from '@/lib/errors';
+import { AppError, conflict, notFound } from '@/lib/errors';
 import type { Actor } from './actor';
 import { writeAudit } from './audit';
 import { one } from './one';
@@ -86,6 +86,16 @@ export type ContentServiceConfig<TInput extends ContentInputBase> = {
   afterWrite?: (tx: Tx, id: string, input: TInput) => Promise<void>;
   /** Media referenced by an already-stored row, for a status-only transition. */
   storedMediaIds?: (tx: Tx, row: ContentRow) => Promise<(string | null | undefined)[]>;
+  /**
+   * A `key` column carrying a UNIQUE constraint — `pages_key_key`,
+   * `programs_key_key`.
+   *
+   * Without this the second page created with `key = 'privacy'` reached the
+   * database and came back as a Postgres unique violation: a 500 naming a
+   * constraint, on a field the editor typed by hand. Checked here for the same
+   * reason `assertSlugsUnique` is: so the refusal is a field error.
+   */
+  uniqueKey?: PgColumn;
 };
 
 export type ContentService<TInput extends ContentInputBase> = {
@@ -124,6 +134,25 @@ export function createContentService<TInput extends ContentInputBase>(
     return (row as ContentRow | undefined) ?? null;
   }
 
+  /**
+   * The `key` column's UNIQUE constraint, stated before the insert rather than
+   * after it. `errors.slug.taken` is the message: for a page the key *is* the
+   * path the legal route looks the page up by, so "already in use, choose
+   * another" is the same sentence either way.
+   */
+  async function assertKeyUnique(tx: Tx, key: unknown, excludeId?: string): Promise<void> {
+    if (!config.uniqueKey || typeof key !== 'string' || key === '') return;
+
+    const where = eq(config.uniqueKey, key);
+    const [clash] = await tx
+      .select({ id: table.id })
+      .from(table)
+      .where(excludeId ? and(where, ne(table.id, excludeId)) : where)
+      .limit(1);
+
+    if (clash) throw conflict('errors.slug.taken', { key: ['errors.slug.taken'] });
+  }
+
   return {
     async upsert(db, actor, input) {
       assertCan(actor, 'content.write');
@@ -136,6 +165,7 @@ export function createContentService<TInput extends ContentInputBase>(
         await assertSlugsUnique(tx, table, slugs, existing?.id);
 
         const values = config.toColumns(input, slugs, existing);
+        await assertKeyUnique(tx, values.key, existing?.id);
         const status = (values.status as ContentStatus | undefined) ?? 'draft';
 
         assertCanTransition(actor, existing?.status ?? 'draft', status);

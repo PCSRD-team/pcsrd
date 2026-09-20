@@ -4,6 +4,7 @@ import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
 import { readAsActor, rowsOf } from '@/db/session';
 import {
+  type AuditAction,
   auditLogs,
   formSubmissions,
   impactMetrics,
@@ -24,7 +25,7 @@ import {
   storyMedia,
   vacancies,
 } from '@/db/schema';
-import type { ContentStatus } from '@/db/schema/enums';
+import type { ContentStatus, SubmissionState, SubmissionType } from '@/db/schema/enums';
 import type { Entity } from '@/lib/cache/tags';
 import type { Actor } from '@/services/_shared/actor';
 
@@ -271,13 +272,6 @@ export async function listAdminRedirects(actor: Actor) {
   );
 }
 
-export async function getAdminRedirect(actor: Actor, id: string) {
-  return readAsActor(db, actor, async (tx) => {
-    const [row] = await tx.select().from(redirects).where(eq(redirects.id, id)).limit(1);
-    return row ?? null;
-  });
-}
-
 /** One catalogue row, whole, for its edit form. */
 export async function getAdminPartner(actor: Actor, id: string) {
   return readAsActor(db, actor, async (tx) => {
@@ -493,11 +487,23 @@ export async function getMediaUsage(actor: Actor, mediaId: string): Promise<Medi
 
 export async function listSubmissions(
   actor: Actor,
-  options: { sensitive?: boolean; page?: number } = {},
+  options: {
+    sensitive?: boolean;
+    type?: SubmissionType;
+    state?: SubmissionState;
+    page?: number;
+  } = {},
 ) {
   const page = Math.max(1, options.page ?? 1);
   return readAsActor(db, actor, async (tx) => {
-    const where = eq(formSubmissions.isSensitive, options.sensitive ?? false);
+    // `is_sensitive` is a hard filter, never a UI one (05-ADMIN §7): the
+    // confidential rows are absent from the result set, not hidden in it. The
+    // type and state filters narrow what is left.
+    const where = and(
+      eq(formSubmissions.isSensitive, options.sensitive ?? false),
+      options.type ? eq(formSubmissions.type, options.type) : undefined,
+      options.state ? eq(formSubmissions.state, options.state) : undefined,
+    );
 
     const [items, counted] = await Promise.all([
       tx
@@ -540,13 +546,34 @@ export async function getUser(actor: Actor, id: string) {
   });
 }
 
+/**
+ * The entity types that actually appear in the log, for the filter's options.
+ *
+ * Read from the table rather than restated as a constant: `entity_type` is a
+ * plain text column each service names for itself, so a hand-written list
+ * would offer a filter for a type nothing writes and miss one that a new
+ * service added.
+ */
+export async function listAuditEntityTypes(actor: Actor): Promise<string[]> {
+  return readAsActor(db, actor, async (tx) => {
+    const rows = await tx
+      .selectDistinct({ entityType: auditLogs.entityType })
+      .from(auditLogs)
+      .orderBy(auditLogs.entityType);
+    return rows.map((row) => row.entityType);
+  });
+}
+
 export async function listAudit(
   actor: Actor,
-  options: { entityType?: string; page?: number } = {},
+  options: { entityType?: string; action?: AuditAction; page?: number } = {},
 ) {
   const page = Math.max(1, options.page ?? 1);
   return readAsActor(db, actor, async (tx) => {
-    const where = options.entityType ? eq(auditLogs.entityType, options.entityType) : undefined;
+    const where = and(
+      options.entityType ? eq(auditLogs.entityType, options.entityType) : undefined,
+      options.action ? eq(auditLogs.action, options.action) : undefined,
+    );
 
     const [items, counted] = await Promise.all([
       tx

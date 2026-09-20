@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/layout';
 import { Caption } from '@/components/ui/typography';
 import { getAdminNavCounts } from '@/db/queries/admin';
 import type { UserRole } from '@/db/schema/enums';
+import { DEFAULT_LOCALE, localePath } from '@/lib/i18n/config';
 import type { Actor } from '@/services/_shared/actor';
 import { can } from '@/services/_shared/permissions';
 import { adminDict } from './admin-dict';
@@ -167,7 +168,15 @@ export function AdminShell({
           <Caption className="mbs-1 text-paper/70">
             {actor.fullName ?? ''} — {adminDict.users.roles[actor.role]}
           </Caption>
-          <ButtonLink href="/ar" tone="quiet" size="sm" className={`mbs-4 border border-navy-700 ${onNavy}`}>
+          {/* The site's front door in the default locale, built rather than
+              written: a literal prefix would still point at Arabic after a
+              locale was added or the default changed. */}
+          <ButtonLink
+            href={localePath(DEFAULT_LOCALE, '/')}
+            tone="quiet"
+            size="sm"
+            className={`mbs-4 border border-navy-700 ${onNavy}`}
+          >
             {t.visitSite}
           </ButtonLink>
         </div>

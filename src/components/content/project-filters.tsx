@@ -101,7 +101,10 @@ export function ProjectFilterPanel({
   const headingId = 'project-filters-heading';
 
   return (
-    <Panel as="aside" padding="sm" labelledBy={headingId} className="md:sticky md:inset-bs-6 md:self-start">
+    // Sticky from `lg`, matching the breakpoint at which `/projects` actually
+    // puts the panel in a column beside the results. Below that it is a
+    // full-width block above them and must scroll away with the page.
+    <Panel as="aside" padding="sm" labelledBy={headingId} className="lg:sticky lg:inset-bs-6 lg:self-start">
       <form method="get" aria-label={dict.a11y.filterPanel}>
         <div className="flex items-baseline justify-between gap-3 pbe-4">
           <Heading level={2} size="h4" id={headingId}>

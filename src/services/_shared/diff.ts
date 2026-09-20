@@ -32,12 +32,34 @@ function summarize(value: unknown): unknown {
   return value;
 }
 
-function equal(a: unknown, b: unknown): boolean {
+/**
+ * Structural equality that does not care about key order.
+ *
+ * `JSON.stringify(a) === JSON.stringify(b)` was the obvious version and is
+ * wrong for the jsonb columns: Postgres stores a `jsonb` object with its own
+ * key ordering, so a value read back and posted again unchanged serialises
+ * differently from the one that was written. Anything that asks "did this
+ * change?" — the audit diff, and the organisation settings' permission check —
+ * would answer yes to an untouched field.
+ */
+export function valuesEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
   if (a === null || b === null || a === undefined || b === undefined) return false;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((item, index) => valuesEqual(item, b[index]));
+  }
   if (typeof a === 'object' && typeof b === 'object') {
-    return JSON.stringify(a) === JSON.stringify(b);
+    const left = a as Record<string, unknown>;
+    const right = b as Record<string, unknown>;
+    const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+    for (const key of keys) {
+      // `{ note_en: null }` and `{}` describe the same stored value.
+      if (left[key] === undefined && right[key] === undefined) continue;
+      if (!valuesEqual(left[key] ?? null, right[key] ?? null)) return false;
+    }
+    return true;
   }
   return false;
 }
@@ -61,7 +83,7 @@ export function computeDiff(
     const to = after[key];
     // A create has no `before`, so a field absent from `after` is not a change.
     if (before === null && to === undefined) continue;
-    if (!equal(from, to)) diff[key] = { from: summarize(from), to: summarize(to) };
+    if (!valuesEqual(from, to)) diff[key] = { from: summarize(from), to: summarize(to) };
   }
 
   return diff;

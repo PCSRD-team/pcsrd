@@ -17,15 +17,12 @@ export const site_coreAr = {
   siteChrome: {
     channelsBarNav: 'شريط القنوات الرسمية',
     secondaryNav: 'روابط إضافية',
-    footerIdentity: 'السجل التعريفي للمؤسسة',
     whatsapp: 'واتساب',
     officeHours: 'ساعات العمل',
     phone: 'الهاتف',
     email: 'البريد الإلكتروني',
     address: 'العنوان',
-    getInvolvedNav: 'شارك معنا',
     homeLinkLabel: 'الصفحة الرئيسية',
-    licensedBy: 'مرخّصة من',
   },
 
   /** Home page sections that have no copy elsewhere. */
@@ -36,7 +33,6 @@ export const site_coreAr = {
     governoratesCount: 'محافظات نعمل فيها',
     partnersCount: 'شركاء منشورون',
     membershipsCount: 'عضويات وشبكات',
-    programCode: 'برنامج',
     aboutTitle: 'من نحن',
     aboutCta: 'تعرّف علينا',
     whereWeWorkTitle: 'أين نعمل',
@@ -45,7 +41,6 @@ export const site_coreAr = {
     getInvolvedTitle: 'شارك معنا',
     getInvolvedLead: 'ثلاثة أبواب مفتوحة: شراكة مؤسسية، أو تطوّع، أو دعم مباشر.',
     storyCta: 'اقرأ القصة',
-    heroImageLabel: 'صورة تعبيرية',
     metricsFootnote: 'تُنشر الأرقام مع فترتها وحالة التحقّق منها فقط.',
   },
 
@@ -112,6 +107,24 @@ export const site_coreAr = {
     learnMore: 'المزيد',
   },
 
+  /**
+   * The error boundaries — `(site)/[locale]/error.tsx` and `global-error.tsx`.
+   *
+   * Those two are Client Components (React requires an error boundary to be
+   * one) and they render after something upstream has already failed, so they
+   * cannot `await getDictionary()` and may not even have a resolved locale.
+   * They import `site_coreAr` and `site_coreEn` directly and render **both**
+   * languages, each block carrying its own `lang`/`dir` — the same answer
+   * `not-found-body.tsx` gives, for the same reason. The copy still lives
+   * here rather than in the components (RULE 5).
+   */
+  boundary: {
+    errorTitle: 'تعذّر عرض هذه الصفحة',
+    errorBody: 'حدث خطأ غير متوقّع. حاول مجدداً، وإن تكرّر فأخبرنا.',
+    referenceLabel: 'رقم المرجع',
+    retry: 'إعادة المحاولة',
+  },
+
   /** `/legal/[slug]`. */
   legalPages: {
     eyebrow: 'أحكام',
@@ -133,15 +146,12 @@ export const site_coreEn: Shape = {
   siteChrome: {
     channelsBarNav: 'Official channels bar',
     secondaryNav: 'More links',
-    footerIdentity: 'Organisation identity record',
     whatsapp: 'WhatsApp',
     officeHours: 'Office hours',
     phone: 'Phone',
     email: 'Email',
     address: 'Address',
-    getInvolvedNav: 'Get involved',
     homeLinkLabel: 'Home page',
-    licensedBy: 'Licensed by',
   },
 
   homePage: {
@@ -151,7 +161,6 @@ export const site_coreEn: Shape = {
     governoratesCount: 'Governorates we work in',
     partnersCount: 'Published partners',
     membershipsCount: 'Memberships and networks',
-    programCode: 'Programme',
     aboutTitle: 'About us',
     aboutCta: 'Learn about us',
     whereWeWorkTitle: 'Where we work',
@@ -160,7 +169,6 @@ export const site_coreEn: Shape = {
     getInvolvedTitle: 'Get involved',
     getInvolvedLead: 'Three open doors: institutional partnership, volunteering, or direct support.',
     storyCta: 'Read the story',
-    heroImageLabel: 'Illustrative image',
     metricsFootnote: 'Figures are published only with their period and verification status.',
   },
 
@@ -223,6 +231,13 @@ export const site_coreEn: Shape = {
     verifyCalloutCta: 'List of official channels',
     contactAlternative: 'Or write to us through the contact page',
     learnMore: 'Learn more',
+  },
+
+  boundary: {
+    errorTitle: 'This page could not be shown',
+    errorBody: 'Something went wrong. Please try again, and let us know if it keeps happening.',
+    referenceLabel: 'Reference',
+    retry: 'Try again',
   },
 
   legalPages: {

@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/careers/
   return buildMetadata({
     locale,
     path: { ar: `/careers/${vacancy.slugAr}`, en: `/careers/${vacancy.slugEn}` },
-    title: seoTitle ?? vacancy.title ?? siteName,
+    title: seoTitle?.trim() || vacancy.title?.trim() || siteName,
     description: seoDescription ?? richTextToPlainText(vacancy.description, 160),
     siteName,
     translationStatus: toTranslationStatus(vacancy.translationStatus),

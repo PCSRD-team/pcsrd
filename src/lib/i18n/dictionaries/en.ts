@@ -30,9 +30,9 @@ export const en: Dictionary = {
     submit: 'Send',
     submitting: 'Sending…',
     download: 'Download',
-    externalLink: 'External link',
     language: 'Language',
     switchToEnglish: 'العربية',
+    listSeparator: ', ',
   },
 
   nav: {
@@ -76,7 +76,6 @@ export const en: Dictionary = {
     eligibility: 'Who qualifies',
     howToAccess: 'How to access the service',
     objectives: 'Specific objectives',
-    interventions: 'Key interventions',
     sustainability: 'Sustainability',
     targetGroups: 'Target groups',
     projectsInProgram: 'Projects in this programme',
@@ -147,7 +146,6 @@ export const en: Dictionary = {
     lead: 'These are the only channels we speak through.',
     channel: 'Channel',
     handle: 'Handle',
-    lastVerified: 'Last verified',
     official: 'Official',
     notOurs: 'Not ours',
     reportTitle: 'Report an impersonation',
@@ -229,7 +227,6 @@ export const en: Dictionary = {
     description: 'Description',
     relatedProject: 'Related project',
     contactPreference: 'How you prefer to be contacted',
-    contactNone: 'I do not want to be contacted',
     anonymousNotice:
       'You may submit this complaint without giving your name. We do not record your device address or browser details with complaints.',
     channel: 'Channel',
@@ -258,9 +255,6 @@ export const en: Dictionary = {
     emptyTitle: 'Nothing here yet',
     emptyBody: 'Content will appear here once it is published.',
     emptyFiltered: 'No results match these filters.',
-    errorTitle: 'This section could not be shown',
-    errorBody: 'Something went wrong. Try refreshing the page.',
-    retry: 'Try again',
     notFoundTitle: 'Page not found',
     notFoundBody: 'The link may be out of date, or the page may have been removed.',
     untranslatedTitle: 'This page has not been translated yet',
@@ -386,7 +380,6 @@ export const en: Dictionary = {
       confirmDelete: 'Confirm deletion',
       deleteHint: 'Deletion is permanent and cannot be undone.',
       deletePublishedHint: 'Unpublish the item before deleting it.',
-      cancel: 'Cancel',
       actions: 'Actions',
       add: 'Add',
       back: 'Back to the list',
@@ -456,17 +449,6 @@ export const en: Dictionary = {
       uploaded: 'Uploaded',
       exifNotStripped: 'EXIF data not stripped',
       openDetail: 'Details',
-      fields: {
-        altAr: 'Alt text (Arabic)',
-        altEn: 'Alt text (English)',
-        captionAr: 'Caption (Arabic)',
-        captionEn: 'Caption (English)',
-        credit: 'Credit',
-        consent: 'Consent status',
-        consentReference: 'Consent reference',
-        hasIdentifiableMinors: 'Shows identifiable minors',
-        minorsHint: 'When on, nothing using this asset can be published before consent is documented.',
-      },
       consent: {
         not_required: 'Not required',
         obtained: 'Documented',
@@ -622,12 +604,8 @@ export const en: Dictionary = {
 
   a11y: {
     mainNav: 'Main navigation',
-    footerNav: 'Footer links',
     breadcrumb: 'Breadcrumb',
     pagination: 'Pagination',
-    currentPage: 'Current page',
-    openMenu: 'Open menu',
-    closeMenu: 'Close menu',
     filterPanel: 'Filter panel',
   },
 };

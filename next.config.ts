@@ -45,10 +45,28 @@ const config: NextConfig = {
 
   images: {
     formats: ['image/avif', 'image/webp'],
+    // The optimiser fetches and re-serves anything a pattern matches, so the
+    // pattern names *this* project's storage host and nothing wider.
+    // `https://*.supabase.co/...` matched every Supabase project on the
+    // internet, which makes `/_next/image` a free image proxy for all of them
+    // and bills the transfer here. The wildcard survives only as a fallback
+    // for an environment with no URL to read (CI with `SKIP_ENV_VALIDATION=1`),
+    // where no page renders a storage image anyway.
     remotePatterns: [
-      new URL('https://*.supabase.co/storage/v1/object/public/**'),
+      new URL(
+        `https://${
+          URL.canParse(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
+            ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL as string).host
+            : '*.supabase.co'
+        }/storage/v1/object/public/**`,
+      ),
     ],
+    // The real breakpoints this design uses are 375 (the mobile drawing), 640,
+    // 768, 1024 and the 1180px content column; 420/828 and 1080/1200 are the
+    // 1× and 2× candidates for the two ends of that range.
     deviceSizes: [360, 420, 640, 828, 1080, 1200, 1920],
+    // 48 and 64 are the header and footer logo squares; 256/384 cover the
+    // partner tile and the news thumbnail at 2×.
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
@@ -60,7 +78,13 @@ const config: NextConfig = {
   staticPageGenerationTimeout: 240,
 
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    // There is no `optimizePackageImports` entry. It used to name
+    // `lucide-react`, which is not — and never was — a dependency of this
+    // project: the kit draws its own icons from an inline path table in
+    // `src/components/ui/icon.tsx`, so there is no icon package to tree-shake.
+    // An entry for an absent package is not an error, it is simply inert, which
+    // is why it survived several passes.
+
     // Enables `src/app/global-not-found.tsx`. Without it an unmatched URL gets
     // Next's built-in 404, whose `<html>` carries no `lang` — WCAG 2.2 SC 3.1.1
     // at Level A. The convention exists for exactly this shape of app: several

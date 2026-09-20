@@ -1,6 +1,7 @@
 import { fontVariables } from '@/app/fonts';
 import { AdminShell } from '@/components/admin/shell';
 import { requireAuth } from '@/lib/auth/guard';
+import { adminUi } from '@/components/admin/admin-ui-dict';
 import '../../globals.css';
 
 /**
@@ -27,7 +28,10 @@ import '../../globals.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: { default: 'لوحة التحكم', template: '%s — لوحة التحكم' },
+  title: {
+    default: adminUi.shell.brand,
+    template: `%s — ${adminUi.shell.brand}`,
+  },
   robots: { index: false, follow: false },
 };
 

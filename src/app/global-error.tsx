@@ -2,6 +2,8 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
+import { DEFAULT_LOCALE, DIR } from '@/lib/i18n/config';
+import { site_coreAr, site_coreEn } from '@/lib/i18n/dictionaries/partials/site-core';
 import { fontVariables } from './fonts';
 import './globals.css';
 
@@ -15,13 +17,14 @@ import './globals.css';
  * `src/app/layout.tsx` at all, and all three route groups are root layouts, so
  * a failure in any one of them had nothing to catch it.
  *
- * It is a Client Component because an error boundary has to be. It is also the
- * one screen in the codebase that cannot read the dictionaries: `getDictionary`
- * is server-only, and the locale lives in a segment this component has already
- * fallen out of. Both languages are shown rather than guessing, each block
- * carrying its own `lang` and `dir` so a screen reader announces each in the
- * right voice — the same approach `not-found.tsx` takes, and for the same
- * reason.
+ * It is a Client Component because an error boundary has to be, so it cannot
+ * call `getDictionary` (`server-only`), and the locale lives in a segment this
+ * component has already fallen out of. It reads the `boundary` block of the
+ * `site-core` partial directly instead — the copy is still a dictionary
+ * lookup (RULE 5), just one that does not need a server. Both languages are
+ * shown rather than guessing, each block carrying its own `lang` and `dir` so
+ * a screen reader announces each in the right voice — the same approach
+ * `not-found.tsx` takes, and for the same reason.
  *
  * `digest` is rendered deliberately. It is the only handle a visitor can quote
  * and an operator can grep for, and it contains no detail of the failure.
@@ -43,18 +46,23 @@ export default function GlobalError({
     Sentry.captureException(error);
   }, [error]);
 
+  const ar = site_coreAr.boundary;
+  const en = site_coreEn.boundary;
+
   return (
-    <html lang="ar" dir="rtl">
+    <html lang={DEFAULT_LOCALE} dir={DIR[DEFAULT_LOCALE]}>
       <body className={`${fontVariables} bg-paper-ground antialiased`}>
         <div className="container-content section-gap">
           <div className="rule-edge bg-paper p-8">
-            <p className="eyebrow">500</p>
+            <p className="eyebrow" dir="ltr">
+              500
+            </p>
 
             <h1 className="mbs-4 text-h2 font-semibold text-ink" lang="ar" dir="rtl">
-              حدث خطأ غير متوقّع
+              {ar.errorTitle}
             </h1>
             <p className="mbs-3 text-small text-ink-70" lang="ar" dir="rtl">
-              تعذّر عرض الصفحة. حاول مجدداً، وإن تكرّر الأمر تواصل معنا.
+              {ar.errorBody}
             </p>
             <p className="mbs-4" lang="ar" dir="rtl">
               <button
@@ -62,18 +70,17 @@ export default function GlobalError({
                 onClick={reset}
                 className="border-be-2 border-gold-600 py-1 text-small font-medium text-ink hover:bg-gold-050"
               >
-                إعادة المحاولة
+                {ar.retry}
               </button>
             </p>
 
             <hr className="mbs-8 border-bs border-rule" />
 
             <h2 className="mbs-8 text-h3 font-semibold text-ink" lang="en" dir="ltr">
-              Something went wrong
+              {en.errorTitle}
             </h2>
             <p className="mbs-2 text-small text-ink-70" lang="en" dir="ltr">
-              The page could not be displayed. Try again, and get in touch if it keeps
-              happening.
+              {en.errorBody}
             </p>
             <p className="mbs-4" lang="en" dir="ltr">
               <button
@@ -81,7 +88,7 @@ export default function GlobalError({
                 onClick={reset}
                 className="border-be-2 border-gold-600 py-1 text-small font-medium text-ink hover:bg-gold-050"
               >
-                Try again
+                {en.retry}
               </button>
             </p>
 

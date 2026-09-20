@@ -274,6 +274,9 @@ export type ProgramInput = ContentInputBase &
 export const programService = createContentService<ProgramInput>({
   table: programs,
   entityType: 'program',
+  // `programs_key_key`. Three rows, one per `program_key` value — pointing a
+  // second programme at a taken key is a unique violation, not a save.
+  uniqueKey: programs.key,
   toColumns: (input, slugs, existing) => ({
     ...lifecycleColumns(input),
     ...slugs,
@@ -333,7 +336,8 @@ export type VacancyInput = ContentInputBase &
     deadline: string;
     applicationMethod?: 'form' | 'email';
     applicationEmail?: string | null;
-    postedAt?: string;
+    /** Absent, null or blank keeps the stored date — see `toColumns`. */
+    postedAt?: string | null;
     translationStatus?: TranslationStatus;
   };
 
@@ -413,6 +417,9 @@ export type PageInput = ContentInputBase &
 export const pageService = createContentService<PageInput>({
   table: pages,
   entityType: 'page',
+  // `pages_key_key`. The key is typed by hand on `/admin/pages/new`, so a
+  // second `privacy` page is the easiest unique violation in the CMS to hit.
+  uniqueKey: pages.key,
   toColumns: (input, slugs) => ({
     ...lifecycleColumns(input),
     ...slugs,

@@ -26,8 +26,8 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/v
   const values = row as Record<string, unknown>;
   const title = String(values.titleAr ?? adminUi.entity.fallbackVacancy);
   const status = values.status as ContentStatus;
-  // `posted_at` is set once on creation and never posted by the form — the
-  // service keeps it. Shown here so the editor can see what the site shows.
+  // Also an editable field on the form below; repeated in the header because
+  // it is what the public page shows as the posting date.
   const postedAt = typeof values.postedAt === 'string' ? values.postedAt : null;
 
   return (

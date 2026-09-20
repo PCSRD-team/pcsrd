@@ -217,7 +217,15 @@ export function Checkbox({
   const message = errorText(error);
   return (
     <div className={cn('space-y-1', className)}>
-      <label className="flex min-h-target items-start gap-3 py-2 text-small text-ink">
+      {/* The label activates the box, so it is part of the target and carries
+          the same pointer. `has-[:disabled]` keeps the two in step without the
+          caller having to mirror the flag. */}
+      <label
+        className={cn(
+          'flex min-h-target cursor-pointer items-start gap-3 py-2 text-small text-ink',
+          'has-[:disabled]:cursor-not-allowed has-[:disabled]:text-ink-55',
+        )}
+      >
         <input
           {...rest}
           id={controlId}
@@ -268,21 +276,32 @@ function ChoiceList({
   );
   return (
     <ul className={cn('grid gap-1', columns === 2 && 'sm:grid-cols-2')}>
-      {options.map((option) => (
-        <li key={option.value}>
-          <label className="flex min-h-target items-center gap-3 py-2 text-small text-ink">
-            <input
-              type={type}
-              name={name}
-              value={option.value}
-              defaultChecked={selected.has(option.value)}
-              disabled={disabled || option.disabled}
-              className="control-choice"
-            />
-            {option.label}
-          </label>
-        </li>
-      ))}
+      {options.map((option) => {
+        const isDisabled = Boolean(disabled || option.disabled);
+        return (
+          <li key={option.value}>
+            {/* The whole row is the target — 44px tall, pointer on the label as
+                well as the box, `not-allowed` and dimmed when the option is
+                unavailable so the state reads before the click. */}
+            <label
+              className={cn(
+                'flex min-h-target items-center gap-3 py-2 text-small',
+                isDisabled ? 'cursor-not-allowed text-ink-55' : 'cursor-pointer text-ink',
+              )}
+            >
+              <input
+                type={type}
+                name={name}
+                value={option.value}
+                defaultChecked={selected.has(option.value)}
+                disabled={isDisabled}
+                className="control-choice"
+              />
+              {option.label}
+            </label>
+          </li>
+        );
+      })}
     </ul>
   );
 }

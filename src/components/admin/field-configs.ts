@@ -1,4 +1,5 @@
 import { ADMIN_OPTIONS } from '@/lib/admin-options';
+import { adminUi } from './admin-ui-dict';
 import type { FieldSpec } from './content-form';
 
 /**
@@ -6,14 +7,21 @@ import type { FieldSpec } from './content-form';
  *
  * These are the screens. Adding an entity means adding an entry here and a
  * route that renders `ContentForm` with it, not designing another editor.
+ *
+ * **Structure lives here; words do not.** Which control, which name, which
+ * limit, which enum — that is configuration. Every label and hint is read from
+ * `adminUi.fields` (RULE 5), so a rename is a dictionary edit and the admin
+ * stays translatable even though it renders Arabic today.
  */
+
+const f = adminUi.fields;
 
 const SLUG: FieldSpec = {
   kind: 'bilingual',
   name: 'slug',
-  label: 'المسار',
+  label: f.common.slug,
   required: true,
-  hint: 'حروف وأرقام وشرطات فقط.',
+  hint: f.common.slugHint,
 };
 
 /** Programme / project options for the relation selects, loaded per page. */
@@ -25,222 +33,259 @@ export type RelationOptions = {
 const GALLERY: FieldSpec = {
   kind: 'gallery',
   name: 'gallery',
-  label: 'معرض الصور',
-  hint: 'بالترتيب الذي تظهر به. كل صورة تخضع لقاعدة الموافقة عند النشر.',
+  label: f.common.gallery,
+  hint: f.common.galleryHint,
 };
 
 const relationFields = (options: RelationOptions): FieldSpec[] => [
-  { kind: 'select', name: 'programId', label: 'البرنامج', options: options.programs },
-  { kind: 'select', name: 'projectId', label: 'المشروع', options: options.projects },
+  { kind: 'select', name: 'programId', label: f.common.program, options: options.programs },
+  { kind: 'select', name: 'projectId', label: f.common.project, options: options.projects },
 ];
 
 export const postFields = (options: RelationOptions): FieldSpec[] => [
-  { kind: 'bilingual', name: 'title', label: 'العنوان', required: true, max: 200 },
+  { kind: 'bilingual', name: 'title', label: f.common.title, required: true, max: 200 },
   SLUG,
   {
     kind: 'select',
     name: 'category',
-    label: 'التصنيف',
+    label: f.common.category,
     options: [...ADMIN_OPTIONS.postCategory],
     required: true,
   },
-  { kind: 'bilingual', name: 'excerpt', label: 'مقتطف', multiline: true, max: 400 },
-  { kind: 'richtext', name: 'body', labelAr: 'المحتوى (عربي)', labelEn: 'Body (English)' },
+  { kind: 'bilingual', name: 'excerpt', label: f.post.excerpt, multiline: true, max: 400 },
+  { kind: 'richtext', name: 'body', labelAr: f.common.bodyAr, labelEn: f.common.bodyEn },
   ...relationFields(options),
-  { kind: 'media', name: 'heroMediaId', label: 'الصورة الرئيسية' },
+  { kind: 'media', name: 'heroMediaId', label: f.common.heroMedia },
   GALLERY,
   {
     kind: 'text',
     name: 'expiresAt',
-    label: 'تاريخ انتهاء الإعلان',
+    label: f.post.expiresAt,
     type: 'date',
     // The archive cron reads this. Only announcements may carry one — the
     // `posts_expiry_only_announcements` constraint refuses it on a news item.
-    hint: 'للإعلانات فقط. تُؤرشَف تلقائياً بعد هذا التاريخ.',
+    hint: f.post.expiresAtHint,
   },
-  { kind: 'checkbox', name: 'isFeatured', label: 'مميّز' },
+  { kind: 'checkbox', name: 'isFeatured', label: f.common.featured },
 ];
 
 export const storyFields = (options: RelationOptions): FieldSpec[] => [
-  { kind: 'bilingual', name: 'title', label: 'العنوان', required: true, max: 200 },
+  { kind: 'bilingual', name: 'title', label: f.common.title, required: true, max: 200 },
   SLUG,
-  { kind: 'bilingual', name: 'summary', label: 'ملخّص', multiline: true, max: 600 },
-  { kind: 'richtext', name: 'body', labelAr: 'المحتوى (عربي)', labelEn: 'Body (English)' },
+  { kind: 'bilingual', name: 'summary', label: f.common.summary, multiline: true, max: 600 },
+  { kind: 'richtext', name: 'body', labelAr: f.common.bodyAr, labelEn: f.common.bodyEn },
   ...relationFields(options),
-  { kind: 'bilingual', name: 'quoteText', label: 'اقتباس', multiline: true, max: 400 },
-  { kind: 'bilingual', name: 'quoteAttribution', label: 'نسبة الاقتباس', max: 120 },
+  { kind: 'bilingual', name: 'quoteText', label: f.story.quoteText, multiline: true, max: 400 },
+  { kind: 'bilingual', name: 'quoteAttribution', label: f.story.quoteAttribution, max: 120 },
   {
     kind: 'checkbox',
     name: 'subjectAnonymized',
-    label: 'هوية صاحب القصة مُخفاة',
+    label: f.story.subjectAnonymized,
     // Default-on, and the form says what turning it off costs.
-    hint: 'إن أُلغيت، يصبح توثيق الموافقة إلزامياً قبل الحفظ.',
+    hint: f.story.subjectAnonymizedHint,
   },
-  { kind: 'checkbox', name: 'consentObtained', label: 'الموافقة مُوثَّقة' },
+  { kind: 'checkbox', name: 'consentObtained', label: f.story.consentObtained },
   {
     kind: 'text',
     name: 'consentReference',
-    label: 'مرجع الموافقة',
-    hint: 'رقم أو مسار المستند. مطلوب لأي قصة تكشف هوية صاحبها.',
+    label: f.common.consentReference,
+    hint: f.story.consentReferenceHint,
   },
-  { kind: 'media', name: 'heroMediaId', label: 'الصورة الرئيسية' },
+  { kind: 'media', name: 'heroMediaId', label: f.common.heroMedia },
   GALLERY,
-  { kind: 'checkbox', name: 'isFeatured', label: 'مميّزة' },
+  { kind: 'checkbox', name: 'isFeatured', label: f.story.featured },
 ];
 
 export const VACANCY_FIELDS: FieldSpec[] = [
-  { kind: 'bilingual', name: 'title', label: 'المسمّى', required: true, max: 200 },
+  { kind: 'bilingual', name: 'title', label: f.vacancy.title, required: true, max: 200 },
   SLUG,
   {
     kind: 'select',
     name: 'type',
-    label: 'النوع',
+    label: f.common.type,
     options: [...ADMIN_OPTIONS.vacancyType],
     required: true,
   },
-  { kind: 'bilingual', name: 'location', label: 'مكان العمل', max: 120 },
+  { kind: 'bilingual', name: 'location', label: f.vacancy.location, max: 120 },
   {
     kind: 'select',
     name: 'employmentType',
-    label: 'نوع التعاقد',
+    label: f.vacancy.employmentType,
     options: [
-      { value: 'FULL_TIME', label: 'دوام كامل' },
-      { value: 'PART_TIME', label: 'دوام جزئي' },
-      { value: 'VOLUNTEER', label: 'تطوّع' },
+      { value: 'FULL_TIME', label: adminUi.enums.employmentType.FULL_TIME },
+      { value: 'PART_TIME', label: adminUi.enums.employmentType.PART_TIME },
+      { value: 'VOLUNTEER', label: adminUi.enums.employmentType.VOLUNTEER },
     ],
   },
-  { kind: 'richtext', name: 'description', labelAr: 'الوصف (عربي)', labelEn: 'Description (English)' },
-  { kind: 'richtext', name: 'requirements', labelAr: 'المتطلبات (عربي)', labelEn: 'Requirements (English)' },
+  {
+    kind: 'richtext',
+    name: 'description',
+    labelAr: f.vacancy.descriptionAr,
+    labelEn: f.vacancy.descriptionEn,
+  },
+  {
+    kind: 'richtext',
+    name: 'requirements',
+    labelAr: f.vacancy.requirementsAr,
+    labelEn: f.vacancy.requirementsEn,
+  },
   {
     kind: 'text',
     name: 'deadline',
-    label: 'آخر موعد للتقديم',
+    label: f.vacancy.deadline,
     type: 'date',
     required: true,
     // Not optional anywhere in the system: the column is `not null` and the
     // daily archive job depends on every row having one.
-    hint: 'إلزامي. تُؤرشَف الوظيفة تلقائياً بعده ويختفي نموذج التقديم.',
+    hint: f.vacancy.deadlineHint,
   },
   {
     kind: 'select',
     name: 'applicationMethod',
-    label: 'طريقة التقديم',
+    label: f.vacancy.applicationMethod,
     options: [
-      { value: 'form', label: 'نموذج على الموقع' },
-      { value: 'email', label: 'بريد إلكتروني' },
+      { value: 'form', label: adminUi.enums.applicationMethod.form },
+      { value: 'email', label: adminUi.enums.applicationMethod.email },
     ],
   },
   {
     kind: 'text',
     name: 'applicationEmail',
-    label: 'بريد التقديم',
+    label: f.vacancy.applicationEmail,
     type: 'email',
-    hint: 'مطلوب إذا كانت طريقة التقديم بالبريد.',
+    hint: f.vacancy.applicationEmailHint,
+  },
+  {
+    // The public vacancy page renders this as the posting date. Without a
+    // control it was whatever day the *draft* was created and there was no way
+    // to correct it. Blank keeps the stored value — the service writes the
+    // column only when a date arrives.
+    kind: 'text',
+    name: 'postedAt',
+    label: f.vacancy.postedAt,
+    type: 'date',
+    hint: f.vacancy.postedAtHint,
   },
 ];
 
 export const PUBLICATION_FIELDS: FieldSpec[] = [
-  { kind: 'bilingual', name: 'title', label: 'العنوان', required: true, max: 200 },
+  { kind: 'bilingual', name: 'title', label: f.common.title, required: true, max: 200 },
   SLUG,
   {
     kind: 'select',
     name: 'type',
-    label: 'النوع',
+    label: f.common.type,
     options: [...ADMIN_OPTIONS.publicationType],
     required: true,
   },
-  { kind: 'bilingual', name: 'description', label: 'الوصف', multiline: true, max: 800 },
-  { kind: 'media', name: 'fileArId', label: 'الملف (عربي)', assetKind: 'document' },
+  { kind: 'bilingual', name: 'description', label: f.common.description, multiline: true, max: 800 },
+  { kind: 'media', name: 'fileArId', label: f.publication.fileAr, assetKind: 'document' },
   {
     kind: 'media',
     name: 'fileEnId',
-    label: 'الملف (إنجليزي)',
+    label: f.publication.fileEn,
     assetKind: 'document',
-    hint: 'إن تُرك فارغاً، يُعرض الملف العربي للقارئ الإنجليزي.',
+    hint: f.publication.fileEnHint,
   },
-  { kind: 'text', name: 'publishedYear', label: 'سنة النشر', type: 'number' },
-  { kind: 'checkbox', name: 'isFeatured', label: 'مميّز' },
-  { kind: 'text', name: 'displayOrder', label: 'ترتيب الظهور', type: 'number' },
+  { kind: 'text', name: 'publishedYear', label: f.publication.publishedYear, type: 'number' },
+  { kind: 'checkbox', name: 'isFeatured', label: f.common.featured },
+  { kind: 'text', name: 'displayOrder', label: f.common.displayOrder, type: 'number' },
 ];
 
 export const PAGE_FIELDS: FieldSpec[] = [
   {
     kind: 'text',
     name: 'key',
-    label: 'المفتاح',
+    label: f.page.key,
     required: true,
-    hint: 'privacy · accessibility · terms · verify. لا يُغيَّر بعد الإنشاء — المسار يبحث به.',
+    hint: f.page.keyHint,
   },
-  { kind: 'bilingual', name: 'title', label: 'العنوان', required: true, max: 200 },
+  { kind: 'bilingual', name: 'title', label: f.common.title, required: true, max: 200 },
   SLUG,
-  { kind: 'richtext', name: 'body', labelAr: 'المحتوى (عربي)', labelEn: 'Body (English)' },
+  { kind: 'richtext', name: 'body', labelAr: f.common.bodyAr, labelEn: f.common.bodyEn },
 ];
 
 export const PROGRAM_FIELDS: FieldSpec[] = [
   {
     kind: 'select',
     name: 'key',
-    label: 'المفتاح',
+    label: f.program.key,
     options: [...ADMIN_OPTIONS.programKey],
     required: true,
-    hint: 'ثلاثة برامج فقط. المفتاح يربط البرنامج بمشاريعه ولونه.',
+    hint: f.program.keyHint,
   },
-  { kind: 'bilingual', name: 'title', label: 'الاسم', required: true, max: 200 },
+  { kind: 'bilingual', name: 'title', label: f.program.title, required: true, max: 200 },
   SLUG,
   {
     kind: 'bilingual',
     name: 'tagline',
-    label: 'وصف السلايدر / الجملة التعريفية',
+    label: f.program.tagline,
     max: 200,
-    hint: 'يظهر كوصف قصير داخل بطاقة البرنامج في الصفحة الرئيسية وصفحة البرنامج.',
+    hint: f.program.taglineHint,
   },
   {
     kind: 'select',
     name: 'targetGroups',
-    label: 'الفئات المستهدفة',
+    label: f.program.targetGroups,
     options: [...ADMIN_OPTIONS.targetGroup],
     multiple: true,
   },
-  { kind: 'richtext', name: 'introduction', labelAr: 'المقدّمة (عربي)', labelEn: 'Introduction (English)' },
+  {
+    kind: 'richtext',
+    name: 'introduction',
+    labelAr: f.program.introductionAr,
+    labelEn: f.program.introductionEn,
+  },
   {
     kind: 'richtext',
     name: 'eligibility',
-    labelAr: 'من يستفيد (عربي)',
-    labelEn: 'Who qualifies (English)',
+    labelAr: f.program.eligibilityAr,
+    labelEn: f.program.eligibilityEn,
   },
   {
     kind: 'richtext',
     name: 'howToAccess',
-    labelAr: 'كيف تصل إلى الخدمة (عربي)',
-    labelEn: 'How to access (English)',
+    labelAr: f.program.howToAccessAr,
+    labelEn: f.program.howToAccessEn,
   },
-  { kind: 'richtext', name: 'rationale', labelAr: 'المبرّر (عربي)', labelEn: 'Rationale (English)' },
+  {
+    kind: 'richtext',
+    name: 'rationale',
+    labelAr: f.program.rationaleAr,
+    labelEn: f.program.rationaleEn,
+  },
   {
     kind: 'richtext',
     name: 'impactStatement',
-    labelAr: 'بيان الأثر (عربي)',
-    labelEn: 'Impact statement (English)',
+    labelAr: f.program.impactStatementAr,
+    labelEn: f.program.impactStatementEn,
   },
   {
     kind: 'richtext',
     name: 'sustainability',
-    labelAr: 'الاستدامة (عربي)',
-    labelEn: 'Sustainability (English)',
+    labelAr: f.program.sustainabilityAr,
+    labelEn: f.program.sustainabilityEn,
   },
-  { kind: 'bilingual', name: 'strategicObjective', label: 'الهدف الاستراتيجي', multiline: true, max: 600 },
+  {
+    kind: 'bilingual',
+    name: 'strategicObjective',
+    label: f.program.strategicObjective,
+    multiline: true,
+    max: 600,
+  },
   {
     kind: 'media',
     name: 'heroMediaId',
-    label: 'صورة السلايدر الرئيسية',
-    hint: 'اختر صورة من مكتبة الوسائط. تظهر في سلايدر البرامج في الصفحة الرئيسية.',
+    label: f.program.heroMedia,
+    hint: f.program.heroMediaHint,
   },
   GALLERY,
   {
     kind: 'text',
     name: 'displayOrder',
-    label: 'ترتيب الظهور في الصفحة الرئيسية',
+    label: f.program.displayOrder,
     type: 'number',
-    hint: 'تستخدم الصفحة الرئيسية هذا الرقم لترتيب البرامج المنشورة في السلايدر.',
+    hint: f.program.displayOrderHint,
   },
 ];
 
@@ -251,64 +296,64 @@ export const PROGRAM_FIELDS: FieldSpec[] = [
 // from colliding with the bar's `status` buttons.
 
 export const PARTNER_FIELDS: FieldSpec[] = [
-  { kind: 'bilingual', name: 'name', label: 'الاسم', required: true, max: 160 },
+  { kind: 'bilingual', name: 'name', label: f.common.name, required: true, max: 160 },
   {
     kind: 'select',
     name: 'type',
-    label: 'النوع',
+    label: f.common.type,
     options: [...ADMIN_OPTIONS.partnerType],
     required: true,
   },
   {
     kind: 'select',
     name: 'membershipLevel',
-    label: 'مستوى العضوية',
+    label: f.partner.membershipLevel,
     options: [...ADMIN_OPTIONS.membershipLevel],
-    hint: 'للشبكات والعضويات فقط؛ يُتجاهل لغيرها.',
+    hint: f.partner.membershipLevelHint,
   },
-  { kind: 'bilingual', name: 'sector', label: 'القطاع', max: 120 },
-  { kind: 'bilingual', name: 'description', label: 'الوصف', multiline: true, max: 800 },
+  { kind: 'bilingual', name: 'sector', label: f.partner.sector, max: 120 },
+  { kind: 'bilingual', name: 'description', label: f.common.description, multiline: true, max: 800 },
   {
     kind: 'text',
     name: 'website',
-    label: 'الموقع الإلكتروني',
-    hint: 'رابط كامل يبدأ بـ https://',
+    label: f.partner.website,
+    hint: f.partner.websiteHint,
   },
-  { kind: 'media', name: 'logoMediaId', label: 'الشعار' },
+  { kind: 'media', name: 'logoMediaId', label: f.partner.logoMedia },
   {
     kind: 'select',
     name: 'logoPermission',
-    label: 'إذن عرض الشعار',
+    label: f.partner.logoPermission,
     options: [...ADMIN_OPTIONS.logoPermission],
     required: true,
     // The public site renders the logo only when this is `granted`; a
     // published partner with a pending permission appears by name alone.
-    hint: 'لا يُعرض الشعار على الموقع إلا إذا كان الإذن ممنوحاً.',
+    hint: f.partner.logoPermissionHint,
   },
-  { kind: 'checkbox', name: 'isFeatured', label: 'مميّز' },
-  { kind: 'text', name: 'displayOrder', label: 'ترتيب الظهور', type: 'number' },
+  { kind: 'checkbox', name: 'isFeatured', label: f.common.featured },
+  { kind: 'text', name: 'displayOrder', label: f.common.displayOrder, type: 'number' },
 ];
 
 export const PERSON_FIELDS: FieldSpec[] = [
-  { kind: 'bilingual', name: 'name', label: 'الاسم', required: true, max: 120 },
-  { kind: 'bilingual', name: 'role', label: 'الصفة', required: true, max: 120 },
+  { kind: 'bilingual', name: 'name', label: f.common.name, required: true, max: 120 },
+  { kind: 'bilingual', name: 'role', label: f.person.role, required: true, max: 120 },
   {
     kind: 'select',
     name: 'category',
-    label: 'الفئة',
+    label: f.person.category,
     options: [...ADMIN_OPTIONS.personCategory],
     required: true,
   },
-  { kind: 'bilingual', name: 'bio', label: 'نبذة', multiline: true, max: 1200 },
-  { kind: 'media', name: 'photoMediaId', label: 'الصورة' },
+  { kind: 'bilingual', name: 'bio', label: f.person.bio, multiline: true, max: 1200 },
+  { kind: 'media', name: 'photoMediaId', label: f.person.photo },
   {
     kind: 'checkbox',
     name: 'isPublic',
-    label: 'يظهر على الموقع',
+    label: f.person.isPublic,
     // DNH-5. Naming staff in Gaza is a safety decision made per person.
-    hint: 'قرار أمني يُتّخذ لكل شخص على حدة. الصورة تخضع لقاعدة الموافقة نفسها عند النشر.',
+    hint: f.person.isPublicHint,
   },
-  { kind: 'text', name: 'displayOrder', label: 'ترتيب الظهور', type: 'number' },
+  { kind: 'text', name: 'displayOrder', label: f.common.displayOrder, type: 'number' },
 ];
 
 /**
@@ -321,69 +366,69 @@ export function metricFields(options: {
   projects: { value: string; label: string }[];
 }): FieldSpec[] {
   return [
-    { kind: 'bilingual', name: 'label', label: 'المؤشر', required: true, max: 160 },
+    { kind: 'bilingual', name: 'label', label: f.metric.label, required: true, max: 160 },
     {
       kind: 'text',
       name: 'value',
-      label: 'القيمة',
+      label: f.metric.value,
       required: true,
-      hint: 'أرقام فقط، حتى منزلتين عشريتين. تُحفظ كنص كي لا يُقرَّب عدد المستفيدين.',
+      hint: f.metric.valueHint,
     },
-    { kind: 'text', name: 'unit', label: 'الوحدة', required: true, hint: 'مثل: مستفيد، جلسة، أسرة.' },
+    { kind: 'text', name: 'unit', label: f.metric.unit, required: true, hint: f.metric.unitHint },
     {
       kind: 'select',
       name: 'displayPrefix',
-      label: 'بادئة العرض',
+      label: f.metric.displayPrefix,
       options: [
-        { value: '+', label: '+ (أكثر من)' },
-        { value: '~', label: '~ (تقريباً)' },
+        { value: '+', label: adminUi.enums.metricPrefix['+'] },
+        { value: '~', label: adminUi.enums.metricPrefix['~'] },
       ],
     },
-    { kind: 'select', name: 'programId', label: 'البرنامج', options: options.programs },
-    { kind: 'select', name: 'projectId', label: 'المشروع', options: options.projects },
-    { kind: 'text', name: 'periodStart', label: 'بداية الفترة', type: 'date', required: true },
-    { kind: 'text', name: 'periodEnd', label: 'نهاية الفترة', type: 'date', required: true },
+    { kind: 'select', name: 'programId', label: f.common.program, options: options.programs },
+    { kind: 'select', name: 'projectId', label: f.common.project, options: options.projects },
+    { kind: 'text', name: 'periodStart', label: f.metric.periodStart, type: 'date', required: true },
+    { kind: 'text', name: 'periodEnd', label: f.metric.periodEnd, type: 'date', required: true },
     {
       kind: 'select',
       name: 'status',
-      label: 'حالة التحقّق',
+      label: f.metric.status,
       options: [...ADMIN_OPTIONS.metricStatus],
       required: true,
       // The rule: no published figure without its period and verification
       // status. `assertMetricPublishable` refuses `isPublic` on anything but
       // `verified` with a source.
-      hint: 'لا يُنشر الرقم على الموقع إلا إذا كان مُتحقَّقاً منه ومقترناً بمصدره.',
+      hint: f.metric.statusHint,
     },
     {
       kind: 'text',
       name: 'verificationSource',
-      label: 'مصدر التحقّق',
-      hint: 'مطلوب لأي رقم مُتحقَّق منه: تقرير، تقييم، سجل داخلي.',
+      label: f.metric.verificationSource,
+      hint: f.metric.verificationSourceHint,
     },
-    { kind: 'checkbox', name: 'isPublic', label: 'منشور على الموقع' },
-    { kind: 'checkbox', name: 'isFeatured', label: 'مميّز' },
-    { kind: 'text', name: 'displayOrder', label: 'ترتيب الظهور', type: 'number' },
+    { kind: 'checkbox', name: 'isPublic', label: f.metric.isPublic },
+    { kind: 'checkbox', name: 'isFeatured', label: f.common.featured },
+    { kind: 'text', name: 'displayOrder', label: f.common.displayOrder, type: 'number' },
   ];
 }
 
 /** Media metadata. `alt_ar` is required at every layer; this is the first. */
 export const MEDIA_FIELDS: FieldSpec[] = [
-  { kind: 'bilingual', name: 'alt', label: 'النص البديل', required: true, max: 300 },
-  { kind: 'bilingual', name: 'caption', label: 'التعليق', multiline: true, max: 500 },
-  { kind: 'text', name: 'credit', label: 'المصدر / حقوق الصورة' },
+  { kind: 'bilingual', name: 'alt', label: f.media.alt, required: true, max: 300 },
+  { kind: 'bilingual', name: 'caption', label: f.media.caption, multiline: true, max: 500 },
+  { kind: 'text', name: 'credit', label: f.media.credit },
   {
     kind: 'select',
     name: 'consent',
-    label: 'حالة الموافقة',
+    label: f.media.consent,
     options: [...ADMIN_OPTIONS.consentStatus],
     required: true,
-    hint: 'سجّل الموافقة ومرجعها أولاً؛ لا يمكن وسم الصورة بأنها تُظهر قُصّراً قبل ذلك.',
+    hint: f.media.consentHint,
   },
   {
     kind: 'text',
     name: 'consentReference',
-    label: 'مرجع الموافقة',
-    hint: 'رقم أو مسار نموذج الموافقة. مطلوب لأي صورة تُظهر قُصّراً.',
+    label: f.common.consentReference,
+    hint: f.media.consentReferenceHint,
   },
   {
     // `chk_media_minor_consent` in the database: this may be on only when
@@ -391,7 +436,7 @@ export const MEDIA_FIELDS: FieldSpec[] = [
     // is the order the editor has to fill them in.
     kind: 'checkbox',
     name: 'hasIdentifiableMinors',
-    label: 'تُظهر قُصّراً يمكن التعرّف عليهم',
-    hint: 'يُقبل فقط بعد تسجيل موافقة موثّقة ومرجعها في الحقلين أعلاه. تحفظه قاعدة البيانات بهذا الشرط ولا تقبله بغيره.',
+    label: f.media.minors,
+    hint: f.media.minorsHint,
   },
 ];

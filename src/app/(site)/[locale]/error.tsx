@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/feedback';
 import { Container } from '@/components/ui/layout';
+import { site_coreAr, site_coreEn } from '@/lib/i18n/dictionaries/partials/site-core';
 
 /**
  * Route-group error boundary.
@@ -11,37 +12,42 @@ import { Container } from '@/components/ui/layout';
  * `componentDidCatch`, which has no server equivalent. It is the only client
  * file among the core routes.
  *
- * The copy is passed in through neither props nor a dictionary: an error
- * boundary renders when something upstream already failed, so it cannot depend
- * on a fetch succeeding. Both languages are shown, which is the honest answer
- * when the locale itself may be what failed to resolve.
+ * The copy cannot come from `getDictionary`: that is `server-only`, and this
+ * boundary renders when something upstream has already failed, possibly the
+ * locale resolution itself. The two `boundary` blocks of the `site-core`
+ * partial are imported directly instead — still a dictionary lookup, not a
+ * literal (RULE 5) — and both languages are shown, each with its own `lang`
+ * and `dir`, which is the honest answer when the locale is unknown.
  */
 export default function SiteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const ar = site_coreAr.boundary;
+  const en = site_coreEn.boundary;
+
   return (
     <Container size="narrow" className="section-gap">
       <div className="grid gap-6 md:grid-cols-2">
         <div lang="ar" dir="rtl">
           <ErrorState
-            title="تعذّر عرض هذه الصفحة"
-            body="حدث خطأ غير متوقّع. حاول مجدداً، وإن تكرّر فأخبرنا."
+            title={ar.errorTitle}
+            body={ar.errorBody}
             reference={error.digest ?? null}
-            referenceLabel="رقم المرجع"
+            referenceLabel={ar.referenceLabel}
             action={
               <Button type="button" onClick={reset}>
-                إعادة المحاولة
+                {ar.retry}
               </Button>
             }
           />
         </div>
         <div lang="en" dir="ltr">
           <ErrorState
-            title="This page could not be shown"
-            body="Something went wrong. Please try again, and let us know if it keeps happening."
+            title={en.errorTitle}
+            body={en.errorBody}
             reference={error.digest ?? null}
-            referenceLabel="Reference"
+            referenceLabel={en.referenceLabel}
             action={
               <Button type="button" onClick={reset} tone="secondary">
-                Try again
+                {en.retry}
               </Button>
             }
           />

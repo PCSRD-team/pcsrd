@@ -126,7 +126,7 @@ export function BilingualField({
       <FieldRow>
         <div>
           <Eyebrow as="span" className="block">
-            <label htmlFor={`${id}-ar`}>{t.arabic}</label>
+            <label htmlFor={`${id}-ar`} className="cursor-pointer">{t.arabic}</label>
           </Eyebrow>
           {control('ar')}
           <Meta id={`${id}-ar`} length={ar.length} max={maxLength?.ar} error={errorAr} />
@@ -135,7 +135,7 @@ export function BilingualField({
         <div>
           <div className="flex items-baseline justify-between gap-3">
             <Eyebrow as="span">
-              <label htmlFor={`${id}-en`}>{t.english}</label>
+              <label htmlFor={`${id}-en`} className="cursor-pointer">{t.english}</label>
             </Eyebrow>
             <Button type="button" tone="quiet" size="sm" onClick={() => setEn(ar)}>
               {t.copyFromArabic}

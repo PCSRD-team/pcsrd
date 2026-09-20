@@ -21,6 +21,7 @@ import { submissionState } from '@/db/schema/enums';
 import { requireAuth } from '@/lib/auth/guard';
 import { isAppError } from '@/lib/errors';
 import { formatDate } from '@/lib/format';
+import { ar } from '@/lib/i18n/dictionaries/ar';
 import { can } from '@/services/_shared/permissions';
 import { getSubmission } from '@/services/submission/submission.service';
 
@@ -54,7 +55,7 @@ export const dynamic = 'force-dynamic';
  * character so Arabic prose stays RTL and an email stays LTR.
  */
 function PayloadValue({ value }: { value: unknown }) {
-  const text = Array.isArray(value) ? value.join('، ') : String(value ?? '');
+  const text = Array.isArray(value) ? value.join(ar.common.listSeparator) : String(value ?? '');
   const startsLatin = /^[\s\p{P}]*[A-Za-z0-9+@/]/u.test(text);
   return (
     <Bidi dir={startsLatin ? 'ltr' : 'rtl'} className="whitespace-pre-wrap break-words">

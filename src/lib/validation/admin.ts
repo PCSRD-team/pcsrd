@@ -246,7 +246,12 @@ export const vacancySchema = z
     deadline: z.iso.date({ message: 'errors.field.required' }),
     applicationMethod: z.enum(['form', 'email']).default('form'),
     applicationEmail: z.union([z.email(), z.literal('')]).nullable().optional(),
-    postedAt: z.iso.date().optional(),
+    /**
+     * Blank means "leave it alone": the service writes the column only when a
+     * value arrives, so an empty input keeps the stored date (or the column's
+     * `CURRENT_DATE` default on a create).
+     */
+    postedAt: z.union([z.iso.date(), z.literal('')]).nullable().optional(),
   })
   .refine((v) => v.applicationMethod !== 'email' || Boolean(v.applicationEmail), {
     path: ['applicationEmail'],

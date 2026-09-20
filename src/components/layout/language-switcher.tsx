@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { LinkPendingMark } from '@/components/ui/link-pending';
-import { type Locale, otherLocale } from '@/lib/i18n/config';
+import { type Locale, otherLocale, splitLocalePath } from '@/lib/i18n/config';
 import { cn } from '@/lib/utils';
 
 /**
@@ -23,8 +23,9 @@ export function LanguageSwitcher({ locale, label, className }: { locale: Locale;
   const searchParams = useSearchParams();
   const target = otherLocale(locale);
 
-  const [, first, ...rest] = pathname.split('/');
-  const withoutLocale = first === 'ar' || first === 'en' ? `/${rest.join('/')}` : pathname;
+  // `splitLocalePath` rather than a comparison against the two locale codes:
+  // the prefix it strips is whatever is in `LOCALES`.
+  const withoutLocale = splitLocalePath(pathname)?.rest ?? pathname;
   const query = searchParams.toString();
 
   const href = `/${target}${withoutLocale === '/' ? '' : withoutLocale}${query ? `?${query}` : ''}`;

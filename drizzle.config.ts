@@ -7,12 +7,23 @@ import { defineConfig } from 'drizzle-kit';
 
 loadEnv({ path: '.env.local', override: true, quiet: true });
 
+// A `!` here turns a missing variable into `undefined` travelling into
+// drizzle-kit, which fails much later with a connection error that names
+// neither the variable nor this file. Say it once, here, in words.
+const directUrl = process.env.DIRECT_URL;
+if (!directUrl) {
+  throw new Error(
+    'DIRECT_URL is not set. drizzle-kit needs the owner connection on :5432 — ' +
+      'check .env.local, and note that DATABASE_URL (the :6543 pooler) is not a substitute.',
+  );
+}
+
 export default defineConfig({
   schema: './src/db/schema/index.ts',
   out: './drizzle',
   dialect: 'postgresql',
   // :5432 session mode. The transaction pooler cannot run session-level DDL.
-  dbCredentials: { url: process.env.DIRECT_URL! },
+  dbCredentials: { url: directUrl },
   casing: 'snake_case',
   verbose: true,
   strict: true,

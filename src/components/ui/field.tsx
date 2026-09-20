@@ -55,7 +55,10 @@ export function errorText(error: string | string[] | null | undefined): string |
 
 const styles = {
   field: 'space-y-2',
-  label: 'block text-small font-medium text-ink',
+  // A `<label for>` focuses the control it names, so it is a target and says
+  // so — the UA gives a label no cursor of its own. Stated here once for every
+  // field in the site and the admin.
+  label: 'block w-fit cursor-pointer text-small font-medium text-ink',
   required: 'ms-1 text-destructive',
   optional: 'ms-2 font-mono text-eyebrow text-mono-muted',
   hint: 'text-caption text-ink-55',

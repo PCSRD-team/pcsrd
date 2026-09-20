@@ -151,6 +151,3 @@ export const rateLimited = (retryAfterSeconds?: number) =>
 
 export const conflict = (messageKey: string, fieldErrors?: FieldErrors) =>
   new AppError('conflict', messageKey, { fieldErrors });
-
-export const validationFailed = (fieldErrors: FieldErrors) =>
-  new AppError('validation', 'errors.validation', { fieldErrors });

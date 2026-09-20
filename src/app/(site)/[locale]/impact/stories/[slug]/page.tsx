@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/impact/s
   return buildMetadata({
     locale,
     path: { ar: `/impact/stories/${story.slugAr}`, en: `/impact/stories/${story.slugEn}` },
-    title: seoTitle ?? story.title ?? siteName,
+    title: seoTitle?.trim() || story.title?.trim() || siteName,
     description: seoDescription ?? story.summary,
     siteName,
     type: 'article',

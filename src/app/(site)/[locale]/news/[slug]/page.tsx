@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/news/[sl
   return buildMetadata({
     locale,
     path: { ar: `/news/${post.slugAr}`, en: `/news/${post.slugEn}` },
-    title: seoTitle ?? post.title ?? siteName,
+    title: seoTitle?.trim() || post.title?.trim() || siteName,
     description: seoDescription ?? post.excerpt,
     siteName,
     type: 'article',
@@ -120,7 +120,11 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
             image={hero}
             alt={post.hero?.alt ?? ''}
             decorative={!post.hero?.alt}
-            sizes="(min-width: 760px) 760px, 100vw"
+            // The narrow container caps at 760px, but it only *reaches* 760px
+            // once the viewport clears 760 + the 2×64px desktop gutter. Below
+            // 888px the column is narrower than the old hint claimed.
+            sizes="(min-width: 888px) 760px, 100vw"
+            // The article's hero, and the only `preload` on this route.
             preload
             className="mbe-10"
           />

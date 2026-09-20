@@ -65,23 +65,43 @@ export default async function VerifyPage({ params }: PageProps<'/[locale]/verify
   const official = channels.filter((channel) => channel.is_official);
   const impostors = channels.filter((channel) => !channel.is_official);
   const whatsapp = visibleText(org?.whatsappNumber);
+  /** The recorded note for this locale, falling back to the Arabic original. */
+  const channelNote = (channel: ChannelRow) =>
+    visibleText(locale === 'ar' ? channel.note_ar : (channel.note_en ?? channel.note_ar));
 
+  /**
+   * Two columns, not three.
+   *
+   * The third was headed "official" and every cell under it was a badge
+   * reading "official" — on a table that filters to `is_official` and sits on
+   * the attestation ground. It restated its own header once per row, cost the
+   * widest no-wrap column on a 375px screen, and said nothing a reader could
+   * act on. The attestation now appears once, as a stamp in the page header,
+   * which is where a stamp belongs; the column it freed carries the note the
+   * organisation recorded against the channel — information that existed in
+   * `official_channels` and was rendered only for impostors.
+   */
   const columns: Column<ChannelRow>[] = [
     { key: 'platform', header: dict.verify.channel, rowHeader: true, cell: (row) => row.platform },
     {
       key: 'handle',
       header: dict.verify.handle,
       cell: (row) => (
-        <a href={row.url} rel="noopener noreferrer me" target="_blank" className="inline-flex items-center gap-2 font-mono text-caption">
-          <Bidi>{row.handle}</Bidi>
-          <Icon name="external" size={16} />
-        </a>
+        <span className="flex flex-col gap-1">
+          <a
+            href={row.url}
+            rel="noopener noreferrer me"
+            target="_blank"
+            className="inline-flex min-h-target items-center gap-2 font-mono text-caption"
+          >
+            <Bidi>{row.handle}</Bidi>
+            <Icon name="external" size={16} />
+          </a>
+          {channelNote(row) ? (
+            <span className="text-caption text-ink-55">{channelNote(row)}</span>
+          ) : null}
+        </span>
       ),
-    },
-    {
-      key: 'status',
-      header: dict.verify.official,
-      cell: () => <Badge tone="verified">{dict.verify.official}</Badge>,
     },
   ];
 
@@ -92,6 +112,9 @@ export default async function VerifyPage({ params }: PageProps<'/[locale]/verify
         title={dict.verify.title}
         lede={dict.verify.lead}
         breadcrumbs={<SiteBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.nav.verify, path: '/verify' }]} />}
+        // The attestation, stated once for the whole list rather than repeated
+        // in a column that was headed with the same word.
+        meta={official.length > 0 ? <Badge tone="verified">{dict.verify.official}</Badge> : null}
         actions={
           <ButtonLink href="#report" tone="marked" size="sm">
             {dict.verify.reportTitle}
@@ -127,7 +150,7 @@ export default async function VerifyPage({ params }: PageProps<'/[locale]/verify
           <SectionHeading id="verify-impostors" title={dict.verify.notOurs} />
           <RuledList bounded>
             {impostors.map((channel) => {
-              const note = visibleText(locale === 'ar' ? channel.note_ar : (channel.note_en ?? channel.note_ar));
+              const note = channelNote(channel);
               return (
                 <RuledListItem key={channel.id} className="items-baseline">
                   <span className="text-small font-medium text-ink">{channel.platform}</span>

@@ -67,7 +67,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/legal/[s
   return buildMetadata({
     locale,
     path: `/legal/${slug}`,
-    title: seoTitle ?? page?.title ?? legalTitle(dict, slug),
+    title: seoTitle?.trim() || page?.title?.trim() || legalTitle(dict, slug),
     description: seoDescription,
     siteName: organizationName(org),
     translationStatus: page ? toTranslationStatus(page.translationStatus) : null,

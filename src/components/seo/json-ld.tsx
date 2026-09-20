@@ -3,12 +3,10 @@ import type { Locale } from '@/lib/i18n/config';
 import {
   type ArticleInput,
   type BreadcrumbItem,
-  type ImageForJsonLd,
   type JobPostingInput,
   type JsonLdObject,
   breadcrumbJsonLd,
   collectionPageJsonLd,
-  imageObjectJsonLd,
   jobPostingJsonLd,
   newsArticleJsonLd,
   organizationJsonLd,
@@ -106,10 +104,6 @@ export function ProgramJsonLd(props: Parameters<typeof programServiceJsonLd>[0])
 
 export function ProjectJsonLd(props: Parameters<typeof projectJsonLd>[0]) {
   return <JsonLd data={projectJsonLd(props)} />;
-}
-
-export function ImageObjectJsonLd({ image }: { image: ImageForJsonLd }) {
-  return <JsonLd data={imageObjectJsonLd(image)} />;
 }
 
 /**

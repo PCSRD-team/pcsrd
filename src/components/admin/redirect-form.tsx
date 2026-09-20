@@ -11,6 +11,7 @@ import { Input, Select } from '@/components/ui/inputs';
 import { Rule } from '@/components/ui/layout';
 import { Notice } from '@/components/ui/notice';
 import { Heading } from '@/components/ui/typography';
+import { DEFAULT_LOCALE, localePath } from '@/lib/i18n/config';
 import { REDIRECT_STATUS_CODES } from '@/lib/validation/admin';
 import { type AdminFormDict, resolveAdminKey } from './admin-dict';
 
@@ -70,7 +71,7 @@ export function RedirectForm({ dict }: { dict: AdminFormDict }) {
               type="text"
               dir="ltr"
               required
-              placeholder="/ar/about"
+              placeholder={localePath(DEFAULT_LOCALE, '/about')}
               hint={t.destinationHint}
               error={firstError('destinationPath')}
               className="font-mono text-start"

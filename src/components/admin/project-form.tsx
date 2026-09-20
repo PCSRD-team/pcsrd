@@ -73,35 +73,41 @@ export type ProjectFormValues = {
 
 export type Option = { value: string; label: string };
 
+/**
+ * The screen's words, read from the dictionary (RULE 5) rather than restated
+ * here. The labels this form shares with the generic entity editors come from
+ * `fields.common`, so the project editor and the post editor cannot drift
+ * apart on what "الصورة الرئيسية" is called.
+ */
 const LABEL = {
-  title: 'العنوان',
-  slug: 'المسار',
-  slugHint: 'حروف وأرقام وشرطات فقط. يُشتق من العنوان إن تُرك فارغاً.',
-  program: 'البرنامج',
-  state: 'حالة المشروع',
-  startDate: 'تاريخ البدء',
-  endDate: 'تاريخ الانتهاء',
-  endDateHint: 'لا يسبق تاريخ البدء.',
-  governorates: 'المحافظات',
-  themes: 'المحاور',
-  implementingPartners: 'شركاء التنفيذ',
-  donors: 'الجهات المموّلة',
-  summary: 'ملخّص',
-  objectiveAr: 'الهدف (عربي)',
-  objectiveEn: 'Objective (English)',
-  activitiesAr: 'الأنشطة (عربي)',
-  activitiesEn: 'Activities (English)',
-  outcomesAr: 'المخرجات (عربي)',
-  outcomesEn: 'Outcomes (English)',
-  localities: 'المناطق والأحياء',
-  localitiesHint: 'اسم في كل سطر. تظهر مع المحافظات في بطاقة المشروع.',
-  hero: 'الصورة الرئيسية',
-  heroHint: 'اختر صورة من مكتبة الوسائط.',
-  gallery: 'معرض الصور',
-  galleryHint: 'بالترتيب الذي تظهر به. كل صورة تخضع لقاعدة الموافقة عند النشر.',
-  featured: 'مميّز',
-  sourceNote: 'ملاحظة داخلية',
-  sourceNoteHint: 'لا تُعرض على الموقع. لتوثيق مصدر البيانات.',
+  title: adminUi.fields.common.title,
+  slug: adminUi.fields.common.slug,
+  slugHint: adminUi.fields.project.slugHint,
+  program: adminUi.fields.common.program,
+  state: adminUi.fields.project.state,
+  startDate: adminUi.fields.project.startDate,
+  endDate: adminUi.fields.project.endDate,
+  endDateHint: adminUi.fields.project.endDateHint,
+  governorates: adminUi.fields.project.governorates,
+  themes: adminUi.fields.project.themes,
+  implementingPartners: adminUi.fields.project.implementingPartners,
+  donors: adminUi.fields.project.donors,
+  summary: adminUi.fields.common.summary,
+  objectiveAr: adminUi.fields.project.objectiveAr,
+  objectiveEn: adminUi.fields.project.objectiveEn,
+  activitiesAr: adminUi.fields.project.activitiesAr,
+  activitiesEn: adminUi.fields.project.activitiesEn,
+  outcomesAr: adminUi.fields.project.outcomesAr,
+  outcomesEn: adminUi.fields.project.outcomesEn,
+  localities: adminUi.fields.project.localities,
+  localitiesHint: adminUi.fields.project.localitiesHint,
+  hero: adminUi.fields.common.heroMedia,
+  heroHint: adminUi.fields.project.heroHint,
+  gallery: adminUi.fields.common.gallery,
+  galleryHint: adminUi.fields.common.galleryHint,
+  featured: adminUi.fields.common.featured,
+  sourceNote: adminUi.fields.project.sourceNote,
+  sourceNoteHint: adminUi.fields.project.sourceNoteHint,
 } as const;
 
 export function ProjectForm({
