@@ -10,7 +10,7 @@ import { Container, PageHeader } from '@/components/ui/layout';
 import { Meta, Prose } from '@/components/ui/typography';
 import { getStoryBySlug, listStorySlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
-import { formatDate } from '@/lib/format';
+import { formatDate, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -98,7 +98,7 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
           meta={
             story.publishedAt ? (
               <Meta as="p">
-                <time dateTime={story.publishedAt.toISOString()}>
+                <time dateTime={toDateTimeAttr(story.publishedAt)}>
                   <DateText locale={locale}>{formatDate(story.publishedAt, locale)}</DateText>
                 </time>
               </Meta>

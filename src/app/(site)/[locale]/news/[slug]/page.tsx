@@ -12,7 +12,7 @@ import { Container, PageHeader } from '@/components/ui/layout';
 import { Meta, Prose } from '@/components/ui/typography';
 import { getPostBySlug, listPostSlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
-import { formatDate } from '@/lib/format';
+import { formatDate, timeOf, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -61,7 +61,7 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
 
   const hero = mediaImage(post.hero?.path, post.hero?.blur, post.hero);
   const showUpdated =
-    post.publishedAt && post.updatedAt.getTime() - post.publishedAt.getTime() > 24 * 60 * 60 * 1000;
+    (timeOf(post.updatedAt) ?? 0) - (timeOf(post.publishedAt) ?? 0) > 24 * 60 * 60 * 1000;
 
   return (
     <Container size="narrow" className="section-gap">
@@ -98,7 +98,7 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
               {post.publishedAt ? (
                 <Meta as="p">
                   {dict.news.publishedOn}{' '}
-                  <time dateTime={post.publishedAt.toISOString()}>
+                  <time dateTime={toDateTimeAttr(post.publishedAt)}>
                     <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
                   </time>
                 </Meta>
@@ -106,7 +106,7 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
               {showUpdated ? (
                 <Meta as="p">
                   {dict.contentUi.updatedOn}{' '}
-                  <time dateTime={post.updatedAt.toISOString()}>
+                  <time dateTime={toDateTimeAttr(post.updatedAt)}>
                     <DateText locale={locale}>{formatDate(post.updatedAt, locale)}</DateText>
                   </time>
                 </Meta>

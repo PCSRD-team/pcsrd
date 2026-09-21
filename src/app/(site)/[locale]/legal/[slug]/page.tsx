@@ -10,7 +10,7 @@ import { EmptyState, UntranslatedNotice } from '@/components/ui/feedback';
 import { Container, PageHeader, Rule } from '@/components/ui/layout';
 import { Eyebrow, Meta, Prose } from '@/components/ui/typography';
 import { getOrganization, getPageByKey } from '@/db/queries/content';
-import { formatDate } from '@/lib/format';
+import { formatDate, toDateTimeAttr } from '@/lib/format';
 import { DEFAULT_LOCALE, isLocale, localePath, type Locale } from '@/lib/i18n/config';
 import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata, type TranslationStatus } from '@/lib/seo/metadata';
@@ -128,7 +128,7 @@ export default async function LegalPage({ params }: PageProps<'/[locale]/legal/[
           published && updatedAt ? (
             <Meta>
               {dict.legalPages.lastUpdated}{' '}
-              <time dateTime={updatedAt.toISOString()}>
+              <time dateTime={toDateTimeAttr(updatedAt)}>
                 <DateText locale={locale}>{formatDate(updatedAt, locale)}</DateText>
               </time>
             </Meta>

@@ -27,13 +27,36 @@ export const DEFAULT_REVALIDATE = 3600;
  * dropped every cached post page instead of its own. The function form is what
  * makes the granularity real.
  */
+/**
+ * What `unstable_cache` gives back, as opposed to what was put in.
+ *
+ * The cache stores its value as JSON, so a `Date` returned by a query comes
+ * back from a cache **hit** as an ISO string, while a **miss** passes the real
+ * `Date` straight through. The types said `Date` either way, so
+ * `post.publishedAt.toISOString()` typechecked, worked on the first request of
+ * a deploy, and threw `TypeError: post.publishedAt.toISOString is not a
+ * function` on the second — the homepage, the news list, both detail routes
+ * and two cards, all 500ing on a warm cache only.
+ *
+ * Declaring the boundary honestly turns that class of bug into a compile
+ * error. `formatDate`, `formatPeriod` and `<time dateTime>` all accept a
+ * string already, so honesty costs the consumers nothing.
+ */
+export type Serialized<T> = T extends Date
+  ? string
+  : T extends (infer U)[]
+    ? Serialized<U>[]
+    : T extends object
+      ? { [K in keyof T]: Serialized<T[K]> }
+      : T;
+
 export function cached<TArgs extends unknown[], TResult>(
   fn: (...args: TArgs) => Promise<TResult>,
   keyParts: string[],
   options: { tags: string[] | ((...args: TArgs) => string[]); revalidate?: number },
-): (...args: TArgs) => Promise<TResult> {
+): (...args: TArgs) => Promise<Serialized<TResult>> {
   return (...args: TArgs) =>
-    unstable_cache(() => fn(...args), [...keyParts, ...args.map(stableKey)], {
+    unstable_cache(() => fn(...args) as Promise<Serialized<TResult>>, [...keyParts, ...args.map(stableKey)], {
       tags: typeof options.tags === 'function' ? options.tags(...args) : options.tags,
       revalidate: options.revalidate ?? DEFAULT_REVALIDATE,
     })();
