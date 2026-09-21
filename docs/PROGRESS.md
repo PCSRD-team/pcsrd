@@ -1,6 +1,6 @@
 # Progress — where the project stands, and where to pick it up
 
-Last updated 2026-09-20, at commit `0b7f31b`.
+Last updated 2026-09-22, at commit `7942d13`.
 
 **If you are resuming: read §0, then start at the top of §5.** Everything above
 §5 is context; §5 is the queue. Nothing in §5 needs re-discovery — each item
@@ -16,22 +16,25 @@ the deploy runbook. `docs/RUNBOOK.md` is operations. This file is the map.
 The application is **code-complete against the spec** and every mechanical gate
 is green. What remains is, in order:
 
-1. Run the browser suites end to end and act on what they find (§5.1). The
-   accessibility half has been run once; the journeys, forms, visual and
-   security halves have not.
-2. Commit visual baselines (§5.2), then Lighthouse against `next start` (§5.3).
-3. The small queue in §5.4 — each is under an hour.
-4. Then it is the owner's turn: §6 is blocked on credentials, decisions and
+1. **Replace the Upstash credentials** — the rate limiter's database no longer
+   exists, and with it gone every form on the site is unusable (§5.1.1). This
+   is the one finding that blocks a launch on its own.
+2. Decide what to do about the soft 404s on five detail routes (§5.1.2).
+3. Run `visual.spec.ts` and commit the baselines (§5.2); the other six specs
+   have now been run and pass.
+4. Lighthouse against `next start` (§5.3).
+5. The small queue in §5.4 — each is under an hour.
+6. Then it is the owner's turn: §6 is blocked on credentials, decisions and
    organisational copy, and nothing in §5 unblocks it.
 
-Do **not** re-audit. Four full audits have run (schema parity, dependencies and
+Do **not** re-audit. Five full audits have run (schema parity, dependencies and
 dead code, localisation and RTL, database-to-frontend completeness) plus a UI,
 image and interaction pass. Their findings are fixed and recorded in §3. A fifth
 scan would rediscover the same ground.
 
 ---
 
-## 1. Mechanical state at `0b7f31b`
+## 1. Mechanical state at `7942d13`
 
 | Gate | Command | Result |
 |---|---|---|
@@ -110,6 +113,20 @@ own types refuse it.
 - media pagination dropped its own filters;
 - 265 lines of hardcoded copy moved into the dictionaries.
 
+**The browser run (2026-09-21/22) found and fixed:**
+
+- **`unstable_cache` returns strings where the types promised `Date`.** The
+  cache stores JSON, so a hit hands back an ISO string and a miss the real
+  `Date`. The Arabic homepage was serving `<html id="__next_error__">` with no
+  `<h1>` and no `<main>` on any warm cache, and the news list, both detail
+  routes, two cards, the sitemap and the feed with it. A build never shows it,
+  because a build populates the cache. `cached()` now declares a `Serialized<T>`
+  return type, which turned the class into 22 compile errors.
+- **An unmatched URL under a locale** now renders the designed 404 with the site
+  chrome, through a catch-all segment, instead of Next's built-in bare document.
+- A `robots.txt` assertion that required a trailing slash the implementation
+  deliberately omits.
+
 ---
 
 ## 4. Facts that will bite if forgotten
@@ -130,6 +147,9 @@ own types refuse it.
 - The integration suite connects as `postgres`, so it exercises the service
   rules and never the row-level policies. Verifying those needs the real
   database and `scripts/assert-rls.ts`.
+- **`next dev` compiles on first hit**, 30–70s for a heavy route, which reads
+  as a 60s navigation timeout in Playwright. Warm every route with `curl`
+  before treating any browser failure as a defect.
 - `origin/main` is a shared remote and other people push to it. Check
   `git log --oneline HEAD..origin/main` before a large commit; when a merge
   conflicts, compare file hashes (`git show <rev>:<path> | md5sum`) against
@@ -155,14 +175,60 @@ Status of each spec:
 
 | Spec | Run? | Result |
 |---|---|---|
-| `a11y.spec.ts` | yes | 29 routes × 2 locales **pass with zero violations**; the one failure (404 `lang`) is fixed |
-| `shell.spec.ts` | no | locale negotiation, skip link, switcher, 375px overflow |
-| `routes.spec.ts` | no | every route: one `<h1>`, `<main>`, title, description, canonical, hreflang |
-| `forms.spec.ts` | no | the six forms, invalid input only, with and without JavaScript |
-| `journeys.spec.ts` | no | J1–J6 from the spec |
-| `security.spec.ts` | no | headers, no third-party script, robots/sitemap/feed |
-| `admin.spec.ts` | no | unauthenticated redirects, login without JavaScript |
+| `a11y.spec.ts` | yes | 29 routes × 2 locales **pass with zero violations** |
+| `shell.spec.ts` | yes | passes warm |
+| `routes.spec.ts` | yes | passes warm, except the soft-404 below |
+| `security.spec.ts` | yes | **65 passed, 0 failed** (with `admin.spec.ts`); 4 flaky, all Turnstile-bearing pages on first compile |
+| `admin.spec.ts` | yes | passes |
+| `journeys.spec.ts` | yes | J1 passes warm; the rest need content |
+| `forms.spec.ts` | yes | **all fail — the rate limiter's backend is gone.** See §5.1.1 |
 | `visual.spec.ts` | no | see §5.2 |
+
+**Always warm the routes before judging a failure.** `next dev` compiles a
+route on its first hit and a heavy one takes 30–70s, which reads as a 60s
+navigation timeout. Roughly 20 of the failures in the first full run were this
+and nothing else:
+
+```sh
+for L in ar en; do for p in "" /about /programs /projects /impact /news   /partners /get-involved /careers /verify /contact /resources; do
+  curl -s -o /dev/null --max-time 280 "http://localhost:3100/$L$p"; done; done
+```
+
+### 5.1.1 The rate limiter's backend no longer exists — **blocker**
+
+Every `forms.spec.ts` case fails, in both locales and with and without
+JavaScript, and the page shows "Something went wrong" rather than the
+validation errors. The cause is not the forms: `checkRateLimit` runs before
+Zod, and the Upstash host in `.env.local` — `native-boar-37077.upstash.io` —
+returns **NXDOMAIN**. The free-tier database was reclaimed.
+
+The limiter fails closed, so with it gone **every one of the six forms is
+unusable, including the confidential complaints channel**. This is a launch
+blocker and the credential is the owner's to replace (§6.10). Two things are
+worth deciding at the same time:
+
+- whether failing closed is right for the complaints form specifically, or
+  whether a safeguarding channel should survive an anti-abuse outage;
+- that the failure is currently invisible — it reaches a visitor as a generic
+  message and nothing pages anyone. Sentry is wired; this path should report.
+
+### 5.1.2 Soft 404s on five detail routes
+
+`/ar/projects/no-such-slug` answers **200**, not 404 — as do the news, story,
+programme and vacancy detail routes. `/legal/…` correctly answers 404.
+
+The difference is *when* `notFound()` is reached: `legal/[slug]` checks its key
+synchronously before any `await`, while the other five call `notFound()` after
+awaiting the record, by which point the response has begun streaming — and Next
+documents that a streamed not-found is a 200. `loading.tsx` was the obvious
+suspect and was **tested and cleared**: removing it and restarting clean still
+gave 200.
+
+Fixing it properly means the existence check has to happen before the first
+await, which the current data flow cannot do without either `dynamicParams =
+false` (breaks ISR for newly published content) or restructuring how the locale
+layout fetches. That is a product decision, not a cleanup. Until then every dead
+link into those five content types is indexable.
 
 Classify each failure as (a) a real defect in `src/`, (b) missing published
 content — the live database has one published programme, so most lists render
@@ -243,6 +309,14 @@ organisational copy.
    restore it.
 8. **Smoke-test the CMS** after the migrations: sign in, publish a post, upload
    an image, open a complaint, download a CV, check the audit log.
+10. **Replace the Upstash rate-limit credentials.** `UPSTASH_REDIS_REST_URL` in
+    `.env.local` points at `native-boar-37077.upstash.io`, which returns
+    NXDOMAIN — the free-tier database was reclaimed. The limiter fails closed,
+    so until it is replaced **every form on the site returns "Something went
+    wrong"**, the confidential complaints channel included. Create a new
+    Upstash database, set both variables locally and in Vercel, and decide the
+    two questions in §5.1.1 while you are there.
+
 9. **M7 in full**: real content, cross-browser and real-device testing, the
    domain cutover, Search Console, an uptime monitor, an Arabic admin guide with
    screenshots, and a credentials handover under organisational accounts.

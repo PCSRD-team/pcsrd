@@ -114,7 +114,10 @@ test.describe('machine-readable endpoints', () => {
     const body = await response.text();
     expect(body).toMatch(/User-Agent: \*/i);
     expect(body).toMatch(/Disallow: \/admin/);
-    expect(body).toMatch(/Disallow: \/api\//);
+    // `/api` without a trailing slash, which is what robots.ts emits and what
+    // the intent is: the bare prefix blocks `/api` itself as well as
+    // everything under it, where `/api/` would leave `/api` crawlable.
+    expect(body).toMatch(/Disallow: \/api$/m);
     expect(body).toMatch(/Sitemap: https?:\/\/\S+\/sitemap\.xml/);
   });
 
