@@ -16,7 +16,7 @@ import { Eyebrow, Heading, Lede } from '@/components/ui/typography';
 import { getOrganization, listMetrics, listPartners, listPosts, listPrograms, listStories } from '@/db/queries/content';
 import { getProjectFacets, listFeaturedProjects } from '@/db/queries/projects';
 import { publicEnv } from '@/lib/env.public';
-import { formatDate, formatNumber, formatPeriod, storageUrl } from '@/lib/format';
+import { formatDate, formatNumber, formatPeriod, storageUrl, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath, type Locale } from '@/lib/i18n/config';
 import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -590,7 +590,7 @@ function LatestNews({
           {posts.map((post) => (
             <RuledListItem key={post.id} className="grid gap-x-6 gap-y-1 sm:grid-cols-[140px_120px_minmax(0,1fr)]">
               {post.publishedAt ? (
-                <time dateTime={post.publishedAt.toISOString()} className="font-mono text-caption text-mono-muted">
+                <time dateTime={toDateTimeAttr(post.publishedAt)} className="font-mono text-caption text-mono-muted">
                   <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
                 </time>
               ) : (

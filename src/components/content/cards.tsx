@@ -5,7 +5,7 @@ import { Card, CardBody, CardFooter, CardMedia } from '@/components/ui/card';
 import { Figure } from '@/components/ui/figure';
 import { Stat } from '@/components/ui/stat';
 import { Eyebrow, Heading, Meta } from '@/components/ui/typography';
-import { formatDate, formatNumber, formatPeriod } from '@/lib/format';
+import { formatDate, formatNumber, formatPeriod, toDateTimeAttr } from '@/lib/format';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import { type Locale, localePath } from '@/lib/i18n/config';
 import { mediaImage } from './media';
@@ -141,7 +141,7 @@ export function PostCard({
     category: 'news' | 'statement' | 'announcement';
     title: string | null;
     excerpt: string | null;
-    publishedAt: Date | null;
+    publishedAt: Date | string | null;
     heroPath: string | null;
     heroAlt: string | null;
     heroBlur: string | null;
@@ -171,7 +171,7 @@ export function PostCard({
           <Eyebrow as="span">{postCategoryLabel(post.category, dict)}</Eyebrow>
           {post.publishedAt ? (
             <Meta as="span">
-              <time dateTime={post.publishedAt.toISOString()}>
+              <time dateTime={toDateTimeAttr(post.publishedAt)}>
                 <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
               </time>
             </Meta>
@@ -285,7 +285,7 @@ export function StoryCard({
     summary: string | null;
     quote: string | null;
     quoteAttribution: string | null;
-    publishedAt: Date | null;
+    publishedAt: Date | string | null;
     heroPath: string | null;
     heroAlt: string | null;
     heroBlur: string | null;
@@ -336,7 +336,7 @@ export function StoryCard({
       {story.publishedAt ? (
         <CardFooter>
           <Meta as="span">
-            <time dateTime={story.publishedAt.toISOString()}>
+            <time dateTime={toDateTimeAttr(story.publishedAt)}>
               <DateText locale={locale}>{formatDate(story.publishedAt, locale)}</DateText>
             </time>
           </Meta>

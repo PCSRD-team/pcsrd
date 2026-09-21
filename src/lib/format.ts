@@ -30,6 +30,29 @@ export function formatDate(
 }
 
 /** `2024 — 2026`, or `منذ 2024` when the end is open. */
+/**
+ * A machine-readable `datetime` attribute from a value that may already be a
+ * string.
+ *
+ * Queries return `Date`, but every public query is wrapped in
+ * `unstable_cache`, which stores its value as JSON — so a cache hit hands back
+ * an ISO string and a miss hands back the `Date`. Calling `.toISOString()`
+ * directly worked on the first request after a deploy and threw on the second.
+ * See `Serialized` in `src/db/queries/_cache.ts`.
+ */
+export function toDateTimeAttr(value: Date | string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+/** Milliseconds since the epoch, for a value that may be a serialised date. */
+export function timeOf(value: Date | string | null | undefined): number | null {
+  if (!value) return null;
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
 export function formatPeriod(
   start: string | null,
   end: string | null,

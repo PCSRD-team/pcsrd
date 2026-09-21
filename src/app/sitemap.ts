@@ -86,12 +86,18 @@ function entriesFor(
   });
 }
 
+/**
+ * `updatedAt` and `publishedAt` are `Date | string` because every query feeding
+ * this file is `unstable_cache`-wrapped, and the cache stores its value as
+ * JSON: a hit returns an ISO string, a miss the real `Date`. See `Serialized`
+ * in `src/db/queries/_cache.ts`.
+ */
 type SluggedRow = {
   slugAr: string;
   slugEn: string;
   translationStatus: string;
-  updatedAt: Date;
-  publishedAt: Date | null;
+  updatedAt: Date | string;
+  publishedAt: Date | string | null;
 };
 
 function recordPaths(prefix: string, row: SluggedRow): LocalizedPaths {
@@ -101,8 +107,14 @@ function recordPaths(prefix: string, row: SluggedRow): LocalizedPaths {
 }
 
 /** `updated_at` is the honest signal; `published_at` only when nothing was edited since. */
-const lastModified = (row: { updatedAt: Date; publishedAt: Date | null }): Date =>
-  row.updatedAt > (row.publishedAt ?? row.updatedAt) ? row.updatedAt : (row.publishedAt ?? row.updatedAt);
+const lastModified = (row: {
+  updatedAt: Date | string;
+  publishedAt: Date | string | null;
+}): Date => {
+  const updated = new Date(row.updatedAt);
+  const published = row.publishedAt ? new Date(row.publishedAt) : null;
+  return published && published > updated ? published : updated;
+};
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [programs, projects, posts, stories, vacancies, pageKeys] = await Promise.all([

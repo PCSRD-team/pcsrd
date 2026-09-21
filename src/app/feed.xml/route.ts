@@ -30,6 +30,20 @@ function escapeXml(value: string): string {
     .replace(/'/g, '&apos;');
 }
 
+
+/**
+ * RFC-822 dates for the feed, from values that may already be serialised.
+ *
+ * `listFeedPosts` is `unstable_cache`-wrapped, so a cache hit returns an ISO
+ * string where the type once claimed a `Date`. See `Serialized` in
+ * `src/db/queries/_cache.ts`.
+ */
+function rfc822(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return Number.isNaN(date.getTime()) ? null : date.toUTCString();
+}
+
 export async function GET() {
   const [posts, org] = await Promise.all([
     prerenderData('feed posts', () => listFeedPosts(20), []),
@@ -45,7 +59,7 @@ export async function GET() {
       <title>${escapeXml(post.title)}</title>
       <link>${escapeXml(url)}</link>
       <guid isPermaLink="true">${escapeXml(url)}</guid>
-      ${post.publishedAt ? `<pubDate>${post.publishedAt.toUTCString()}</pubDate>` : ''}
+      ${rfc822(post.publishedAt) ? `<pubDate>${rfc822(post.publishedAt)}</pubDate>` : ''}
       <category>${escapeXml(post.category)}</category>
       ${post.excerpt ? `<description>${escapeXml(post.excerpt)}</description>` : ''}
     </item>`;
@@ -59,7 +73,7 @@ export async function GET() {
     <link>${BASE}/ar/news</link>
     <language>ar</language>
     <description>${escapeXml(org?.missionAr ?? '')}</description>
-    ${newest ? `<lastBuildDate>${newest.toUTCString()}</lastBuildDate>` : ''}
+    ${rfc822(newest) ? `<lastBuildDate>${rfc822(newest)}</lastBuildDate>` : ''}
     <ttl>60</ttl>
     <atom:link href="${BASE}/feed.xml" rel="self" type="application/rss+xml" />
 ${items}
