@@ -589,8 +589,14 @@ export const getStoryBySlug = cached(_getStoryBySlug, ['stories:detail'], {
  * Open positions only.
  *
  * The deadline filter is applied in the query rather than left to the archive
- * cron: a job that closed at midnight must stop appearing immediately, not at
- * the next cron tick.
+ * cron, so a closed job stops appearing without waiting for a status change.
+ *
+ * It is not instant, and this comment used to say it was. The result is wrapped
+ * in `cached()` with the one-hour default and no date component in the key, so
+ * the worst case is a stale hour — which is the archive cron's own interval
+ * anyway (`vercel.json`, `0 * * * *`). Putting the date in the key would make it
+ * exact at the cost of a guaranteed miss at every midnight boundary in every
+ * locale, for a field that is a date and not a time.
  */
 export async function _listOpenVacancies(locale: Locale, options: { type?: VacancyType } = {}) {
   return db
