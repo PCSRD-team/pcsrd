@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
 import { readAsActor, rowsOf } from '@/db/session';
@@ -446,43 +446,71 @@ export async function getMediaUsage(actor: Actor, mediaId: string): Promise<Medi
       await tx.execute(sql`select * from app.media_usage(${mediaId}::uuid)`),
     );
 
-    const out: MediaUsageRow[] = [];
+    /**
+     * One query per *table*, not per usage row.
+     *
+     * This ran a `select … limit 1` inside the loop, and it is not a cold path:
+     * `entity-forms.ts` calls it on every media metadata save and
+     * `media.service.ts` on every delete. Production runs `max: 1` connection
+     * (`src/db/index.ts` — a serverless rule), so those round trips to Tokyo
+     * serialised completely. An asset used twelve times cost twelve of them.
+     *
+     * The same table backs several usage types — `program` and
+     * `program_gallery` are both `programs` — so ids are grouped by the entity
+     * name rather than by the usage type, and one `inArray` covers all of them.
+     */
+    type Resolved = { title: string | null; ar: string | null; en: string | null };
+    const byEntity = new Map<string, { meta: UsageMeta; ids: Set<string> }>();
     for (const usage of usages) {
       const meta = USAGE_TABLES[usage.entity_type];
-      let title: string | null = null;
-      let cacheKeys: MediaUsageRow['cacheKeys'] = {};
-      if (meta && usage.entity_id) {
-        const [row] = await tx
+      if (!meta || !usage.entity_id) continue;
+      const group = byEntity.get(meta.entity) ?? { meta, ids: new Set<string>() };
+      group.ids.add(usage.entity_id);
+      byEntity.set(meta.entity, group);
+    }
+
+    const resolved = new Map<string, Resolved>();
+    await Promise.all(
+      [...byEntity.values()].map(async ({ meta, ids }) => {
+        const rows = await tx
           .select({
+            id: meta.table.id,
             title: meta.title,
             ar: meta.keys?.ar ?? sql<null>`null`,
             en: meta.keys?.en ?? sql<null>`null`,
           })
           .from(meta.table)
-          .where(eq(meta.table.id, usage.entity_id))
-          .limit(1);
-        title = (row?.title as string | undefined) ?? null;
-        cacheKeys = { ar: row?.ar as string | null, en: row?.en as string | null };
-      }
-      out.push({
+          .where(inArray(meta.table.id, [...ids]));
+        for (const row of rows) {
+          resolved.set(row.id as string, {
+            title: (row.title as string | undefined) ?? null,
+            ar: (row.ar as string | null) ?? null,
+            en: (row.en as string | null) ?? null,
+          });
+        }
+      }),
+    );
+
+    return usages.map((usage) => {
+      const meta = USAGE_TABLES[usage.entity_type];
+      const row = usage.entity_id ? resolved.get(usage.entity_id) : undefined;
+      return {
         entityType: usage.entity_type,
         entityId: usage.entity_id,
         field: usage.field,
-        title,
+        title: row?.title ?? null,
         cacheEntity: usage.entity_type === 'organization' ? 'orgSettings' : (meta?.entity ?? null),
-        cacheKeys,
+        cacheKeys: row ? { ar: row.ar, en: row.en } : {},
         href:
           usage.entity_type === 'organization'
             ? '/admin/organization'
             : meta && usage.entity_id
               ? `/admin/${meta.path}/${usage.entity_id}`
               : null,
-      });
-    }
-    return out;
+      } satisfies MediaUsageRow;
+    });
   });
 }
-
 // ── Inbox ────────────────────────────────────────────────────────────────
 
 export async function listSubmissions(
