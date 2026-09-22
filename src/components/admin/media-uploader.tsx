@@ -1,7 +1,7 @@
 'use client';
-// Client Component: posts multipart to the route handler with `fetch` and
-// reports the result in place — there is no Server Action that streams a
-// file and hands back a record for the picker.
+// Client Component: intercepts the submit so the editor stays on the page and
+// the library refreshes in place. The form underneath is an ordinary
+// `multipart/form-data` POST and works without this — see below.
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -22,6 +22,17 @@ import { adminUi } from './admin-ui-dict';
  * a successful upload leaves an orphaned object in the bucket every time
  * somebody forgets — which is often, and the bucket has no way to know the row
  * was never written.
+ *
+ * **It works with scripting off.** This was the one admin form that did not,
+ * against non-negotiable #7, and the exception was recorded rather than fixed
+ * on the grounds that no Server Action can stream a file and hand back a
+ * record for the picker. That is true and it was never the obstacle: the route
+ * handler already accepted a plain multipart POST, because that is what
+ * `fetch` was sending it. What it did not do was answer a *browser* — it
+ * returned JSON, so a no-JS submit landed on a page of raw JSON with no way
+ * back. It now content-negotiates, and the form carries a real `action`,
+ * `method` and `encType`, so the native submit redirects to `/admin/media`
+ * with a flash like every other admin mutation.
  */
 export function MediaUploader() {
   const [busy, setBusy] = useState(false);
@@ -29,20 +40,30 @@ export function MediaUploader() {
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
   const t = adminUi.uploader;
 
-  async function upload(formData: FormData) {
+  async function upload(event: React.FormEvent<HTMLFormElement>) {
+    // The form has a real `action`, `method` and `encType`, so with scripting
+    // off it posts natively to the same route handler and comes back with a
+    // redirect and a flash. This handler is the enhancement on top: it keeps
+    // the editor on the page and refreshes the library in place.
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
     const alt = String(formData.get('altAr') ?? '').trim();
     if (!alt) {
       setMessage({ tone: 'danger', text: t.altRequired });
       return;
     }
 
-    const file = formData.get('file');
-    if (file instanceof File) formData.set('kind', file.type === 'application/pdf' ? 'document' : 'image');
-
     setBusy(true);
     setMessage(null);
     try {
-      const response = await fetch('/api/admin/media', { method: 'POST', body: formData });
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        // What tells the handler to answer with JSON rather than a redirect.
+        headers: { Accept: 'application/json' },
+      });
       const body = (await response.json()) as { ok: boolean; messageKey?: string };
 
       if (!response.ok || !body.ok) {
@@ -68,7 +89,15 @@ export function MediaUploader() {
 
   return (
     <Panel as="section" tone="white" padding="md" labelledBy="uploader-title">
-      <form action={upload}>
+      <form
+        action="/api/admin/media"
+        method="post"
+        encType="multipart/form-data"
+        onSubmit={upload}
+      >
+        {/* Where the no-JS redirect lands. Ignored by the fetch path, which
+            never leaves the page. */}
+        <input type="hidden" name="returnTo" value="/admin/media" />
         <FormStack>
           <div>
             <Heading level={2} size="h4" id="uploader-title">
