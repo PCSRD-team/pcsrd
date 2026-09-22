@@ -545,8 +545,27 @@ export async function _getStoryBySlug(slug: string, locale: Locale) {
     galleryFor(storyMedia, storyMedia.storyId, row.id, locale),
   ]);
 
+  // The safeguarding record does not travel with the story.
+  //
+  // `consentReference` is free text that can name the person in the
+  // photograph, and `consentObtained` is the rest of that record.
+  // `.select()` pulled both into this object, `cached()` serialises whatever
+  // it returns into the Next Data Cache, and the key is a public slug.
+  // Nothing on the page renders either, so they widened the blast radius for
+  // nothing and sat one prop-drill away from a leak.
+  //
+  // `subjectAnonymized` stays. It is not part of the record — it is a notice
+  // the reader is shown, so the absence of a name or a photograph reads as a
+  // deliberate withholding rather than an omission.
+  //
+  // Dropped here rather than narrowed in the select, so the publish gate in
+  // `services/_shared/publish.ts` goes on reading them from its own query.
+  const { consentReference: _ref, consentObtained: _got, ...rest } = row;
+  void _ref;
+  void _got;
+
   return {
-    ...row,
+    ...rest,
     title: en ? (row.titleEn?.trim() || row.titleAr) : row.titleAr,
     summary: en ? (row.summaryEn?.trim() || row.summaryAr) : row.summaryAr,
     body: en ? (row.bodyEn ?? row.bodyAr) : row.bodyAr,
