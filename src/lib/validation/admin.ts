@@ -210,10 +210,6 @@ export const programSchema = z.object({
   rationaleEn: richText,
   strategicObjectiveAr: optionalText(600).nullable(),
   strategicObjectiveEn: optionalText(600).nullable(),
-  // No default: absent means "not posted" and the service keeps the stored
-  // value. A default of `[]` emptied both arrays on every save.
-  specificObjectives: z.array(z.unknown()).optional(),
-  keyInterventions: z.array(z.unknown()).optional(),
   sustainabilityAr: richText,
   sustainabilityEn: richText,
   impactStatementAr: richText,

@@ -50,6 +50,13 @@
       "when": 1790057083055,
       "tag": "0006_rate_limit_fallback",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790072208647,
+      "tag": "0007_drop_unused_program_blocks",
+      "breakpoints": true
     }
   ]
 }

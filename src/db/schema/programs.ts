@@ -22,14 +22,6 @@ import {
 import { programKey, targetGroup } from './enums';
 import { mediaAssets } from './media';
 
-/** `[{ title_ar, title_en, body_ar, body_en }]` */
-export type ProgramBlock = {
-  title_ar: string;
-  title_en?: string | null;
-  body_ar?: string | null;
-  body_en?: string | null;
-};
-
 /**
  * Three rows, ever. Modelled as a table rather than constants because the copy
  * is fully CMS-editable and the organisation will rewrite it.
@@ -54,14 +46,6 @@ export const programs = pgTable(
     rationaleEn: jsonb().$type<RichText>(),
     strategicObjectiveAr: text(),
     strategicObjectiveEn: text(),
-    specificObjectives: jsonb()
-      .$type<ProgramBlock[]>()
-      .notNull()
-      .default(sql`'[]'::jsonb`),
-    keyInterventions: jsonb()
-      .$type<ProgramBlock[]>()
-      .notNull()
-      .default(sql`'[]'::jsonb`),
     sustainabilityAr: jsonb().$type<RichText>(),
     sustainabilityEn: jsonb().$type<RichText>(),
     impactStatementAr: jsonb().$type<RichText>(),

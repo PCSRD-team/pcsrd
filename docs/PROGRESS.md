@@ -424,14 +424,17 @@ Done:
   on it now, including protocol-relative, `javascript:`, traversal, fragment
   and query-smuggled hosts — it is attacker-controllable and had none.
 
-### 5.5 Two that need a decision, not an implementation
+### 5.5 Decisions, taken 2026-09-22
 
 - **`media-uploader.tsx` is the one form that needs JavaScript.** It streams a
   file, and non-negotiable #7 says every form works without it. A documented
   exception, or a no-JS fallback that posts to a route handler?
-- **`programs.specific_objectives` and `key_interventions`** are live columns
-  that nothing reads or writes. Either an `ArrayField` in the admin plus a block
-  on the programme page, or drop them in a migration.
+- ~~**`programs.specific_objectives` and `key_interventions`**~~ — **dropped**
+  2026-09-22 in `drizzle/0007_drop_unused_program_blocks.sql`. Checked against
+  the live database first, not inferred: all three programmes, both columns,
+  zero entries. Nothing was lost. `ProgramBlock` went with them — it typed
+  nothing else — and `keep()` now guards one column, `accent_token`, which the
+  same test already pinned.
 
 ---
 
@@ -442,10 +445,12 @@ organisational copy.
 
 1. **Apply the migrations to production.** `npm run db:migrate` now covers
    `0003` (the audit sequence grant — without it every audited mutation
-   aborts), `0005`, and `0006` (the rate limiter's database fallback; until it
+   aborts), `0005`, `0006` (the rate limiter's database fallback; until it
    is applied the fallback has nothing to fall back to, and
    `schema-parity.test.ts` records the repository as one table ahead of the
-   live database). Then `supabase db push` for the storage buckets; the live
+   live database) and `0007` (drops two unused `programs` columns — verified
+   empty in all three rows before the migration was written). Then
+   `supabase db push` for the storage buckets; the live
    project has no `supabase_migrations` schema yet, so this is its first push.
 
 2. **Confirm `DATABASE_URL` connects as `app_runtime`, not `postgres`.** The

@@ -114,7 +114,7 @@ export type ContentService<TInput extends ContentInputBase> = {
  *
  * Every service rebuilds the whole row on save, so a column with no input in
  * the form was silently reset on every edit — `accent_token` back to its
- * default, `specific_objectives` to `[]`, a gallery to nothing. `undefined`
+ * default, a gallery to nothing. `undefined`
  * means "not posted": keep what is stored, or the default on a create.
  * `null` and `[]` are real values and are written as given.
  */
