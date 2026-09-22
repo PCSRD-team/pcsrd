@@ -183,7 +183,7 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
 
           {project.gallery.length > 0 ? (
             <Section labelledBy="project-gallery">
-              <SectionHeading id="project-gallery" title={dict.projects.gallery} />
+              <SectionHeading id="project-gallery" title={dict.contentUi.gallery} />
               <Grid as="ul" cols={3} gap={4}>
                 {project.gallery.map((item) => (
                   <li key={item.path}>

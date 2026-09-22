@@ -654,11 +654,16 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       listFeaturedProjects(locale, 2),
       listPartners(locale),
       listStories(locale, { limit: 1, featuredOnly: true }),
-      listPosts(locale, { limit: 3 }),
+      listPosts(locale, { limit: 3, featuredOnly: true }),
     ]);
 
   const story = featuredStories[0] ?? (await listStories(locale, { limit: 1 }))[0] ?? null;
   const shownMetrics = metrics.length > 0 ? metrics : await listMetrics(locale, { status: 'verified' });
+  // Featured first, latest as the fallback — the same idiom as the story and
+  // the metrics two lines up. The `is_featured` checkbox had a writer in the
+  // news form and no reader anywhere on the site, so marking a post as
+  // featured did nothing at all.
+  const shownPosts = posts.items.length > 0 ? posts : await listPosts(locale, { limit: 3 });
   const memberships = partners.filter((partner) => partner.type === 'network' || partner.type === 'membership');
 
   return (
@@ -680,7 +685,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       <FeaturedStory locale={locale} dict={dict} story={story} />
       <PartnersGrid locale={locale} dict={dict} partners={partners} />
       <GetInvolvedPanels locale={locale} dict={dict} />
-      <LatestNews locale={locale} dict={dict} posts={posts.items} />
+      <LatestNews locale={locale} dict={dict} posts={shownPosts.items} />
       <VerifyBlock locale={locale} dict={dict} />
     </>
   );

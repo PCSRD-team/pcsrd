@@ -302,6 +302,7 @@ export const en: Dictionary = {
 
     content: {
       unpublishFirst: 'Unpublish this item before doing that.',
+      keyTaken: 'That key is already in use. Choose another.',
     },
 
     media: {

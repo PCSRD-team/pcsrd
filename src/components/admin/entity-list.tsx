@@ -130,7 +130,11 @@ export async function EntityListPage({
             id={row.id}
             status={row.status}
             actor={actor}
-            returnTo={`/admin/${meta.path}`}
+            // The current view, not the bare list. Publishing or deleting from
+            // page 3 of a filtered list used to return the editor to page 1 of
+            // an unfiltered one, because this sent a path with no query and the
+            // return-path pattern rejected one anyway.
+            returnTo={hrefFor(result.page)}
             label={row.title}
             allowDelete={meta.canCreate}
           />

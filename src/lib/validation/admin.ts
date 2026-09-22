@@ -571,13 +571,23 @@ export const STATUS_ENTITIES = [
 export const DELETE_ENTITIES = [...STATUS_ENTITIES, 'person', 'metric'] as const;
 
 /**
- * Where a row action sends the browser afterwards. Restricted to a path inside
- * the admin so the `returnTo` field can never become an open redirect.
+ * Where a row action sends the browser afterwards.
+ *
+ * Anchored to `/admin` so `returnTo` can never become an open redirect, and
+ * exported because the same rule is applied a second time by `safeReturnPath`
+ * in `src/actions/admin/flash.ts`. It used to be written out in both places,
+ * which meant the Zod copy ran first and silently coerced anything the other
+ * copy would have accepted — so widening one of them alone did nothing.
+ *
+ * The query part is allowed, and deliberately excludes `/`, `:` and `#`: with
+ * the path anchored to `/admin`, a query that can carry neither a scheme nor a
+ * second path segment cannot leave the origin. Without it, publishing a row
+ * from page 3 of a list sent the editor back to the admin root, because the
+ * pattern rejected `?page=3` and the whole path was then replaced.
  */
-const adminReturnPath = z
-  .string()
-  .regex(/^\/admin(?:\/[\w-]+)*\/?$/)
-  .default('/admin');
+export const ADMIN_RETURN_PATH = /^\/admin(?:\/[\w-]+)*\/?(?:\?[\w=&%+.-]*)?$/;
+
+const adminReturnPath = z.string().regex(ADMIN_RETURN_PATH).default('/admin');
 
 export const rowStatusSchema = z.object({
   entity: z.enum(STATUS_ENTITIES),
