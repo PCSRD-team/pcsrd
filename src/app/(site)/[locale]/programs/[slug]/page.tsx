@@ -63,13 +63,21 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
 
-  const [dict, program] = await Promise.all([getDictionary(locale), getProgramBySlug(slug, locale)]);
+  // `listPrograms` needs nothing from this programme, so it belongs in the
+  // first wave. It sat in the second, which made the page pay two sequential
+  // round trips to a database in Tokyo where one would do — and this is the
+  // only detail route with a two-stage waterfall.
+  const [dict, program, allPrograms] = await Promise.all([
+    getDictionary(locale),
+    getProgramBySlug(slug, locale),
+    listPrograms(locale),
+  ]);
   if (!program) notFound();
 
-  const [projects, metrics, allPrograms] = await Promise.all([
+  // These two genuinely depend on `program.key`.
+  const [projects, metrics] = await Promise.all([
     listProjects(locale, { program: program.key, page: 1 }),
     listMetrics(locale, { programKey: program.key }),
-    listPrograms(locale),
   ]);
 
   const targetGroupLabel = (key: string) =>

@@ -24,11 +24,15 @@ is green. What remains is, in order:
 2. ~~Soft 404s on five detail routes~~ — **closed** 2026-09-22: measured against
    `next start`, not the dev server, and the exposure that motivated it does not
    exist. Next noindexes every streamed not-found itself (§5.1.2).
-3. Run `visual.spec.ts` and commit the baselines (§5.2); the other six specs
+3. **Check whether `/programs/[slug]` ships a heading in a production build**
+   (§5.1.3). Measured against `next dev` it does not — the response is the
+   loading skeleton and the content arrives only as RSC payload. One route,
+   pre-existing, and one `curl` decides it.
+4. Run `visual.spec.ts` and commit the baselines (§5.2); the other six specs
    have now been run and pass.
-4. Lighthouse against `next start` (§5.3).
-5. The small queue in §5.4 — each is under an hour.
-6. Then it is the owner's turn: §6 is blocked on credentials, decisions and
+5. Lighthouse against `next start` (§5.3).
+6. The small queue in §5.4 — each is under an hour.
+7. Then it is the owner's turn: §6 is blocked on credentials, decisions and
    organisational copy, and nothing in §5 unblocks it.
 
 Do **not** re-audit. Five full audits have run (schema parity, dependencies and
@@ -330,6 +334,52 @@ motivated the item does not exist, so the cost buys nothing.
 Revisit only if a real 404 status is needed for compliance or analytics, which
 is the one reason the Next documentation itself gives.
 
+### 5.1.3 `/[locale]/programs/[slug]` ships no heading in its SSR HTML — **open, needs a production check**
+
+Found 2026-09-22 by fetching served HTML rather than by reading code, which is
+the only way this class of thing shows up.
+
+**What was measured**, against `next dev`, warm, deterministic across four
+requests with a byte-identical response each time:
+
+```
+h1=0  /ar/programs/<published-slug>     ← the only one
+h1=1  /ar/news/<published-slug>
+h1=1  /ar/programs   /ar/news   /ar/careers   /ar/about   /ar
+```
+
+The programme detail response is the `loading.tsx` skeleton — `aria-busy`,
+`loading-surface`, an unresolved `<template id="B:0">` — followed by the RSC
+payload, which *does* contain the heading as `[\"$\",\"h1\",…]`. So the content
+renders; it never reaches the HTML shell. No error, no `__next_error__`, a 200
+in well under a second in the server log.
+
+**What was ruled out:**
+
+- **Not caused by this session.** Restoring the pre-session file
+  (`git show c2d75b8:…`) reproduces it exactly.
+- **Not latency.** The route had the only two-stage query waterfall of any
+  detail route — `listPrograms` sat in the second wave needing nothing from the
+  first. That is fixed, on its own merits, and the heading did not come back.
+- **Not an error boundary.** Nothing is logged, and the error marker is absent.
+
+**What is not known, and decides whether it matters:** whether this reproduces
+in a production build. Dev streaming is not the production pipeline, and
+`PROGRESS §4` already records that dev misleads about status codes. A browser
+executes the payload, which is why `a11y.spec.ts` passes and why nothing caught
+it: axe runs against the live DOM, not the shell.
+
+**Why it would matter if it does reproduce:** a crawler or reader without
+JavaScript gets a skeleton with no `<h1>` and no article text on the one route
+that describes what the organisation actually does. The `<title>` and meta are
+correct either way, so search results would not look broken — which is what
+makes it worth measuring rather than assuming.
+
+**How to check, in one step:** `npm run build && npx next start --port 3100`,
+then `curl -s http://localhost:3100/ar/programs/<slug> | grep -c '<h1'`.
+Compare against `/ar/news/<slug>`. If the production build emits the heading,
+close this as a dev-server artefact and say so here.
+
 ### 5.2 Visual baselines
 
 `npm run test:visual:update`, then look at each PNG before committing it.
@@ -344,27 +394,35 @@ bundle is several times larger and the numbers are meaningless. Budgets are in
 
 ### 5.4 Small, each under an hour
 
-- **Render the galleries that queries now return.** `_getStoryBySlug`,
-  `_getPostBySlug` and `_getProgramBySlug` return `gallery`; the three detail
-  pages render only `hero`. Files: `impact/stories/[slug]/page.tsx`,
-  `news/[slug]/page.tsx:118`, `programs/[slug]/page.tsx:127`.
-- **`/careers` vacancy-type tabs.** `listOpenVacancies` accepts `{ type }` and
-  nothing sets it (`careers/page.tsx:43`). Use the kit `Tabs`.
-- **Home featured posts.** `listPosts` now accepts `featuredOnly`
-  (`page.tsx:657`). Editorial decision: latest three, or the featured ones?
-  Without it the "featured" checkbox in the news form does nothing.
-- **`errors.content.keyTaken`.** The page-key collision currently reuses
-  `errors.slug.taken`. Add the precise key to `ar.ts`/`en.ts` and use it in
-  `createContentService`.
-- **`safeReturnPath`** (`src/actions/admin/flash.ts:21`) rejects any `returnTo`
-  carrying a querystring, so publishing from page 3 of a list returns you to
-  page 1. Widen the pattern to accept `?page=` without opening a redirect.
+Five of the seven are done (2026-09-22). What is left:
+
 - **Flip the restricted-classes rule to `error`** in `eslint.config.mjs`. The
   tree has been at zero for several passes.
 - **Delete `docs/audit/**` if you want it gone** — it is a point-in-time report,
   not documentation. `CLAUDE.md`, `DEPLOYMENT.md` and this file reference it, so
   update those three if you do. Kept for now because it records *why* several
   non-obvious decisions were made.
+
+Done:
+
+- ~~Render the galleries that queries now return.~~ All three, plus the story
+  page's **hero**, which it did not render either — so `_getStoryBySlug`'s hero
+  join was dead as well. The heading moved from `projects.gallery` to
+  `contentUi.gallery`; "From the field" was never project-specific.
+- ~~`/careers` vacancy-type tabs.~~ Kit `Tabs`, so the filter is a URL: the
+  filtered view canonicalises to itself, and an unknown `?type=` falls back to
+  the unfiltered canonical rather than advertising a duplicate.
+- ~~Home featured posts.~~ No editorial decision was needed: the page already
+  does featured-first-latest-as-fallback for the story and the metrics, so the
+  posts now match it.
+- ~~`errors.content.keyTaken`.~~ Reusing `errors.slug.taken` was defensible for
+  pages, where the key *is* the path, and wrong for programmes, where it is an
+  internal identifier that never appears in a URL.
+- ~~`safeReturnPath`.~~ Needed three changes, not one: the pattern was written
+  out twice and the Zod copy runs first, `withFlash` concatenated `?ok=` where
+  it now has to merge, and `entity-list` sent a bare path regardless. 24 tests
+  on it now, including protocol-relative, `javascript:`, traversal, fragment
+  and query-smuggled hosts — it is attacker-controllable and had none.
 
 ### 5.5 Two that need a decision, not an implementation
 
