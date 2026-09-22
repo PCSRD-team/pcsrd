@@ -40,8 +40,6 @@ beforeEach(async () => {
         slugAr: 'التعافي',
         slugEn: 'recovery',
         accentToken: '--color-prog-recovery',
-        specificObjectives: [{ title_ar: 'هدف' }],
-        keyInterventions: [{ title_ar: 'تدخّل' }],
       })
       .returning({ id: programs.id }),
   ).id;
@@ -56,7 +54,11 @@ beforeEach(async () => {
 });
 
 describe('programme save', () => {
-  it('keeps accent_token and the structured arrays when the form does not post them', async () => {
+  // `accentToken` is the last column `keep()` still guards: the two jsonb
+  // arrays this also pinned were dropped in 0007, having never had an editor
+  // or a reader. The semantics under test are unchanged — a save must not
+  // reset a column the form did not post.
+  it('keeps accent_token when the form does not post it', async () => {
     await programService.upsert(db(), MANAGER, {
       id: programId,
       key: 'early_recovery',
@@ -66,8 +68,6 @@ describe('programme save', () => {
     const stored = row1(await getDb().select().from(programs).where(eq(programs.id, programId)));
     expect(stored.titleAr).toBe('التعافي المبكر — محدّث');
     expect(stored.accentToken).toBe('--color-prog-recovery');
-    expect(stored.specificObjectives).toEqual([{ title_ar: 'هدف' }]);
-    expect(stored.keyInterventions).toEqual([{ title_ar: 'تدخّل' }]);
   });
 
   it('keeps the gallery when `media` is not posted, and replaces it when it is', async () => {

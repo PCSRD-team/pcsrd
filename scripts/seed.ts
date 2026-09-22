@@ -91,8 +91,6 @@ async function main() {
         slugEn: program.slugEn,
         accentToken: program.accent,
         displayOrder: program.order,
-        specificObjectives: [],
-        keyInterventions: [],
         targetGroups: [],
         // Draft, always. A seeded programme must not appear on the public site
         // carrying a TODO in its title.

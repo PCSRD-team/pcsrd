@@ -254,8 +254,6 @@ export type ProgramInput = ContentInputBase &
     rationaleEn?: RichText | null;
     strategicObjectiveAr?: string | null;
     strategicObjectiveEn?: string | null;
-    specificObjectives?: unknown[];
-    keyInterventions?: unknown[];
     sustainabilityAr?: RichText | null;
     sustainabilityEn?: RichText | null;
     impactStatementAr?: RichText | null;
@@ -295,10 +293,6 @@ export const programService = createContentService<ProgramInput>({
     rationaleEn: input.rationaleEn ?? null,
     strategicObjectiveAr: input.strategicObjectiveAr ?? null,
     strategicObjectiveEn: input.strategicObjectiveEn ?? null,
-    // Structured arrays with no editor yet (05-ADMIN §3 `ArrayField`); kept
-    // as stored until one exists, so a save does not empty them.
-    specificObjectives: keep(input.specificObjectives, existing, 'specificObjectives', []),
-    keyInterventions: keep(input.keyInterventions, existing, 'keyInterventions', []),
     sustainabilityAr: input.sustainabilityAr ?? null,
     sustainabilityEn: input.sustainabilityEn ?? null,
     impactStatementAr: input.impactStatementAr ?? null,
