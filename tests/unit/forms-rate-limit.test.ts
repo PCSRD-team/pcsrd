@@ -22,8 +22,8 @@ describe('checkRateLimit without Upstash credentials', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { checkRateLimit } = await loadWith({ NODE_ENV: 'development' });
 
-    expect(await checkRateLimit('form', 'abc')).toEqual({ success: true, retryAfterSeconds: 0 });
-    expect(await checkRateLimit('upload', 'abc')).toEqual({ success: true, retryAfterSeconds: 0 });
+    expect(await checkRateLimit('form', 'abc')).toEqual({ success: true, retryAfterSeconds: 0, degraded: false });
+    expect(await checkRateLimit('upload', 'abc')).toEqual({ success: true, retryAfterSeconds: 0, degraded: false });
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0]?.[0]).toMatch(/DISABLED/);
   });
@@ -39,5 +39,83 @@ describe('checkRateLimit without Upstash credentials', () => {
       UPSTASH_REDIS_REST_URL: 'https://x.upstash.io',
     });
     await expect(checkRateLimit('form', 'abc')).rejects.toThrow(/required outside development/);
+  });
+});
+
+/**
+ * The behaviour the outage of 2026-09-19 exposed.
+ *
+ * `cached[key].limit()` had no `try/catch`, so a fetch failure escaped
+ * `checkRateLimit`, escaped `submit()`, and reached `runAction` as an
+ * unexpected throw — which meant all six public forms answered "Something went
+ * wrong" and nothing reported it. Upstash is mocked here to throw; what is
+ * under test is that the throw is contained, that the database is consulted,
+ * and that the caller is told the limiter is degraded.
+ */
+async function loadWithFailingUpstash(dbAnswer: boolean | null | 'throw') {
+  vi.resetModules();
+  vi.doMock('@/lib/env', () => ({
+    serverEnv: {
+      NODE_ENV: 'production',
+      UPSTASH_REDIS_REST_URL: 'https://gone.upstash.invalid',
+      UPSTASH_REDIS_REST_TOKEN: 'token',
+    },
+  }));
+  vi.doMock('@upstash/redis', () => ({ Redis: class {} }));
+  vi.doMock('@upstash/ratelimit', () => ({
+    Ratelimit: class {
+      static slidingWindow = () => undefined;
+      limit = () => Promise.reject(new Error('getaddrinfo ENOTFOUND gone.upstash.invalid'));
+    },
+  }));
+  vi.doMock('@/db', () => ({
+    db: {
+      execute: () =>
+        dbAnswer === 'throw'
+          ? Promise.reject(new Error('connection refused'))
+          : Promise.resolve({ rows: [{ ok: dbAnswer }] }),
+    },
+  }));
+  return import('@/lib/security/rate-limit');
+}
+
+describe('checkRateLimit when Upstash is unreachable', () => {
+  it('falls back to the database and permits a client inside its allowance', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { checkRateLimit } = await loadWithFailingUpstash(true);
+
+    const result = await checkRateLimit('form', 'abc');
+    expect(result.success).toBe(true);
+    expect(result.degraded).toBe(true);
+  });
+
+  it('still refuses a client the database says is over its allowance', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { checkRateLimit } = await loadWithFailingUpstash(false);
+
+    const result = await checkRateLimit('form', 'abc');
+    expect(result.success).toBe(false);
+    expect(result.degraded).toBe(true);
+    expect(result.retryAfterSeconds).toBeGreaterThan(0);
+  });
+
+  it('refuses, rather than throwing, when neither backend can answer', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { checkRateLimit } = await loadWithFailingUpstash('throw');
+
+    // The contract that matters: it resolves. A throw here is what took the
+    // forms down, because `runAction` turns it into `errors.unexpected`.
+    const result = await checkRateLimit('form', 'abc');
+    expect(result.success).toBe(false);
+    expect(result.degraded).toBe(true);
+  });
+
+  it('logs the outage instead of absorbing it', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { checkRateLimit } = await loadWithFailingUpstash(true);
+    await checkRateLimit('form', 'abc');
+
+    expect(error).toHaveBeenCalled();
+    expect(error.mock.calls.map((c) => String(c[0])).join(' ')).toMatch(/Upstash is unreachable/);
   });
 });

@@ -100,7 +100,17 @@ async function submit<TSchema extends z.ZodType>(
 
     const limiter = pipeline.type === 'job' ? 'upload' : 'form';
     const rate = await checkRateLimit(limiter, hashIp(ip) ?? 'unknown');
-    if (!rate.success) return err('rate_limited', 'errors.rateLimited');
+
+    // A safeguarding disclosure and a partnership enquiry do not deserve the
+    // same treatment when anti-abuse is down. A degraded limiter means the primary
+    // backend did not answer — on 2026-09-19 that state lasted days and took
+    // every form with it, this channel included. A complainant who cannot
+    // reach the organisation because a Redis host expired is a worse outcome
+    // than an unthrottled complaint: the honeypot and Turnstile still stand,
+    // and the throttle is the outer wall, not the only one.
+    if (!rate.success && !(rate.degraded && sensitive)) {
+      return err('rate_limited', 'errors.rateLimited');
+    }
 
     const fields = formDataToObject(formData, pipeline.multi ?? []);
 

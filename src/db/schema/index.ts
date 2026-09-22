@@ -16,4 +16,5 @@ export * from './pages';
 export * from './submissions';
 export * from './audit';
 export * from './redirects';
+export * from './rate-limit';
 export * from './relations';
