@@ -56,7 +56,7 @@ const styles = {
       'active:border-destructive',
     /** Gold as a marking colour: a 2px rule under the label, ink text. */
     marked:
-      'border-b-2 border-gold-600 bg-transparent px-1 text-ink hover:bg-gold-050 hover:text-gold-700 ' +
+      'border-be-2 border-gold-600 bg-transparent px-1 text-ink hover:bg-gold-050 hover:text-gold-700 ' +
       'active:border-gold-700',
   },
   icon: {

@@ -28,28 +28,36 @@ const eslintConfig = defineConfig([
   // 00-ARCHITECTURE §0.9 rule 2. A physical property silently breaks RTL and
   // is invisible to an LTR-reading reviewer, so it has to be caught by machine.
   {
+    // src/emails is excluded: React Email renders for mail clients, which do
+    // not load a stylesheet, so those components carry inline CSS style
+    // objects and no Tailwind at all. Once `objectValues` was switched on, the
+    // plugin read `{ fontSize: '15px', borderStyle: 'solid' }` as a class list
+    // and reported 44 unknown classes in one file. Nothing there can violate a
+    // Tailwind rule, because nothing there is a Tailwind class.
     files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/emails/**"],
     plugins: { "better-tailwindcss": betterTailwind },
     settings: {
       "better-tailwindcss": {
         // Tailwind v4 is CSS-first: the @theme block IS the config.
         entryPoint: "src/app/globals.css",
 
-        // WITHOUT THIS, MOST OF THE KIT IS NOT LINTED AT ALL.
+        // WITHOUT THIS, MOST OF THE SHARED KIT IS NOT LINTED AT ALL.
         //
         // Sixteen files in src/components/ui hold their classes in a
-        //  object rather than in a className, and the
-        // plugin scans a variable named  only when it is assigned a
+        // `const styles = { … }` object rather than in a className, and the
+        // plugin scans a variable named `styles` only when it is assigned a
         // string directly — an object literal's values were never visited.
         //
-        // Measured, not assumed:  inside 
-        // produced zero errors, and the same three classes in a 
+        // Measured, not assumed: `pl-4 ml-2 text-left` inside `styles.box`
+        // produced zero errors, and the same three classes in a `className`
         // on the next line produced three. So non-negotiable #2 — logical
         // properties only, "the ESLint rule stays on" — was unenforced across
-        // the whole shared kit, which is the one place it matters most.
+        // the whole shared kit, which is the one place it matters most. It
+        // found a real `border-b-2` in button.tsx the moment it was switched on.
         //
-        //  visits them. Both the string form and the object
-        // form are listed so neither stops being scanned.
+        // `objectValues` visits them. Both the string form and the object form
+        // are listed so neither stops being scanned.
         variables: [
           ["^styles?$", [{ match: "strings" }, { match: "objectValues" }]],
           ["^classes$", [{ match: "strings" }, { match: "objectValues" }]],

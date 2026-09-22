@@ -121,6 +121,36 @@ own types refuse it.
 - media pagination dropped its own filters;
 - 265 lines of hardcoded copy moved into the dictionaries.
 
+**The lint pass (2026-09-22) found and fixed:**
+
+- **Most of the shared kit was not being linted at all.** Sixteen files in
+  `src/components/ui` keep their classes in a `const styles = { … }` object
+  rather than in a `className`, and `eslint-plugin-better-tailwindcss` scans a
+  variable named `styles` only when it is assigned a string *directly* — an
+  object literal's values were never visited. So non-negotiable #2, "logical
+  CSS properties only … the ESLint rule stays on", was unenforced across
+  exactly the code the rule exists to protect.
+
+  Measured rather than assumed: `pl-4 ml-2 text-left` placed inside
+  `styles.box` produced **zero** errors, and the same three classes in a
+  `className` on the next line produced **three**. Adding `objectValues` to the
+  plugin's `variables` setting closes it, and it immediately found a real
+  `border-b-2` in `button.tsx` — a physical property in the kit's own button,
+  which is the one component every page uses.
+
+  `src/emails/**` is now excluded from that block. React Email renders for mail
+  clients, which load no stylesheet, so those files carry inline CSS style
+  objects and no Tailwind; with `objectValues` on, the plugin read
+  `{ fontSize: '15px', borderStyle: 'solid' }` as a class list and reported 44
+  unknown classes in one file.
+
+- **`better-tailwindcss/no-restricted-classes` is `error`, not `warn`.** Its own
+  comment made that conditional on the rule reporting zero, and
+  `eslint --format json` now reports zero problems of any rule across the tree.
+  A radius or a shadow fails the build rather than scrolling past in a warning
+  list nobody reads. Verified by injecting `rounded-lg shadow-md` and watching
+  it fail.
+
 **The production-build pass (2026-09-22) found and fixed:**
 
 - **The modal dialog documented a focus contract its only caller did not
@@ -396,8 +426,9 @@ bundle is several times larger and the numbers are meaningless. Budgets are in
 
 Five of the seven are done (2026-09-22). What is left:
 
-- **Flip the restricted-classes rule to `error`** in `eslint.config.mjs`. The
-  tree has been at zero for several passes.
+- ~~Flip the restricted-classes rule to `error`~~ — **done** 2026-09-22, and
+  widening the plugin to see style objects at the same time found a real
+  physical property in `button.tsx`. See §3.
 - **Delete `docs/audit/**` if you want it gone** — it is a point-in-time report,
   not documentation. `CLAUDE.md`, `DEPLOYMENT.md` and this file reference it, so
   update those three if you do. Kept for now because it records *why* several
