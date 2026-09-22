@@ -34,6 +34,27 @@ const eslintConfig = defineConfig([
       "better-tailwindcss": {
         // Tailwind v4 is CSS-first: the @theme block IS the config.
         entryPoint: "src/app/globals.css",
+
+        // WITHOUT THIS, MOST OF THE KIT IS NOT LINTED AT ALL.
+        //
+        // Sixteen files in src/components/ui hold their classes in a
+        //  object rather than in a className, and the
+        // plugin scans a variable named  only when it is assigned a
+        // string directly — an object literal's values were never visited.
+        //
+        // Measured, not assumed:  inside 
+        // produced zero errors, and the same three classes in a 
+        // on the next line produced three. So non-negotiable #2 — logical
+        // properties only, "the ESLint rule stays on" — was unenforced across
+        // the whole shared kit, which is the one place it matters most.
+        //
+        //  visits them. Both the string form and the object
+        // form are listed so neither stops being scanned.
+        variables: [
+          ["^styles?$", [{ match: "strings" }, { match: "objectValues" }]],
+          ["^classes$", [{ match: "strings" }, { match: "objectValues" }]],
+          ["^classNames?$", [{ match: "strings" }, { match: "objectValues" }]],
+        ],
       },
     },
     rules: {
@@ -83,14 +104,16 @@ const eslintConfig = defineConfig([
       // rounding; gold-600 is a rule, a stamp and a focus ring, never a fill
       // and never text on paper (text is gold-700, 5.75:1).
       //
-      // Severity is "warn" DELIBERATELY AND TEMPORARILY. The shared kit in
-      // src/components/ui is clean; the pages, admin, forms and layout
-      // components are being migrated onto it in the next phase. Flip this to
-      // "error" once `eslint` reports zero warnings from this rule. Each
-      // pattern matches the full class including variants (`md:rounded-lg`,
-      // `hover:shadow-md`), so the only escape is `-none`.
+      // Severity was "warn" while the pages, admin, forms and layout
+      // components were migrated onto the shared kit, on the condition that it
+      // be flipped once the rule reported zero. It does — `eslint --format
+      // json` reports zero problems of any rule across the tree — so it is an
+      // error now, and a radius or a shadow fails the build rather than
+      // scrolling past in a warning list nobody reads. Each pattern matches
+      // the full class including variants (`md:rounded-lg`, `hover:shadow-md`),
+      // so the only escape is `-none`.
       "better-tailwindcss/no-restricted-classes": [
-        "warn",
+        "error",
         {
           restrict: [
             {
