@@ -19,7 +19,9 @@ is green. What remains is, in order:
 1. **Replace the Upstash credentials** — the rate limiter's database no longer
    exists, and with it gone every form on the site is unusable (§5.1.1). This
    is the one finding that blocks a launch on its own.
-2. Decide what to do about the soft 404s on five detail routes (§5.1.2).
+2. ~~Soft 404s on five detail routes~~ — **closed** 2026-09-22: measured against
+   `next start`, not the dev server, and the exposure that motivated it does not
+   exist. Next noindexes every streamed not-found itself (§5.1.2).
 3. Run `visual.spec.ts` and commit the baselines (§5.2); the other six specs
    have now been run and pass.
 4. Lighthouse against `next start` (§5.3).
@@ -112,6 +114,19 @@ own types refuse it.
 - the unmatched-URL 404 had **no `lang`** — WCAG 2.2 SC 3.1.1, Level A;
 - media pagination dropped its own filters;
 - 265 lines of hardcoded copy moved into the dictionaries.
+
+**The production-build pass (2026-09-22) found and fixed:**
+
+- **Every published detail page shipped with no `meta description` and no
+  `og:description`.** The SEO columns hold an empty string rather than nulls, and the
+  six detail routes resolved the description with `??`, which falls back on `null`
+  but not on an empty string — so a blank SEO textarea produced nothing at all instead of
+  the record's own summary. This is the exact bug that was found and fixed for
+  the `<title>` one pass earlier; the title call sites were changed to `||`
+  and the description call sites were not. Measured before and after by
+  fetching the served HTML of the two published pages, not by reading code.
+  The resolution is now one tested function, `seoFallback` in
+  `src/lib/seo/metadata.ts`, so the two paths cannot drift apart again.
 
 **The browser run (2026-09-21/22) found and fixed:**
 
@@ -212,27 +227,55 @@ worth deciding at the same time:
 - that the failure is currently invisible — it reaches a visitor as a generic
   message and nothing pages anyone. Sentry is wired; this path should report.
 
-### 5.1.2 Soft 404s on five detail routes
+### 5.1.2 Soft 404s on five detail routes — **CLOSED, working as designed**
 
-`/ar/projects/no-such-slug` answers **200**, not 404 — as do the news, story,
-programme and vacancy detail routes. `/legal/…` correctly answers 404.
+Measured 2026-09-22 against a production build and `next start`, not the dev
+server, and then against the framework's own documentation. The previous
+entry's conclusion was wrong in the way that mattered.
 
-The difference is *when* `notFound()` is reached: `legal/[slug]` checks its key
-synchronously before any `await`, while the other five call `notFound()` after
-awaiting the record, by which point the response has begun streaming — and Next
-documents that a streamed not-found is a 200. `loading.tsx` was the obvious
-suspect and was **tested and cleared**: removing it and restarting clean still
-gave 200.
+**What is true.** `/ar/projects/no-such-slug` and its four siblings answer
+**200**, and `/legal/…` answers 404.
 
-Fixing it properly means the existence check has to happen before the first
-await, which the current data flow cannot do without either `dynamicParams =
-false` (breaks ISR for newly published content) or restructuring how the locale
-layout fetches. That is a product decision, not a cleanup. Until then every dead
-link into those five content types is indexable.
+**What is not true.** The previous entry said "every dead link into those five
+content types is indexable". It is not. Next injects
+`<meta name="robots" content="noindex">` into every streamed not-found body —
+verified on all five routes by fetching the served HTML. `not-found.md` and
+`loading.md` §"Status Codes" in `node_modules/next/dist/docs/` state it
+outright:
 
-Classify each failure as (a) a real defect in `src/`, (b) missing published
-content — the live database has one published programme, so most lists render
-their empty state and that is a pass, or (c) a test problem. Fix (a) and (c).
+> Some crawlers may label these responses as "soft 404s". In the streaming
+> case, this does not lead to indexation because the page is explicitly marked
+> `noindex` in the HTML.
+
+**The mechanism**, settled by experiment rather than inference:
+
+- `loading.tsx` is **not** the cause. Removed it from `projects/[slug]`, rebuilt
+  clean, requested a never-seen slug: still 200.
+- `notFound()` in `generateMetadata` is **not** a fix. Next 16 streams metadata
+  too, so it is not "before the response starts". Tested with a clean
+  `.next` and a fresh slug: still 200.
+- It is a **race**, not a structural difference. In one run
+  `/ar/impact/stories/…` answered 404 while the other four answered 200 — the
+  stories template resolved before its shell flushed. Nothing about that route
+  is different in kind.
+- The status cannot change once streaming has begun. That is the whole of it.
+
+**A trap that invalidated two earlier measurements, and will invalidate yours.**
+`.next/cache` survives `npm run build`. The first request to an unknown slug
+caches a 200, and every later measurement — across rebuilds, across ports —
+serves that entry. `x-nextjs-cache: HIT` is the tell. **Always measure with a
+slug that has never been requested, and read the header.**
+
+**Why it stays as it is.** The documented way to get a real 404 status is a
+check in `src/proxy.ts` before the response streams. That would put five slug
+lookups on the hot path of every site request, and — worse — a newly published
+item whose cached slug list has not refreshed would get a **false 404 on real
+content**. Serving a wrong 404 for a published project is a considerably worse
+failure than serving a noindex'd 200 for a dead link. The SEO exposure that
+motivated the item does not exist, so the cost buys nothing.
+
+Revisit only if a real 404 status is needed for compliance or analytics, which
+is the one reason the Next documentation itself gives.
 
 ### 5.2 Visual baselines
 

@@ -15,7 +15,7 @@ import { prerenderData } from '@/lib/build-time';
 import { formatDate, timeOf, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { buildMetadata } from '@/lib/seo/metadata';
+import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
 
 export const revalidate = 3600;
 
@@ -41,8 +41,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/news/[sl
   return buildMetadata({
     locale,
     path: { ar: `/news/${post.slugAr}`, en: `/news/${post.slugEn}` },
-    title: seoTitle?.trim() || post.title?.trim() || siteName,
-    description: seoDescription ?? post.excerpt,
+    title: seoFallback(seoTitle, post.title, siteName),
+    description: seoFallback(seoDescription, post.excerpt),
     siteName,
     type: 'article',
     publishedTime: post.publishedAt,

@@ -13,7 +13,7 @@ import { getOrganization, getPageByKey } from '@/db/queries/content';
 import { formatDate, toDateTimeAttr } from '@/lib/format';
 import { DEFAULT_LOCALE, isLocale, localePath, type Locale } from '@/lib/i18n/config';
 import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
-import { buildMetadata, type TranslationStatus } from '@/lib/seo/metadata';
+import { buildMetadata, seoFallback, type TranslationStatus } from '@/lib/seo/metadata';
 
 export const revalidate = 3600;
 
@@ -67,8 +67,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/legal/[s
   return buildMetadata({
     locale,
     path: `/legal/${slug}`,
-    title: seoTitle?.trim() || page?.title?.trim() || legalTitle(dict, slug),
-    description: seoDescription,
+    title: seoFallback(seoTitle, page?.title, legalTitle(dict, slug)),
+    description: seoFallback(seoDescription),
     siteName: organizationName(org),
     translationStatus: page ? toTranslationStatus(page.translationStatus) : null,
     noIndex: page?.noIndex ?? false,
