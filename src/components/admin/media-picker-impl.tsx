@@ -101,15 +101,6 @@ export function MediaPickerImpl({
     return () => controller.abort();
   }, [kind, open, page, search, t.loadError]);
 
-  useEffect(() => {
-    if (!open) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [open]);
-
   const runSearch = () => {
     setError('');
     setLoading(true);

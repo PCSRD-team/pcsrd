@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { useEffect, useRef, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Panel } from './card';
 import { Caption, Heading } from './typography';
@@ -23,13 +25,44 @@ import { Caption, Heading } from './typography';
  * This is ordinary markup the caller renders conditionally, which is what
  * every caller here already does with `useState`.
  *
- * **Focus containment is the caller's.** A focus trap needs refs, a keydown
- * listener and a restore-on-close, i.e. a Client Component with real state —
- * and the caller already owns the state that opens and closes this. The kit
- * stays server-renderable and does not pretend to trap focus it cannot see.
- * A caller that opens a dialog owns three things: moving focus in, Escape,
- * and returning focus to the trigger.
+ * **Why this is a Client Component** — the kit's one standing exception, and
+ * non-negotiable #1 wants the reason stated. This file used to document a
+ * contract instead: "a caller that opens a dialog owns three things: moving
+ * focus in, Escape, and returning focus to the trigger." Its only caller
+ * implemented one of the three. With `aria-modal="true"` set, that meant a
+ * screen-reader user's virtual cursor was confined to the dialog while
+ * keyboard focus stayed on the trigger behind it — Tab then walked a subtree
+ * assistive technology had been told was inert. WCAG 2.4.3, failed by a
+ * component whose own comment said whose job it was.
+ *
+ * A contract that its only caller does not meet is not a contract, it is a
+ * bug with documentation. Focus containment needs a ref, a keydown listener
+ * and a restore-on-close, so it needs a client boundary — and a modal is
+ * never server-only anyway, because something has to open and close it.
  */
+
+/**
+ * Tabbable descendants, in document order.
+ *
+ * `:not([disabled])` and the `tabindex="-1"` exclusion matter: a disabled
+ * submit button and a programmatically-focusable container are both focusable
+ * in some sense and neither is a Tab stop, so including them makes the cycle
+ * land somewhere the user cannot see a focus ring.
+ */
+const TABBABLE = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function tabbableWithin(root: HTMLElement): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>(TABBABLE)].filter(
+    (el) => el.offsetParent !== null || el === document.activeElement,
+  );
+}
 
 const styles = {
   backdrop: 'fixed inset-0 z-[100] flex items-center justify-center bg-navy-900/60 p-4',
@@ -61,13 +94,85 @@ export function Dialog({
   close?: ReactNode;
   children: ReactNode;
   /**
-   * Pressing the backdrop itself. Omit for a dialog that may only be closed
-   * from its own controls — a destructive confirmation, say.
+   * Pressing the backdrop itself, or Escape. Omit for a dialog that may only
+   * be closed from its own controls — a destructive confirmation, say. A
+   * dialog with no `onDismiss` still traps focus and still restores it; it
+   * simply has no dismissal gesture.
    */
   onDismiss?: () => void;
   size?: keyof typeof styles.size;
   className?: string;
 }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  // Read once, on mount. Reading it at close time would find whatever the
+  // dialog itself last focused.
+  const returnTo = useRef<HTMLElement | null>(null);
+  // Held in a ref so the trap effect does not re-subscribe on every render of
+  // a caller that passes a fresh closure — which every caller does.
+  const dismiss = useRef(onDismiss);
+  useEffect(() => {
+    dismiss.current = onDismiss;
+  }, [onDismiss]);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+
+    returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    // Focus the first real control, falling back to the container. Without
+    // this the keyboard stays on the trigger behind an `aria-modal` subtree.
+    const first = tabbableWithin(box)[0];
+    if (first) first.focus();
+    else {
+      box.tabIndex = -1;
+      box.focus();
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        dismiss.current?.();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const stops = tabbableWithin(box);
+      if (stops.length === 0) {
+        // Nothing to cycle through, but Tab must still not escape the modal.
+        event.preventDefault();
+        return;
+      }
+
+      const firstStop = stops[0]!;
+      const lastStop = stops[stops.length - 1]!;
+      const active = document.activeElement;
+
+      // Focus outside the dialog entirely — a click on the backdrop, or a
+      // browser that moved it — is pulled back rather than left to wander.
+      if (!(active instanceof HTMLElement) || !box.contains(active)) {
+        event.preventDefault();
+        (event.shiftKey ? lastStop : firstStop).focus();
+        return;
+      }
+      if (event.shiftKey && active === firstStop) {
+        event.preventDefault();
+        lastStop.focus();
+      } else if (!event.shiftKey && active === lastStop) {
+        event.preventDefault();
+        firstStop.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true);
+      // The trigger is normally still mounted; `isConnected` covers the case
+      // where the action that closed this dialog also removed it.
+      const target = returnTo.current;
+      if (target?.isConnected) target.focus();
+    };
+  }, []);
+
   return (
     <div
       className={styles.backdrop}
@@ -81,6 +186,7 @@ export function Dialog({
       }
     >
       <div
+        ref={boxRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

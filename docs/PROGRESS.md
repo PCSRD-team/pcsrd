@@ -119,6 +119,17 @@ own types refuse it.
 
 **The production-build pass (2026-09-22) found and fixed:**
 
+- **The modal dialog documented a focus contract its only caller did not
+  meet.** `dialog.tsx` said "a caller that opens a dialog owns three things:
+  moving focus in, Escape, and returning focus to the trigger". The one caller,
+  `media-picker-impl.tsx`, implemented Escape. With `aria-modal="true"` set,
+  that confined a screen-reader user’s cursor to the dialog while keyboard
+  focus stayed on the trigger behind it — Tab then walked a subtree assistive
+  technology had been told was inert. WCAG 2.4.3, failed by a component whose
+  own comment named whose job it was. The trap now lives in `Dialog`, which
+  costs it a `use client` boundary and is worth it: a contract its only caller
+  does not meet is a bug with documentation.
+
 - **Admin sign-in had no anti-automation of any kind.** `signIn` called
   none of `checkRateLimit`, `verifyTurnstile` or `writeAudit`. A Server Action
   is a POST endpoint reachable without rendering the login page, so nothing on
@@ -398,6 +409,15 @@ organisational copy.
    restore it.
 8. **Smoke-test the CMS** after the migrations: sign in, publish a post, upload
    an image, open a complaint, download a CV, check the audit log.
+
+   Add one item to that pass: **open the media picker and check the focus**.
+   The dialog gained a real focus trap on 2026-09-22 — it previously documented
+   the job as the caller's, and its one caller did a third of it. The logic is
+   typechecked and linted but **has not been exercised in a browser**, because
+   the e2e suite deliberately holds no admin credentials and the picker sits
+   behind auth. With the picker open: Tab should cycle inside the dialog and
+   never reach the page behind it, Escape should close it, and focus should
+   land back on the "Choose" button.
 10. **Replace the Upstash rate-limit credentials.** `UPSTASH_REDIS_REST_URL` in
     `.env.local` points at `native-boar-37077.upstash.io`, which returns
     NXDOMAIN — the free-tier database was reclaimed. This is **no longer a

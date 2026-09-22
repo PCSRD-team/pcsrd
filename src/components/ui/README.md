@@ -127,6 +127,35 @@ plain submit.
 **Not for** — controlled inputs (`value` + `onChange`) inside a Server Component; use
 `defaultValue`.
 
+## Overlay — `dialog.tsx` (client)
+
+| Export | Use | Key props |
+|---|---|---|
+| `Dialog` | The modal surface: backdrop, scroll container, stacking context, named heading | `title`, `titleId` (both required), `description`, `close`, `onDismiss`, `size: 'sm' \| 'md' \| 'lg'` |
+| `DialogBody` | A block under the heading, at the kit's rhythm | |
+
+`title` is required because it is also the accessible name, and it is the one
+thing a hand-rolled modal forgets. `titleId` is the caller's so two dialogs on a
+page cannot collide.
+
+**Focus is the component's, not the caller's.** `Dialog` moves focus in on
+open, cycles Tab and Shift+Tab within itself, pulls stray focus back, closes on
+Escape when `onDismiss` is given, and returns focus to whatever was focused
+before it opened. This used to be documented as the caller's job; the one caller
+implemented Escape and nothing else, so with `aria-modal="true"` set a screen
+reader confined its cursor to the dialog while the keyboard stayed on the
+trigger behind it. **Do not re-add an Escape listener in a caller** — there would
+then be two.
+
+**Why this file is `'use client'`** — the kit's one standing exception besides
+`submit-button.tsx` and `link-pending.tsx`. A focus trap needs a ref, a keydown
+listener and a restore-on-close. A modal is never server-only in any case:
+something has to open and close it.
+
+**No `<dialog>` element** — `showModal()` is script, and a `<dialog>` rendered
+without it is inert and closed, so the content would simply not appear.
+
+
 ## Navigation — `breadcrumbs.tsx`, `pagination.tsx` (+ `pagination-model.ts`), `tabs.tsx`, `skip-link.tsx`
 
 | Component | Purpose | Key props |
