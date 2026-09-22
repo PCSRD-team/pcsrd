@@ -13,7 +13,7 @@ import { prerenderData } from '@/lib/build-time';
 import { formatDate, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { buildMetadata } from '@/lib/seo/metadata';
+import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
 
 export const revalidate = 3600;
 
@@ -38,8 +38,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/impact/s
   return buildMetadata({
     locale,
     path: { ar: `/impact/stories/${story.slugAr}`, en: `/impact/stories/${story.slugEn}` },
-    title: seoTitle?.trim() || story.title?.trim() || siteName,
-    description: seoDescription ?? story.summary,
+    title: seoFallback(seoTitle, story.title, siteName),
+    description: seoFallback(seoDescription, story.summary),
     siteName,
     type: 'article',
     publishedTime: story.publishedAt,

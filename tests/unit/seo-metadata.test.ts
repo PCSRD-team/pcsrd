@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMetadata, isTranslatedFor, ogLocale, withPagination } from '@/lib/seo/metadata';
+import { buildMetadata, isTranslatedFor, ogLocale, seoFallback, withPagination } from '@/lib/seo/metadata';
 
 /**
  * `buildMetadata` is the one place the canonical / hreflang / untranslated
@@ -240,5 +240,59 @@ describe('withPagination', () => {
       previous: '/ar/news?category=news',
       next: '/ar/news?category=news&page=3',
     });
+  });
+});
+
+/**
+ * The regression this suite could not previously catch.
+ *
+ * `buildMetadata` was already correct — it turns a blank into `undefined`. The
+ * bug lived at the six call sites, which resolved the description with `??`.
+ * `??` falls back on `null` and `undefined` but **not** on `''`, and the SEO
+ * columns hold `''` because `optionalText` preserves it. So a blank SEO
+ * textarea produced no meta description and no `og:description` at all,
+ * instead of the record's own summary.
+ *
+ * Testing `buildMetadata` in isolation can never catch a call-site bug, which
+ * is why the resolution itself is now a function with a test.
+ */
+describe('seoFallback', () => {
+  it('skips an empty string — the case `??` misses and the whole bug rode on', () => {
+    expect(seoFallback('', 'the summary')).toBe('the summary');
+  });
+
+  it('skips whitespace-only, which a textarea produces just as easily', () => {
+    expect(seoFallback('   \n ', 'the summary')).toBe('the summary');
+  });
+
+  it('skips null and undefined', () => {
+    expect(seoFallback(null, undefined, 'the summary')).toBe('the summary');
+  });
+
+  it('prefers the first non-blank candidate', () => {
+    expect(seoFallback('the seo field', 'the summary')).toBe('the seo field');
+  });
+
+  it('trims what it returns, so no page ships a padded description', () => {
+    expect(seoFallback('  padded  ')).toBe('padded');
+  });
+
+  it('returns undefined when every candidate is blank, never an empty string', () => {
+    expect(seoFallback('', null, undefined, '  ')).toBeUndefined();
+  });
+
+  it('returns undefined with no candidates at all — the legal page with no SEO copy', () => {
+    expect(seoFallback()).toBeUndefined();
+  });
+
+  it('feeds buildMetadata a description that survives to the output', () => {
+    const meta = buildMetadata({
+      ...base,
+      locale: 'ar',
+      path: '/news/x',
+      description: seoFallback('', 'the summary'),
+    });
+    expect(meta.description).toBe('the summary');
+    expect(meta.openGraph?.description).toBe('the summary');
   });
 });

@@ -18,7 +18,7 @@ import { prerenderData } from '@/lib/build-time';
 import { formatPeriod } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { buildMetadata } from '@/lib/seo/metadata';
+import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
 
 export const revalidate = 3600;
 
@@ -50,8 +50,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/projects
   return buildMetadata({
     locale,
     path: { ar: `/projects/${project.slugAr}`, en: `/projects/${project.slugEn}` },
-    title: project.seoTitle?.trim() || project.title?.trim() || siteName,
-    description: project.seoDescription ?? project.summary,
+    title: seoFallback(project.seoTitle, project.title, siteName),
+    description: seoFallback(project.seoDescription, project.summary),
     siteName,
     translationStatus,
     noIndex: project.noIndex,

@@ -21,7 +21,7 @@ import { isLocale, localePath } from '@/lib/i18n/config';
 import { formSlice } from '@/lib/i18n/form-dict';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { richTextToPlainText } from '@/lib/seo/json-ld';
-import { buildMetadata } from '@/lib/seo/metadata';
+import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
 
 export const revalidate = 300;
 
@@ -46,8 +46,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/careers/
   return buildMetadata({
     locale,
     path: { ar: `/careers/${vacancy.slugAr}`, en: `/careers/${vacancy.slugEn}` },
-    title: seoTitle?.trim() || vacancy.title?.trim() || siteName,
-    description: seoDescription ?? richTextToPlainText(vacancy.description, 160),
+    title: seoFallback(seoTitle, vacancy.title, siteName),
+    description: seoFallback(seoDescription, richTextToPlainText(vacancy.description, 160)),
     siteName,
     translationStatus: toTranslationStatus(vacancy.translationStatus),
     // A closed vacancy stays reachable — an applicant following an old link

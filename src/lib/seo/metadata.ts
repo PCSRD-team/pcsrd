@@ -294,3 +294,35 @@ export function withPagination(metadata: Metadata, input: PaginationInput): Meta
     },
   };
 }
+
+/**
+ * Resolves an SEO field against its fallbacks, skipping blanks.
+ *
+ * The SEO columns hold **empty strings**, not nulls: `optionalText` in
+ * `src/lib/validation/common.ts` preserves `''` deliberately, so an untouched
+ * textarea in the CMS is stored as `''`. `??` falls back on `null` and
+ * `undefined` but not on `''`, which is why every detail route once shipped an
+ * empty `<title>`.
+ *
+ * That was fixed for the title and left in place for the description — so
+ * every published detail page went on shipping with **no** `meta description`
+ * and **no** `og:description`, silently, because `buildMetadata` turns `''`
+ * into `undefined` and there was nothing left to fall back to. Verified by
+ * fetching the served HTML of the two published pages, not by reading code.
+ *
+ * One function, so the title path and the description path cannot drift apart
+ * a second time.
+ */
+// A call whose LAST candidate is a definite string cannot return undefined, and
+// the title call sites end in `siteName`. The overload says so, which is why
+// `title` stays a required `string` on `BuildMetadataInput` and no call site
+// needs a cast to prove what it already guarantees.
+export function seoFallback(...candidates: [...(string | null | undefined)[], string]): string;
+export function seoFallback(...candidates: (string | null | undefined)[]): string | undefined;
+export function seoFallback(...candidates: (string | null | undefined)[]): string | undefined {
+  for (const candidate of candidates) {
+    const trimmed = candidate?.trim();
+    if (trimmed) return trimmed;
+  }
+  return undefined;
+}
