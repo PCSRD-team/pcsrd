@@ -5,7 +5,8 @@ import type { MediaAsset } from '@/db/schema/media';
 import { createSupabaseAdminClient } from '@/lib/auth/supabase-server';
 import { requireActor } from '@/lib/auth/guard';
 import { publicEnv } from '@/lib/env.public';
-import { isAppError, toActionResult } from '@/lib/errors';
+import { withFlash } from '@/actions/admin/flash';
+import { err, isAppError, ok, toActionResult, type ActionResult } from '@/lib/errors';
 import { storageUrl } from '@/lib/format';
 import { mediaMetadataSchema } from '@/lib/validation/admin';
 import { processImageUpload, storagePath, validateCvUpload } from '@/lib/security/upload';
@@ -14,6 +15,39 @@ import { registerMedia } from '@/services/media/media.service';
 export const dynamic = 'force-dynamic';
 /** sharp can exceed the default 10 s on a large photograph. */
 export const maxDuration = 30;
+
+/**
+ * The same outcome, in whichever shape the caller can use.
+ *
+ * `media-uploader.tsx` was the one form in the admin that did not work with
+ * scripting off, against non-negotiable #7. It did not need a Server Action to
+ * fix — this handler already accepts an ordinary `multipart/form-data` POST,
+ * because that is what `fetch` was sending it. What it did not do was answer a
+ * browser: it returned JSON, so a no-JS submit landed on a page of raw JSON
+ * with no way back.
+ *
+ * So the form now carries a real `action`/`method`/`encType` and the JSON
+ * response is reserved for callers that ask for it. `fetch` sets
+ * `Accept: application/json` explicitly; a native form submit sends
+ * `text/html`, and gets a redirect carrying the outcome as a dictionary key —
+ * the same `withFlash` contract every other admin action uses, rendered by the
+ * `<Flash>` already on `/admin/media`.
+ */
+function wantsJson(request: Request): boolean {
+  return (request.headers.get('accept') ?? '').includes('application/json');
+}
+
+function respond(
+  request: Request,
+  returnTo: unknown,
+  result: ActionResult<unknown>,
+  status: number,
+): Response {
+  if (wantsJson(request)) return Response.json(result, { status });
+  // 303, not 307: the browser must follow it with GET. A 307 would repeat the
+  // multipart POST against the redirect target.
+  return Response.redirect(new URL(withFlash(returnTo, result), request.url), 303);
+}
 
 const pickerQuerySchema = z.object({
   q: z.string().trim().max(200).optional(),
@@ -91,15 +125,21 @@ export async function POST(request: Request) {
   try {
     const actor = await requireActor();
     const form = await request.formData();
+    const returnTo = form.get('returnTo');
 
     const file = form.get('file');
     if (!(file instanceof File)) {
-      return Response.json({ ok: false, code: 'validation' }, { status: 422 });
+      return respond(request, returnTo, err('validation', 'errors.upload.failed'), 422);
     }
 
     // Only the text parts. `file` is handled above and is not metadata.
     const metadata = mediaMetadataSchema.safeParse({
-      kind: form.get('kind') ?? undefined,
+      // Derived here, not in the client, so the no-JS path gets it too: the
+      // schema defaults `kind` to `image`, and a PDF posted without one would
+      // go to `processImageUpload` and be refused. The browser-reported type
+      // is untrusted input, but both processors sniff magic bytes, so a lie
+      // only ever costs the uploader a rejection.
+      kind: form.get('kind') ?? (file.type === 'application/pdf' ? 'document' : 'image'),
       altAr: form.get('altAr') ?? '',
       altEn: form.get('altEn') || null,
       captionAr: form.get('captionAr') || null,
@@ -111,23 +151,14 @@ export async function POST(request: Request) {
     });
 
     if (!metadata.success) {
-      return Response.json(
-        {
-          ok: false,
-          code: 'validation',
-          fieldErrors: z.flattenError(metadata.error).fieldErrors,
-        },
-        { status: 422 },
-      );
+      const flat = z.flattenError(metadata.error).fieldErrors;
+      return respond(request, returnTo, err('validation', 'errors.validation', flat), 422);
     }
 
     const isDocument = metadata.data.kind === 'document';
     const processed = isDocument ? await validateCvUpload(file) : await processImageUpload(file);
     if (!processed.ok) {
-      return Response.json(
-        { ok: false, code: 'upload_rejected', messageKey: `errors.upload.${processed.reason}` },
-        { status: 415 },
-      );
+      return respond(request, returnTo, err('upload_rejected', `errors.upload.${processed.reason}`), 415);
     }
 
     const bucket = isDocument ? 'documents' : 'media';
@@ -139,10 +170,7 @@ export async function POST(request: Request) {
       .upload(path, processed.buffer, { contentType: processed.mime, upsert: false });
 
     if (error) {
-      return Response.json(
-        { ok: false, code: 'internal', messageKey: 'errors.upload.failed' },
-        { status: 500 },
-      );
+      return respond(request, returnTo, err('internal', 'errors.upload.failed'), 500);
     }
 
     const record = await registerMedia(db, actor, {
@@ -165,9 +193,13 @@ export async function POST(request: Request) {
       exifStripped: 'exifStripped' in processed ? processed.exifStripped : false,
     });
 
-    return Response.json({ ok: true, data: record }, { status: 201 });
+    return respond(request, returnTo, ok(record, 'admin.saved'), 201);
   } catch (error) {
     const result = toActionResult(error);
-    return Response.json(result, { status: isAppError(error) ? error.status : 500 });
+    const status = isAppError(error) ? error.status : 500;
+    // `returnTo` is undefined when the throw beat `request.formData()` — an
+    // unauthenticated POST, most often. `safeReturnPath` turns that into
+    // `/admin`, which is where the login redirect wants the visitor anyway.
+    return respond(request, undefined, result, status);
   }
 }

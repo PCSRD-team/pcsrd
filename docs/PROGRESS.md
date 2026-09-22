@@ -426,9 +426,35 @@ Done:
 
 ### 5.5 Decisions, taken 2026-09-22
 
-- **`media-uploader.tsx` is the one form that needs JavaScript.** It streams a
-  file, and non-negotiable #7 says every form works without it. A documented
-  exception, or a no-JS fallback that posts to a route handler?
+- ~~**`media-uploader.tsx` is the one form that needs JavaScript.**~~ —
+  **fixed** 2026-09-22, and it turned out not to need the exception at all.
+  The stated obstacle was real but not the obstacle: no Server Action can
+  stream a file and hand back a record for the picker, true — and the route
+  handler already accepted a plain `multipart/form-data` POST, because that is
+  what `fetch` was sending it. What it did not do was answer a *browser*. It
+  returned JSON, so a no-JS submit landed on a page of raw JSON with no way
+  back.
+
+  It now content-negotiates: `Accept: application/json` gets the JSON the
+  picker consumes, anything else gets a **303** — not 307, which would repeat
+  the multipart POST — carrying the outcome as a dictionary key through the
+  same `withFlash` contract every other admin mutation uses, rendered by the
+  `<Flash>` already on `/admin/media`. The form carries a real `action`,
+  `method` and `encType`; the client handler is now an enhancement layered on
+  top rather than the only way in.
+
+  One real gap closed on the way: `kind` was computed in the client, and the
+  schema defaults it to `image`, so a PDF posted without scripting would have
+  gone to `processImageUpload` and been refused. It is derived in the route
+  now, which is also one implementation instead of two.
+
+  Verified against a running server, both shapes:
+
+  ```
+  Accept: text/html        -> 303  /admin?err=errors.unauthorized
+  Accept: application/json -> {"ok":false,"code":"unauthorized",...}
+  ```
+
 - ~~**`programs.specific_objectives` and `key_interventions`**~~ — **dropped**
   2026-09-22 in `drizzle/0007_drop_unused_program_blocks.sql`. Checked against
   the live database first, not inferred: all three programmes, both columns,
@@ -481,15 +507,15 @@ organisational copy.
    behind auth. With the picker open: Tab should cycle inside the dialog and
    never reach the page behind it, Escape should close it, and focus should
    land back on the "Choose" button.
-10. **Replace the Upstash rate-limit credentials.** `UPSTASH_REDIS_REST_URL` in
-    `.env.local` points at `native-boar-37077.upstash.io`, which returns
-    NXDOMAIN — the free-tier database was reclaimed. This is **no longer a
-    blocker**: as of 2026-09-22 the limiter falls back to Postgres, reports the
-    outage to Sentry, and lets a safeguarding disclosure through while degraded
-    (§5.1.1). Replacing it restores the faster backend and takes the limiting
-    off the request pool. Create a new Upstash database and set both variables
-    locally and in Vercel.
+9. **Replace the Upstash rate-limit credentials.** `UPSTASH_REDIS_REST_URL` in
+   `.env.local` points at `native-boar-37077.upstash.io`, which returns
+   NXDOMAIN — the free-tier database was reclaimed. This is **no longer a
+   blocker**: as of 2026-09-22 the limiter falls back to Postgres, reports the
+   outage to Sentry, and lets a safeguarding disclosure through while degraded
+   (§5.1.1). Replacing it restores the faster backend and takes the limiting
+   off the request pool. Create a new Upstash database and set both variables
+   locally and in Vercel.
 
-9. **M7 in full**: real content, cross-browser and real-device testing, the
+10. **M7 in full**: real content, cross-browser and real-device testing, the
    domain cutover, Search Console, an uptime monitor, an Arabic admin guide with
    screenshots, and a credentials handover under organisational accounts.

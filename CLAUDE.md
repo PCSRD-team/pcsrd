@@ -24,7 +24,10 @@ assume pnpm, translate them).
 5. **No hardcoded copy.** Everything goes through the dictionaries.
 6. **No organisation facts in code.** Names, licence numbers, channels and figures read
    from `organization_settings` / the CMS.
-7. **Every form works with JavaScript disabled.** Server Actions, no exceptions.
+7. **Every form works with JavaScript disabled.** Server Actions, with one
+   documented exception: the media uploader streams a file, so it posts to a
+   route handler that content-negotiates — JSON for `fetch`, a 303 and a flash
+   for a native submit. No form may simply require scripting.
 8. **Admin: guard first, then mutate, then write an audit entry.**
 9. **Mutations revalidate the correct cache tags.**
 10. **Every list has designed loading, empty, error and untranslated states.** See
