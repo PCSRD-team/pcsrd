@@ -309,6 +309,7 @@ export const ar = {
 
     content: {
       unpublishFirst: 'أوقف نشر العنصر قبل هذا الإجراء.',
+      keyTaken: 'هذا المُعرِّف مستخدم بالفعل. اختر مُعرِّفاً آخر.',
     },
 
     media: {

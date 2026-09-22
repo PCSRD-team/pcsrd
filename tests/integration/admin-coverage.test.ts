@@ -74,7 +74,7 @@ describe('pages and programmes — the `key` unique constraint', () => {
       pageService.upsert(db(), MANAGER, { key: 'privacy', titleAr: 'سياسة الخصوصية' }),
     ).rejects.toMatchObject({
       code: 'conflict',
-      fieldErrors: { key: ['errors.slug.taken'] },
+      fieldErrors: { key: ['errors.content.keyTaken'] },
     });
 
     expect(await getDb().select().from(pages)).toHaveLength(1);

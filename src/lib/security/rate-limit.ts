@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { serverEnv } from '@/lib/env';
@@ -105,18 +106,20 @@ function build(): Limiters | null {
  */
 async function checkInDatabase(key: LimiterKey, id: string): Promise<boolean | null> {
   try {
-    // Imported at the point of use, not at module load. The Redis client is
-    // lazy for the same reason: importing this file from a unit test that
-    // never rate-limits must not open a database connection.
-    const [{ sql }, { db }, { rowsOf }] = await Promise.all([
-      import('drizzle-orm'),
-      import('@/db'),
-      import('@/db/session'),
-    ]);
+    // Only `@/db` is deferred, and only because importing it opens a
+    // connection: the Redis client is lazy for the same reason, so that a unit
+    // test importing this file to check something else does not reach a
+    // database. `drizzle-orm` is a static import — it opens nothing, and
+    // deferring it put a large module load inside the request path.
+    const { db } = await import('@/db');
     const result = await db.execute(
       sql`select app.check_rate_limit(${`rl:${key}:${id}`}, ${LIMITS[key].limit}, make_interval(secs => ${LIMITS[key].windowSeconds})) as ok`,
     );
-    const [row] = rowsOf<{ ok: boolean | null }>(result);
+    // Shaped like `rowsOf` in `@/db/session`, inlined rather than imported:
+    // that module pulls `@/db` in eagerly, which is the one thing this branch
+    // is arranged to avoid until it is actually needed.
+    const rows = Array.isArray(result) ? result : ((result as { rows?: unknown }).rows ?? []);
+    const row = (rows as { ok: boolean | null }[])[0];
     return row?.ok ?? null;
   } catch (error) {
     console.error('[rate-limit] the database fallback failed too', error);

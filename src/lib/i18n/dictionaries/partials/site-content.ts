@@ -17,6 +17,7 @@ export const site_contentAr = {
   /** Chrome around content records: figure fallbacks, links, labels. */
   contentUi: {
     noImage: 'لا توجد صورة',
+    gallery: 'من الميدان',
     readStory: 'اقرأ القصة',
     viewVacancy: 'تفاصيل الشاغر',
     toProgram: 'إلى صفحة البرنامج',
@@ -63,6 +64,7 @@ type Shape = typeof site_contentAr;
 export const site_contentEn: Shape = {
   contentUi: {
     noImage: 'No image',
+    gallery: 'From the field',
     readStory: 'Read the story',
     viewVacancy: 'Vacancy details',
     toProgram: 'Programme page',

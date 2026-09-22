@@ -52,7 +52,10 @@ describe('checkRateLimit without Upstash credentials', () => {
  * under test is that the throw is contained, that the database is consulted,
  * and that the caller is told the limiter is degraded.
  */
+const captureException = vi.fn();
+
 async function loadWithFailingUpstash(dbAnswer: boolean | null | 'throw') {
+  captureException.mockClear();
   vi.resetModules();
   vi.doMock('@/lib/env', () => ({
     serverEnv: {
@@ -61,6 +64,9 @@ async function loadWithFailingUpstash(dbAnswer: boolean | null | 'throw') {
       UPSTASH_REDIS_REST_TOKEN: 'token',
     },
   }));
+  // Mocked so the assertion below can see the report, and so a cold run does
+  // not pay for the real SDK's module graph inside a 5s test timeout.
+  vi.doMock('@sentry/nextjs', () => ({ captureException }));
   vi.doMock('@upstash/redis', () => ({ Redis: class {} }));
   vi.doMock('@upstash/ratelimit', () => ({
     Ratelimit: class {
@@ -108,6 +114,19 @@ describe('checkRateLimit when Upstash is unreachable', () => {
     const result = await checkRateLimit('form', 'abc');
     expect(result.success).toBe(false);
     expect(result.degraded).toBe(true);
+  });
+
+  it('reports the outage to Sentry, tagged so an alert can route on it', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { checkRateLimit } = await loadWithFailingUpstash(true);
+    await checkRateLimit('form', 'abc');
+
+    // The report is deliberately not awaited by the request path, so this
+    // waits for it rather than assuming it has already happened.
+    await vi.waitFor(() => expect(captureException).toHaveBeenCalled());
+    expect(captureException.mock.calls[0]?.[1]).toMatchObject({
+      tags: { area: 'rate-limit', backend: 'upstash' },
+    });
   });
 
   it('logs the outage instead of absorbing it', async () => {

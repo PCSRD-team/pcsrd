@@ -8,7 +8,7 @@ import { getSiteName, toTranslationStatus } from '@/components/content/site';
 import { ArticleJsonLd } from '@/components/seo/json-ld';
 import { DateText } from '@/components/ui/bidi';
 import { Figure } from '@/components/ui/figure';
-import { Container, PageHeader } from '@/components/ui/layout';
+import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { Meta, Prose } from '@/components/ui/typography';
 import { getPostBySlug, listPostSlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
@@ -133,6 +133,28 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
         <Prose measure="reading">
           <RichText doc={post.body} />
         </Prose>
+        {post.gallery.length > 0 ? (
+          <Section labelledBy="post-gallery" className="mbs-12">
+            <SectionHeading id="post-gallery" title={dict.contentUi.gallery} />
+            <Grid as="ul" cols={3} gap={4}>
+              {post.gallery.map((item) => (
+                <li key={item.path}>
+                  {/* `alt` is the media asset's own — `alt_ar` is NOT NULL in
+                      the schema, so a published image always has one. */}
+                  <Figure
+                    image={mediaImage(item.path, item.blur, item)}
+                    alt={item.alt ?? ''}
+                    ratio="portrait"
+                    // Three-up inside the 760px reading column, not the full
+                    // content width: ~245px a tile at the top end.
+                    sizes="(min-width: 888px) 245px, (min-width: 640px) 30vw, 100vw"
+                    caption={item.caption}
+                  />
+                </li>
+              ))}
+            </Grid>
+          </Section>
+        ) : null}
       </article>
     </Container>
   );

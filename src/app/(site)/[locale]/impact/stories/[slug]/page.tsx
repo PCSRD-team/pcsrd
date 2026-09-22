@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { mediaImage } from '@/components/content/media';
 import { ContentBreadcrumbs, TranslationNotice } from '@/components/content/page-chrome';
 import { RichText } from '@/components/content/rich-text';
 import { getSiteName, toTranslationStatus } from '@/components/content/site';
 import { StoryJsonLd } from '@/components/seo/json-ld';
 import { DateText } from '@/components/ui/bidi';
 import { Notice } from '@/components/ui/notice';
-import { Container, PageHeader } from '@/components/ui/layout';
+import { Figure } from '@/components/ui/figure';
+import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { Meta, Prose } from '@/components/ui/typography';
 import { getStoryBySlug, listStorySlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
@@ -60,6 +62,8 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
 
   const [dict, story] = await Promise.all([getDictionary(locale), getStoryBySlug(slug, locale)]);
   if (!story) notFound();
+
+  const storyHero = mediaImage(story.hero?.path, story.hero?.blur, story.hero);
 
   return (
     <Container size="narrow" className="section-gap">
@@ -117,6 +121,26 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
             {dict.impact.storyAnonymized}
           </Notice>
         ) : null}
+        {/*
+          The hero, which this page did not render at all: `_getStoryBySlug`
+          resolved it and nothing read it, so a story could not show the image
+          its own row pointed at. It sits after the anonymisation notice on
+          purpose — the notice is about the subject, and a story whose subject
+          is anonymised can still carry a non-identifying photograph.
+        */}
+        {storyHero ? (
+          <Figure
+            image={storyHero}
+            alt={story.hero?.alt ?? ''}
+            decorative={!story.hero?.alt}
+            // The reading column caps at 760px and only reaches it once the
+            // viewport clears 760 + the 2×64px desktop gutter.
+            sizes="(min-width: 888px) 760px, 100vw"
+            // The LCP element on this route, and the only `preload` on it.
+            preload
+            className="mbe-10"
+          />
+        ) : null}
 
         {story.quote ? (
           <blockquote className="mbe-10 border-be border-rule pbe-6">
@@ -134,6 +158,27 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
         <Prose measure="reading">
           <RichText doc={story.body} />
         </Prose>
+        {story.gallery.length > 0 ? (
+          <Section labelledBy="story-gallery" className="mbs-12">
+            <SectionHeading id="story-gallery" title={dict.contentUi.gallery} />
+            <Grid as="ul" cols={3} gap={4}>
+              {story.gallery.map((item) => (
+                <li key={item.path}>
+                  {/* `alt` is the media asset's own — `alt_ar` is NOT NULL in
+                      the schema, so a published image always has one. */}
+                  <Figure
+                    image={mediaImage(item.path, item.blur, item)}
+                    alt={item.alt ?? ''}
+                    ratio="portrait"
+                    // Three-up inside the 760px reading column: ~245px a tile.
+                    sizes="(min-width: 888px) 245px, (min-width: 640px) 30vw, 100vw"
+                    caption={item.caption}
+                  />
+                </li>
+              ))}
+            </Grid>
+          </Section>
+        ) : null}
       </article>
     </Container>
   );

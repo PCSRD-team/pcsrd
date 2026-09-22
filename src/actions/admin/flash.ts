@@ -1,4 +1,5 @@
 import type { ActionResult } from '@/lib/errors';
+import { ADMIN_RETURN_PATH } from '@/lib/validation/admin';
 
 /**
  * Carries an action's outcome across a redirect.
@@ -13,17 +14,24 @@ import type { ActionResult } from '@/lib/errors';
  * here is a POST endpoint.
  */
 
-const ADMIN_PATH = /^\/admin(?:\/[\w-]+)*\/?$/;
-
 /** A `returnTo` that is not an admin path is replaced, never followed. */
 export function safeReturnPath(value: unknown): string {
-  return typeof value === 'string' && ADMIN_PATH.test(value) ? value : '/admin';
+  return typeof value === 'string' && ADMIN_RETURN_PATH.test(value) ? value : '/admin';
 }
 
+/**
+ * Appends the outcome to `returnTo`, **merging** with any query it carries.
+ *
+ * This concatenated — `${path}?${query}` — which was correct only for as long
+ * as the pattern rejected every path with a query. Now that a list page can
+ * send its own `?page=3`, concatenating would produce `?page=3?ok=admin.saved`
+ * and lose both.
+ */
 export function withFlash(returnTo: unknown, result: ActionResult<unknown>): string {
   const path = safeReturnPath(returnTo);
-  const query = new URLSearchParams();
+  const [base = '/admin', existing] = path.split('?');
+  const query = new URLSearchParams(existing);
   if (result.ok) query.set('ok', result.messageKey ?? 'admin.saved');
   else query.set('err', result.messageKey);
-  return `${path}?${query}`;
+  return `${base}?${query}`;
 }

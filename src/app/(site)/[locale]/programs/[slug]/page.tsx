@@ -249,6 +249,28 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
         }
       />
 
+      {program.gallery.length > 0 ? (
+        <Section labelledBy="program-gallery">
+          <SectionHeading id="program-gallery" title={dict.contentUi.gallery} />
+          <Grid as="ul" cols={3} gap={4}>
+            {program.gallery.map((item) => (
+              <li key={item.path}>
+                {/* `alt` is the media asset's own — `alt_ar` is NOT NULL in the
+                    schema, so a published image always has one. */}
+                <Figure
+                  image={mediaImage(item.path, item.blur, item)}
+                  alt={item.alt ?? ''}
+                  ratio="portrait"
+                  // Three-up across the 1180px content column: ~380px a tile.
+                  sizes="(min-width: 1180px) 380px, (min-width: 640px) 30vw, 100vw"
+                  caption={item.caption}
+                />
+              </li>
+            ))}
+          </Grid>
+        </Section>
+      ) : null}
+
       {otherPrograms.length > 0 ? (
         <Section labelledBy="program-others">
           <SectionHeading id="program-others" title={dict.home.programsTitle} />

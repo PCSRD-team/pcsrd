@@ -136,9 +136,13 @@ export function createContentService<TInput extends ContentInputBase>(
 
   /**
    * The `key` column's UNIQUE constraint, stated before the insert rather than
-   * after it. `errors.slug.taken` is the message: for a page the key *is* the
-   * path the legal route looks the page up by, so "already in use, choose
-   * another" is the same sentence either way.
+   * after it.
+   *
+   * This reused `errors.slug.taken`, on the argument that for a page the key
+   * *is* the path the legal route looks it up by. That holds for pages and not
+   * for programmes, where the key is an internal identifier that never appears
+   * in a URL — so an editor was told "that path is already in use" about a
+   * field that is not a path. Two constraints, two sentences.
    */
   async function assertKeyUnique(tx: Tx, key: unknown, excludeId?: string): Promise<void> {
     if (!config.uniqueKey || typeof key !== 'string' || key === '') return;
@@ -150,7 +154,7 @@ export function createContentService<TInput extends ContentInputBase>(
       .where(excludeId ? and(where, ne(table.id, excludeId)) : where)
       .limit(1);
 
-    if (clash) throw conflict('errors.slug.taken', { key: ['errors.slug.taken'] });
+    if (clash) throw conflict('errors.content.keyTaken', { key: ['errors.content.keyTaken'] });
   }
 
   return {
