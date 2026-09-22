@@ -1,6 +1,6 @@
 # Progress — where the project stands, and where to pick it up
 
-Last updated 2026-09-22, at commit `7942d13`.
+Last updated 2026-09-22, at commit `a972b07`.
 
 **If you are resuming: read §0, then start at the top of §5.** Everything above
 §5 is context; §5 is the queue. Nothing in §5 needs re-discovery — each item
@@ -36,28 +36,48 @@ is green. What remains is, in order:
 7. Then it is the owner's turn: §6 is blocked on credentials, decisions and
    organisational copy, and nothing in §5 unblocks it.
 
+**A sixth pass ran on 2026-09-22** and is worth knowing about before you
+trust the sentence below. It did not re-audit; it fetched served HTML and ran
+the lint config against itself, and that found three things reading the code
+had not: every published detail page shipped with no meta description, most of
+the shared kit was never linted at all, and `/programs/[slug]` ships no heading
+in its SSR HTML (§5.1.3, still open). It also closed two items by measuring
+rather than building — the soft 404s and the Upstash blocker. The lesson is
+narrow: **measure the output, not the source.**
+
 Do **not** re-audit. Five full audits have run (schema parity, dependencies and
 dead code, localisation and RTL, database-to-frontend completeness) plus a UI,
-image and interaction pass. Their findings are fixed and recorded in §3. A fifth
-scan would rediscover the same ground.
+image and interaction pass. Their findings are fixed and recorded in §3. Another
+source-reading scan would rediscover the same ground.
 
 ---
 
-## 1. Mechanical state at `7942d13`
+## 1. Mechanical state at `a972b07`
 
 | Gate | Command | Result |
 |---|---|---|
 | Types | `npm run typecheck` | 0 errors, `strict` + `noUncheckedIndexedAccess` |
 | Lint | `npm run lint` | 0 errors, 0 warnings |
 | CSS | `npm run lint:css` | clean |
-| Unit | `npm run test:unit` | **174** passing, 18 files |
-| Integration | `npm run test:int` | **87** passing, 9 files (PGlite, real Postgres 17) |
-| Schema | `npx drizzle-kit check` | clean; `0005` proven idempotent by applying it twice |
-| Build | `npm run build` | succeeds; 51 prerendered pages |
+| Unit | `npm run test:unit` | **211** passing, 19 files |
+| Integration | `npm run test:int` | **94** passing, 10 files (PGlite, real Postgres 17) |
+| Schema | `npx drizzle-kit check` | clean |
+| Build | `npm run build` | succeeds; 52 prerendered pages |
 
 Design system, counted in `src/`: **0** `rounded-*`, **0** `shadow-*`, **0**
 `bg-gold-600`, **0** `text-gold-600`. Code quality: **0** `any`, **0**
 `@ts-ignore`, **0** non-null assertions in `src/`, **0** `console.log`.
+
+Two of those gates got stricter on 2026-09-22 rather than merely staying green:
+`no-restricted-classes` moved from `warn` to `error`, and the Tailwind plugin
+now reads class strings inside `const styles = { … }` objects, which is where
+most of the shared kit keeps them and where nothing had been checked before
+(§3).
+
+**Run the suites from a quiet tree.** A `next dev` server left running will
+fight `npm run build` over `.next` and corrupt the generated type files;
+`npm run typecheck` then fails inside `.next/dev/types` with unterminated
+literals, which looks like a source error and is not one.
 
 ---
 
