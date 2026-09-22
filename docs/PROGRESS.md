@@ -16,9 +16,11 @@ the deploy runbook. `docs/RUNBOOK.md` is operations. This file is the map.
 The application is **code-complete against the spec** and every mechanical gate
 is green. What remains is, in order:
 
-1. **Replace the Upstash credentials** — the rate limiter's database no longer
-   exists, and with it gone every form on the site is unusable (§5.1.1). This
-   is the one finding that blocks a launch on its own.
+1. ~~Replace the Upstash credentials~~ — **no longer a blocker** as of
+   2026-09-22. The limiter now falls back to Postgres, reports the outage to
+   Sentry, and lets a safeguarding disclosure through when it is degraded
+   (§5.1.1). Replacing the credential is still worth doing; nothing waits on
+   it.
 2. ~~Soft 404s on five detail routes~~ — **closed** 2026-09-22: measured against
    `next start`, not the dev server, and the exposure that motivated it does not
    exist. Next noindexes every streamed not-found itself (§5.1.2).
@@ -117,6 +119,16 @@ own types refuse it.
 
 **The production-build pass (2026-09-22) found and fixed:**
 
+- **Admin sign-in had no anti-automation of any kind.** `signIn` called
+  none of `checkRateLimit`, `verifyTurnstile` or `writeAudit`. A Server Action
+  is a POST endpoint reachable without rendering the login page, so nothing on
+  that page could gate it: unlimited, unlogged, unalerted password guessing
+  against every admin account. It is now limited on two hashed keys at once —
+  the address and the account — because the address alone lets one attacker
+  spread a list across a botnet and the account alone lets one host walk the
+  staff list. The uniform wrong-password message stays; it is correct, and it
+  is what made the missing throttle matter.
+
 - **Every published detail page shipped with no `meta description` and no
   `og:description`.** The SEO columns hold an empty string rather than nulls, and the
   six detail routes resolved the description with `??`, which falls back on `null`
@@ -196,7 +208,7 @@ Status of each spec:
 | `security.spec.ts` | yes | **65 passed, 0 failed** (with `admin.spec.ts`); 4 flaky, all Turnstile-bearing pages on first compile |
 | `admin.spec.ts` | yes | passes |
 | `journeys.spec.ts` | yes | J1 passes warm; the rest need content |
-| `forms.spec.ts` | yes | **all fail — the rate limiter's backend is gone.** See §5.1.1 |
+| `forms.spec.ts` | yes | all failed on the limiter outage; the cause is fixed (§5.1.1) and they need a re-run |
 | `visual.spec.ts` | no | see §5.2 |
 
 **Always warm the routes before judging a failure.** `next dev` compiles a
@@ -209,23 +221,53 @@ for L in ar en; do for p in "" /about /programs /projects /impact /news   /partn
   curl -s -o /dev/null --max-time 280 "http://localhost:3100/$L$p"; done; done
 ```
 
-### 5.1.1 The rate limiter's backend no longer exists — **blocker**
+### 5.1.1 The rate limiter's backend — **no longer a blocker**
 
-Every `forms.spec.ts` case fails, in both locales and with and without
-JavaScript, and the page shows "Something went wrong" rather than the
-validation errors. The cause is not the forms: `checkRateLimit` runs before
-Zod, and the Upstash host in `.env.local` — `native-boar-37077.upstash.io` —
-returns **NXDOMAIN**. The free-tier database was reclaimed.
+**What happened.** The free-tier Upstash database was reclaimed and its host —
+`native-boar-37077.upstash.io` — began returning NXDOMAIN. `checkRateLimit`
+had no `try/catch` around `.limit()`, so the fetch error propagated out of
+`submit()`, reached `runAction` as an unexpected throw, and every one of the
+six public forms answered `errors.unexpected` — "Something went wrong" — in
+both locales, with and without JavaScript. The confidential safeguarding
+complaints channel included.
 
-The limiter fails closed, so with it gone **every one of the six forms is
-unusable, including the confidential complaints channel**. This is a launch
-blocker and the credential is the owner's to replace (§6.10). Two things are
-worth deciding at the same time:
+Worse than the outage: **nothing reported it.** `runAction` catches the throw,
+and `instrumentation.ts` only reports errors that escape a request, which this
+one never did. The failure reached a visitor as a generic message and paged
+nobody. It lasted days.
 
-- whether failing closed is right for the complaints form specifically, or
-  whether a safeguarding channel should survive an anti-abuse outage;
-- that the failure is currently invisible — it reaches a visitor as a generic
-  message and nothing pages anyone. Sentry is wired; this path should report.
+**Fixed 2026-09-22.** A limiter whose own outage takes down the forms it
+protects is worse than no limiter, so it now has a second wall:
+
+- `drizzle/0006_rate_limit_fallback.sql` — a sliding window in Postgres behind
+  `app.check_rate_limit`, `SECURITY DEFINER` for the same reason
+  `app.submit_form` is: the public form path sets no actor, and every table
+  here is `FORCE ROW LEVEL SECURITY`. The runtime role has **no grant on the
+  table**, only `execute` on the function, so a compromised role cannot forge
+  or clear another client's window. Seven integration tests against real
+  Postgres cover the allowance boundary, that a refused call does not record a
+  hit (otherwise a retry extends its own lockout forever), bucket isolation,
+  the sliding behaviour, and the two degenerate inputs.
+- `checkRateLimit` catches, reports to Sentry once per process under the tag
+  `area: rate-limit`, and falls through to the database. The report is
+  deliberately **not awaited** — a slow transport must not be what makes a form
+  submission time out.
+- `timeout: 2000` on the `Ratelimit` constructor. Without it a host that hangs
+  rather than refusing holds the request open until the platform kills the
+  function, and the fallback is never reached.
+- The result now carries `degraded`, and `src/actions/public/forms.ts` uses it:
+  **a sensitive submission is allowed through when the limiter is degraded.**
+  A complainant who cannot reach the organisation because a Redis host expired
+  is a worse outcome than an unthrottled complaint — the honeypot and Turnstile
+  both still stand, and the throttle is the outer wall, not the only one. The
+  other five forms are unchanged and still refuse.
+- Spent windows are dropped by the existing daily purge cron, not a third cron
+  job: Vercel Hobby allows exactly two and `vercel.json` declares both. A
+  failure there is logged and cannot fail the retention purge.
+
+**Still worth doing, but no longer blocking:** replace the Upstash credentials
+(§6.10). Until then the database carries the limiting, which is correct but
+slower and shares the request pool.
 
 ### 5.1.2 Soft 404s on five detail routes — **CLOSED, working as designed**
 
@@ -329,10 +371,14 @@ bundle is several times larger and the numbers are meaningless. Budgets are in
 Nothing in §5 unblocks these; they need a credential, a decision, or
 organisational copy.
 
-1. **Apply the migrations to production.** `npm run db:migrate` covers `0003`
-   (the audit sequence grant — without it every audited mutation aborts) and
-   `0005`. Then `supabase db push` for the storage buckets; the live project has
-   no `supabase_migrations` schema yet, so this is its first push.
+1. **Apply the migrations to production.** `npm run db:migrate` now covers
+   `0003` (the audit sequence grant — without it every audited mutation
+   aborts), `0005`, and `0006` (the rate limiter's database fallback; until it
+   is applied the fallback has nothing to fall back to, and
+   `schema-parity.test.ts` records the repository as one table ahead of the
+   live database). Then `supabase db push` for the storage buckets; the live
+   project has no `supabase_migrations` schema yet, so this is its first push.
+
 2. **Confirm `DATABASE_URL` connects as `app_runtime`, not `postgres`.** The
    wrong value disables all 85 row-level policies while the site keeps working.
    `npx tsx scripts/assert-rls.ts` checks it.
@@ -354,11 +400,12 @@ organisational copy.
    an image, open a complaint, download a CV, check the audit log.
 10. **Replace the Upstash rate-limit credentials.** `UPSTASH_REDIS_REST_URL` in
     `.env.local` points at `native-boar-37077.upstash.io`, which returns
-    NXDOMAIN — the free-tier database was reclaimed. The limiter fails closed,
-    so until it is replaced **every form on the site returns "Something went
-    wrong"**, the confidential complaints channel included. Create a new
-    Upstash database, set both variables locally and in Vercel, and decide the
-    two questions in §5.1.1 while you are there.
+    NXDOMAIN — the free-tier database was reclaimed. This is **no longer a
+    blocker**: as of 2026-09-22 the limiter falls back to Postgres, reports the
+    outage to Sentry, and lets a safeguarding disclosure through while degraded
+    (§5.1.1). Replacing it restores the faster backend and takes the limiting
+    off the request pool. Create a new Upstash database and set both variables
+    locally and in Vercel.
 
 9. **M7 in full**: real content, cross-browser and real-device testing, the
    domain cutover, Search Console, an uptime monitor, an Arabic admin guide with

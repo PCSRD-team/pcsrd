@@ -41,6 +41,9 @@ const CONSTRAINTS: Record<string, Record<string, string>> = {
   project_partners: { "project_partners_partner_id_fkey": 'f', "project_partners_pkey": 'p', "project_partners_project_id_fkey": 'f' },
   projects: { "projects_created_by_fkey": 'f', "projects_date_order": 'c', "projects_hero_media_id_fkey": 'f', "projects_og_media_id_fkey": 'f', "projects_pkey": 'p', "projects_program_id_fkey": 'f', "projects_slug_shape": 'c', "projects_updated_by_fkey": 'f' },
   publications: { "publications_created_by_fkey": 'f', "publications_file_ar_id_fkey": 'f', "publications_file_en_id_fkey": 'f', "publications_pkey": 'p', "publications_published_year_check": 'c', "publications_slug_shape": 'c', "publications_updated_by_fkey": 'f' },
+  // Added by drizzle/0006_rate_limit_fallback.sql. The live database does not
+  // carry it until that migration is applied — docs/PROGRESS.md §6.1.
+  rate_limit_hits: {},
   redirects: { "redirects_absolute": 'c', "redirects_no_loop": 'c', "redirects_pkey": 'p', "redirects_source_path_key": 'u', "redirects_status_code": 'c' },
   stories: { "stories_created_by_fkey": 'f', "stories_hero_media_id_fkey": 'f', "stories_named_needs_consent": 'c', "stories_og_media_id_fkey": 'f', "stories_pkey": 'p', "stories_program_id_fkey": 'f', "stories_project_id_fkey": 'f', "stories_slug_shape": 'c', "stories_updated_by_fkey": 'f' },
   story_media: { "story_media_media_id_fkey": 'f', "story_media_pkey": 'p', "story_media_story_id_fkey": 'f' },
@@ -65,6 +68,7 @@ const INDEXES: Record<string, string[]> = {
   project_partners: ["ix_project_partners_partner", "project_partners_partner_idx", "project_partners_pkey"],
   projects: ["ix_projects_featured", "ix_projects_govs", "ix_projects_program", "ix_projects_public", "ix_projects_search_ar", "ix_projects_state", "ix_projects_themes", "projects_featured_idx", "projects_gov_gin", "projects_pkey", "projects_program_idx", "projects_published_idx", "projects_slug_ar_idx", "projects_slug_en_idx", "projects_start_year_idx", "projects_themes_gin", "ux_projects_slug_ar", "ux_projects_slug_en"],
   publications: ["ix_publications_public", "publications_pkey", "publications_slug_ar_idx", "publications_slug_en_idx", "publications_type_idx", "ux_publications_slug_ar", "ux_publications_slug_en"],
+  rate_limit_hits: ["rate_limit_hits_bucket_time_idx"],
   redirects: ["redirects_pkey", "redirects_source_path_key"],
   stories: ["ix_stories_program", "ix_stories_project", "ix_stories_public", "stories_pkey", "stories_program_idx", "stories_project_idx", "stories_published_idx", "stories_slug_ar_idx", "stories_slug_en_idx", "ux_stories_slug_ar", "ux_stories_slug_en"],
   story_media: ["story_media_media_idx", "story_media_pkey"],
@@ -114,6 +118,7 @@ const COLUMNS: Record<string, string[]> = {
   project_partners: ["project_id", "partner_id", "role"],
   projects: ["id", "status", "translation_status", "published_at", "created_at", "updated_at", "created_by", "updated_by", "slug_ar", "slug_en", "program_id", "title_ar", "title_en", "summary_ar", "summary_en", "objective_ar", "objective_en", "activities_ar", "activities_en", "outcomes_ar", "outcomes_en", "project_state", "start_date", "end_date", "governorates", "localities", "themes", "hero_media_id", "is_featured", "source_note", "seo_title_ar", "seo_title_en", "seo_description_ar", "seo_description_en", "og_media_id", "no_index"],
   publications: ["id", "status", "translation_status", "published_at", "created_at", "updated_at", "created_by", "updated_by", "slug_ar", "slug_en", "type", "title_ar", "title_en", "description_ar", "description_en", "file_ar_id", "file_en_id", "published_year", "is_featured", "display_order"],
+  rate_limit_hits: ["bucket", "hit_at"],
   redirects: ["id", "source_path", "destination_path", "status_code", "created_at"],
   stories: ["id", "status", "translation_status", "published_at", "created_at", "updated_at", "created_by", "updated_by", "slug_ar", "slug_en", "program_id", "project_id", "title_ar", "title_en", "summary_ar", "summary_en", "body_ar", "body_en", "quote_text_ar", "quote_text_en", "quote_attribution_ar", "quote_attribution_en", "subject_anonymized", "consent_obtained", "consent_reference", "hero_media_id", "is_featured", "seo_title_ar", "seo_title_en", "seo_description_ar", "seo_description_en", "og_media_id", "no_index"],
   story_media: ["story_id", "media_id", "display_order"],

@@ -6,6 +6,8 @@ import { db } from '@/db';
 import { readAsSelf } from '@/db/session';
 import { profiles } from '@/db/schema';
 import { createSupabaseServerClient } from '@/lib/auth/supabase-server';
+import { getClientIp, hashIp } from '@/lib/security/ip';
+import { checkRateLimit } from '@/lib/security/rate-limit';
 import { type ActionResult, err, ok, runAction } from '@/lib/errors';
 
 /**
@@ -30,6 +32,25 @@ export async function signIn(_prev: AuthResult | null, formData: FormData): Prom
   }
 
   const result = await runAction(async () => {
+    // A Server Action is a POST endpoint: it is reachable without ever
+    // rendering the login page, so nothing on that page can gate it. Before
+    // this, sign-in called none of `checkRateLimit`, `verifyTurnstile` or
+    // `writeAudit` — unlimited password guessing against every admin account
+    // of an organisation working in Gaza, leaving no trace anywhere.
+    //
+    // Two keys, deliberately. The address alone lets one attacker spread a
+    // list across a botnet; the account alone lets one host walk the whole
+    // staff list. Both are hashed, so neither the limiter's storage nor its
+    // keys carry an address or an email in the clear.
+    const ip = await getClientIp();
+    const [byIp, byAccount] = await Promise.all([
+      checkRateLimit('login', `ip:${hashIp(ip) ?? 'unknown'}`),
+      checkRateLimit('login', `account:${hashIp(email.toLowerCase()) ?? 'unknown'}`),
+    ]);
+    if (!byIp.success || !byAccount.success) {
+      return err('rate_limited', 'errors.rateLimited');
+    }
+
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 

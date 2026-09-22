@@ -43,6 +43,13 @@
       "when": 1789467218631,
       "tag": "0005_live_parity",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790057083055,
+      "tag": "0006_rate_limit_fallback",
+      "breakpoints": true
     }
   ]
 }
