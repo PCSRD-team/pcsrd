@@ -24,10 +24,11 @@ is green. What remains is, in order:
 2. ~~Soft 404s on five detail routes~~ — **closed** 2026-09-22: measured against
    `next start`, not the dev server, and the exposure that motivated it does not
    exist. Next noindexes every streamed not-found itself (§5.1.2).
-3. **Check whether `/programs/[slug]` ships a heading in a production build**
-   (§5.1.3). Measured against `next dev` it does not — the response is the
-   loading skeleton and the content arrives only as RSC payload. One route,
-   pre-existing, and one `curl` decides it.
+3. **Finish diagnosing `/programs/[slug]`** (§5.1.3) — **confirmed against a
+   production build**: the route ships no `<h1>` and no article text in its
+   SSR HTML, only the loading skeleton, while the RSC payload is complete. It
+   is pre-existing and it is the only route affected. Bisected down to
+   `_getProgramBySlug`; §5.1.3 has the table and names the exact next step.
 4. Run `visual.spec.ts` and commit the baselines (§5.2); the other six specs
    have now been run and pass.
 5. Lighthouse against `next start` (§5.3).
@@ -364,51 +365,68 @@ motivated the item does not exist, so the cost buys nothing.
 Revisit only if a real 404 status is needed for compliance or analytics, which
 is the one reason the Next documentation itself gives.
 
-### 5.1.3 `/[locale]/programs/[slug]` ships no heading in its SSR HTML — **open, needs a production check**
+### 5.1.3 `/[locale]/programs/[slug]` ships no heading in its SSR HTML — **CONFIRMED in production, cause narrowed, not fixed**
 
 Found 2026-09-22 by fetching served HTML rather than by reading code, which is
-the only way this class of thing shows up.
+the only way this class of defect shows up.
 
-**What was measured**, against `next dev`, warm, deterministic across four
-requests with a byte-identical response each time:
+**Confirmed against a production build**, not the dev server:
 
 ```
-h1=0  /ar/programs/<published-slug>     ← the only one
-h1=1  /ar/news/<published-slug>
-h1=1  /ar/programs   /ar/news   /ar/careers   /ar/about   /ar
+h1=0  /ar/programs/<published-slug>     ← the only route
+h1=1  /ar/news/<published-slug>   /ar/careers   /ar
 ```
 
-The programme detail response is the `loading.tsx` skeleton — `aria-busy`,
-`loading-surface`, an unresolved `<template id="B:0">` — followed by the RSC
-payload, which *does* contain the heading as `[\"$\",\"h1\",…]`. So the content
-renders; it never reaches the HTML shell. No error, no `__next_error__`, a 200
-in well under a second in the server log.
+The response is the `loading.tsx` skeleton — 42 `loading-surface` elements,
+`aria-busy`, an unresolved `<template id="B:0">`. The **RSC payload is
+complete**: `.rsc` carries three `"h1"` entries, the `.html` carries none. So
+the content renders; it never reaches the HTML.
 
-**What was ruled out:**
+This is baked in at build time. `.next/server/app/ar/programs/<slug>.html` is
+77 935 bytes of skeleton with `h1=0`, while the news equivalent is correct.
+`x-nextjs-prerender: 1`, `x-nextjs-cache: HIT`. Deleting the prerendered files
+and forcing an on-demand render reproduces it exactly, and the server logs
+nothing.
 
-- **Not caused by this session.** Restoring the pre-session file
-  (`git show c2d75b8:…`) reproduces it exactly.
-- **Not latency.** The route had the only two-stage query waterfall of any
-  detail route — `listPrograms` sat in the second wave needing nothing from the
-  first. That is fixed, on its own merits, and the heading did not come back.
-- **Not an error boundary.** Nothing is logged, and the error marker is absent.
+**Bisected on a dev server** (reproduces identically, seconds per iteration
+instead of six-minute builds). Replacing the page body one piece at a time:
 
-**What is not known, and decides whether it matters:** whether this reproduces
-in a production build. Dev streaming is not the production pipeline, and
-`PROGRESS §4` already records that dev misleads about status codes. A browser
-executes the payload, which is why `a11y.spec.ts` passes and why nothing caught
-it: axe runs against the live DOM, not the shell.
+| page body | `h1` |
+|---|---|
+| full page | 0 |
+| minimal — `PageHeader` only, same data | 0 |
+| no data fetching at all | **1** |
+| `getDictionary` only | **1** |
+| `listPrograms(locale)` only (a real DB query, 2 ms) | **1** |
+| `getProgramBySlug` only | 0 |
+| `_getProgramBySlug` — the raw, uncached function | 0 |
+| awaits `_getProgramBySlug`, renders a **hardcoded** title | 0 |
 
-**Why it would matter if it does reproduce:** a crawler or reader without
-JavaScript gets a skeleton with no `<h1>` and no article text on the one route
-that describes what the organisation actually does. The `<title>` and meta are
-correct either way, so search results would not look broken — which is what
-makes it worth measuring rather than assuming.
+So: **it is `_getProgramBySlug`, and it is the call rather than the value** —
+awaiting it breaks the HTML pass even when the result is discarded. It is not
+`cached()`, because the raw function fails the same way, and it is not "any
+database query", because `listPrograms` on the same route is fine.
 
-**How to check, in one step:** `npm run build && npx next start --port 3100`,
-then `curl -s http://localhost:3100/ar/programs/<slug> | grep -c '<h1'`.
-Compare against `/ar/news/<slug>`. If the production build emits the heading,
-close this as a dev-server artefact and say so here.
+**Not yet established:** which part of that function does it. It issues a
+`.select()` on `programs`, then three parallel queries — hero media, a project
+`count(*)`, and `galleryFor`. The next step is to bisect *inside* the function
+the same way, with a probe that awaits each of the four in turn.
+
+**One measurement worth repeating carefully:** a probe that awaited the raw
+function and logged the result reported `null` after ~1 s on a minimal page,
+while the full page clearly gets a row. That may be a probe artefact — the
+minimal page passed the slug slightly differently — or it may be the whole
+answer. Check it first.
+
+**Why nothing caught it:** `a11y.spec.ts` runs axe against the live DOM, where
+the browser has executed the RSC payload and the heading is present. Only
+fetching the served HTML shows the difference. Consider one e2e assertion that
+greps the *response body* for `<h1` on each detail route.
+
+**Impact:** a crawler or reader without JavaScript gets a skeleton with no
+heading and no article text on the route describing what the organisation does.
+`<title>` and the meta tags are correct either way, so a search result would not
+look broken — which is exactly what makes it worth fixing rather than noticing.
 
 ### 5.2 Visual baselines
 
