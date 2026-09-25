@@ -1,6 +1,6 @@
 # Progress — where the project stands, and where to pick it up
 
-Last updated 2026-09-22, at commit `a972b07`.
+Last updated 2026-09-24, at commit `1285616`.
 
 **If you are resuming: read §0, then start at the top of §5.** Everything above
 §5 is context; §5 is the queue. Nothing in §5 needs re-discovery — each item
@@ -222,6 +222,79 @@ own types refuse it.
 
 ---
 
+## 3b. The careers portal (added 2026-09-24)
+
+A feature the spec does not describe, built on request: **admin-defined
+application forms** for jobs, volunteering, internships, training and
+consultancies, with an applicant pipeline and an Excel export.
+
+**It does not reuse `form_submissions`.** That table is six known forms behind
+one `payload` column, with retention fixed per *type*; this needs a form whose
+shape is a row, retention set per *form*, and a pipeline with a reviewer, a
+rating and a history. Four new tables own it:
+
+| Table | What it holds |
+|---|---|
+| `application_forms` | one form: slug, window, capacity, retention, consent switch, optional `vacancy_id` |
+| `application_form_fields` | its fields, ordered; type, labels, validation, options, `visible_when` |
+| `applications` | one submitted application: `answers` jsonb, attachments, status, rating, note |
+| `application_events` | append-only status history |
+
+**The capacity cap is enforced inside `app.submit_application()`**, under
+`select … for update` on the form row. It cannot be done in TypeScript: two
+applicants arriving in the same second both read `n - 1` and both pass. The
+function also owns the window check, the duplicate-email rule and
+`purge_after`. `applications` has **no INSERT grant** for `app_runtime`, so
+that function is the only door — the same shape as `app.submit_form()`.
+
+`submission_count` counts **slots taken**, so a waitlisted row does not
+increment it; raising the capacity later therefore admits the people already on
+the list.
+
+**The field catalogue** (`src/lib/applications/field-catalog.ts`) is 87
+ready-made bilingual fields in eleven groups, with validation an admin could
+not write — a Palestinian ID shape, E.164 phones, the `governorate` enum's
+members. A `catalogKey` on the row records provenance. Alongside it is a
+free-form builder for anything the catalogue does not cover; between them the
+admin is never blocked and never able to weaken a vetted rule.
+
+**Two things the builder deliberately cannot do**, both in
+`src/lib/validation/applications.ts`:
+
+- **No author-supplied `config.pattern`.** The key is absent from the schema, so
+  a regular expression can only ever have been copied from the catalogue by the
+  service. `(a+)+$` against a 200-character answer is a denial of service that
+  looks like a typo.
+- **No free-text file types.** `accept` is a named choice of three.
+
+**Privacy.** `20-PRIVACY §5` says collect an age band, not a birth date, and no
+national ID. The owner asked for both. They are in the catalogue, **off by
+default**, marked `sensitive: true`, and a form carrying any sensitive field
+**cannot publish** unless `require_consent` is on (`setFormStatus`). Sensitive
+columns are excluded from the export unless explicitly requested, and asking
+for them writes a `view_sensitive` audit entry. Attachment downloads are
+audited the same way.
+
+**Rule 7 holds on every screen.** The builder reorders with arrow buttons
+posting to Server Actions, not drag-and-drop; the option editor is three
+parallel arrays because that is what a plain form can express; the tabs are
+links. Nothing in the portal requires JavaScript.
+
+**The export** is a hand-written XLSX writer (`src/lib/export/xlsx.ts`, no new
+dependency, `node:zlib` only): RTL sheet view, frozen header, autofilter,
+Arabic verbatim, and a formula-injection guard — applicant text beginning `=`,
+`+`, `-` or `@` is quote-prefixed so Excel stores it as text.
+
+**Retention** rides the existing `purge-submissions` cron (Vercel Hobby allows
+two jobs and both are declared). `app.purge_expired_applications()` returns the
+attachment paths so the objects are deleted with the rows.
+
+**Not yet exercised in a browser.** Typecheck, lint, 384 unit and integration
+tests and a production build all pass, but no screen in this feature has been
+opened by a human — the e2e suite holds no admin credentials. See §5.4.
+
+---
+
 ## 4. Facts that will bite if forgotten
 
 - `cacheComponents` stays **off**. Turning it on breaks `unstable_cache`,
@@ -240,6 +313,21 @@ own types refuse it.
 - The integration suite connects as `postgres`, so it exercises the service
   rules and never the row-level policies. Verifying those needs the real
   database and `scripts/assert-rls.ts`.
+- **Drizzle wraps a driver error rather than rethrowing it.** It throws its own
+  `Failed query: …` and hangs the real one off `cause`, so matching a
+  `PCSRD_*` refusal on the top-level message alone silently never matches. See
+  `messageChain` in `src/services/applications/application.service.ts`; the
+  same trap applies to anything reading `app.submit_form()`'s refusals.
+- **`drizzle-kit generate` replays hand-written migrations that have no
+  snapshot.** 0006 and 0007 were authored by hand, so generating 0008 proposed
+  both again — and the replay would have aborted on any database that already
+  had them. `drizzle/0008_application_portal.sql` documents the three
+  statements removed. `meta/0008_snapshot.json` now includes them, so it should
+  not recur.
+- `src/lib/applications/attachments.ts` is `server-only` on purpose: it reaches
+  `sharp` through `security/upload.ts`, and importing it from a Client
+  Component put `require('fs')` in the browser bundle and broke the build. The
+  browser-safe half is `attachment-kinds.ts`, which has no imports at all.
 - **`next dev` compiles on first hit**, 30–70s for a heavy route, which reads
   as a 60s navigation timeout in Playwright. Warm every route with `curl`
   before treating any browser failure as a defect.
@@ -464,6 +552,21 @@ bundle is several times larger and the numbers are meaningless. Budgets are in
 
 Five of the seven are done (2026-09-22). What is left:
 
+- **Smoke-test the careers portal in a browser** (added 2026-09-24, §3b). None
+  of its eight screens has been opened by a human — the e2e suite holds no
+  admin credentials and the whole feature sits behind auth. Typecheck, lint,
+  384 tests and a production build pass; that is not the same thing. The pass:
+  create a form, add a catalogue field and a custom one, reorder them with the
+  arrows, try to publish with a sensitive field and consent off (must refuse),
+  turn consent on and publish, open `/ar/apply/<slug>` in both locales, submit
+  an application, check the applicant appears, change its status, download the
+  CV, and export the spreadsheet — then open the .xlsx in real Excel and
+  confirm the Arabic, the RTL sheet direction and the frozen header. Do the
+  same pass once with JavaScript disabled; every screen is built to work
+  without it and none of that has been verified.
+- **Decide the retention default.** It is 12 months per form, chosen to match
+  the existing `job` submission retention. It is the owner's policy call, and
+  shortening it later shortens the life of rows already stored.
 - ~~Flip the restricted-classes rule to `error`~~ — **done** 2026-09-22, and
   widening the plugin to see style objects at the same time found a real
   physical property in `button.tsx`. See §3.
@@ -538,15 +641,50 @@ Done:
 Nothing in §5 unblocks these; they need a credential, a decision, or
 organisational copy.
 
-1. **Apply the migrations to production.** `npm run db:migrate` now covers
-   `0003` (the audit sequence grant — without it every audited mutation
-   aborts), `0005`, `0006` (the rate limiter's database fallback; until it
-   is applied the fallback has nothing to fall back to, and
-   `schema-parity.test.ts` records the repository as one table ahead of the
-   live database) and `0007` (drops two unused `programs` columns — verified
-   empty in all three rows before the migration was written). Then
-   `supabase db push` for the storage buckets; the live
-   project has no `supabase_migrations` schema yet, so this is its first push.
+1. **Apply the pending migrations to production.**
+
+   **Do not run `npm run db:migrate`.** Probed against the live database on
+   2026-09-25: `drizzle.__drizzle_migrations` **does not exist** — the `drizzle`
+   schema is absent entirely, because the database was built from hand-written
+   DDL and drizzle-kit has never run against it. `drizzle-kit migrate` would
+   therefore read an empty journal, conclude nothing has been applied, and start
+   at `0000_baseline.sql`, which creates 21 tables that already exist. It aborts
+   on the first `CREATE TABLE` and the failure reads like a broken migration
+   rather than a mis-detected baseline.
+
+   Use `scripts/apply-pending-migrations.ts` instead. It probes each file
+   against the live schema, applies only what is missing, and wraps each file in
+   its own transaction:
+
+   ```sh
+   npx tsx scripts/apply-pending-migrations.ts          # dry run, shows the plan
+   npx tsx scripts/apply-pending-migrations.ts --apply  # writes
+   ```
+
+   Measured state on 2026-09-25 (this corrects the earlier note, which listed
+   `0003` and `0005` as pending — both are applied):
+
+   | Migration | Live |
+   |---|---|
+   | `0002_runtime_grants` | applied (3/3 grants present) |
+   | `0003_audit_log_sequence_grant` | applied |
+   | `0004_footer_org_settings` | applied (9 footer columns) |
+   | `0005_live_parity` | applied |
+   | `0006_rate_limit_fallback` | **pending** — until it lands the limiter's fallback has nothing to fall back to |
+   | `0007_drop_unused_program_blocks` | **pending** |
+   | `0008_application_portal` | **pending** — the careers portal's four tables |
+   | `0009_application_portal_runtime` | **pending** — its grants, policies, triggers and `app.submit_application()` |
+
+   **0008 and 0009 must land together.** 0008 alone creates four tables with row
+   level security *disabled*, on a database where the other twenty-one are
+   `FORCE ROW LEVEL SECURITY`. The script applies them in order in one run.
+
+   Then `supabase db push` for the storage buckets; the live project has no
+   `supabase_migrations` schema yet, so this is its first push.
+
+   Baselining the drizzle journal so the ordinary command works again is worth
+   doing afterwards, but it is bookkeeping and doing it wrong silently skips a
+   real migration — which is why it is not folded into this step.
 
 2. **Confirm `DATABASE_URL` connects as `app_runtime`, not `postgres`.** The
    wrong value disables all 85 row-level policies while the site keeps working.

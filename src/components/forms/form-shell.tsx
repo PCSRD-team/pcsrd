@@ -3,6 +3,8 @@
 import { useActionState } from 'react';
 import type { ReactNode } from 'react';
 import type { SubmissionResult } from '@/actions/public/forms';
+import type { ActionErr } from '@/lib/errors';
+import type { FormValues } from '@/lib/validation/common';
 import { FormActions, FormStack } from '@/components/ui/field';
 import { SubmissionReceipt } from '@/components/ui/feedback';
 import { LiveRegion, Notice } from '@/components/ui/notice';
@@ -35,28 +37,63 @@ import { Turnstile } from './turnstile';
 
 export type SubmissionState = SubmissionResult | null;
 
-export function FormShell({
+/**
+ * What the shell needs an action to return.
+ *
+ * Generic over the success payload rather than pinned to `SubmissionResult`,
+ * because the careers portal's action returns one extra field — whether the
+ * application landed on a waiting list — and that changes what the receipt
+ * says. The alternative was a second shell, which would have been this file
+ * copied with four words different and would have drifted the first time
+ * anything about the captcha, the honeypot or the live region changed.
+ *
+ * `reference` is the one thing every form must produce. It is the handle a
+ * person quotes when they follow up, and a receipt without one is a receipt
+ * that helps nobody.
+ */
+export type ShellOk<TData extends { reference: string }> = {
+  ok: true;
+  data: TData;
+  messageKey?: string;
+};
+
+export type ShellErr = ActionErr & { values?: FormValues };
+
+export type ShellResult<TData extends { reference: string }> = ShellOk<TData> | ShellErr;
+
+export function FormShell<TData extends { reference: string } = { reference: string }>({
   action,
   dict,
   locale,
   submitLabel,
   children,
+  renderReceipt,
+  intro,
 }: {
-  action: (prev: SubmissionState, formData: FormData) => Promise<SubmissionState>;
+  action: (
+    prev: ShellResult<TData> | null,
+    formData: FormData,
+  ) => Promise<ShellResult<TData> | null>;
   dict: FormDict;
   locale: 'ar' | 'en';
   submitLabel?: string;
   children: (state: FieldState) => ReactNode;
+  /** Overrides the default receipt when a form has more to say than a number. */
+  renderReceipt?: (data: TData) => ReactNode;
+  /** Rendered above the fields, inside the form, after any failure notice. */
+  intro?: ReactNode;
 }) {
   const [state, formAction] = useActionState(action, null);
 
   if (state?.ok) {
     return (
-      <SubmissionReceipt
-        title={dict.forms.successWithReference}
-        reference={state.data.reference}
-        body={dict.forms.keepReference}
-      />
+      renderReceipt?.(state.data) ?? (
+        <SubmissionReceipt
+          title={dict.forms.successWithReference}
+          reference={state.data.reference}
+          body={dict.forms.keepReference}
+        />
+      )
     );
   }
 
@@ -88,6 +125,8 @@ export function FormShell({
           </Notice>
         ) : null}
       </LiveRegion>
+
+      {intro}
 
       <FormStack>{children(fieldState)}</FormStack>
 

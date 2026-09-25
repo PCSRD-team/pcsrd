@@ -260,3 +260,101 @@ export async function notifySubmission(input: NotifyInput): Promise<void> {
     }
   }
 }
+
+// ── Careers portal ───────────────────────────────────────────────────────
+
+export type NotifyApplicationInput = {
+  reference: string;
+  locale: Locale;
+  /** The form's title in the applicant's locale, for the acknowledgement. */
+  formTitle: string;
+  applicantName: string | null;
+  applicantEmail: string | null;
+  waitlisted: boolean;
+  answers: Record<string, unknown>;
+  /** Extra recipients the form's own settings name, beyond the HR inbox. */
+  notifyEmails?: string[];
+};
+
+/**
+ * Announces a new application and acknowledges it to the applicant.
+ *
+ * Reuses `SubmissionNotification` rather than adding a template. An
+ * application *is* a submission as far as an inbox is concerned — a reference,
+ * a set of labelled rows and a link into the admin — and a second template
+ * would be the same markup maintained twice, drifting in exactly the places
+ * (the footer, the reference block) where consistency is the point.
+ *
+ * Two differences from `notifySubmission`, both deliberate:
+ *
+ * - **The rows are labelled from the form, not from the page dictionary.**
+ *   `FIELD_LABELS` knows the six fixed forms' keys; an admin-built form's keys
+ *   are whatever the admin chose. `payloadToFields` falls back to the key,
+ *   which is readable, and the full labelled answers are one click away in the
+ *   admin.
+ *
+ * - **Sensitive answers are not in the email at all.** The notification
+ *   carries the reference, the applicant's name and the form; a national ID or
+ *   a date of birth stays in the database behind the audit log. Mail is
+ *   forwarded, archived and searched — the same reasoning as rule 2 above,
+ *   applied to recruitment data rather than to a complaint.
+ */
+export async function notifyApplication(input: NotifyApplicationInput): Promise<void> {
+  const recipients = [serverEnv.MAIL_TO_HR, ...(input.notifyEmails ?? [])];
+  const organizationName = await resolveOrganizationName(STAFF_LOCALE);
+
+  // Only the identity fields and the form reach the inbox. Everything else is
+  // in the admin, where reading it is a permission and an audit entry.
+  const summary: Record<string, unknown> = {
+    form: input.formTitle,
+    name: input.applicantName,
+    email: input.applicantEmail,
+    ...(input.waitlisted ? { waitlisted: true } : {}),
+  };
+
+  const notification = await renderNotification({
+    type: 'job',
+    reference: input.reference,
+    isSensitive: false,
+    payload: summary,
+    organizationName,
+    hasAttachment: true,
+  });
+
+  const sends: Promise<unknown>[] = [
+    resend().emails.send({
+      from: serverEnv.MAIL_FROM,
+      to: [...new Set(recipients)],
+      subject: notification.subject,
+      html: notification.html,
+      text: notification.text,
+    }),
+  ];
+
+  if (input.applicantEmail?.includes('@')) {
+    const acknowledgement = await renderAcknowledgement({
+      locale: input.locale,
+      reference: input.reference,
+      organizationName: await resolveOrganizationName(input.locale),
+    });
+    sends.push(
+      resend().emails.send({
+        from: serverEnv.MAIL_FROM,
+        to: input.applicantEmail,
+        subject: acknowledgement.subject,
+        html: acknowledgement.html,
+        text: acknowledgement.text,
+      }),
+    );
+  }
+
+  for (const result of await Promise.allSettled(sends)) {
+    if (result.status === 'rejected') {
+      // The reference identifies the row; no answer is logged.
+      console.error('[mail] application send failed', {
+        reference: input.reference,
+        error: result.reason,
+      });
+    }
+  }
+}

@@ -1,4 +1,10 @@
 import { relations } from 'drizzle-orm';
+import {
+  applicationEvents,
+  applicationFormFields,
+  applicationForms,
+  applications,
+} from './applications';
 import { auditLogs } from './audit';
 import { mediaAssets } from './media';
 import { impactMetrics } from './metrics';
@@ -274,6 +280,51 @@ export const formSubmissionsRelations = relations(formSubmissions, ({ one }) => 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   actor: one(profiles, {
     fields: [auditLogs.actorId],
+    references: [profiles.id],
+  }),
+}));
+
+// ── Careers portal ───────────────────────────────────────────────────────
+
+export const applicationFormsRelations = relations(applicationForms, ({ one, many }) => ({
+  vacancy: one(vacancies, {
+    fields: [applicationForms.vacancyId],
+    references: [vacancies.id],
+  }),
+  fields: many(applicationFormFields),
+  applications: many(applications),
+}));
+
+export const applicationFormFieldsRelations = relations(applicationFormFields, ({ one }) => ({
+  form: one(applicationForms, {
+    fields: [applicationFormFields.formId],
+    references: [applicationForms.id],
+  }),
+}));
+
+export const applicationsRelations = relations(applications, ({ one, many }) => ({
+  form: one(applicationForms, {
+    fields: [applications.formId],
+    references: [applicationForms.id],
+  }),
+  vacancy: one(vacancies, {
+    fields: [applications.vacancyId],
+    references: [vacancies.id],
+  }),
+  reviewer: one(profiles, {
+    fields: [applications.reviewedBy],
+    references: [profiles.id],
+  }),
+  events: many(applicationEvents),
+}));
+
+export const applicationEventsRelations = relations(applicationEvents, ({ one }) => ({
+  application: one(applications, {
+    fields: [applicationEvents.applicationId],
+    references: [applications.id],
+  }),
+  actor: one(profiles, {
+    fields: [applicationEvents.actorId],
     references: [profiles.id],
   }),
 }));

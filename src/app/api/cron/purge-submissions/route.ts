@@ -1,5 +1,6 @@
 import { db } from '@/db';
 import { isAuthorisedCron } from '@/lib/security/cron-auth';
+import { purgeExpiredApplications } from '@/services/applications/application.service';
 import { purgeExpiredSubmissions } from '@/services/submission/submission.service';
 
 export const dynamic = 'force-dynamic';
@@ -18,14 +19,25 @@ export async function GET(request: Request) {
 
   const purged = await purgeExpiredSubmissions(db);
 
-  // The row is gone; the applicant's CV must go with it. A retention policy
-  // that deletes the record and keeps the file has deleted the index, not the
-  // data.
-  if (purged.attachments.length) {
+  // The careers portal has its own retention, set per form rather than per
+  // type, so it has its own purge function — and it rides this job rather than
+  // taking a cron slot of its own, because Vercel Hobby allows exactly two and
+  // `vercel.json` already declares both.
+  //
+  // Sequential, not `Promise.all`: both call SECURITY DEFINER functions that
+  // take row locks, and the pool is `max: 1`. Running them concurrently on one
+  // connection buys nothing and risks the second waiting on a transaction the
+  // same connection is holding.
+  const purgedApplications = await purgeExpiredApplications(db);
+
+  // The rows are gone; the files must go with them. A retention policy that
+  // deletes the record and keeps the CV has deleted the index, not the data.
+  const attachments = [...purged.attachments, ...purgedApplications.attachments];
+  if (attachments.length) {
     const { createSupabaseAdminClient } = await import('@/lib/auth/supabase-server');
     const { error } = await createSupabaseAdminClient()
       .storage.from('applications')
-      .remove(purged.attachments);
+      .remove(attachments);
     if (error) console.error('[purge] attachments left in storage', error);
   }
 
@@ -47,7 +59,8 @@ export async function GET(request: Request) {
 
   return Response.json({
     purged: purged.deleted,
-    attachments: purged.attachments.length,
+    purgedApplications: purgedApplications.deleted,
+    attachments: attachments.length,
     rateLimitWindows,
   });
 }

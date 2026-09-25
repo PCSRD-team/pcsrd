@@ -142,3 +142,75 @@ export const submissionState = pgEnum('submission_state', [
   'archived',
 ]);
 export type SubmissionState = (typeof submissionState.enumValues)[number];
+
+// ── Careers portal ─────────────────────────────────────────────────────
+
+/**
+ * What an application form is *for*.
+ *
+ * Wider than `vacancy_type` on purpose. A vacancy is a job or a volunteer
+ * position; a form may also stand alone — an internship intake, a training
+ * cohort, a consultancy roster — with no vacancy row behind it at all.
+ */
+export const applicationFormKind = pgEnum('application_form_kind', [
+  'job',
+  'volunteer',
+  'internship',
+  'training',
+  'consultancy',
+  'other',
+]);
+export type ApplicationFormKind = (typeof applicationFormKind.enumValues)[number];
+
+/**
+ * The control a form field renders as.
+ *
+ * `section` renders no control at all — it is a heading with optional prose,
+ * so a long form reads as a set of parts rather than forty inputs in a
+ * column. It is a field type rather than a separate table because it has to
+ * take part in the same ordering.
+ *
+ * `checkbox` is one box (a consent tick); `multi_select` is a group of them.
+ * They are separate because their stored values differ — boolean against an
+ * array — and collapsing them would make the export ambiguous.
+ */
+export const applicationFieldType = pgEnum('application_field_type', [
+  'short_text',
+  'long_text',
+  'email',
+  'phone',
+  'number',
+  'date',
+  'select',
+  'radio',
+  'multi_select',
+  'checkbox',
+  'file',
+  'section',
+]);
+export type ApplicationFieldType = (typeof applicationFieldType.enumValues)[number];
+
+/**
+ * Where an applicant is in the pipeline.
+ *
+ * `withdrawn` is the applicant's own decision and `rejected` is the
+ * organisation's; keeping them apart is what makes the funnel figures honest.
+ */
+export const applicationStatus = pgEnum('application_status', [
+  'new',
+  'under_review',
+  'shortlisted',
+  'interview',
+  'offer',
+  'hired',
+  'rejected',
+  'withdrawn',
+]);
+export type ApplicationStatus = (typeof applicationStatus.enumValues)[number];
+
+/** What happens once `capacity` is reached: refuse, or keep taking names. */
+export const applicationCapacityRule = pgEnum('application_capacity_rule', [
+  'close',
+  'waitlist',
+]);
+export type ApplicationCapacityRule = (typeof applicationCapacityRule.enumValues)[number];

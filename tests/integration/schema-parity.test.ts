@@ -44,6 +44,22 @@ const CONSTRAINTS: Record<string, Record<string, string>> = {
   // Added by drizzle/0006_rate_limit_fallback.sql. The live database does not
   // carry it until that migration is applied — docs/PROGRESS.md §6.1.
   rate_limit_hits: {},
+  // ── Ahead of production ────────────────────────────────────────────────
+  //
+  // The four careers-portal tables (drizzle/0008, drizzle/0009). The live
+  // database does not carry them until those migrations are applied, exactly
+  // as `rate_limit_hits` was recorded here ahead of 0006 — docs/PROGRESS.md §6.1.
+  //
+  // These entries describe what the migration creates rather than what the
+  // 2026-09-14 inventory captured, because there is nothing in the inventory to
+  // compare against yet. That is the one case where writing the expectation
+  // from the migration is honest; for every table that exists in production it
+  // would defeat the point of this file. Recapture the inventory after the
+  // migrations are applied and these become ordinary parity rows.
+  application_events: {"application_events_actor_id_fkey":"f","application_events_application_id_fkey":"f","application_events_pkey":"p"},
+  application_form_fields: {"application_form_fields_form_id_fkey":"f","application_form_fields_key_shape":"c","application_form_fields_options":"c","application_form_fields_pkey":"p","application_form_fields_section":"c"},
+  application_forms: {"application_forms_capacity":"c","application_forms_count":"c","application_forms_created_by_fkey":"f","application_forms_pkey":"p","application_forms_retention":"c","application_forms_slug_shape":"c","application_forms_updated_by_fkey":"f","application_forms_vacancy_id_fkey":"f","application_forms_window":"c"},
+  applications: {"applications_form_id_fkey":"f","applications_pkey":"p","applications_rating_range":"c","applications_reference_key":"u","applications_reviewed_by_fkey":"f","applications_reviewed_shape":"c","applications_vacancy_id_fkey":"f"},
   redirects: { "redirects_absolute": 'c', "redirects_no_loop": 'c', "redirects_pkey": 'p', "redirects_source_path_key": 'u', "redirects_status_code": 'c' },
   stories: { "stories_created_by_fkey": 'f', "stories_hero_media_id_fkey": 'f', "stories_named_needs_consent": 'c', "stories_og_media_id_fkey": 'f', "stories_pkey": 'p', "stories_program_id_fkey": 'f', "stories_project_id_fkey": 'f', "stories_slug_shape": 'c', "stories_updated_by_fkey": 'f' },
   story_media: { "story_media_media_id_fkey": 'f', "story_media_pkey": 'p', "story_media_story_id_fkey": 'f' },
@@ -69,6 +85,11 @@ const INDEXES: Record<string, string[]> = {
   projects: ["ix_projects_featured", "ix_projects_govs", "ix_projects_program", "ix_projects_public", "ix_projects_search_ar", "ix_projects_state", "ix_projects_themes", "projects_featured_idx", "projects_gov_gin", "projects_pkey", "projects_program_idx", "projects_published_idx", "projects_slug_ar_idx", "projects_slug_en_idx", "projects_start_year_idx", "projects_themes_gin", "ux_projects_slug_ar", "ux_projects_slug_en"],
   publications: ["ix_publications_public", "publications_pkey", "publications_slug_ar_idx", "publications_slug_en_idx", "publications_type_idx", "ux_publications_slug_ar", "ux_publications_slug_en"],
   rate_limit_hits: ["rate_limit_hits_bucket_time_idx"],
+  // See the note in CONSTRAINTS: ahead of production, from 0008/0009.
+  application_events: ["application_events_application_idx","application_events_pkey"],
+  application_form_fields: ["application_form_fields_key_idx","application_form_fields_order_idx","application_form_fields_pkey"],
+  application_forms: ["application_forms_open_idx","application_forms_pkey","application_forms_slug_idx","application_forms_vacancy_idx"],
+  applications: ["applications_email_idx","applications_form_idx","applications_pkey","applications_purge_idx","applications_reference_key","applications_status_idx"],
   redirects: ["redirects_pkey", "redirects_source_path_key"],
   stories: ["ix_stories_program", "ix_stories_project", "ix_stories_public", "stories_pkey", "stories_program_idx", "stories_project_idx", "stories_published_idx", "stories_slug_ar_idx", "stories_slug_en_idx", "ux_stories_slug_ar", "ux_stories_slug_en"],
   story_media: ["story_media_media_idx", "story_media_pkey"],
@@ -76,6 +97,11 @@ const INDEXES: Record<string, string[]> = {
 };
 
 const ENUMS: Record<string, string[]> = {
+  // Ahead of production, from drizzle/0008 — see the note in CONSTRAINTS.
+  application_capacity_rule: ["close", "waitlist"],
+  application_field_type: ["short_text", "long_text", "email", "phone", "number", "date", "select", "radio", "multi_select", "checkbox", "file", "section"],
+  application_form_kind: ["job", "volunteer", "internship", "training", "consultancy", "other"],
+  application_status: ["new", "under_review", "shortlisted", "interview", "offer", "hired", "rejected", "withdrawn"],
   consent_status: ["not_required", "obtained", "pending"],
   content_status: ["draft", "in_review", "published", "archived"],
   governorate: ["north_gaza", "gaza", "middle", "khan_younis", "rafah"],
@@ -119,6 +145,11 @@ const COLUMNS: Record<string, string[]> = {
   projects: ["id", "status", "translation_status", "published_at", "created_at", "updated_at", "created_by", "updated_by", "slug_ar", "slug_en", "program_id", "title_ar", "title_en", "summary_ar", "summary_en", "objective_ar", "objective_en", "activities_ar", "activities_en", "outcomes_ar", "outcomes_en", "project_state", "start_date", "end_date", "governorates", "localities", "themes", "hero_media_id", "is_featured", "source_note", "seo_title_ar", "seo_title_en", "seo_description_ar", "seo_description_en", "og_media_id", "no_index"],
   publications: ["id", "status", "translation_status", "published_at", "created_at", "updated_at", "created_by", "updated_by", "slug_ar", "slug_en", "type", "title_ar", "title_en", "description_ar", "description_en", "file_ar_id", "file_en_id", "published_year", "is_featured", "display_order"],
   rate_limit_hits: ["bucket", "hit_at"],
+  // See the note in CONSTRAINTS: ahead of production, from 0008/0009.
+  application_events: ["id","application_id","actor_id","from_status","to_status","note","created_at"],
+  application_form_fields: ["id","form_id","sort_order","key","type","catalog_key","label_ar","label_en","placeholder_ar","placeholder_en","help_ar","help_en","required","options","config","visible_when","sensitive","created_at","updated_at"],
+  application_forms: ["id","vacancy_id","kind","slug","title_ar","title_en","intro_ar","intro_en","status","published_at","opens_at","closes_at","capacity","capacity_rule","submission_count","confirmation_ar","confirmation_en","notify_emails","retention_months","allow_multiple_per_email","require_consent","created_at","updated_at","created_by","updated_by"],
+  applications: ["id","form_id","vacancy_id","reference","locale","status","waitlisted","answers","attachments","applicant_name","applicant_email","applicant_phone","rating","internal_note","reviewed_by","reviewed_at","ip_hash","user_agent","created_at","purge_after"],
   redirects: ["id", "source_path", "destination_path", "status_code", "created_at"],
   stories: ["id", "status", "translation_status", "published_at", "created_at", "updated_at", "created_by", "updated_by", "slug_ar", "slug_en", "program_id", "project_id", "title_ar", "title_en", "summary_ar", "summary_en", "body_ar", "body_en", "quote_text_ar", "quote_text_en", "quote_attribution_ar", "quote_attribution_en", "subject_anonymized", "consent_obtained", "consent_reference", "hero_media_id", "is_featured", "seo_title_ar", "seo_title_en", "seo_description_ar", "seo_description_en", "og_media_id", "no_index"],
   story_media: ["story_id", "media_id", "display_order"],

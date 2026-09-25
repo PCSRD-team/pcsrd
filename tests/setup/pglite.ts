@@ -79,6 +79,7 @@ export async function resetTables(db: TestDb): Promise<void> {
   await db.execute(`
     truncate table
       audit_logs, form_submissions, redirects,
+      application_events, applications, application_form_fields, application_forms,
       post_media, program_media, story_media, project_media, project_partners,
       impact_metrics, posts, stories, publications, vacancies, pages,
       projects, programs, partners, people, organization_settings,

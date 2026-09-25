@@ -147,6 +147,46 @@ export const ar = {
     noOpenings: 'لا توجد شواغر مفتوحة حالياً.',
   },
 
+  /**
+   * The application portal's public copy.
+   *
+   * Separate from `careers` because a form is not a vacancy listing: it may
+   * stand alone for a volunteer intake or a training cohort with no vacancy
+   * behind it, and every string here is addressed to someone filling it in
+   * rather than to someone browsing.
+   */
+  apply: {
+    title: 'التقديم',
+    submit: 'إرسال الطلب',
+    submitting: 'جاري الإرسال…',
+    successWaitlisted:
+      'وصلنا طلبك وسُجّل على قائمة الانتظار — اكتمل العدد المطلوب، وسنتواصل معك إن توفّر مكان.',
+    deadline: 'آخر موعد للتقديم',
+    opensAt: 'يبدأ التقديم',
+    slotsLeft: 'المقاعد المتبقّية: {n}',
+    closedTitle: 'أُغلق باب التقديم',
+    closedBody: 'انتهت فترة التقديم على هذا الإعلان. تابع صفحة الوظائف للإعلانات الجديدة.',
+    notYetTitle: 'لم يُفتح التقديم بعد',
+    notYetBody: 'يبدأ استقبال الطلبات في {date}.',
+    fullTitle: 'اكتمل العدد',
+    fullBody: 'وصل هذا الإعلان إلى العدد المطلوب من المتقدمين.',
+    waitlistNotice: 'اكتمل العدد المطلوب. ما زال بإمكانك التقديم وسيُسجَّل طلبك على قائمة الانتظار.',
+    consentLabel: 'أوافق على معالجة بياناتي الشخصية لغرض النظر في هذا الطلب.',
+    consentHelp:
+      'تُستخدم بياناتك لغرض التوظيف فقط، ولا تُشارك خارج المؤسسة، وتُحذف تلقائياً بعد انتهاء مدة الاحتفاظ.',
+    retentionNotice: 'تُحذف بيانات هذا الطلب تلقائياً بعد {months} شهراً.',
+    filesHint: 'مجموع حجم المرفقات لا يتجاوز 4 ميغابايت.',
+    openFormsTitle: 'نماذج التقديم المفتوحة',
+    kind: {
+      job: 'وظيفة',
+      volunteer: 'تطوّع',
+      internship: 'تدريب',
+      training: 'دورة تدريبية',
+      consultancy: 'استشارة',
+      other: 'أخرى',
+    },
+  },
+
   verify: {
     title: 'قنواتنا الرسمية',
     lead: 'هذه هي القنوات الوحيدة التي نتحدّث من خلالها.',
@@ -287,6 +327,23 @@ export const ar = {
       uuid: 'معرّف غير صالح.',
       tooShort: 'النص أقصر من المطلوب.',
       tooLong: 'النص أطول من المسموح.',
+      tooSmall: 'الرقم أصغر من المسموح.',
+      tooLarge: 'الرقم أكبر من المسموح.',
+      pattern: 'الصيغة غير صحيحة.',
+      dateTooEarly: 'التاريخ أبكر من المسموح.',
+      dateTooLate: 'التاريخ أحدث من المسموح.',
+      invalidChoice: 'اختيار غير صالح.',
+      tooFewChoices: 'اختر عدداً أكبر من الخيارات.',
+      tooManyChoices: 'اختر عدداً أقل من الخيارات.',
+      mustAgree: 'يلزم الموافقة على هذا البند للمتابعة.',
+      // Builder-side: the admin is editing a field definition, not filling it in.
+      fieldKey: 'مُعرّف الحقل يجب أن يبدأ بحرف إنجليزي صغير ويحوي حروفاً وأرقاماً وشرطة سفلية فقط.',
+      optionValue: 'قيمة الخيار يجب أن تكون حروفاً إنجليزية صغيرة أو أرقاماً أو شرطة سفلية.',
+      optionsRequired: 'أضف خياراً واحداً على الأقل.',
+      sectionCannotBeRequired: 'العنوان الفاصل لا يمكن أن يكون مطلوباً.',
+      rangeInverted: 'الحد الأدنى يجب أن يكون أصغر من الحد الأعلى.',
+      selfCondition: 'الحقل لا يمكن أن يكون شرط ظهور نفسه.',
+      closesBeforeOpens: 'تاريخ الإغلاق يجب أن يكون بعد تاريخ الفتح.',
     },
     upload: {
       too_large: 'حجم الملف يتجاوز 4 ميغابايت.',
@@ -294,6 +351,35 @@ export const ar = {
       empty: 'الملف فارغ.',
       unreadable: 'تعذّرت قراءة الملف.',
       failed: 'تعذّر رفع الملف. حاول مجدداً.',
+      totalTooLarge: 'مجموع حجم الملفات يتجاوز 4 ميغابايت. أرفق ملفات أصغر.',
+    },
+
+    /**
+     * The careers portal, applicant side. Each one is a different action on
+     * the applicant's part — "it closed" and "you already applied" call for
+     * different next steps, which is why they are not one message.
+     */
+    apply: {
+      closed: 'انتهت فترة التقديم على هذا الإعلان.',
+      notYetOpen: 'لم يبدأ التقديم على هذا الإعلان بعد.',
+      full: 'اكتمل العدد المطلوب من المتقدمين لهذا الإعلان.',
+      duplicate: 'سبق أن قدّمت طلباً على هذا الإعلان بهذا البريد الإلكتروني.',
+    },
+
+    /** The careers portal, admin side: refusals from the form builder. */
+    applicationForm: {
+      noFields: 'لا يمكن نشر نموذج بلا حقول. أضف حقلاً واحداً على الأقل.',
+      consentRequired:
+        'النموذج يحتوي حقولاً حسّاسة (مثل رقم الهوية أو تاريخ الميلاد). فعّل بند الموافقة على معالجة البيانات قبل النشر.',
+      deadlinePassed: 'تاريخ الإغلاق مضى. حدّثه قبل النشر.',
+      fieldExists: 'هذا الحقل مضاف إلى النموذج بالفعل.',
+      keyFrozen:
+        'لا يمكن تغيير مُعرّف الحقل بعد وصول طلبات — الإجابات المحفوظة مرتبطة به. يمكنك تغيير التسمية.',
+      conditionUnknownField: 'حقل الشرط غير موجود في هذا النموذج.',
+      conditionBadField: 'لا يمكن ربط الشرط بعنوان فاصل أو حقل مرفق.',
+      conditionForwards: 'حقل الشرط يجب أن يسبق الحقل المشروط في الترتيب.',
+      fieldHasDependents: 'حقول أخرى تعتمد على هذا الحقل كشرط ظهور. احذفها أو عدّل شرطها أولاً.',
+      reorderIncomplete: 'قائمة الترتيب لا تطابق حقول النموذج.',
     },
 
     // Thrown by the service layer. These twelve keys were referenced in code

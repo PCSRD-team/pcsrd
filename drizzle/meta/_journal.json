@@ -57,6 +57,13 @@
       "when": 1790072208647,
       "tag": "0007_drop_unused_program_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790080789587,
+      "tag": "0008_application_portal",
+      "breakpoints": true
     }
   ]
 }

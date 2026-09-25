@@ -29,6 +29,23 @@ export const TAGS = {
   vacancyList: 'vacancy:list',
   vacancy: (slug: string) => `vacancy:${slug}`,
 
+  /**
+   * The careers portal's form definitions.
+   *
+   * Deliberately outside the `Entity` union below. `tagsFor` exists for the
+   * seven CMS entities that share one generic list screen and one service; an
+   * application form has its own service, its own screens and no cross-entity
+   * edges to bust, so it names its tags directly rather than joining a
+   * registry whose other members it has nothing in common with.
+   *
+   * Applications themselves carry **no** tag. Every read of them is an admin
+   * read, and `queries/admin/*` is never `unstable_cache`-wrapped — an
+   * applicants table that could serve a cached page would show a reviewer a
+   * pipeline that has already moved on.
+   */
+  applicationFormList: 'application-form:list',
+  applicationForm: (slug: string) => `application-form:${slug}`,
+
   publicationList: 'publication:list',
   publication: (slug: string) => `publication:${slug}`,
 

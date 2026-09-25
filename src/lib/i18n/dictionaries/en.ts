@@ -141,6 +141,40 @@ export const en: Dictionary = {
     noOpenings: 'There are no open positions at the moment.',
   },
 
+  apply: {
+    title: 'Apply',
+    submit: 'Submit application',
+    submitting: 'Submitting…',
+    successWaitlisted:
+      'We have your application and have placed it on the waiting list — this opening is full, and we will be in touch if a place comes up.',
+    deadline: 'Application deadline',
+    opensAt: 'Applications open',
+    slotsLeft: 'Places remaining: {n}',
+    closedTitle: 'Applications are closed',
+    closedBody:
+      'The application period for this opening has ended. Watch the careers page for new openings.',
+    notYetTitle: 'Applications have not opened yet',
+    notYetBody: 'This form starts accepting applications on {date}.',
+    fullTitle: 'This opening is full',
+    fullBody: 'This opening has reached the number of applicants it can take.',
+    waitlistNotice:
+      'This opening is full. You can still apply and your application will be placed on the waiting list.',
+    consentLabel: 'I consent to my personal data being processed for this application.',
+    consentHelp:
+      'Your details are used for recruitment only, are not shared outside the organisation, and are deleted automatically at the end of the retention period.',
+    retentionNotice: 'The details in this application are deleted automatically after {months} months.',
+    filesHint: 'Your attachments must come to no more than 4 MB in total.',
+    openFormsTitle: 'Open application forms',
+    kind: {
+      job: 'Job',
+      volunteer: 'Volunteering',
+      internship: 'Internship',
+      training: 'Training',
+      consultancy: 'Consultancy',
+      other: 'Other',
+    },
+  },
+
   verify: {
     title: 'Our official channels',
     lead: 'These are the only channels we speak through.',
@@ -281,6 +315,25 @@ export const en: Dictionary = {
       uuid: 'Invalid identifier.',
       tooShort: 'This is shorter than allowed.',
       tooLong: 'This is longer than allowed.',
+      tooSmall: 'This number is below the allowed minimum.',
+      tooLarge: 'This number is above the allowed maximum.',
+      pattern: 'This is not in the expected format.',
+      dateTooEarly: 'This date is earlier than allowed.',
+      dateTooLate: 'This date is later than allowed.',
+      invalidChoice: 'That is not one of the available choices.',
+      tooFewChoices: 'Select more options.',
+      tooManyChoices: 'Select fewer options.',
+      mustAgree: 'You need to agree to this to continue.',
+      // Builder-side: the admin is editing a field definition, not filling it in.
+      fieldKey:
+        'A field key must start with a lower-case letter and contain only letters, digits and underscores.',
+      optionValue:
+        'An option value may contain only lower-case letters, digits and underscores.',
+      optionsRequired: 'Add at least one option.',
+      sectionCannotBeRequired: 'A section heading cannot be required.',
+      rangeInverted: 'The minimum must be below the maximum.',
+      selfCondition: 'A field cannot be its own visibility condition.',
+      closesBeforeOpens: 'The closing date must be after the opening date.',
     },
     upload: {
       too_large: 'The file is larger than 4 MB.',
@@ -288,6 +341,36 @@ export const en: Dictionary = {
       empty: 'The file is empty.',
       unreadable: 'The file could not be read.',
       failed: 'The upload failed. Please try again.',
+      totalTooLarge: 'Your files come to more than 4 MB in total. Please attach smaller files.',
+    },
+
+    /**
+     * The careers portal, applicant side. Each one is a different action on
+     * the applicant's part — "it closed" and "you already applied" call for
+     * different next steps, which is why they are not one message.
+     */
+    apply: {
+      closed: 'Applications for this opening have closed.',
+      notYetOpen: 'Applications for this opening have not opened yet.',
+      full: 'This opening has reached the number of applicants it can take.',
+      duplicate: 'You have already applied to this opening with this email address.',
+    },
+
+    /** The careers portal, admin side: refusals from the form builder. */
+    applicationForm: {
+      noFields: 'A form cannot be published with no fields. Add at least one.',
+      consentRequired:
+        'This form asks for sensitive details (such as an ID number or date of birth). Turn on the data-processing consent before publishing.',
+      deadlinePassed: 'The closing date has already passed. Update it before publishing.',
+      fieldExists: 'That field is already on this form.',
+      keyFrozen:
+        'A field key cannot change once applications have arrived — the stored answers are keyed by it. You can still change the label.',
+      conditionUnknownField: 'The condition names a field that is not on this form.',
+      conditionBadField: 'A condition cannot point at a section heading or a file field.',
+      conditionForwards: 'The controlling field must come before the field it controls.',
+      reorderIncomplete: "The reordered list does not match the form's fields.",
+      fieldHasDependents:
+        'Other fields use this one as their visibility condition. Remove or re-point them first.',
     },
 
     // Thrown by the service layer. These twelve keys were referenced in code

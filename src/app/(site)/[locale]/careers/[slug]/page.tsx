@@ -14,6 +14,7 @@ import { DefinitionList } from '@/components/ui/definition-list';
 import { Notice } from '@/components/ui/notice';
 import { Container, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { Eyebrow, Prose } from '@/components/ui/typography';
+import { getFormSlugForVacancy } from '@/db/queries/applications';
 import { getOrganization, getVacancyBySlug, listVacancySlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
 import { formatDate } from '@/lib/format';
@@ -66,6 +67,13 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
     getOrganization(locale),
   ]);
   if (!vacancy) notFound();
+
+  // A vacancy may have a purpose-built form behind it in the careers portal.
+  // When it does, that form replaces the generic job-application form: it asks
+  // the questions this role actually needs, and its deadline and applicant cap
+  // are enforced by `app.submit_application()` rather than only by this page's
+  // `isClosed` check. Looked up after the vacancy because it needs its id.
+  const applyFormSlug = await getFormSlugForVacancy(vacancy.id);
 
   const url = localePath(locale, `/careers/${slug}`);
 
@@ -167,6 +175,16 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
                       <Bidi>{vacancy.applicationEmail}</Bidi>
                     </a>
                   </p>
+                </Panel>
+              ) : applyFormSlug ? (
+                // The portal's form lives on its own page rather than being
+                // embedded here: it can run to forty fields across six
+                // sections, and a form that long inside a vacancy record buries
+                // the description an applicant is still reading.
+                <Panel>
+                  <ButtonLink href={localePath(locale, `/apply/${applyFormSlug}`)}>
+                    {dict.careers.applyNow}
+                  </ButtonLink>
                 </Panel>
               ) : (
                 <div className="max-w-narrow">

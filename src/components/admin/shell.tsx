@@ -99,6 +99,16 @@ export function buildNav(
           capability: 'submissions.read',
           badge: counts.submissions,
         },
+        // The careers portal sits under Inbox rather than Content: a form is
+        // authored like content, but what the sidebar is for is telling
+        // someone there is something waiting for them, and what waits here is
+        // applicants.
+        {
+          href: '/admin/careers',
+          label: n.careers,
+          icon: 'job',
+          capability: 'submissions.read',
+        },
         // Gated on `canViewSensitive`, which is granted per person and is not
         // implied by being an admin. Someone without it never sees the link,
         // and the count they cannot open is never rendered.
