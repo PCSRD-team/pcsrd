@@ -1,6 +1,6 @@
 # Progress — where the project stands, and where to pick it up
 
-Last updated 2026-09-24, at commit `1285616`.
+Last updated 2026-09-25, at commit `8367211`.
 
 **If you are resuming: read §0, then start at the top of §5.** Everything above
 §5 is context; §5 is the queue. Nothing in §5 needs re-discovery — each item
@@ -641,50 +641,40 @@ Done:
 Nothing in §5 unblocks these; they need a credential, a decision, or
 organisational copy.
 
-1. **Apply the pending migrations to production.**
+1. ~~**Apply the pending migrations to production.**~~ — **done 2026-09-25.**
+   `0006`, `0007`, `0008` and `0009` were applied with
+   `scripts/apply-pending-migrations.ts --apply` and verified against the live
+   database afterwards, not assumed:
 
-   **Do not run `npm run db:migrate`.** Probed against the live database on
-   2026-09-25: `drizzle.__drizzle_migrations` **does not exist** — the `drizzle`
-   schema is absent entirely, because the database was built from hand-written
-   DDL and drizzle-kit has never run against it. `drizzle-kit migrate` would
-   therefore read an empty journal, conclude nothing has been applied, and start
-   at `0000_baseline.sql`, which creates 21 tables that already exist. It aborts
-   on the first `CREATE TABLE` and the failure reads like a broken migration
-   rather than a mis-detected baseline.
+   - the four careers tables exist, with row-level security **enabled *and*
+     forced**, like the other twenty-one
+   - 15 policies — 5 / 3 / 4 / 3, the expected counts
+   - 3 `app.*` functions and 5 triggers
+   - **`applications` has no `INSERT` grant for `app_runtime`**, so
+     `app.submit_application()` really is the only door
+   - an end-to-end probe: a real submission returned `PCS-APP-FD8FBBCA`, and
+     deleting its form cascaded the application away. The probe rows were
+     removed.
+   - `0006`: `rate_limit_hits` plus both limiter functions present, so the
+     fallback now has something to fall back to
+   - `0007`: both unused `programs` columns gone
+   - public tables went 21 → 26
 
-   Use `scripts/apply-pending-migrations.ts` instead. It probes each file
-   against the live schema, applies only what is missing, and wraps each file in
-   its own transaction:
+   **The `drizzle-kit migrate` trap still stands** for any future migration.
+   `drizzle.__drizzle_migrations` does not exist — the `drizzle` schema is
+   absent entirely, because this database was built from hand-written DDL and
+   drizzle-kit has never run against it. `npm run db:migrate` would therefore
+   read an empty journal, conclude nothing is applied, start at
+   `0000_baseline.sql` and abort on the first `CREATE TABLE` of a table that
+   already exists. Use `scripts/apply-pending-migrations.ts`, which probes each
+   file against the live schema and applies only what is missing, each in its
+   own transaction. Baselining the journal so the ordinary command works again
+   is still worth doing, and is still bookkeeping that silently skips a real
+   migration if done wrong.
 
-   ```sh
-   npx tsx scripts/apply-pending-migrations.ts          # dry run, shows the plan
-   npx tsx scripts/apply-pending-migrations.ts --apply  # writes
-   ```
-
-   Measured state on 2026-09-25 (this corrects the earlier note, which listed
-   `0003` and `0005` as pending — both are applied):
-
-   | Migration | Live |
-   |---|---|
-   | `0002_runtime_grants` | applied (3/3 grants present) |
-   | `0003_audit_log_sequence_grant` | applied |
-   | `0004_footer_org_settings` | applied (9 footer columns) |
-   | `0005_live_parity` | applied |
-   | `0006_rate_limit_fallback` | **pending** — until it lands the limiter's fallback has nothing to fall back to |
-   | `0007_drop_unused_program_blocks` | **pending** |
-   | `0008_application_portal` | **pending** — the careers portal's four tables |
-   | `0009_application_portal_runtime` | **pending** — its grants, policies, triggers and `app.submit_application()` |
-
-   **0008 and 0009 must land together.** 0008 alone creates four tables with row
-   level security *disabled*, on a database where the other twenty-one are
-   `FORCE ROW LEVEL SECURITY`. The script applies them in order in one run.
-
-   Then `supabase db push` for the storage buckets; the live project has no
-   `supabase_migrations` schema yet, so this is its first push.
-
-   Baselining the drizzle journal so the ordinary command works again is worth
-   doing afterwards, but it is bookkeeping and doing it wrong silently skips a
-   real migration — which is why it is not folded into this step.
+   Still outstanding from this item: `supabase db push` for the storage
+   buckets. The live project has no `supabase_migrations` schema yet, so that
+   is its first push.
 
 2. **Confirm `DATABASE_URL` connects as `app_runtime`, not `postgres`.** The
    wrong value disables all 85 row-level policies while the site keeps working.
