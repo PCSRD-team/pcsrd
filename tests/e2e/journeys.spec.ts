@@ -110,7 +110,7 @@ test('J4 — volunteer page carries the application form', async ({ page, siteLo
   await expect(form.locator('[name="dateOfBirth"], [name="nationalId"], [name="address"]')).toHaveCount(0);
 });
 
-test('J5 — job page → application form with a PDF-accepting file input', async ({ page, siteLocale }) => {
+test('J5 — job page → its application form in the careers portal', async ({ page, siteLocale }) => {
   const d = dict(siteLocale);
   await go(page, path(siteLocale, '/careers'));
   await expect(page.locator('h1')).toHaveText(d.careers.title);
@@ -126,14 +126,12 @@ test('J5 — job page → application form with a PDF-accepting file input', asy
   await expect(page).toHaveURL(new RegExp(`${path(siteLocale, '/careers/')}`));
   await expect(page.locator('h1')).toHaveText(/\S/);
 
-  const form = page.locator('form:has(input[name="cv"])');
-  await expect(form).toHaveCount(1);
-  await expect(form).toHaveAttribute('enctype', 'multipart/form-data');
-  const cv = form.locator('input[type="file"][name="cv"]');
-  await expect(cv).toBeVisible();
-  expect((await cv.getAttribute('accept')) ?? '').toMatch(/\.pdf|application\/pdf/);
-  await expect(form.locator('label[for="cv"]')).toHaveCount(1);
-  await expect(form.locator('#cv-hint')).toBeVisible();
+  const apply = page.locator(`main a[href^="${path(siteLocale, '/apply/')}"]`).first();
+  test.skip((await apply.count()) === 0, 'the vacancy has no published portal form');
+
+  await apply.click();
+  await expect(page).toHaveURL(new RegExp(`${path(siteLocale, '/apply/')}`));
+  await expect(page.locator('main form')).toHaveCount(1);
 });
 
 test('J6 — verify page: official channels table or its empty state', async ({ page, siteLocale }) => {

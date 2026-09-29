@@ -34,6 +34,7 @@ import {
   storyService,
   vacancyService,
 } from '@/services/content';
+import { ensureFormForVacancy } from '@/services/applications/application-form.service';
 import { upsertMetric, upsertPartner, upsertPerson } from '@/services/content/catalog.service';
 import { upsertProject } from '@/services/content/project.service';
 import { createRedirect } from '@/services/content/redirect.service';
@@ -270,7 +271,13 @@ export async function saveVacancyForm(_prev: EntityResult | null, formData: Form
     formData,
     'vacancy',
     vacancySchema,
-    (actor, input) => vacancyService.upsert(db, actor, input),
+    async (actor, input) => {
+      const vacancy = await vacancyService.upsert(db, actor, input);
+      // A new vacancy arrives with its application form already in the
+      // careers portal, as a draft — the portal is the one way to apply.
+      if (!input.id) await ensureFormForVacancy(db, actor, vacancy.id);
+      return vacancy;
+    },
   );
   if (result.ok) redirect(`/admin/vacancies/${result.data.id}?saved=1`);
   return result;

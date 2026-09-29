@@ -43,7 +43,7 @@ export const admin_uiAr = {
       projects: 'المشاريع',
       posts: 'الأخبار',
       stories: 'القصص',
-      vacancies: 'الوظائف',
+      vacancies: 'الشواغر',
       pages: 'الصفحات',
       data: 'البيانات',
       metrics: 'مؤشرات الأثر',
@@ -54,7 +54,7 @@ export const admin_uiAr = {
       mediaLibrary: 'مكتبة الوسائط',
       inbox: 'الوارد',
       careers: 'بوابة الوظائف',
-      applicationForms: 'نماذج التقديم',
+      applicationForms: 'نماذج التقديم والمتقدمون',
       submissions: 'الطلبات',
       sensitive: 'الشكاوى السرّية',
       settings: 'الإعدادات',
@@ -171,6 +171,16 @@ export const admin_uiAr = {
       fromCatalog: 'من الكتالوج',
       custom: 'مخصّص',
       preview: 'معاينة النموذج',
+
+      // ── The vacancy editor's link to its form ──
+      vacancyForm: 'نموذج التقديم',
+      vacancyFormBody:
+        'طلبات هذا الشاغر تُستقبل عبر نموذجه في بوابة الوظائف. لن يظهر زر «قدّم الآن» على صفحة الشاغر حتى يُنشر النموذج.',
+      vacancyFormNone: 'لا يوجد نموذج تقديم لهذا الشاغر بعد.',
+      vacancyFormByEmail: 'هذا الشاغر يستقبل الطلبات عبر البريد الإلكتروني، فلا يحتاج نموذجاً.',
+      createVacancyForm: 'إنشاء نموذج التقديم',
+      manageForm: 'إدارة النموذج',
+      newApplicantCount: '{n} جديد',
 
       // ── Applicants ──
       applicants: 'المتقدمون',
@@ -932,7 +942,7 @@ export const admin_uiEn: Shape = {
       mediaLibrary: 'Media library',
       inbox: 'Inbox',
       careers: 'Careers portal',
-      applicationForms: 'Application forms',
+      applicationForms: 'Forms and applicants',
       submissions: 'Submissions',
       sensitive: 'Confidential complaints',
       settings: 'Settings',
@@ -1034,6 +1044,15 @@ export const admin_uiEn: Shape = {
       fromCatalog: 'From catalogue',
       custom: 'Custom',
       preview: 'Preview the form',
+
+      vacancyForm: 'Application form',
+      vacancyFormBody:
+        'Applications for this vacancy come in through its form in the careers portal. The "Apply now" button appears on the vacancy page once the form is published.',
+      vacancyFormNone: 'This vacancy has no application form yet.',
+      vacancyFormByEmail: 'This vacancy takes applications by email, so it needs no form.',
+      createVacancyForm: 'Create the application form',
+      manageForm: 'Manage the form',
+      newApplicantCount: '{n} new',
 
       applicants: 'Applicants',
       applicantCount: '{n} applicants',

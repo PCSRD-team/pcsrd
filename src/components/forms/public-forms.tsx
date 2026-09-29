@@ -4,7 +4,6 @@ import {
   submitComplaint,
   submitContact,
   submitFraudReport,
-  submitJobApplication,
   submitPartnership,
   submitVolunteer,
 } from '@/actions/public/forms';
@@ -25,7 +24,6 @@ import {
 import type { Locale } from '@/lib/i18n/config';
 import {
   CheckboxGroup,
-  FileField,
   type FormDict,
   type OptionLabels,
   SelectField,
@@ -35,7 +33,7 @@ import {
 import { FormShell } from './form-shell';
 
 /**
- * The six public forms — each one declares its fields and nothing else.
+ * The five public forms — each one declares its fields and nothing else.
  *
  * The shell owns everything they share: the locale, the honeypot, the result
  * region, the captcha and the submit. The field wrappers own the dictionary
@@ -61,9 +59,6 @@ type PublicFormProps = {
 
 const opts = (values: readonly string[], labels: OptionLabels) =>
   values.map((value) => ({ value, label: labels[value] ?? value }));
-
-const CV_ACCEPT =
-  '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 // ── Contact ──────────────────────────────────────────────────────────────
 
@@ -261,49 +256,3 @@ export function FraudReportForm({ dict, locale, labels }: PublicFormProps) {
   );
 }
 
-// ── Job application ──────────────────────────────────────────────────────
-
-/**
- * The only form that carries a file. React sets `multipart/form-data` on any
- * form whose action is a function, in the server-rendered markup too, so the
- * file posts correctly before hydration.
- *
- * The accept list is a convenience for the file picker, not a check. The real
- * validation reads magic bytes on the server, because both the extension and
- * the browser-supplied MIME type are attacker-controlled.
- */
-export function JobApplicationForm({
-  dict,
-  locale,
-  vacancyId,
-}: {
-  dict: FormDict;
-  locale: Locale;
-  vacancyId: string;
-}) {
-  return (
-    <FormShell action={submitJobApplication} dict={dict} locale={locale}>
-      {(state) => (
-        <>
-          <input type="hidden" name="vacancyId" value={vacancyId} />
-          <TextField name="name" label={dict.forms.name} dict={dict} required state={state} autoComplete="name" />
-          <FieldRow>
-            <TextField name="email" label={dict.forms.email} dict={dict} type="email" required state={state} autoComplete="email" />
-            <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" required state={state} autoComplete="tel" />
-          </FieldRow>
-          <FileField
-            name="cv"
-            label={dict.forms.cv}
-            dict={dict}
-            hint={dict.forms.cvHint}
-            required
-            state={state}
-            accept={CV_ACCEPT}
-          />
-          <TextArea name="coverNote" label={dict.forms.coverNote} dict={dict} rows={5} state={state} />
-          <TextField name="portfolioUrl" label={dict.forms.portfolioUrl} dict={dict} type="url" state={state} autoComplete="url" />
-        </>
-      )}
-    </FormShell>
-  );
-}

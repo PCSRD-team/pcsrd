@@ -138,24 +138,6 @@ export type VolunteerInput = z.infer<typeof volunteerSchema>;
 
 export const VOLUNTEER_MULTI = ['areas'] as const;
 
-// ── Job application ──────────────────────────────────────────────────────
-
-/**
- * The CV itself is not described here. A `File` cannot be meaningfully
- * validated by Zod — the check that matters reads magic bytes, and that lives
- * in `security/upload.ts`.
- */
-export const jobApplicationSchema = z.object({
-  vacancyId: z.uuid({ message: 'errors.field.required' }),
-  name: shortText(2, 80),
-  email: emailSchema,
-  phone: phoneSchema,
-  coverNote: optionalText(2000),
-  portfolioUrl: optionalUrl,
-  ...envelope,
-});
-export type JobApplicationInput = z.infer<typeof jobApplicationSchema>;
-
 // ── Complaint (CFM) ──────────────────────────────────────────────────────
 
 export const COMPLAINT_CATEGORIES = [

@@ -137,6 +137,7 @@ export const en: Dictionary = {
     requirements: 'Requirements',
     applyNow: 'Apply now',
     applyByEmail: 'Apply by email',
+    notOpenYet: 'Applications for this position are not open yet. Check back on this page or the careers page.',
     closed: 'Applications are closed',
     noOpenings: 'There are no open positions at the moment.',
     openForms: 'Opportunities you can apply for directly',
@@ -377,6 +378,7 @@ export const en: Dictionary = {
       fieldHasDependents:
         'Other fields use this one as their visibility condition. Remove or re-point them first.',
       vacancyTaken: 'That vacancy is already linked to another form. Each vacancy has one form.',
+      vacancyByEmail: 'This vacancy takes applications by email. Switch its application method to form first.',
       notWaitlisted: 'This application is not on the waiting list.',
     },
 

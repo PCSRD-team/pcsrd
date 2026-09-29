@@ -4,7 +4,6 @@ import { vacancyTypeLabel } from '@/components/content/cards';
 import { ContentBreadcrumbs, TranslationNotice } from '@/components/content/page-chrome';
 import { RichText } from '@/components/content/rich-text';
 import { getSiteName, toTranslationStatus } from '@/components/content/site';
-import { JobApplicationForm } from '@/components/forms/public-forms';
 import { JobPostingJsonLd } from '@/components/seo/json-ld';
 import { Badge } from '@/components/ui/badge';
 import { Bidi, DateText } from '@/components/ui/bidi';
@@ -19,7 +18,6 @@ import { getOrganization, getVacancyBySlug, listVacancySlugs } from '@/db/querie
 import { prerenderData } from '@/lib/build-time';
 import { formatDate } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
-import { formSlice } from '@/lib/i18n/form-dict';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
@@ -71,8 +69,7 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
   ]);
   if (!vacancy) notFound();
 
-  // A vacancy may have a purpose-built form behind it in the careers portal.
-  // When it does, that form replaces the generic job-application form: it asks
+  // Applications go through the vacancy's form in the careers portal: it asks
   // the questions this role actually needs, and its deadline and applicant cap
   // are enforced by `app.submit_application()` rather than only by this page's
   // `isClosed` check. Looked up after the vacancy because it needs its id.
@@ -190,9 +187,12 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
                   </ButtonLink>
                 </Panel>
               ) : (
-                <div className="max-w-narrow">
-                  <JobApplicationForm dict={formSlice(dict)} locale={locale} vacancyId={vacancy.id} />
-                </div>
+                // The careers portal is the one way to apply. A vacancy whose
+                // form is still a draft says so rather than falling back to a
+                // generic form whose answers would land somewhere else.
+                <Notice tone="info" live="off">
+                  {dict.careers.notOpenYet}
+                </Notice>
               )}
             </Section>
           )}

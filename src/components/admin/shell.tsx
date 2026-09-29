@@ -75,8 +75,23 @@ export function buildNav(
         { href: '/admin/projects', label: n.projects, icon: 'project' },
         { href: '/admin/posts', label: n.posts, icon: 'news' },
         { href: '/admin/stories', label: n.stories, icon: 'story' },
-        { href: '/admin/vacancies', label: n.vacancies, icon: 'job' },
         { href: '/admin/pages', label: n.pages, icon: 'page' },
+      ],
+    },
+    // One group for everything about recruitment: the vacancy says what the
+    // job is, its form in the portal collects the applications, and the
+    // applicants are reached from the form. Two places for one job was how an
+    // application could end up in the general inbox instead of the pipeline.
+    {
+      title: n.careers,
+      items: [
+        { href: '/admin/vacancies', label: n.vacancies, icon: 'job' },
+        {
+          href: '/admin/careers',
+          label: n.applicationForms,
+          icon: 'inbox',
+          capability: 'submissions.read',
+        },
       ],
     },
     {
@@ -98,16 +113,6 @@ export function buildNav(
           icon: 'inbox',
           capability: 'submissions.read',
           badge: counts.submissions,
-        },
-        // The careers portal sits under Inbox rather than Content: a form is
-        // authored like content, but what the sidebar is for is telling
-        // someone there is something waiting for them, and what waits here is
-        // applicants.
-        {
-          href: '/admin/careers',
-          label: n.careers,
-          icon: 'job',
-          capability: 'submissions.read',
         },
         // Gated on `canViewSensitive`, which is granted per person and is not
         // implied by being an admin. Someone without it never sees the link,

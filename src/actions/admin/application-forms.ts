@@ -20,6 +20,7 @@ import {
   createForm,
   deleteField,
   deleteForm,
+  ensureFormForVacancy,
   reorderFields,
   saveField,
   setFormStatus,
@@ -143,6 +144,28 @@ export async function setApplicationFormStatus(formData: FormData): Promise<void
   });
 
   redirect(withFlash(returnTo ?? `/admin/careers/${id}`, result));
+}
+
+/**
+ * The vacancy editor's "create its application form" button — for a vacancy
+ * that predates its form, or one switched from email to the portal.
+ */
+export async function createVacancyApplicationForm(formData: FormData): Promise<void> {
+  const vacancyId = String(formData.get('vacancyId') ?? '');
+
+  const result = await runAction<{ id: string }>(async () => {
+    const actor = await requireActor();
+    const form = await ensureFormForVacancy(db, actor, vacancyId);
+    if (!form) return err('validation', 'errors.applicationForm.vacancyByEmail');
+    bustForm(form.slug);
+    return ok({ id: form.id }, 'admin.saved');
+  });
+
+  redirect(
+    result.ok
+      ? withFlash(`/admin/careers/${result.data.id}`, result)
+      : withFlash(`/admin/vacancies/${vacancyId}`, result),
+  );
 }
 
 export async function deleteApplicationForm(formData: FormData): Promise<void> {

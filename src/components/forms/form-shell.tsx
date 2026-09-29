@@ -13,7 +13,7 @@ import { type FieldState, type FormDict, Honeypot, resolveKey } from './fields';
 import { Turnstile } from './turnstile';
 
 /**
- * The one shell behind the six public forms.
+ * The one shell behind the five public forms and the careers portal's forms.
  *
  * **A Client Component, and the reason is `useActionState`.** It is the only
  * way React hands an action's return value back to the form — with JavaScript
@@ -26,7 +26,7 @@ import { Turnstile } from './turnstile';
  *
  * `method` and `encType` are not set on the `<form>`: React sets both
  * (`POST`, `multipart/form-data`) for any form whose action is a function and
- * warns if a caller sets them too. The job application's file therefore
+ * warns if a caller sets them too. A portal form's file fields therefore
  * travels correctly before hydration without a prop for it.
  *
  * The fields are a render prop rather than children because they need the

@@ -9,6 +9,7 @@ import {
   createForm,
   deleteField,
   deleteForm,
+  ensureFormForVacancy,
   isFormOpen,
   reorderFields,
   saveField,
@@ -26,6 +27,7 @@ import {
   submitApplication,
 } from '@/services/applications/application.service';
 import { parseAnswers } from '@/lib/applications/answer-schema';
+import { STARTER_FIELDS } from '@/lib/applications/field-catalog';
 import type { ApplicationFormInput } from '@/lib/validation/applications';
 import { resetTables, useTestDb } from '../setup/pglite';
 import { row1 } from '../setup/rows';
@@ -892,6 +894,85 @@ describe('vacancy links', () => {
       code: 'conflict',
       fieldErrors: { vacancyId: ['errors.applicationForm.vacancyTaken'] },
     });
+  });
+});
+
+describe('ensureFormForVacancy — the portal is the one way to apply', () => {
+  const insertVacancy = async (overrides: Partial<typeof vacancies.$inferInsert> = {}) => {
+    const [vacancy] = await getDb()
+      .insert(vacancies)
+      .values({
+        slugAr: 'منسق-ميداني',
+        slugEn: 'field-officer',
+        titleAr: 'منسق ميداني',
+        titleEn: 'Field officer',
+        type: 'job',
+        deadline: '2030-08-01',
+        status: 'published',
+        ...overrides,
+      } as typeof vacancies.$inferInsert)
+      .returning();
+    return vacancy!;
+  };
+
+  it('creates a draft job form with the starter fields, titles and deadline', async () => {
+    const vacancy = await insertVacancy();
+    const form = await ensureFormForVacancy(db(), ADMIN, vacancy.id);
+
+    expect(form).not.toBeNull();
+    expect(form!).toMatchObject({
+      kind: 'job',
+      slug: 'field-officer',
+      titleAr: 'منسق ميداني',
+      titleEn: 'Field officer',
+      status: 'draft',
+      vacancyId: vacancy.id,
+      requireConsent: true,
+    });
+    // The end of the vacancy's last day in Gaza (UTC+3 in August).
+    expect(form!.closesAt?.toISOString()).toBe('2030-08-01T20:59:00.000Z');
+    expect(form!.fields.map((field) => field.key)).toEqual([...STARTER_FIELDS.job]);
+  });
+
+  it('is idempotent: a vacancy keeps the one form it has', async () => {
+    const vacancy = await insertVacancy();
+    const first = await ensureFormForVacancy(db(), ADMIN, vacancy.id);
+    const second = await ensureFormForVacancy(db(), ADMIN, vacancy.id);
+
+    expect(second!.id).toBe(first!.id);
+    const rows = await getDb()
+      .select()
+      .from(applicationForms)
+      .where(eq(applicationForms.vacancyId, vacancy.id));
+    expect(rows).toHaveLength(1);
+  });
+
+  it('gives a volunteer vacancy a volunteer form', async () => {
+    const vacancy = await insertVacancy({ type: 'volunteer' });
+    const form = await ensureFormForVacancy(db(), ADMIN, vacancy.id);
+    expect(form!.kind).toBe('volunteer');
+  });
+
+  it('creates nothing for a vacancy that takes applications by email', async () => {
+    const vacancy = await insertVacancy({
+      applicationMethod: 'email',
+      applicationEmail: 'jobs@example.org',
+    });
+    expect(await ensureFormForVacancy(db(), ADMIN, vacancy.id)).toBeNull();
+  });
+
+  it('picks a free slug when another form already uses the vacancy’s', async () => {
+    await createForm(db(), ADMIN, formInput({ slug: 'field-officer' }));
+    const vacancy = await insertVacancy();
+    const form = await ensureFormForVacancy(db(), ADMIN, vacancy.id);
+    expect(form!.slug).toBe('field-officer-2');
+  });
+
+  it('lets an editor who creates a vacancy get its form, as a draft only they cannot publish', async () => {
+    const vacancy = await insertVacancy();
+    const form = await ensureFormForVacancy(db(), EDITOR, vacancy.id);
+    expect(form!.status).toBe('draft');
+    await expect(setFormStatus(db(), EDITOR, form!.id, 'published')).rejects.toBeInstanceOf(AppError);
   });
 });
 

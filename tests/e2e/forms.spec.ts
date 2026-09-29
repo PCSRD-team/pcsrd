@@ -180,13 +180,12 @@ for (const locale of LOCALES) {
     });
   }
 
-  test.describe(`job application form (${locale})`, () => {
-    test.use({ extraHTTPHeaders: { 'x-forwarded-for': fakeIp(locale.length * 100 + 9) } });
-
-    test('on the first open vacancy: file input accepts PDF and an empty submit is rejected', async ({
-      page,
-    }, info) => {
-      const jsEnabled = info.project.use.javaScriptEnabled !== false;
+  test.describe(`vacancy applications (${locale})`, () => {
+    // The careers portal is the one way to apply. A vacancy page links to its
+    // form, gives an email address, or says applications are not open yet —
+    // it never embeds a generic form of its own.
+    test('a vacancy page applies through the portal, never an embedded form', async ({ page }) => {
+      const d = dict(locale);
       await go(page, path(locale, '/careers'));
       const first = page.locator(`main a[href^="${path(locale, '/careers/')}"]`).first();
       test.skip((await first.count()) === 0, 'no open vacancy in the live database');
@@ -194,24 +193,14 @@ for (const locale of LOCALES) {
       await first.click();
       await expect(page).toHaveURL(new RegExp(`${path(locale, '/careers/')}`));
 
-      const form = page.locator('form:has(input[name="cv"])');
-      await expect(form).toHaveCount(1);
-      await expect(form).toHaveAttribute('enctype', 'multipart/form-data');
-      await expect(form.locator('input[name="vacancyId"]')).toHaveAttribute('value', /\S/);
+      await expect(page.locator('form:has(input[name="vacancyId"])')).toHaveCount(0);
 
-      const cv = form.locator('input[name="cv"]');
-      await expect(cv).toHaveAttribute('type', 'file');
-      expect((await cv.getAttribute('accept')) ?? '').toContain('application/pdf');
-      const hint = (await cv.getAttribute('aria-describedby')) ?? '';
-      expect(hint.split(/\s+/)).toContain('cv-hint');
-
-      await expectHoneypotHidden(form);
-      if (jsEnabled) await expectHoneypotNotInTabOrder(page, form);
-
-      await submitEmpty(form);
-      const afterSubmit = page.locator('form:has(input[name="cv"])');
-      await expectServerValidation(page, afterSubmit, locale, ['name', 'email', 'phone']);
-      if (jsEnabled) await expectFocusKept(page, afterSubmit);
+      const portal = page.locator(`main a[href^="${path(locale, '/apply/')}"]`);
+      const email = page.locator('main a[href^="mailto:"]');
+      const notOpen = page.locator('main').getByText(d.careers.notOpenYet, { exact: true });
+      const closed = page.locator('main').getByText(d.contentUi.closedNotice, { exact: true });
+      const routes = (await portal.count()) + (await email.count()) + (await notOpen.count()) + (await closed.count());
+      expect(routes, 'the page offers the portal, an email, or says why not').toBeGreaterThan(0);
     });
   });
 }

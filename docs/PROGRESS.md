@@ -346,6 +346,29 @@ Every e2e spec except `visual` was run against `next dev`. What it found:
 | "A navigation group opens with Enter" | Test for a design that does not exist — the header is flat links plus a `<details>` menu | Skips, with a reason, while there are no groups |
 | Page timeouts on `/`, `/about` | Environment — first compile on `next dev` | none |
 
+## 3e. One careers portal (2026-09-29)
+
+The owner asked for **one** way to apply. There were two: the generic
+five-field `JobApplicationForm` embedded in a vacancy page (answers in the
+general inbox as `form_submissions.type = 'job'`) and the portal
+(`/apply/<slug>`, its own tables and pipeline). The live database had no
+vacancies, forms, applications or `job` submissions, so nothing was migrated.
+
+- **Removed:** `JobApplicationForm`, `submitJobApplication`,
+  `jobApplicationSchema`. The `job` value stays in the `submission_type` enum
+  (a DB type; dropping it is a migration with no benefit) and the admin
+  attachment route still serves any legacy row.
+- **A vacancy gets its form automatically.** Creating a vacancy with the
+  `form` method calls `ensureFormForVacancy()`: a **draft** portal form with
+  the kind's starter fields, the vacancy's titles, and a deadline at 23:59
+  Gaza time on its last day. Idempotent; `null` for an email vacancy.
+- **Vacancy page:** the portal's "Apply now", the email address, or — while
+  the form is a draft — `careers.notOpenYet`. Never an embedded form.
+- **Admin:** the vacancy editor has an "application form" panel (status,
+  applicant counts, manage / applicants, or a create button for an older
+  vacancy). The sidebar has one "بوابة الوظائف" group: vacancies, then
+  forms and applicants.
+
 ## 4. Facts that will bite if forgotten
 
 - **A slug param is percent-encoded when it is not ASCII.** Read it through

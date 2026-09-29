@@ -4,13 +4,14 @@ import {
   applicationFormFields,
   applicationForms,
   applications,
+  vacancies,
   type ApplicationForm,
   type ApplicationFormField,
   type ApplicationFieldOption,
 } from '@/db/schema';
-import type { ContentStatus } from '@/db/schema/enums';
+import type { ApplicationFormKind, ContentStatus } from '@/db/schema/enums';
 import { readAsActor, withActor } from '@/db/session';
-import { catalogField } from '@/lib/applications/field-catalog';
+import { STARTER_FIELDS, catalogField } from '@/lib/applications/field-catalog';
 import { zonedInputToDate } from '@/lib/time-zone';
 import { AppError, conflict, notFound } from '@/lib/errors';
 import { slugify } from '../_shared/slug';
@@ -174,46 +175,130 @@ export async function createForm(
   assertCan(actor, 'content.write');
   if (input.status === 'published') assertCan(actor, 'content.publish');
 
-  return withActor(db, actor, async (tx) => {
-    const columns = formColumns(input);
-    await assertSlugFree(tx, columns.slug);
-    await assertVacancyFree(tx, columns.vacancyId);
+  return withActor(db, actor, (tx) => insertForm(tx, actor, input, starterFields));
+}
 
-    const form = one(
-      await tx
-        .insert(applicationForms)
-        .values({
-          ...columns,
-          // A new form is a draft unless the actor may publish and asked to.
-          status: input.status,
-          createdBy: actor.id,
-          updatedBy: actor.id,
-        })
-        .returning(),
-      'application_form',
-    );
+async function insertForm(
+  tx: Tx,
+  actor: Actor,
+  input: ApplicationFormInput,
+  starterFields: readonly string[],
+): Promise<FormWithFields> {
+  const columns = formColumns(input);
+  await assertSlugFree(tx, columns.slug);
+  await assertVacancyFree(tx, columns.vacancyId);
 
-    // The starter set is written here rather than by the action so a form
-    // created by a seed script or a test arrives usable. `sortOrder` counts in
-    // tens, leaving room to insert between two fields without renumbering the
-    // whole form.
-    let order = 0;
-    for (const key of starterFields) {
-      const entry = catalogField(key);
-      if (!entry) continue;
-      await tx.insert(applicationFormFields).values(rowFromCatalog(form.id, entry, order));
-      order += 10;
-    }
+  const form = one(
+    await tx
+      .insert(applicationForms)
+      .values({
+        ...columns,
+        // A new form is a draft unless the actor may publish and asked to.
+        status: input.status,
+        createdBy: actor.id,
+        updatedBy: actor.id,
+      })
+      .returning(),
+    'application_form',
+  );
 
-    await writeAudit(tx, actor, {
-      action: 'create',
-      entityType: 'application_form',
-      entityId: form.id,
-      diff: computeDiff(null, form as unknown as Record<string, unknown>),
-    });
+  // The starter set is written here rather than by the action so a form
+  // created by a seed script or a test arrives usable. `sortOrder` counts in
+  // tens, leaving room to insert between two fields without renumbering the
+  // whole form.
+  let order = 0;
+  for (const key of starterFields) {
+    const entry = catalogField(key);
+    if (!entry) continue;
+    await tx.insert(applicationFormFields).values(rowFromCatalog(form.id, entry, order));
+    order += 10;
+  }
 
-    return loadForm(tx, form.id);
+  await writeAudit(tx, actor, {
+    action: 'create',
+    entityType: 'application_form',
+    entityId: form.id,
+    diff: computeDiff(null, form as unknown as Record<string, unknown>),
   });
+
+  return loadForm(tx, form.id);
+}
+
+/**
+ * The portal form behind a vacancy — the one way to apply for one.
+ *
+ * There used to be two: a fixed five-field form embedded in the vacancy page,
+ * with its answers in the general inbox, and this builder. A vacancy now gets
+ * its form here, created as a **draft** with the starter fields for its kind,
+ * its titles, and a deadline at the end of the vacancy's last day in the
+ * organisation's zone. Nothing goes live until someone publishes the form, and
+ * until then the vacancy page says applications are not open yet.
+ *
+ * Idempotent: a vacancy that already has a form gets that form back, and one
+ * that takes applications by email gets `null`.
+ */
+export async function ensureFormForVacancy(
+  db: Db,
+  actor: Actor,
+  vacancyId: string,
+): Promise<FormWithFields | null> {
+  assertCan(actor, 'content.write');
+
+  return withActor(db, actor, async (tx) => {
+    const vacancy = one(
+      await tx.select().from(vacancies).where(eq(vacancies.id, vacancyId)).limit(1),
+      'vacancy',
+    );
+    if (vacancy.applicationMethod !== 'form') return null;
+
+    const [existing] = await tx
+      .select({ id: applicationForms.id })
+      .from(applicationForms)
+      .where(eq(applicationForms.vacancyId, vacancyId))
+      .limit(1);
+    if (existing) return loadForm(tx, existing.id);
+
+    const kind: ApplicationFormKind = vacancy.type === 'volunteer' ? 'volunteer' : 'job';
+
+    return insertForm(
+      tx,
+      actor,
+      {
+        kind,
+        slug: await freeSlug(tx, slugify(vacancy.slugEn || vacancy.slugAr) || 'vacancy'),
+        titleAr: vacancy.titleAr,
+        titleEn: vacancy.titleEn,
+        introAr: null,
+        introEn: null,
+        status: 'draft',
+        opensAt: null,
+        closesAt: `${vacancy.deadline}T23:59`,
+        capacity: null,
+        capacityRule: 'close',
+        confirmationAr: null,
+        confirmationEn: null,
+        notifyEmails: [],
+        retentionMonths: 12,
+        allowMultiplePerEmail: false,
+        requireConsent: true,
+        vacancyId,
+      },
+      STARTER_FIELDS[kind],
+    );
+  });
+}
+
+/** `base`, or `base-2`, `base-3`… — the first one no form uses. */
+async function freeSlug(tx: Tx, base: string): Promise<string> {
+  for (let n = 1; ; n += 1) {
+    const candidate = n === 1 ? base : `${base.slice(0, 115)}-${n}`;
+    const [taken] = await tx
+      .select({ id: applicationForms.id })
+      .from(applicationForms)
+      .where(eq(applicationForms.slug, candidate))
+      .limit(1);
+    if (!taken) return candidate;
+  }
 }
 
 export async function updateForm(
