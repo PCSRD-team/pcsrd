@@ -13,7 +13,7 @@ import { LOCALES } from '@/lib/i18n/config';
  * Every message is a **dictionary key**. The server has no locale.
  */
 
-export const localeSchema = z.enum(LOCALES).default('ar');
+export const localeSchema = z.enum(LOCALES, { message: 'errors.field.invalidChoice' }).default('ar');
 
 export const emailSchema = z
   .email({ message: 'errors.field.email' })

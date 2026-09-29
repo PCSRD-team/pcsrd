@@ -333,6 +333,19 @@ old path is not a code question.
 
 ---
 
+## 3d. Browser-suite pass (2026-09-29)
+
+Every e2e spec except `visual` was run against `next dev`. What it found:
+
+| Failure | Verdict | Fix |
+|---|---|---|
+| Unknown URL (`/en/no-such-page`) served `<html id="__next_error__">` — no `lang`, no header | **Real, and in production.** A regression of `bb6fd2b`: in this multi-root-layout app a `notFound()` from the catch-all falls through to Next's bare document | The catch-all renders `NotFoundBody` itself (noindex); `src/proxy.ts` rewrites an unknown first segment with **404**. `SITE_SECTIONS` + a unit test that compares it with the directories |
+| Four public-form dropdowns showed Zod's English default error | **Real** (rule 5) | Every `z.enum` in `src/lib/validation/*` now carries a dictionary key |
+| Focus dropped to `<body>` after a failed submit | **Real** (keyboard / screen reader) | `FormShell` focuses the first `aria-invalid` field, else the submit button |
+| Turnstile's sub-scripts flagged as third-party | Test too strict | The form routes allow Turnstile's origin, not one URL |
+| "A navigation group opens with Enter" | Test for a design that does not exist — the header is flat links plus a `<details>` menu | Skips, with a reason, while there are no groups |
+| Page timeouts on `/`, `/about` | Environment — first compile on `next dev` | none |
+
 ## 4. Facts that will bite if forgotten
 
 - **A slug param is percent-encoded when it is not ASCII.** Read it through

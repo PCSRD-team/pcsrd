@@ -33,7 +33,9 @@ import { emailSchema, optionalText, phoneSchema, shortText, slugSchema } from '.
  * instead of a type error.
  */
 
-const enumOf = <T extends readonly [string, ...string[]]>(values: T) => z.enum(values);
+/** Every enum speaks through the dictionary — Zod's own default is English prose. */
+const enumOf = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.enum(values, { message: 'errors.field.invalidChoice' });
 
 const status = enumOf(contentStatus.enumValues).default('draft');
 const translation = enumOf(translationStatus.enumValues).default('ar_only');
@@ -233,14 +235,14 @@ export const vacancySchema = z
     type: enumOf(vacancyType.enumValues).default('job'),
     locationAr: optionalText(120).nullable(),
     locationEn: optionalText(120).nullable(),
-    employmentType: z.enum(['FULL_TIME', 'PART_TIME', 'VOLUNTEER']).nullable().optional(),
+    employmentType: z.enum(['FULL_TIME', 'PART_TIME', 'VOLUNTEER'], { message: 'errors.field.invalidChoice' }).nullable().optional(),
     descriptionAr: richText,
     descriptionEn: richText,
     requirementsAr: richText,
     requirementsEn: richText,
     /** Required. A vacancy without a deadline never closes. */
     deadline: z.iso.date({ message: 'errors.field.required' }),
-    applicationMethod: z.enum(['form', 'email']).default('form'),
+    applicationMethod: z.enum(['form', 'email'], { message: 'errors.field.invalidChoice' }).default('form'),
     applicationEmail: z.union([z.email(), z.literal('')]).nullable().optional(),
     /**
      * Blank means "leave it alone": the service writes the column only when a
@@ -331,7 +333,7 @@ export const metricSchema = z
     /** Kept as a string: a float would round a beneficiary count. */
     value: z.string().regex(/^\d{1,12}(\.\d{1,2})?$/, { message: 'errors.field.number' }),
     unit: shortText(1, 40),
-    displayPrefix: z.enum(['+', '~']).nullable().optional(),
+    displayPrefix: z.enum(['+', '~'], { message: 'errors.field.invalidChoice' }).nullable().optional(),
     programId: optionalUuid,
     projectId: optionalUuid,
     periodStart: z.iso.date(),
@@ -513,7 +515,7 @@ export const redirectSchema = z
      * `proxy` resolves the destination against the site anyway.
      */
     destinationPath: sitePath,
-    statusCode: z.enum(REDIRECT_STATUS_CODES).default('308'),
+    statusCode: z.enum(REDIRECT_STATUS_CODES, { message: 'errors.field.invalidChoice' }).default('308'),
   })
   .refine((v) => v.sourcePath !== v.destinationPath, {
     path: ['destinationPath'],
@@ -546,7 +548,7 @@ export const setUserFlagSchema = z.object({
    * `'true'` or `'false'` from a submit button's value. Not `z.coerce.boolean()`,
    * which is `Boolean(value)` and turns the string `'false'` into `true`.
    */
-  value: z.enum(['true', 'false']).transform((v) => v === 'true'),
+  value: z.enum(['true', 'false'], { message: 'errors.field.invalidChoice' }).transform((v) => v === 'true'),
 });
 
 // ── Row actions ──────────────────────────────────────────────────────────
@@ -586,14 +588,14 @@ export const ADMIN_RETURN_PATH = /^\/admin(?:\/[\w-]+)*\/?(?:\?[\w=&%+.-]*)?$/;
 const adminReturnPath = z.string().regex(ADMIN_RETURN_PATH).default('/admin');
 
 export const rowStatusSchema = z.object({
-  entity: z.enum(STATUS_ENTITIES),
+  entity: z.enum(STATUS_ENTITIES, { message: 'errors.field.invalidChoice' }),
   id: uuid,
   status: enumOf(contentStatus.enumValues),
   returnTo: adminReturnPath,
 });
 
 export const rowDeleteSchema = z.object({
-  entity: z.enum(DELETE_ENTITIES),
+  entity: z.enum(DELETE_ENTITIES, { message: 'errors.field.invalidChoice' }),
   id: uuid,
   returnTo: adminReturnPath,
 });

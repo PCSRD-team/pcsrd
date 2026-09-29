@@ -9,6 +9,7 @@ import {
   splitLocalePath,
 } from '@/lib/i18n/config';
 import { buildAdminCsp } from '@/lib/security/csp';
+import { isSiteSection } from '@/lib/site-sections';
 
 /**
  * `proxy.ts`, not `middleware.ts` — the file was renamed in Next 16 and the old
@@ -120,8 +121,18 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const [, first] = pathname.split('/');
-  if (isLocale(first)) return NextResponse.next();
+  const [, first, section] = pathname.split('/');
+  if (isLocale(first)) {
+    // An unknown section is a real 404. The catch-all route renders the
+    // designed page inside the site layout — `notFound()` there falls through
+    // to Next's bare error document in this multi-root-layout app — and this
+    // rewrite to the same URL is what carries the status. See
+    // `[...notFound]/page.tsx`.
+    if (section && !isSiteSection(section)) {
+      return NextResponse.rewrite(request.nextUrl, { status: 404 });
+    }
+    return NextResponse.next();
+  }
 
   // A returning visitor's choice wins over their browser's; a first visit falls
   // back to Accept-Language, and Arabic when that says nothing useful.

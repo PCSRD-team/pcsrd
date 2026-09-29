@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { SubmissionResult } from '@/actions/public/forms';
 import type { ActionErr } from '@/lib/errors';
@@ -84,6 +84,22 @@ export function FormShell<TData extends { reference: string } = { reference: str
   intro?: ReactNode;
 }) {
   const [state, formAction] = useActionState(action, null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Where focus goes after a refusal. The submit button is disabled while the
+  // action runs, so the browser drops focus to <body> and a keyboard or
+  // screen-reader user is sent back to the top of the page. The first invalid
+  // field is where they need to be; failing that — a captcha or rate-limit
+  // refusal names no field — the submit button they just pressed. The
+  // assertive live region still announces the message either way.
+  useEffect(() => {
+    if (!state || state.ok) return;
+    const form = formRef.current;
+    const target =
+      form?.querySelector<HTMLElement>('[aria-invalid="true"]') ??
+      form?.querySelector<HTMLElement>('button[type="submit"]');
+    target?.focus();
+  }, [state]);
 
   if (state?.ok) {
     return (
@@ -106,7 +122,7 @@ export function FormShell<TData extends { reference: string } = { reference: str
     // `noValidate`: the server is the validator, and its messages are the
     // translated ones. The browser's own bubbles would pre-empt them in the
     // browser's language, not the page's.
-    <form action={formAction} noValidate className="grid gap-6">
+    <form ref={formRef} action={formAction} noValidate className="grid gap-6">
       {/* The locale travels with the submission so the acknowledgement email is
           written in the language the sender used, not the language of whoever
           reads the inbox. */}

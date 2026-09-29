@@ -93,7 +93,14 @@ test.describe('no third-party scripts on (site) routes', () => {
         expect(foreign.filter((src) => !allowed.includes(src)), 'foreign <script src> on a (site) route').toEqual([]);
 
         // 2. Script *requests* actually made by the page.
-        const unexpectedRequests = external.filter((src) => !allowed.includes(src));
+        // Turnstile's loader pulls a versioned build and a blob worker from its
+        // own origin; that origin is what the form routes allow, not one URL.
+        const turnstileOrigin = new URL(TURNSTILE_SRC).origin;
+        const unexpectedRequests = external.filter(
+          (src) =>
+            !allowed.includes(src) &&
+            !(FORM_ROUTES.has(route) && new URL(src).origin === turnstileOrigin),
+        );
         expect(unexpectedRequests, 'external script requests').toEqual([]);
 
         // 3. No inline analytics / tag-manager signatures.
