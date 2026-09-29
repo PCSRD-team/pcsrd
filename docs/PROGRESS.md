@@ -322,9 +322,9 @@ two need a step on the live project (below).
 | 14 | A second form linked to the same vacancy failed as `errors.unexpected` | `assertVacancyFree` → field error |
 | 15 | Dead code | `countApplications`, `assertFormEditable` removed |
 
-**Still needs the live project** (blocked on permission to touch production,
-§6): push the bucket migration above with `supabase db push`, then run the
-§5.4 browser pass.
+**Live project:** the bucket migration is applied — verified 2026-09-29 through
+the Supabase MCP (`storage.buckets.allowed_mime_types` carries all nine types).
+The §5.4 admin browser pass still needs an admin session.
 
 **Still the owner's decision:** the old `JobApplicationForm` (into
 `form_submissions`) and the portal both exist; a vacancy with a linked form
@@ -334,6 +334,16 @@ old path is not a code question.
 ---
 
 ## 4. Facts that will bite if forgotten
+
+- **A slug param is percent-encoded when it is not ASCII.** Read it through
+  `decodeParam()` (`src/lib/route-params.ts`) in every page and image route, or
+  an Arabic slug matches nothing (§5.1.3).
+- **`next start` runs on one database connection** (`max: 1`, the serverless
+  rule) against a database in Tokyo, about 3 s a query from outside Japan.
+  Concurrent local requests queue behind each other; a polling loop that
+  abandons requests will stack them until every page appears to hang. Run
+  Playwright against it with `--workers=1`. Vercel gives each invocation its
+  own connection, so this is a local artefact only.
 
 - `cacheComponents` stays **off**. Turning it on breaks `unstable_cache`,
   `revalidate` and `force-dynamic`, which the whole caching design rests on.
@@ -511,7 +521,37 @@ motivated the item does not exist, so the cost buys nothing.
 Revisit only if a real 404 status is needed for compliance or analytics, which
 is the one reason the Next documentation itself gives.
 
-### 5.1.3 `/[locale]/programs/[slug]` ships no heading in its SSR HTML — **CONFIRMED in production, cause narrowed, not fixed**
+### 5.1.3 `/[locale]/programs/[slug]` ships no heading in its SSR HTML — **FIXED 2026-09-29**
+
+**Cause:** the slug reached the page **percent-encoded**. A probe logged
+`"%D8%A7%D9%84%D8%AA..." NULL` on the server render and `"التعافي-المبكر" FOUND`
+once decoded. Every slug in the default locale is Arabic, so the lookup matched
+nothing, the page called `notFound()` after its shell had streamed, and the HTML
+was the skeleton; the browser then rebuilt the page from the RSC payload with the
+decoded value. It was never programme-specific: the only other published item is
+a news post with a Latin slug (`ewttw`), which is why news looked fine. The
+earlier "`null` after ~1 s" measurement below was the whole answer.
+
+**Fix:** `src/lib/route-params.ts` → `decodeParam()`, applied to all seven slug
+pages and their five share-image routes (`generateImageMetadata` too, which also
+stops the build logging a failed query for the slug-less call it makes while
+collecting page data). Verified against a production build: the prerendered
+`ar/programs/التعافي-المبكر.html` went from `h1=0` to `h1=1`. Guarded by
+`tests/unit/route-params.test.ts` and a new e2e assertion in `routes.spec.ts`
+that reads the **response body**, not the DOM.
+
+Two things the same pass found and fixed alongside it:
+
+- **A detail page's meta description could be empty.** News, stories and
+  programmes now fall back to the start of their body text, and news to the
+  section lead after that.
+- **`routes.spec.ts` compared a percent-encoded `URL.pathname` with Arabic
+  text**, and did not know the documented `ar_only` rule (no English alternate;
+  the English page canonicalises to Arabic). It now decodes, and checks
+  whichever of the two shapes the page chose. Run against `next dev`: all
+  detail routes pass in both locales.
+
+The investigation notes below are kept for the record.
 
 Found 2026-09-22 by fetching served HTML rather than by reading code, which is
 the only way this class of defect shows up.
@@ -675,6 +715,12 @@ Done:
 ---
 
 ## 6. Blocked on the owner
+
+**Found 2026-09-29, before launch:** the only published news post on the live
+site is a test entry — title `test`, slug `ewttw` / `teeee`, no excerpt and no
+body. Unpublish or delete it. (The page no longer ships without a meta
+description — the news lead is the last fallback — but a post called "test" is
+not something to launch with.)
 
 Nothing in §5 unblocks these; they need a credential, a decision, or
 organisational copy.

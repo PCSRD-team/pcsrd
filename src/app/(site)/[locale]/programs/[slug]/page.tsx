@@ -20,7 +20,9 @@ import { listProjects } from '@/db/queries/projects';
 import { prerenderData } from '@/lib/build-time';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
+import { decodeParam } from '@/lib/route-params';
 
 export const revalidate = 3600;
 
@@ -38,7 +40,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/programs/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
   const [program, siteName] = await Promise.all([getProgramBySlug(slug, locale), getSiteName(locale)]);
   if (!program) return {};
@@ -52,7 +55,11 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/programs
     locale,
     path: { ar: `/programs/${program.slugAr}`, en: `/programs/${program.slugEn}` },
     title: seoFallback(seoTitle, program.title, siteName),
-    description: seoFallback(seoDescription, program.tagline),
+    description: seoFallback(
+      seoDescription,
+      program.tagline,
+      richTextToPlainText(program.introduction, 160),
+    ),
     siteName,
     translationStatus: toTranslationStatus(program.translationStatus),
     noIndex: program.noIndex,
@@ -60,7 +67,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/programs
 }
 
 export default async function ProgramPage({ params }: PageProps<'/[locale]/programs/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
   // `listPrograms` needs nothing from this programme, so it belongs in the

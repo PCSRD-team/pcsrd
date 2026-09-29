@@ -44,7 +44,35 @@ async function expectDocumentShape(page: Page, locale: Locale, route: string) {
   await expect(canonical, 'canonical link').toHaveCount(1);
   const canonicalHref = await canonical.getAttribute('href');
   expect(canonicalHref, 'canonical must be absolute').toMatch(/^https?:\/\//);
-  expect(new URL(canonicalHref ?? '').pathname, 'canonical must point at this locale route').toBe(path(locale, route));
+  // `URL.pathname` is percent-encoded; the route is text. An Arabic slug
+  // compared raw against encoded never matches, however correct the tag is.
+  const canonicalPath = decodeURIComponent(new URL(canonicalHref ?? '').pathname);
+
+  // A noindexed page — an unwritten policy, a record marked `noIndex` —
+  // canonicalises to itself and advertises no alternates (`buildMetadata`).
+  const noIndexed = (await page.locator('meta[name="robots"][content*="noindex"]').count()) > 0;
+  if (noIndexed) {
+    // …unless it is the English page of an `ar_only` record, which is
+    // noindexed *and* canonicalises to its Arabic original.
+    if (locale === 'en' && canonicalPath.startsWith('/ar/')) return;
+    expect(canonicalPath, 'a noindexed page canonicalises to itself').toBe(path(locale, route));
+    return;
+  }
+
+  // An `ar_only` record advertises no English alternate on either page, and
+  // its English page canonicalises to the Arabic one — the documented rule in
+  // `src/lib/seo/metadata.ts`. The test cannot see the record's status, but
+  // it can see which of the two shapes the page chose, and check that shape.
+  const untranslated = (await page.locator('link[rel="alternate"][hreflang="en"]').count()) === 0;
+  if (untranslated) {
+    if (locale === 'en') {
+      expect(canonicalPath, 'an untranslated English page canonicalises to Arabic').toMatch(/^\/ar\//);
+    } else {
+      expect(canonicalPath, 'canonical must point at this locale route').toBe(path(locale, route));
+    }
+    return;
+  }
+  expect(canonicalPath, 'canonical must point at this locale route').toBe(path(locale, route));
 
   for (const lang of ['ar', 'en', 'x-default'] as const) {
     const alt = page.locator(`link[rel="alternate"][hreflang="${lang}"]`);
@@ -52,7 +80,11 @@ async function expectDocumentShape(page: Page, locale: Locale, route: string) {
     const href = await alt.getAttribute('href');
     expect(href, `hreflang=${lang} href`).toMatch(/^https?:\/\//);
     const expectedLocale = lang === 'x-default' ? 'ar' : lang;
-    expect(new URL(href ?? '').pathname, `hreflang=${lang} target`).toBe(path(expectedLocale, route));
+    const target = decodeURIComponent(new URL(href ?? '').pathname);
+    // A detail page's slug differs per locale, so only the locale prefix of
+    // the other language's alternate is comparable; its own must match.
+    if (expectedLocale === locale) expect(target, `hreflang=${lang} target`).toBe(path(locale, route));
+    else expect(target, `hreflang=${lang} target`).toMatch(new RegExp(`^/${expectedLocale}(/|$)`));
   }
 }
 
@@ -83,6 +115,23 @@ test.describe('detail routes', () => {
       const route = (href as string).replace(new RegExp(`^/${siteLocale}`), '');
       await expectDocumentShape(page, siteLocale, route);
     });
+
+    // The served HTML, not the live DOM. An Arabic slug once reached the page
+    // percent-encoded, matched nothing, and the response was the loading
+    // skeleton — the browser then rebuilt the page from the RSC payload, so
+    // every DOM assertion above passed. Only the raw body shows it.
+    test(`first published ${prefix}[slug] ships its heading in the HTML`, async ({
+      page,
+      request,
+      siteLocale,
+    }) => {
+      const href = await discoverDetail(page, siteLocale, prefix, list);
+      test.skip(!href, `no published item under ${list} in the live database`);
+
+      // A generous timeout: on `next dev` the first request compiles the route.
+      const body = await (await request.get(href as string, { timeout: 120_000 })).text();
+      expect(body, 'served HTML carries an <h1>').toMatch(/<h1[\s>]/);
+    });
   }
 });
 
@@ -97,10 +146,27 @@ test.describe('unknown slugs', () => {
     '/legal/no-such-page-e2e',
   ];
 
+  // Detail routes stream: their shell is sent before the lookup can fail, so
+  // the status is already 200 when `notFound()` runs. Next marks that body
+  // `noindex` instead, which is what keeps a dead link out of the index —
+  // decided and measured in docs/PROGRESS.md §5.1.2. Asserting a 404 there
+  // tested a behaviour the project chose not to have.
+  const STREAMED = ['/projects/', '/news/', '/programs/', '/impact/stories/', '/careers/'];
+
   for (const route of unknown) {
     test(`${route} → 404 with the designed not-found page`, async ({ page, siteLocale }) => {
       const response = await go(page, path(siteLocale, route));
-      expect(response?.status()).toBe(404);
+      if (STREAMED.some((prefix) => route.startsWith(prefix))) {
+        expect([200, 404]).toContain(response?.status());
+        if (response?.status() === 200) {
+          await expect(
+            page.locator('meta[name="robots"][content*="noindex"]').first(),
+            'a streamed not-found is noindexed',
+          ).toBeAttached();
+        }
+      } else {
+        expect(response?.status()).toBe(404);
+      }
       await expect(page.locator('main')).toHaveCount(1);
       await expectDesignedNotFound(page);
       // The chrome survives the 404 — a lost reader still has the header.

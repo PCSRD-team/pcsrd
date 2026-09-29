@@ -15,7 +15,9 @@ import { prerenderData } from '@/lib/build-time';
 import { formatDate, timeOf, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
+import { decodeParam } from '@/lib/route-params';
 
 export const revalidate = 3600;
 
@@ -28,9 +30,14 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/news/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
-  const [post, siteName] = await Promise.all([getPostBySlug(slug, locale), getSiteName(locale)]);
+  const [post, siteName, dict] = await Promise.all([
+    getPostBySlug(slug, locale),
+    getSiteName(locale),
+    getDictionary(locale),
+  ]);
   if (!post) return {};
 
   // SEO-013: the English SEO title is read on English pages, falling back to Arabic.
@@ -42,7 +49,14 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/news/[sl
     locale,
     path: { ar: `/news/${post.slugAr}`, en: `/news/${post.slugEn}` },
     title: seoFallback(seoTitle, post.title, siteName),
-    description: seoFallback(seoDescription, post.excerpt),
+    // The body, then the section's own lead, so a post with no excerpt — or
+    // no text at all — still ships a description rather than none.
+    description: seoFallback(
+      seoDescription,
+      post.excerpt,
+      richTextToPlainText(post.body, 160),
+      dict.news.lead,
+    ),
     siteName,
     type: 'article',
     publishedTime: post.publishedAt,
@@ -53,7 +67,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/news/[sl
 }
 
 export default async function PostPage({ params }: PageProps<'/[locale]/news/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
   const [dict, post] = await Promise.all([getDictionary(locale), getPostBySlug(slug, locale)]);

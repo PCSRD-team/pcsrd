@@ -13,7 +13,9 @@ import { getOrganization, getPageByKey } from '@/db/queries/content';
 import { formatDate, toDateTimeAttr } from '@/lib/format';
 import { DEFAULT_LOCALE, isLocale, localePath, type Locale } from '@/lib/i18n/config';
 import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
+import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback, type TranslationStatus } from '@/lib/seo/metadata';
+import { decodeParam } from '@/lib/route-params';
 
 export const revalidate = 3600;
 
@@ -53,7 +55,8 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/legal/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale) || !isLegalKey(slug)) return {};
   const [dict, org, page] = await Promise.all([
     getDictionary(locale),
@@ -63,15 +66,23 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/legal/[s
   const seoTitle = locale === 'ar' ? page?.seoTitleAr : page?.seoTitleEn?.trim() || page?.seoTitleAr;
   const seoDescription =
     locale === 'ar' ? page?.seoDescriptionAr : page?.seoDescriptionEn?.trim() || page?.seoDescriptionAr;
+  const published = Boolean(page && hasBody(page.body));
 
   return buildMetadata({
     locale,
     path: `/legal/${slug}`,
     title: seoFallback(seoTitle, page?.title, legalTitle(dict, slug)),
-    description: seoFallback(seoDescription),
+    // The policy's own text, then — while it is unwritten — the sentence the
+    // page itself shows, so the tag is never absent.
+    description: seoFallback(
+      seoDescription,
+      published ? richTextToPlainText(page?.body, 160) : null,
+      dict.legalPages.unpublishedBody,
+    ),
     siteName: organizationName(org),
     translationStatus: page ? toTranslationStatus(page.translationStatus) : null,
-    noIndex: page?.noIndex ?? false,
+    // A placeholder saying "not published yet" is not a page to index.
+    noIndex: !published || (page?.noIndex ?? false),
   });
 }
 
@@ -104,7 +115,8 @@ function LegalNav({ locale, dict, current }: { locale: Locale; dict: Dictionary;
 }
 
 export default async function LegalPage({ params }: PageProps<'/[locale]/legal/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale) || !isLegalKey(slug)) notFound();
 
   const [dict, page] = await Promise.all([getDictionary(locale), getPageByKey(slug, locale)]);

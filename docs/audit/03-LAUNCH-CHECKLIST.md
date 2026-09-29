@@ -41,6 +41,10 @@ Ordered so that the things that stop a launch come first.
       as `postgres`. `postgres` has `BYPASSRLS`, so the wrong value disables all 85 policies
       while the site keeps working. I never read a secret value, so I cannot check this.
       `scripts/assert-rls.ts` now checks the role's attributes once you can run it.
+      **Local half verified 2026-09-29:** `.env.local` connects as
+      `app_runtime.<ref>` on `:6543`, and the live `app_runtime` role has
+      `rolbypassrls = false`. **Still open:** the value set in Vercel's
+      environment, which only the owner can read.
 
 ---
 
@@ -93,7 +97,8 @@ Ordered so that the things that stop a launch come first.
       They are mine, not the organisation's voice. See `04-OPEN-QUESTIONS.md` B2.
 - [ ] **MY-ACTION-REQUIRED** — Point `MAIL_TO_SENSITIVE` at the safeguarding focal point, not
       a shared inbox.
-- [ ] **TODO** — Add a key ring to `src/lib/security/crypto.ts`: `decryptPayload` reads
+- [x] **DONE** (verified 2026-09-29: `keyFor(keyId)` selects the key by the row's id,
+      `SUBMISSION_ENC_KEY_<id>` holds retired keys) — Add a key ring to `src/lib/security/crypto.ts`: `decryptPayload` reads
       `SUBMISSION_ENC_KEY` only and ignores the row's `payload_key_id`, so the rotation that
       `DEPLOYMENT.md` §2 describes ("add a key, bump the id") is not yet possible without
       losing every existing complaint. Until it lands, the key must not be rotated. See
@@ -149,7 +154,7 @@ Ordered so that the things that stop a launch come first.
       against the live project — three buckets present with the expected limits and public
       flags, two `SELECT` policies, none on `applications`. One drift found and corrected by
       the migration: `media` allowed `image/svg+xml`.
-- [ ] **MY-ACTION-REQUIRED** — Run `supabase link` + `supabase db push` once. The live
+- [x] **DONE** (verified 2026-09-29 through the Supabase MCP: the `applications` bucket carries the widened MIME list) — Run `supabase link` + `supabase db push` once. The live
       project has no `supabase_migrations` schema yet; the push creates it and applies the
       0-byte file (no-op) and the storage file. Then run the two verification queries in
       `DEPLOYMENT.md` §3d.
@@ -163,7 +168,7 @@ Ordered so that the things that stop a launch come first.
 - [ ] **MY-ACTION-REQUIRED** — Decide what happens to the `main` branch pointer. See
       `04-OPEN-QUESTIONS.md` B3. Nothing has been pushed.
 - [x] **DONE** — Six list routes have `loading.tsx` rendering the designed skeleton.
-- [ ] **TODO** — Delete the 28 unreferenced Server Action exports. Every `'use server'`
+- [x] **DONE** (verified 2026-09-29: every `'use server'` export is referenced) — Delete the 28 unreferenced Server Action exports. Every `'use server'`
       export is a live POST endpoint whether or not any UI calls it, so these are unaudited,
       never-manually-tested mutation endpoints in production.
 - [x] **DONE** — `global-error.tsx` added. With three root layouts and nothing above them,

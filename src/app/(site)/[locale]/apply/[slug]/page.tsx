@@ -18,6 +18,7 @@ import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
 import { isFormOpen } from '@/services/applications/application-form.service';
+import { decodeParam } from '@/lib/route-params';
 
 /**
  * The public application page.
@@ -42,7 +43,8 @@ export const revalidate = 300;
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/apply/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
 
   const [form, siteName] = await Promise.all([
@@ -73,7 +75,8 @@ export async function generateMetadata({
 }
 
 export default async function ApplyPage({ params }: PageProps<'/[locale]/apply/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
   const [dict, form] = await Promise.all([getDictionary(locale), getApplicationForm(slug, locale)]);

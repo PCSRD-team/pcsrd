@@ -30,11 +30,12 @@ import postgres from 'postgres';
  *
  * ## What it applies
  *
- * Only the four below, in order, each inside its own transaction. Probed
+ * Only the files below, in order, each inside its own transaction. Probed
  * against the live database on 2026-09-25:
  *
  *   0002, 0003, 0004, 0005  already applied
- *   0006, 0007, 0008, 0009  pending  ← this script
+ *   0006, 0007, 0008, 0009  applied 2026-09-25
+ *   0010                    pending  ← this script
  *
  * Each file is re-probed at run time rather than trusted from that list, so a
  * file someone applied by hand in between is skipped rather than replayed.
@@ -84,6 +85,19 @@ const MIGRATIONS: Pending[] = [
             join pg_namespace n on n.oid = p.pronamespace
            where n.nspname='app' and p.proname='submit_application'`
       )[0]?.n ?? 0) > 0,
+  },
+  {
+    // Applied when the stray function is gone, or already carries a pinned
+    // search_path — either way there is nothing left for the file to do.
+    file: '0010_pin_submission_reference_search_path.sql',
+    probe: async (sql) =>
+      (
+        await sql`
+          select coalesce(bool_and(p.proconfig::text like '%search_path%'), true) as ok
+            from pg_proc p
+            join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.proname = 'generate_submission_reference'`
+      )[0]?.ok === true,
   },
 ];
 

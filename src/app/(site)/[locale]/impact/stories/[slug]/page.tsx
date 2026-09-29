@@ -15,7 +15,9 @@ import { prerenderData } from '@/lib/build-time';
 import { formatDate, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
+import { decodeParam } from '@/lib/route-params';
 
 export const revalidate = 3600;
 
@@ -28,7 +30,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/impact/stories/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
   const [story, siteName] = await Promise.all([getStoryBySlug(slug, locale), getSiteName(locale)]);
   if (!story) return {};
@@ -41,7 +44,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/impact/s
     locale,
     path: { ar: `/impact/stories/${story.slugAr}`, en: `/impact/stories/${story.slugEn}` },
     title: seoFallback(seoTitle, story.title, siteName),
-    description: seoFallback(seoDescription, story.summary),
+    description: seoFallback(seoDescription, story.summary, richTextToPlainText(story.body, 160)),
     siteName,
     type: 'article',
     publishedTime: story.publishedAt,
@@ -57,7 +60,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/impact/s
  * an attestation, in the story's own words.
  */
 export default async function StoryPage({ params }: PageProps<'/[locale]/impact/stories/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
   const [dict, story] = await Promise.all([getDictionary(locale), getStoryBySlug(slug, locale)]);

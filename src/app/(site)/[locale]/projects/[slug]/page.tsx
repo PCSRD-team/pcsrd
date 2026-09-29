@@ -19,6 +19,7 @@ import { formatPeriod } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
+import { decodeParam } from '@/lib/route-params';
 
 export const revalidate = 3600;
 
@@ -31,7 +32,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/projects/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
   const [project, siteName, slugs] = await Promise.all([
     getProjectBySlug(slug, locale),
@@ -62,7 +64,8 @@ const STATE_TONE = { active: 'active', completed: 'complete', planned: 'planned'
 
 
 export default async function ProjectPage({ params }: PageProps<'/[locale]/projects/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
   const [dict, project] = await Promise.all([getDictionary(locale), getProjectBySlug(slug, locale)]);

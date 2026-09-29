@@ -23,6 +23,7 @@ import { formSlice } from '@/lib/i18n/form-dict';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
+import { decodeParam } from '@/lib/route-params';
 
 export const revalidate = 300;
 
@@ -35,7 +36,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/careers/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
   const [vacancy, siteName] = await Promise.all([getVacancyBySlug(slug, locale), getSiteName(locale)]);
   if (!vacancy) return {};
@@ -58,7 +60,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/careers/
 }
 
 export default async function VacancyPage({ params }: PageProps<'/[locale]/careers/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
   const [dict, vacancy, org] = await Promise.all([
