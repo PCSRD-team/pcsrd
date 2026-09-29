@@ -41,9 +41,6 @@ export const pages = pgTable(
     slugShapeCheck('pages', t),
     uniqueIndex('pages_slug_ar_idx').on(t.slugAr),
     uniqueIndex('pages_slug_en_idx').on(t.slugEn),
-    // Live duplicates of the two slug indexes from the hand-written DDL.
-    uniqueIndex('ux_pages_slug_ar').on(t.slugAr),
-    uniqueIndex('ux_pages_slug_en').on(t.slugEn),
   ],
 );
 

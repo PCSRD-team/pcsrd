@@ -87,16 +87,24 @@ const MIGRATIONS: Pending[] = [
       )[0]?.n ?? 0) > 0,
   },
   {
-    // Applied when the stray function is gone, or already carries a pinned
-    // search_path — either way there is nothing left for the file to do.
+    // Applied when the stray function is gone.
     file: '0010_pin_submission_reference_search_path.sql',
     probe: async (sql) =>
       (
+        await sql`select to_regprocedure('public.generate_submission_reference()') is null as ok`
+      )[0]?.ok === true,
+  },
+  {
+    // Applied when the case-insensitive email index exists, the duplicates
+    // are gone and PUBLIC no longer holds EXECUTE on the portal functions.
+    file: '0011_harden_and_dedupe.sql',
+    probe: async (sql) =>
+      (
         await sql`
-          select coalesce(bool_and(p.proconfig::text like '%search_path%'), true) as ok
-            from pg_proc p
-            join pg_namespace n on n.oid = p.pronamespace
-           where n.nspname = 'public' and p.proname = 'generate_submission_reference'`
+          select to_regclass('public.applications_email_lower_idx') is not null
+             and to_regclass('public.ux_vacancies_slug_en') is null
+             and not has_function_privilege('anon', 'app.purge_expired_applications()', 'execute')
+             as ok`
       )[0]?.ok === true,
   },
 ];

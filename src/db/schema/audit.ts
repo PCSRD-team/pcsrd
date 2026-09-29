@@ -74,12 +74,6 @@ export const auditLogs = pgTable(
     index('audit_entity_idx').on(t.entityType, t.entityId, t.createdAt.desc()),
     index('audit_actor_idx').on(t.actorId, t.createdAt.desc()),
     index('audit_action_idx').on(t.action, t.createdAt.desc()),
-    // Live duplicates of the three above, created by the hand-written DDL the
-    // database was built from. Kept so `drizzle/` describes production; drop
-    // them there first, then here.
-    index('ix_audit_entity').on(t.entityType, t.entityId, t.createdAt.desc()),
-    index('ix_audit_actor').on(t.actorId, t.createdAt.desc()),
-    index('ix_audit_action').on(t.action, t.createdAt.desc()),
   ],
 );
 

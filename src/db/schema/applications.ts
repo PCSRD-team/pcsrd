@@ -354,7 +354,9 @@ export const applications = pgTable(
     index('applications_form_idx').on(t.formId, t.createdAt.desc()),
     index('applications_status_idx').on(t.formId, t.status),
     index('applications_purge_idx').on(t.purgeAfter),
-    index('applications_email_idx').on(t.formId, t.applicantEmail),
+    // `lower()` because `app.submit_application()` compares addresses
+    // case-insensitively; an index on the raw column only narrows by form.
+    index('applications_email_lower_idx').on(t.formId, sql`lower(${t.applicantEmail})`),
   ],
 );
 

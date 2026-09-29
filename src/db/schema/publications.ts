@@ -55,12 +55,10 @@ export const publications = pgTable(
       .on(t.type, t.displayOrder)
       .where(sql`${t.status} = 'published'`),
     // The `ix_*` / `ux_*` family is the hand-written DDL the live database was
-    // built from; the two `ux_*` duplicate the slug indexes above.
+    // built from; its exact duplicates were dropped in drizzle/0011.
     index('ix_publications_public')
       .on(t.type, t.publishedYear.desc())
       .where(sql`${t.status} = 'published'`),
-    uniqueIndex('ux_publications_slug_ar').on(t.slugAr),
-    uniqueIndex('ux_publications_slug_en').on(t.slugEn),
   ],
 );
 

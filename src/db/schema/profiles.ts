@@ -37,8 +37,6 @@ export const profiles = pgTable(
   (t) => [
     index('profiles_role_idx').on(t.role).where(sql`${t.isActive}`),
     index('ix_profiles_active').on(t.isActive),
-    // Live duplicate of `profiles_role_idx` from the hand-written DDL.
-    index('ix_profiles_role').on(t.role).where(sql`${t.isActive}`),
   ],
 );
 

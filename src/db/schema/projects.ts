@@ -91,8 +91,8 @@ export const projects = pgTable(
       sql`${t.endDate} is null or ${t.startDate} is null or ${t.endDate} >= ${t.startDate}`,
     ),
     // The `ix_*` family is the hand-written DDL the live database was built
-    // from. `ix_projects_govs` / `ix_projects_themes` duplicate the two GIN
-    // indexes above exactly; the rest are distinct shapes.
+    // from. Its exact duplicates were dropped in drizzle/0011; the rest are
+    // distinct shapes.
     index('ix_projects_program').on(t.programId),
     index('ix_projects_state').on(t.projectState, t.startDate.desc()),
     index('ix_projects_public')
@@ -101,14 +101,10 @@ export const projects = pgTable(
     index('ix_projects_featured')
       .on(t.publishedAt.desc())
       .where(sql`${t.status} = 'published' and ${t.isFeatured}`),
-    index('ix_projects_govs').using('gin', t.governorates),
-    index('ix_projects_themes').using('gin', t.themes),
     index('ix_projects_search_ar').using(
       'gin',
       sql`to_tsvector('simple'::regconfig, ((COALESCE(${t.titleAr}, ''::text) || ' '::text) || COALESCE(${t.summaryAr}, ''::text)))`,
     ),
-    uniqueIndex('ux_projects_slug_ar').on(t.slugAr),
-    uniqueIndex('ux_projects_slug_en').on(t.slugEn),
   ],
 );
 
@@ -128,8 +124,6 @@ export const projectPartners = pgTable(
     fk('project_partners_project_id_fkey', t.projectId, projects.id, 'cascade'),
     fk('project_partners_partner_id_fkey', t.partnerId, partners.id, 'cascade'),
     index('project_partners_partner_idx').on(t.partnerId),
-    // Live duplicate of `project_partners_partner_idx` from the hand-written DDL.
-    index('ix_project_partners_partner').on(t.partnerId),
   ],
 );
 

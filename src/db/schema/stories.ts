@@ -77,15 +77,9 @@ export const stories = pgTable(
     index('stories_published_idx').on(t.status, t.publishedAt.desc()),
     index('stories_program_idx').on(t.programId),
     index('stories_project_idx').on(t.projectId),
-    // The `ix_*` / `ux_*` family is the hand-written DDL the live database was
-    // built from; all but `ix_stories_public` duplicate an index above.
-    index('ix_stories_program').on(t.programId),
-    index('ix_stories_project').on(t.projectId),
     index('ix_stories_public')
       .on(t.publishedAt.desc())
       .where(sql`${t.status} = 'published'`),
-    uniqueIndex('ux_stories_slug_ar').on(t.slugAr),
-    uniqueIndex('ux_stories_slug_en').on(t.slugEn),
   ],
 );
 

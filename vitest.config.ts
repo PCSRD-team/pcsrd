@@ -1,5 +1,4 @@
 import { defineConfig } from 'vitest/config';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 /**
  * Two projects, deliberately separated.
@@ -8,13 +7,19 @@ import tsconfigPaths from 'vite-tsconfig-paths';
  * `integration` — the service layer against PGlite (in-process Postgres 17).
  *                 This is what makes ~90% of the backend verifiable before any
  *                 Supabase credential exists. See docs/spec/06-BUILD-PLAN.md §10.
+ *
+ * `@/…` imports resolve through Vite's own `resolve.tsconfigPaths`. It replaced
+ * the `vite-tsconfig-paths` plugin, which did the same job and made Vite warn.
+ * Set on each project because a project does not inherit the root's `resolve`.
  */
+const resolve = { tsconfigPaths: true } as const;
+
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+  resolve,
   test: {
     projects: [
       {
-        plugins: [tsconfigPaths()],
+        resolve,
         test: {
           name: 'unit',
           include: ['tests/unit/**/*.test.ts'],
@@ -23,7 +28,7 @@ export default defineConfig({
         },
       },
       {
-        plugins: [tsconfigPaths()],
+        resolve,
         test: {
           name: 'integration',
           include: ['tests/integration/**/*.test.ts'],

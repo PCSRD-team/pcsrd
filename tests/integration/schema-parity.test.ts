@@ -15,6 +15,11 @@ import { useTestDb } from '../setup/pglite';
  * fails, either the live database changed (recapture the inventory and add a
  * migration) or a migration drifted from it (fix the migration). It must never
  * be "fixed" by editing the expectations to match the migrations.
+ *
+ * One deliberate exception, recorded here so it is not mistaken for drift:
+ * the index lists already omit the 29 `ix_*` / `ux_*` duplicates that
+ * `drizzle/0011` drops, and name `applications_email_lower_idx`. They match
+ * production once 0011 is applied (`scripts/apply-pending-migrations.ts`).
  */
 
 const getDb = useTestDb();
@@ -41,21 +46,10 @@ const CONSTRAINTS: Record<string, Record<string, string>> = {
   project_partners: { "project_partners_partner_id_fkey": 'f', "project_partners_pkey": 'p', "project_partners_project_id_fkey": 'f' },
   projects: { "projects_created_by_fkey": 'f', "projects_date_order": 'c', "projects_hero_media_id_fkey": 'f', "projects_og_media_id_fkey": 'f', "projects_pkey": 'p', "projects_program_id_fkey": 'f', "projects_slug_shape": 'c', "projects_updated_by_fkey": 'f' },
   publications: { "publications_created_by_fkey": 'f', "publications_file_ar_id_fkey": 'f', "publications_file_en_id_fkey": 'f', "publications_pkey": 'p', "publications_published_year_check": 'c', "publications_slug_shape": 'c', "publications_updated_by_fkey": 'f' },
-  // Added by drizzle/0006_rate_limit_fallback.sql. The live database does not
-  // carry it until that migration is applied — docs/PROGRESS.md §6.1.
+  // Added by drizzle/0006_rate_limit_fallback.sql; live since 2026-09-28.
   rate_limit_hits: {},
-  // ── Ahead of production ────────────────────────────────────────────────
-  //
-  // The four careers-portal tables (drizzle/0008, drizzle/0009). The live
-  // database does not carry them until those migrations are applied, exactly
-  // as `rate_limit_hits` was recorded here ahead of 0006 — docs/PROGRESS.md §6.1.
-  //
-  // These entries describe what the migration creates rather than what the
-  // 2026-09-14 inventory captured, because there is nothing in the inventory to
-  // compare against yet. That is the one case where writing the expectation
-  // from the migration is honest; for every table that exists in production it
-  // would defeat the point of this file. Recapture the inventory after the
-  // migrations are applied and these become ordinary parity rows.
+  // The four careers-portal tables (drizzle/0008, drizzle/0009), live since
+  // 2026-09-28 and verified against the live catalogue on 2026-09-29.
   application_events: {"application_events_actor_id_fkey":"f","application_events_application_id_fkey":"f","application_events_pkey":"p"},
   application_form_fields: {"application_form_fields_form_id_fkey":"f","application_form_fields_key_shape":"c","application_form_fields_options":"c","application_form_fields_pkey":"p","application_form_fields_section":"c"},
   application_forms: {"application_forms_capacity":"c","application_forms_count":"c","application_forms_created_by_fkey":"f","application_forms_pkey":"p","application_forms_retention":"c","application_forms_slug_shape":"c","application_forms_updated_by_fkey":"f","application_forms_vacancy_id_fkey":"f","application_forms_window":"c"},
@@ -67,33 +61,33 @@ const CONSTRAINTS: Record<string, Record<string, string>> = {
 };
 
 const INDEXES: Record<string, string[]> = {
-  audit_logs: ["audit_action_idx", "audit_actor_idx", "audit_entity_idx", "audit_logs_pkey", "ix_audit_action", "ix_audit_actor", "ix_audit_entity"],
-  form_submissions: ["form_submissions_pkey", "form_submissions_reference_key", "ix_submissions_handler", "ix_submissions_purge", "ix_submissions_state", "ix_submissions_type", "submissions_purge_idx", "submissions_sensitive_idx", "submissions_state_idx", "submissions_type_idx"],
-  impact_metrics: ["impact_metrics_pkey", "ix_metrics_program", "ix_metrics_project", "ix_metrics_public", "metrics_program_idx", "metrics_project_idx", "metrics_public_idx"],
-  media_assets: ["ix_media_consent", "ix_media_created_by", "ix_media_kind", "media_assets_path_key", "media_assets_pkey", "media_bucket_idx", "media_consent_idx", "media_kind_idx"],
+  audit_logs: ["audit_action_idx", "audit_actor_idx", "audit_entity_idx", "audit_logs_pkey"],
+  form_submissions: ["form_submissions_pkey", "form_submissions_reference_key", "ix_submissions_handler", "ix_submissions_state", "submissions_purge_idx", "submissions_sensitive_idx", "submissions_state_idx", "submissions_type_idx"],
+  impact_metrics: ["impact_metrics_pkey", "ix_metrics_program", "ix_metrics_public", "metrics_program_idx", "metrics_project_idx", "metrics_public_idx"],
+  media_assets: ["ix_media_created_by", "media_assets_path_key", "media_assets_pkey", "media_bucket_idx", "media_consent_idx", "media_kind_idx"],
   organization_settings: ["organization_settings_pkey"],
-  pages: ["pages_key_key", "pages_pkey", "pages_slug_ar_idx", "pages_slug_en_idx", "ux_pages_slug_ar", "ux_pages_slug_en"],
+  pages: ["pages_key_key", "pages_pkey", "pages_slug_ar_idx", "pages_slug_en_idx"],
   partners: ["ix_partners_public", "ix_partners_type", "partners_pkey", "partners_type_idx"],
-  people: ["ix_people_public", "people_pkey", "people_public_idx"],
+  people: ["people_pkey", "people_public_idx"],
   post_media: ["post_media_media_idx", "post_media_pkey"],
-  posts: ["ix_posts_program", "ix_posts_project", "ix_posts_public", "ix_posts_search_ar", "posts_category_idx", "posts_expiring_idx", "posts_pkey", "posts_published_idx", "posts_slug_ar_idx", "posts_slug_en_idx", "ux_posts_slug_ar", "ux_posts_slug_en"],
-  profiles: ["ix_profiles_active", "ix_profiles_role", "profiles_email_key", "profiles_pkey", "profiles_role_idx"],
+  posts: ["ix_posts_program", "ix_posts_project", "ix_posts_public", "ix_posts_search_ar", "posts_category_idx", "posts_expiring_idx", "posts_pkey", "posts_published_idx", "posts_slug_ar_idx", "posts_slug_en_idx"],
+  profiles: ["ix_profiles_active", "profiles_email_key", "profiles_pkey", "profiles_role_idx"],
   program_media: ["program_media_media_idx", "program_media_pkey"],
-  programs: ["ix_programs_hero", "ix_programs_public", "programs_key_key", "programs_pkey", "programs_slug_ar_idx", "programs_slug_en_idx", "programs_status_idx", "ux_programs_slug_ar", "ux_programs_slug_en"],
+  programs: ["ix_programs_hero", "ix_programs_public", "programs_key_key", "programs_pkey", "programs_slug_ar_idx", "programs_slug_en_idx", "programs_status_idx"],
   project_media: ["project_media_media_idx", "project_media_pkey"],
-  project_partners: ["ix_project_partners_partner", "project_partners_partner_idx", "project_partners_pkey"],
-  projects: ["ix_projects_featured", "ix_projects_govs", "ix_projects_program", "ix_projects_public", "ix_projects_search_ar", "ix_projects_state", "ix_projects_themes", "projects_featured_idx", "projects_gov_gin", "projects_pkey", "projects_program_idx", "projects_published_idx", "projects_slug_ar_idx", "projects_slug_en_idx", "projects_start_year_idx", "projects_themes_gin", "ux_projects_slug_ar", "ux_projects_slug_en"],
-  publications: ["ix_publications_public", "publications_pkey", "publications_slug_ar_idx", "publications_slug_en_idx", "publications_type_idx", "ux_publications_slug_ar", "ux_publications_slug_en"],
+  project_partners: ["project_partners_partner_idx", "project_partners_pkey"],
+  projects: ["ix_projects_featured", "ix_projects_program", "ix_projects_public", "ix_projects_search_ar", "ix_projects_state", "projects_featured_idx", "projects_gov_gin", "projects_pkey", "projects_program_idx", "projects_published_idx", "projects_slug_ar_idx", "projects_slug_en_idx", "projects_start_year_idx", "projects_themes_gin"],
+  publications: ["ix_publications_public", "publications_pkey", "publications_slug_ar_idx", "publications_slug_en_idx", "publications_type_idx"],
   rate_limit_hits: ["rate_limit_hits_bucket_time_idx"],
-  // See the note in CONSTRAINTS: ahead of production, from 0008/0009.
+  // From 0008/0009; 0011 replaced the email index with a `lower()` one.
   application_events: ["application_events_application_idx","application_events_pkey"],
   application_form_fields: ["application_form_fields_key_idx","application_form_fields_order_idx","application_form_fields_pkey"],
   application_forms: ["application_forms_open_idx","application_forms_pkey","application_forms_slug_idx","application_forms_vacancy_idx"],
-  applications: ["applications_email_idx","applications_form_idx","applications_pkey","applications_purge_idx","applications_reference_key","applications_status_idx"],
+  applications: ["applications_email_lower_idx","applications_form_idx","applications_pkey","applications_purge_idx","applications_reference_key","applications_status_idx"],
   redirects: ["redirects_pkey", "redirects_source_path_key"],
-  stories: ["ix_stories_program", "ix_stories_project", "ix_stories_public", "stories_pkey", "stories_program_idx", "stories_project_idx", "stories_published_idx", "stories_slug_ar_idx", "stories_slug_en_idx", "ux_stories_slug_ar", "ux_stories_slug_en"],
+  stories: ["ix_stories_public", "stories_pkey", "stories_program_idx", "stories_project_idx", "stories_published_idx", "stories_slug_ar_idx", "stories_slug_en_idx"],
   story_media: ["story_media_media_idx", "story_media_pkey"],
-  vacancies: ["ix_vacancies_open", "ux_vacancies_slug_ar", "ux_vacancies_slug_en", "vacancies_open_idx", "vacancies_pkey", "vacancies_slug_ar_idx", "vacancies_slug_en_idx"],
+  vacancies: ["ix_vacancies_open", "vacancies_open_idx", "vacancies_pkey", "vacancies_slug_ar_idx", "vacancies_slug_en_idx"],
 };
 
 const ENUMS: Record<string, string[]> = {
