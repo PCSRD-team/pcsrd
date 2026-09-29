@@ -6,6 +6,7 @@ import {
   listStorySlugs,
   listVacancySlugs,
 } from '@/db/queries/content';
+import { _listOpenForms } from '@/db/queries/applications';
 import { listProjectSlugs } from '@/db/queries/projects';
 import { publicEnv } from '@/lib/env.public';
 import { prerenderData } from '@/lib/build-time';
@@ -126,6 +127,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prerenderData('sitemap pages', () => listPageKeys(), []),
   ]);
 
+  // Portal forms that are taking applications now. Uncached on purpose: the
+  // sitemap is regenerated on its own schedule and must not serve a form that
+  // closed an hour ago. The slug is the same in both locales.
+  const openForms = await prerenderData('sitemap forms', () => _listOpenForms(DEFAULT_LOCALE), []);
+
   // Open positions only. A closed vacancy stays reachable for whoever
   // bookmarked it, but a sitemap that keeps advertising it invites Google
   // Jobs to list a job nobody can apply for.
@@ -175,6 +181,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly',
         priority: 0.7,
       }),
+    ),
+
+    ...openForms.flatMap((form) =>
+      entriesFor(
+        { ar: `/apply/${form.slug}`, en: `/apply/${form.slug}` },
+        { changeFrequency: 'weekly', priority: 0.6 },
+      ),
     ),
 
     // Legal pages are addressed by key, and the key is the same in both

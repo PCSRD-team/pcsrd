@@ -150,8 +150,29 @@ export async function deleteApplicationForm(formData: FormData): Promise<void> {
 
   const result = await runAction<{ id: string }>(async () => {
     const actor = await requireActor();
-    await deleteForm(db, actor, id);
-    bustForm(String(formData.get('slug') ?? ''));
+    const { slug, attachmentPaths } = await deleteForm(db, actor, id);
+
+    // The rows are gone; their files must go too, or every CV the form ever
+    // received stays in the bucket with nothing left to find it. A storage
+    // failure is logged rather than reported: the deletion the admin asked
+    // for did happen, and rolling it back is not possible anyway.
+    if (attachmentPaths.length > 0) {
+      try {
+        const { createSupabaseAdminClient } = await import('@/lib/auth/supabase-server');
+        const { error } = await createSupabaseAdminClient()
+          .storage.from('applications')
+          .remove(attachmentPaths);
+        if (error) throw error;
+      } catch (error) {
+        console.error('[application-forms] attachment cleanup failed', {
+          formId: id,
+          count: attachmentPaths.length,
+          error,
+        });
+      }
+    }
+
+    bustForm(slug);
     return ok({ id }, 'admin.deleted');
   });
 

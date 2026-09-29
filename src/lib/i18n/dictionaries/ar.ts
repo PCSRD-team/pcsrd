@@ -145,6 +145,11 @@ export const ar = {
     applyByEmail: 'التقديم عبر البريد الإلكتروني',
     closed: 'أُغلق باب التقديم',
     noOpenings: 'لا توجد شواغر مفتوحة حالياً.',
+    openForms: 'فرص يمكنك التقديم عليها مباشرة',
+    openFormsLead: 'برامج تطوّع وتدريب وفرص أخرى باب التقديم عليها مفتوح الآن.',
+    opportunity: 'الفرصة',
+    opportunityKind: 'النوع',
+    noDeadline: 'مفتوح دون موعد نهائي',
   },
 
   /**
@@ -368,9 +373,9 @@ export const ar = {
 
     /** The careers portal, admin side: refusals from the form builder. */
     applicationForm: {
-      noFields: 'لا يمكن نشر نموذج بلا حقول. أضف حقلاً واحداً على الأقل.',
+      noFields: 'لا يمكن أن يكون النموذج المنشور بلا حقول. أضف حقلاً واحداً على الأقل.',
       consentRequired:
-        'النموذج يحتوي حقولاً حسّاسة (مثل رقم الهوية أو تاريخ الميلاد). فعّل بند الموافقة على معالجة البيانات قبل النشر.',
+        'النموذج يحتوي حقولاً حسّاسة (مثل رقم الهوية أو تاريخ الميلاد)، فلا يُنشر ولا يبقى منشوراً دون بند الموافقة على معالجة البيانات. فعّله أولاً.',
       deadlinePassed: 'تاريخ الإغلاق مضى. حدّثه قبل النشر.',
       fieldExists: 'هذا الحقل مضاف إلى النموذج بالفعل.',
       keyFrozen:
@@ -380,6 +385,8 @@ export const ar = {
       conditionForwards: 'حقل الشرط يجب أن يسبق الحقل المشروط في الترتيب.',
       fieldHasDependents: 'حقول أخرى تعتمد على هذا الحقل كشرط ظهور. احذفها أو عدّل شرطها أولاً.',
       reorderIncomplete: 'قائمة الترتيب لا تطابق حقول النموذج.',
+      vacancyTaken: 'هذا الشاغر مربوط بنموذج آخر، ولكل شاغر نموذج واحد.',
+      notWaitlisted: 'هذا الطلب ليس على قائمة الانتظار.',
     },
 
     // Thrown by the service layer. These twelve keys were referenced in code

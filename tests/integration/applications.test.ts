@@ -1,13 +1,14 @@
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db';
-import { applicationForms, applications, profiles } from '@/db/schema';
+import { applicationForms, applications, auditLogs, profiles, vacancies } from '@/db/schema';
 import { AppError } from '@/lib/errors';
 import type { Actor } from '@/services/_shared/actor';
 import {
   addCatalogFieldToForm,
   createForm,
   deleteField,
+  deleteForm,
   isFormOpen,
   reorderFields,
   saveField,
@@ -15,7 +16,9 @@ import {
   updateForm,
 } from '@/services/applications/application-form.service';
 import {
+  admitFromWaitlist,
   buildExportTable,
+  deleteApplication,
   getApplication,
   listApplicants,
   purgeExpiredApplications,
@@ -416,8 +419,8 @@ describe('app.submit_application', () => {
     const stored = row1(
       await getDb().select().from(applicationForms).where(eq(applicationForms.id, form.id)),
     );
-    // Slots taken, not applications received — which is what makes raising the
-    // capacity later admit the people on the list.
+    // Slots taken, not applications received. A place is given to someone on
+    // the list explicitly, with `admitFromWaitlist`.
     expect(stored.submissionCount).toBe(1);
   });
 
@@ -630,8 +633,15 @@ describe('the export', () => {
     // answer it, and the spreadsheet must not disagree with the screen.
     expect(plainKeys).toContain('removed_field');
 
-    const full = await buildExportTable(db(), MANAGER, form.id, { includeSensitive: true });
+    // Sensitive columns are an admin's act: the manager runs the pipeline but
+    // is refused the ID numbers, and the admin gets them.
+    await expect(
+      buildExportTable(db(), MANAGER, form.id, { includeSensitive: true }),
+    ).rejects.toMatchObject({ code: 'forbidden' });
+
+    const full = await buildExportTable(db(), ADMIN, form.id, { includeSensitive: true });
     expect(full.columns.map((column) => column.key)).toContain('national_id');
+    expect(full.truncated).toBe(false);
   });
 });
 
@@ -806,5 +816,226 @@ describe('isFormOpen', () => {
     expect(
       isFormOpen({ ...base, capacity: 1, submissionCount: 1, capacityRule: 'waitlist' }).open,
     ).toBe(true);
+  });
+});
+
+describe('a published form stays fit to publish', () => {
+  it('refuses switching consent off while a sensitive field is on the form', async () => {
+    const form = await createForm(db(), ADMIN, formInput(), ['full_name_ar', 'national_id']);
+    await setFormStatus(db(), ADMIN, form.id, 'published');
+
+    await expect(
+      updateForm(db(), ADMIN, form.id, formInput({ requireConsent: false })),
+    ).rejects.toMatchObject({ message: 'errors.applicationForm.consentRequired' });
+
+    // Rolled back: the live form still carries its consent tick.
+    const stored = row1(
+      await getDb().select().from(applicationForms).where(eq(applicationForms.id, form.id)),
+    );
+    expect(stored.requireConsent).toBe(true);
+  });
+
+  it('refuses adding a sensitive field to a published form that has no consent tick', async () => {
+    const form = await publishedForm({ requireConsent: false });
+
+    await expect(
+      addCatalogFieldToForm(db(), ADMIN, form.id, 'national_id'),
+    ).rejects.toMatchObject({ message: 'errors.applicationForm.consentRequired' });
+  });
+
+  it('refuses deleting the last answerable field of a published form', async () => {
+    const form = await createForm(db(), ADMIN, formInput(), ['full_name_ar']);
+    await setFormStatus(db(), ADMIN, form.id, 'published');
+
+    await expect(
+      deleteField(db(), ADMIN, form.id, form.fields[0]!.id),
+    ).rejects.toMatchObject({ message: 'errors.applicationForm.noFields' });
+  });
+
+  it('lets a draft be edited freely, because the gate is at publishing', async () => {
+    const form = await createForm(db(), ADMIN, formInput(), ['full_name_ar']);
+    await expect(
+      addCatalogFieldToForm(db(), ADMIN, form.id, 'national_id'),
+    ).resolves.toMatchObject({ key: 'national_id' });
+    await expect(
+      updateForm(db(), ADMIN, form.id, formInput({ requireConsent: false })),
+    ).resolves.toMatchObject({ requireConsent: false });
+  });
+});
+
+describe('the window is read in Palestine time', () => {
+  it('stores a bare datetime-local value as the Gaza wall clock, not UTC', async () => {
+    // 1 August: Palestine is on summer time, UTC+3.
+    const form = await createForm(db(), ADMIN, formInput({ closesAt: '2030-08-01T23:59' }));
+    expect(form.closesAt?.toISOString()).toBe('2030-08-01T20:59:00.000Z');
+  });
+});
+
+describe('vacancy links', () => {
+  it('refuses linking a second form to a vacancy with a field error', async () => {
+    const [vacancy] = await getDb()
+      .insert(vacancies)
+      .values({
+        slugAr: 'field-officer',
+        slugEn: 'field-officer',
+        titleAr: 'منسق ميداني',
+        type: 'job',
+        deadline: '2030-01-01',
+        status: 'published',
+      } as typeof vacancies.$inferInsert)
+      .returning();
+
+    await createForm(db(), ADMIN, formInput({ vacancyId: vacancy!.id }));
+    await expect(
+      createForm(db(), ADMIN, formInput({ slug: 'second', vacancyId: vacancy!.id })),
+    ).rejects.toMatchObject({
+      code: 'conflict',
+      fieldErrors: { vacancyId: ['errors.applicationForm.vacancyTaken'] },
+    });
+  });
+});
+
+describe('places and the waiting list', () => {
+  const apply = (formId: string, email: string) =>
+    submitApplication(db(), {
+      formId,
+      locale: 'ar',
+      answers: { email },
+      attachments: [],
+      applicantName: null,
+      applicantEmail: email,
+      applicantPhone: null,
+    });
+
+  const countOf = async (formId: string) =>
+    row1(await getDb().select().from(applicationForms).where(eq(applicationForms.id, formId)))
+      .submissionCount;
+
+  it('admits a waitlisted applicant into a place and records it', async () => {
+    const form = await publishedForm({ capacity: 1, capacityRule: 'waitlist' });
+    await apply(form.id, 'a@example.ps');
+    const second = await apply(form.id, 'b@example.ps');
+    expect(second.waitlisted).toBe(true);
+
+    const admitted = await admitFromWaitlist(db(), MANAGER, second.id);
+    expect(admitted.waitlisted).toBe(false);
+    expect(await countOf(form.id)).toBe(2);
+
+    const detail = await getApplication(db(), MANAGER, second.id);
+    expect(detail.events.map((event) => event.note)).toContain('admitted_from_waitlist');
+
+    await expect(admitFromWaitlist(db(), MANAGER, second.id)).rejects.toMatchObject({
+      message: 'errors.applicationForm.notWaitlisted',
+    });
+  });
+
+  it('gives a place back when an application that held one is erased', async () => {
+    const form = await publishedForm({ capacity: 1 });
+    const first = await apply(form.id, 'a@example.ps');
+    await expect(apply(form.id, 'b@example.ps')).rejects.toMatchObject({
+      message: 'errors.apply.full',
+    });
+
+    await deleteApplication(db(), ADMIN, first.id);
+    expect(await countOf(form.id)).toBe(0);
+    await expect(apply(form.id, 'b@example.ps')).resolves.toMatchObject({ waitlisted: false });
+  });
+
+  it('does not give a place back for an erased waitlisted application', async () => {
+    const form = await publishedForm({ capacity: 1, capacityRule: 'waitlist' });
+    await apply(form.id, 'a@example.ps');
+    const waiting = await apply(form.id, 'b@example.ps');
+
+    await deleteApplication(db(), ADMIN, waiting.id);
+    expect(await countOf(form.id)).toBe(1);
+  });
+});
+
+describe('sensitive answers', () => {
+  async function applicantWithId() {
+    const form = await createForm(db(), ADMIN, formInput(), ['full_name_ar', 'national_id']);
+    await setFormStatus(db(), ADMIN, form.id, 'published');
+    return submitApplication(db(), {
+      formId: form.id,
+      locale: 'ar',
+      answers: { full_name_ar: 'سارة', national_id: '400123456' },
+      attachments: [],
+      applicantName: 'سارة',
+      applicantEmail: 'sara@example.ps',
+      applicantPhone: null,
+    });
+  }
+
+  it('withholds them from a manager, and never hands the value to the page', async () => {
+    const created = await applicantWithId();
+    const detail = await getApplication(db(), MANAGER, created.id);
+
+    expect(detail.answers).not.toHaveProperty('national_id');
+    expect(detail.redactedKeys).toEqual(['national_id']);
+    expect(detail.answers).toMatchObject({ full_name_ar: 'سارة' });
+  });
+
+  it('shows them to an admin and audits the read', async () => {
+    const created = await applicantWithId();
+    const detail = await getApplication(db(), ADMIN, created.id);
+
+    expect(detail.answers).toMatchObject({ national_id: '400123456' });
+    expect(detail.redactedKeys).toEqual([]);
+
+    const entries = await getDb()
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.entityId, created.id));
+    expect(entries.some((entry) => entry.action === 'view_sensitive')).toBe(true);
+  });
+});
+
+describe('the export follows the table', () => {
+  it('applies the search box as well as the status filter', async () => {
+    const form = await publishedForm();
+    for (const email of ['sara@example.ps', 'omar@example.ps']) {
+      await submitApplication(db(), {
+        formId: form.id,
+        locale: 'ar',
+        answers: { email },
+        attachments: [],
+        applicantName: null,
+        applicantEmail: email,
+        applicantPhone: null,
+      });
+    }
+
+    const table = await buildExportTable(db(), MANAGER, form.id, {
+      filters: { search: 'omar' },
+    });
+    expect(table.rows).toHaveLength(1);
+    expect(table.rows[0]).toMatchObject({ email: 'omar@example.ps' });
+  });
+});
+
+describe('deleting a form', () => {
+  it('returns the attachment paths of every application it cascades away', async () => {
+    const form = await publishedForm();
+    await submitApplication(db(), {
+      formId: form.id,
+      locale: 'ar',
+      answers: { email: 'sara@example.ps' },
+      attachments: [
+        {
+          fieldKey: 'cv_file',
+          path: 'application/cv_file/abc.pdf',
+          originalName: 'cv.pdf',
+          size: 10,
+          mime: 'application/pdf',
+        },
+      ],
+      applicantName: null,
+      applicantEmail: 'sara@example.ps',
+      applicantPhone: null,
+    });
+
+    const removed = await deleteForm(db(), ADMIN, form.id);
+    expect(removed.attachmentPaths).toEqual(['application/cv_file/abc.pdf']);
+    expect(removed.slug).toBe(form.slug);
   });
 });

@@ -139,6 +139,11 @@ export const en: Dictionary = {
     applyByEmail: 'Apply by email',
     closed: 'Applications are closed',
     noOpenings: 'There are no open positions at the moment.',
+    openForms: 'Opportunities you can apply for directly',
+    openFormsLead: 'Volunteering, training and other opportunities that are taking applications now.',
+    opportunity: 'Opportunity',
+    opportunityKind: 'Type',
+    noDeadline: 'Open, no closing date',
   },
 
   apply: {
@@ -358,9 +363,9 @@ export const en: Dictionary = {
 
     /** The careers portal, admin side: refusals from the form builder. */
     applicationForm: {
-      noFields: 'A form cannot be published with no fields. Add at least one.',
+      noFields: 'A published form cannot have no fields. Add at least one.',
       consentRequired:
-        'This form asks for sensitive details (such as an ID number or date of birth). Turn on the data-processing consent before publishing.',
+        'This form asks for sensitive details (such as an ID number or date of birth), so it cannot be published, or stay published, without the data-processing consent. Turn it on first.',
       deadlinePassed: 'The closing date has already passed. Update it before publishing.',
       fieldExists: 'That field is already on this form.',
       keyFrozen:
@@ -371,6 +376,8 @@ export const en: Dictionary = {
       reorderIncomplete: "The reordered list does not match the form's fields.",
       fieldHasDependents:
         'Other fields use this one as their visibility condition. Remove or re-point them first.',
+      vacancyTaken: 'That vacancy is already linked to another form. Each vacancy has one form.',
+      notWaitlisted: 'This application is not on the waiting list.',
     },
 
     // Thrown by the service layer. These twelve keys were referenced in code

@@ -65,7 +65,7 @@ export type ApplicationFieldConfig = {
   /** `short_text` only, and only from the catalogue — never author-supplied. */
   pattern?: string;
   /** `file` fields: which catalogue of MIME types the upload is checked against. */
-  accept?: 'document' | 'image' | 'any';
+  accept?: 'document' | 'scan' | 'image' | 'any';
   /** `multi_select`: bounds on how many boxes may be ticked. */
   minChoices?: number;
   maxChoices?: number;

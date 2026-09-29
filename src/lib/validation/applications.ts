@@ -154,7 +154,7 @@ const fieldConfig = z
     max: z.coerce.number().optional(),
     minDate: z.union([z.iso.date(), z.literal('today')]).optional(),
     maxDate: z.union([z.iso.date(), z.literal('today')]).optional(),
-    accept: z.enum(['document', 'image', 'any']).optional(),
+    accept: z.enum(['document', 'scan', 'image', 'any']).optional(),
     minChoices: z.coerce.number().int().min(0).max(50).optional(),
     maxChoices: z.coerce.number().int().min(1).max(50).optional(),
     columns: z.union([z.literal(1), z.literal(2)]).optional(),

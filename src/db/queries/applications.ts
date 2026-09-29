@@ -155,6 +155,8 @@ export type OpenFormCard = {
   kind: ApplicationFormKind;
   title: string;
   closesAt: Date | null;
+  /** Set when a vacancy page already links to this form. */
+  vacancyId: string | null;
   /** Null when uncapped; otherwise how many slots are left, floored at zero. */
   slotsLeft: number | null;
 };
@@ -181,6 +183,7 @@ async function _listOpenForms(locale: Locale): Promise<OpenFormCard[]> {
       titleAr: applicationForms.titleAr,
       titleEn: applicationForms.titleEn,
       closesAt: applicationForms.closesAt,
+      vacancyId: applicationForms.vacancyId,
       capacity: applicationForms.capacity,
       submissionCount: applicationForms.submissionCount,
     })
@@ -204,6 +207,7 @@ async function _listOpenForms(locale: Locale): Promise<OpenFormCard[]> {
     kind: row.kind,
     title: pick(row, 'title', locale) ?? row.titleAr,
     closesAt: row.closesAt,
+    vacancyId: row.vacancyId,
     slotsLeft:
       row.capacity === null ? null : Math.max(0, row.capacity - row.submissionCount),
   }));
@@ -234,6 +238,23 @@ async function _getFormSlugForVacancy(vacancyId: string): Promise<string | null>
     .limit(1);
 
   return row?.slug ?? null;
+}
+
+/**
+ * Where a new application on this form is announced, beyond the HR inbox.
+ *
+ * Uncached and never part of `PublicForm`: that object is handed to a Client
+ * Component, so anything on it is in the page's markup, and staff addresses do
+ * not belong there. Read once per submission, from `after()`.
+ */
+export async function _getFormNotifyEmails(formId: string): Promise<string[]> {
+  const [row] = await db
+    .select({ notifyEmails: applicationForms.notifyEmails })
+    .from(applicationForms)
+    .where(and(eq(applicationForms.id, formId), eq(applicationForms.status, 'published')))
+    .limit(1);
+
+  return row?.notifyEmails ?? [];
 }
 
 export const getFormSlugForVacancy = cached(

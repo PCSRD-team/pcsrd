@@ -1,5 +1,5 @@
-import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
-import type { Db, Tx } from '@/db';
+import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
+import type { Db } from '@/db';
 import {
   applicationEvents,
   applicationFormFields,
@@ -12,12 +12,12 @@ import {
 } from '@/db/schema';
 import type { ApplicationStatus, LocaleCode } from '@/db/schema/enums';
 import { readAsActor, rowsOf, withActor } from '@/db/session';
-import { AppError, notFound } from '@/lib/errors';
+import { AppError, forbidden, notFound } from '@/lib/errors';
 import { hashIp } from '@/lib/security/ip';
 import type { Actor } from '../_shared/actor';
 import { writeAudit } from '../_shared/audit';
 import { one } from '../_shared/one';
-import { assertCan } from '../_shared/permissions';
+import { assertCan, can } from '../_shared/permissions';
 import type { ApplicationReviewInput } from '@/lib/validation/applications';
 
 /**
@@ -190,17 +190,45 @@ export type ApplicantFilters = {
 };
 
 /**
+ * The WHERE clause for one form's applicants under the table's filters.
+ *
+ * Shared by the table and the export, so the spreadsheet a reviewer downloads
+ * is the list they were looking at — search included. Before, the export
+ * applied the status filter and silently dropped the search.
+ *
+ * The search covers the three denormalised identity columns plus the
+ * reference, and nothing inside `answers`. Searching the jsonb would mean a
+ * sequential scan over every stored answer, and it would also make the search
+ * box a way to probe for a national ID.
+ */
+function applicantConditions(formId: string, filters: ApplicantFilters): SQL | undefined {
+  const conditions: (SQL | undefined)[] = [eq(applications.formId, formId)];
+
+  if (filters.status) conditions.push(eq(applications.status, filters.status));
+  if (filters.waitlistedOnly) conditions.push(eq(applications.waitlisted, true));
+
+  if (filters.search) {
+    const term = `%${filters.search}%`;
+    conditions.push(
+      or(
+        ilike(applications.applicantName, term),
+        ilike(applications.applicantEmail, term),
+        ilike(applications.applicantPhone, term),
+        ilike(applications.reference, term),
+      ),
+    );
+  }
+
+  return and(...conditions);
+}
+
+/**
  * The applicants table.
  *
  * `readAsActor` is not optional here. `applications` is FORCE ROW LEVEL
  * SECURITY and `rt_select` is `app.can_publish()`, so a statement issued on the
  * bare `db` handle runs as `anon`, matches nothing, and reports an empty
  * inbox — a failure that looks exactly like "no one has applied yet".
- *
- * The search covers the three denormalised identity columns plus the reference,
- * and nothing inside `answers`. Searching the jsonb would mean a sequential
- * scan over every stored answer on every keystroke, and it would also make the
- * search box a way to probe for a national ID.
  */
 export async function listApplicants(
   db: Db,
@@ -213,23 +241,7 @@ export async function listApplicants(
   const page = Math.max(1, filters.page ?? 1);
 
   return readAsActor(db, actor, async (tx) => {
-    const conditions = [eq(applications.formId, formId)];
-
-    if (filters.status) conditions.push(eq(applications.status, filters.status));
-    if (filters.waitlistedOnly) conditions.push(eq(applications.waitlisted, true));
-
-    if (filters.search) {
-      const term = `%${filters.search}%`;
-      const matches = or(
-        ilike(applications.applicantName, term),
-        ilike(applications.applicantEmail, term),
-        ilike(applications.applicantPhone, term),
-        ilike(applications.reference, term),
-      );
-      if (matches) conditions.push(matches);
-    }
-
-    const where = and(...conditions);
+    const where = applicantConditions(formId, filters);
 
     const [rows, [totalRow], statusRows] = await Promise.all([
       tx
@@ -276,6 +288,12 @@ export async function listApplicants(
 }
 
 export type ApplicationDetail = Application & {
+  /**
+   * Sensitive answers this actor may not read. Their values are removed from
+   * `answers` (and their files from `attachments`) before the row leaves the
+   * service, so the page cannot render what it was never given.
+   */
+  redactedKeys: string[];
   form: Pick<ApplicationForm, 'id' | 'slug' | 'titleAr' | 'titleEn' | 'kind' | 'requireConsent'>;
   fields: ApplicationFormField[];
   events: {
@@ -294,6 +312,11 @@ export type ApplicationDetail = Application & {
  * labels, order and types to read it. An answer whose field has since been
  * deleted has no label left, so the screen falls back to the key — visibly odd
  * rather than invisibly missing.
+ *
+ * Sensitive answers are handled here, not on the page. An actor without
+ * `applications.sensitive` gets them redacted; one with it gets them, and the
+ * read is audited as `view_sensitive` — the same rule the export and the
+ * download already followed, which the screen did not.
  */
 export async function getApplication(
   db: Db,
@@ -302,7 +325,7 @@ export async function getApplication(
 ): Promise<ApplicationDetail> {
   assertCan(actor, 'submissions.read');
 
-  return readAsActor(db, actor, async (tx) => {
+  return withActor(db, actor, async (tx) => {
     const [found] = await tx
       .select({
         application: applications,
@@ -341,7 +364,104 @@ export async function getApplication(
         .orderBy(asc(applicationEvents.createdAt)),
     ]);
 
-    return { ...found.application, form: found.form, fields, events };
+    const sensitiveKeys = fields
+      .filter((field) => field.sensitive && field.key in found.application.answers)
+      .map((field) => field.key);
+    const sensitiveFiles = found.application.attachments.filter((file) =>
+      fields.some((field) => field.sensitive && field.key === file.fieldKey),
+    );
+    const holdsSensitive = sensitiveKeys.length > 0 || sensitiveFiles.length > 0;
+
+    if (holdsSensitive && can(actor, 'applications.sensitive')) {
+      await writeAudit(tx, actor, {
+        action: 'view_sensitive',
+        entityType: 'application',
+        entityId: id,
+        diff: { viewed: { from: null, to: sensitiveKeys.join(', ') || 'attachments' } },
+      });
+      return { ...found.application, form: found.form, fields, events, redactedKeys: [] };
+    }
+
+    if (!holdsSensitive) {
+      return { ...found.application, form: found.form, fields, events, redactedKeys: [] };
+    }
+
+    const answers = { ...found.application.answers };
+    for (const key of sensitiveKeys) delete answers[key];
+
+    return {
+      ...found.application,
+      answers,
+      attachments: found.application.attachments.filter((file) => !sensitiveFiles.includes(file)),
+      form: found.form,
+      fields,
+      events,
+      redactedKeys: [...sensitiveKeys, ...sensitiveFiles.map((file) => file.fieldKey)],
+    };
+  });
+}
+
+/**
+ * Moves an applicant off the waiting list and into a place.
+ *
+ * `submission_count` counts places taken, so admitting someone takes one.
+ * The form row is locked first, the same lock `app.submit_application()`
+ * takes, so an admission and a new application arriving together cannot both
+ * read the same count. It is an explicit decision rather than a side effect of
+ * raising the cap: a waiting list is ordered by the organisation's judgement,
+ * not only by arrival, and the reviewer is the one who knows which of forty
+ * people the new place is for.
+ */
+export async function admitFromWaitlist(
+  db: Db,
+  actor: Actor,
+  id: string,
+): Promise<Application> {
+  assertCan(actor, 'submissions.handle');
+
+  return withActor(db, actor, async (tx) => {
+    const before = one(
+      await tx.select().from(applications).where(eq(applications.id, id)).limit(1),
+      'application',
+    );
+    if (!before.waitlisted) {
+      throw new AppError('conflict', 'errors.applicationForm.notWaitlisted');
+    }
+
+    await tx.execute(
+      sql`select 1 from ${applicationForms} where ${applicationForms.id} = ${before.formId} for update`,
+    );
+
+    const after = one(
+      await tx
+        .update(applications)
+        .set({ waitlisted: false })
+        .where(eq(applications.id, id))
+        .returning(),
+      'application',
+    );
+
+    await tx
+      .update(applicationForms)
+      .set({ submissionCount: sql`${applicationForms.submissionCount} + 1` })
+      .where(eq(applicationForms.id, before.formId));
+
+    await tx.insert(applicationEvents).values({
+      applicationId: id,
+      actorId: actor.id,
+      fromStatus: before.status,
+      toStatus: before.status,
+      note: 'admitted_from_waitlist',
+    });
+
+    await writeAudit(tx, actor, {
+      action: 'set_state',
+      entityType: 'application',
+      entityId: id,
+      diff: { waitlisted: { from: true, to: false } },
+    });
+
+    return after;
   });
 }
 
@@ -455,6 +575,16 @@ export async function deleteApplication(
 
     await tx.delete(applications).where(eq(applications.id, id));
 
+    // An erased application that held a place gives it back. Without this the
+    // cap counted people who, as far as the organisation's records go, never
+    // applied — and a capped form filled up with ghosts.
+    if (!row.waitlisted) {
+      await tx
+        .update(applicationForms)
+        .set({ submissionCount: sql`greatest(${applicationForms.submissionCount} - 1, 0)` })
+        .where(eq(applicationForms.id, row.formId));
+    }
+
     return { attachmentPaths: row.attachments.map((file) => file.path) };
   });
 }
@@ -488,6 +618,8 @@ export type ExportTable = {
   /** Field keys in form order, then any orphaned keys found in the answers. */
   columns: { key: string; label: string }[];
   rows: Record<string, unknown>[];
+  /** True when the export hit its row cap and is not the whole set. */
+  truncated: boolean;
 };
 
 /**
@@ -517,6 +649,7 @@ export async function buildExportTable(
   options: { includeSensitive?: boolean; filters?: ApplicantFilters; locale?: LocaleCode } = {},
 ): Promise<ExportTable> {
   assertCan(actor, 'submissions.read');
+  if (options.includeSensitive) assertCan(actor, 'applications.sensitive');
   const locale = options.locale ?? 'ar';
 
   return withActor(db, actor, async (tx) => {
@@ -526,16 +659,10 @@ export async function buildExportTable(
       .where(eq(applicationFormFields.formId, formId))
       .orderBy(asc(applicationFormFields.sortOrder));
 
-    const conditions = [eq(applications.formId, formId)];
-    if (options.filters?.status) {
-      conditions.push(eq(applications.status, options.filters.status));
-    }
-    if (options.filters?.waitlistedOnly) conditions.push(eq(applications.waitlisted, true));
-
     const rows = await tx
       .select()
       .from(applications)
-      .where(and(...conditions))
+      .where(applicantConditions(formId, options.filters ?? {}))
       .orderBy(desc(applications.createdAt))
       .limit(EXPORT_LIMIT);
 
@@ -573,16 +700,26 @@ export async function buildExportTable(
       });
     }
 
+    // Sensitive files are left out of the attachment count too, so the count
+    // does not reveal that an ID copy exists when the columns are withheld.
+    const visibleFile = (fieldKey: string) =>
+      options.includeSensitive || !sensitiveKeys.has(fieldKey);
+
     return {
       columns: [...labelled].map(([key, label]) => ({ key, label })),
+      truncated: rows.length >= EXPORT_LIMIT,
       rows: rows.map((row) => ({
         __reference: row.reference,
         __status: row.status,
         __waitlisted: row.waitlisted,
         __rating: row.rating,
         __createdAt: row.createdAt,
-        __attachments: row.attachments,
-        ...row.answers,
+        __attachments: row.attachments.filter((file) => visibleFile(file.fieldKey)),
+        ...Object.fromEntries(
+          Object.entries(row.answers).filter(
+            ([key]) => options.includeSensitive || !sensitiveKeys.has(key),
+          ),
+        ),
       })),
     };
   });
@@ -623,6 +760,18 @@ export async function resolveAttachment(
     const file = row.attachments.find((candidate) => candidate.path === path);
     if (!file) throw notFound('attachment');
 
+    // An ID copy is a sensitive answer in file form: the same capability as
+    // reading the ID number on screen.
+    const [field] = await tx
+      .select({ sensitive: applicationFormFields.sensitive })
+      .from(applicationFormFields)
+      .innerJoin(applications, eq(applications.formId, applicationFormFields.formId))
+      .where(and(eq(applications.id, applicationId), eq(applicationFormFields.key, file.fieldKey)))
+      .limit(1);
+    if (field?.sensitive && !can(actor, 'applications.sensitive')) {
+      throw forbidden('missing capability: applications.sensitive');
+    }
+
     await writeAudit(tx, actor, {
       action: 'view_sensitive',
       entityType: 'application',
@@ -634,11 +783,3 @@ export async function resolveAttachment(
   });
 }
 
-/** Re-exported so a caller can count without loading a page of rows. */
-export async function countApplications(tx: Tx, formId: string): Promise<number> {
-  const [row] = await tx
-    .select({ n: count() })
-    .from(applications)
-    .where(eq(applications.formId, formId));
-  return row?.n ?? 0;
-}

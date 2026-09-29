@@ -8,6 +8,12 @@ import { serverEnv } from '@/lib/env';
  *
  *   form    5 / hour   every public form except the one with a file
  *   upload  3 / hour   the job application (it writes to storage)
+ *   apply  10 / hour   the careers portal. Counted only once a submission has
+ *                      passed validation and the captcha, so a mistyped field
+ *                      costs nothing. Higher than `upload` because a
+ *                      recruitment drive draws many applicants through one
+ *                      carrier-grade NAT address, and three per hour per
+ *                      address locks out a whole neighbourhood.
  *   global 30 / hour   everything a single client may do
  *   login   8 / hour   an admin sign-in attempt
  *
@@ -36,7 +42,7 @@ import { serverEnv } from '@/lib/env';
  * reported rather than absorbed.
  */
 
-export type LimiterKey = 'form' | 'upload' | 'global' | 'login';
+export type LimiterKey = 'form' | 'upload' | 'apply' | 'global' | 'login';
 
 export type RateLimitResult = { success: boolean; retryAfterSeconds: number };
 
@@ -46,6 +52,7 @@ type Limiters = Record<LimiterKey, Ratelimit>;
 const LIMITS: Record<LimiterKey, { limit: number; windowSeconds: number }> = {
   form: { limit: 5, windowSeconds: 3600 },
   upload: { limit: 3, windowSeconds: 3600 },
+  apply: { limit: 10, windowSeconds: 3600 },
   global: { limit: 30, windowSeconds: 3600 },
   login: { limit: 8, windowSeconds: 3600 },
 };
@@ -89,7 +96,13 @@ function build(): Limiters | null {
       timeout: 2_000,
     });
 
-  return { form: make('form'), upload: make('upload'), global: make('global'), login: make('login') };
+  return {
+    form: make('form'),
+    upload: make('upload'),
+    apply: make('apply'),
+    global: make('global'),
+    login: make('login'),
+  };
 }
 
 /**

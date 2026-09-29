@@ -7,9 +7,10 @@ import { CollectionPageJsonLd } from '@/components/seo/json-ld';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/feedback';
-import { Container, PageHeader } from '@/components/ui/layout';
+import { Container, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { Tabs } from '@/components/ui/tabs';
 import { Table, TimeCell } from '@/components/ui/table';
+import { listOpenForms } from '@/db/queries/applications';
 import { listOpenVacancies } from '@/db/queries/content';
 import { vacancyType, type VacancyType } from '@/db/schema/enums';
 import { formatDate } from '@/lib/format';
@@ -60,7 +61,20 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
   if (!isLocale(locale)) notFound();
 
   const type = readType(search);
-  const [dict, vacancies] = await Promise.all([getDictionary(locale), listOpenVacancies(locale, { type })]);
+  const [dict, vacancies, openForms] = await Promise.all([
+    getDictionary(locale),
+    listOpenVacancies(locale, { type }),
+    listOpenForms(locale),
+  ]);
+
+  // Portal forms that no vacancy links to — a volunteer intake, a training
+  // cohort. A form behind a vacancy is reached from that vacancy's page, and
+  // listing it here as well would show the same opportunity twice. Without
+  // this section a standalone form was reachable only by its direct link.
+  const standaloneForms = openForms
+    .filter((form) => form.vacancyId === null)
+    // The kit's `Table` keys rows by `id`; a form's slug is unique.
+    .map((form) => ({ ...form, id: form.slug }));
 
   // Links, not buttons, so the filter is the URL: crawlable, shareable, and
   // working with scripting off. `listOpenVacancies` has accepted `type` since
@@ -154,6 +168,51 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
           },
         ]}
       />
+
+      {standaloneForms.length > 0 ? (
+        <Section labelledBy="careers-open-forms" className="mbs-12">
+          <SectionHeading id="careers-open-forms" title={dict.careers.openForms} />
+          <p className="mbe-6 max-w-prose text-body text-ink-70">{dict.careers.openFormsLead}</p>
+          <Table
+            caption={dict.careers.openForms}
+            rows={standaloneForms}
+            rowHref={(form) => localePath(locale, `/apply/${form.slug}`)}
+            // Unreachable: the section renders only when there is a row.
+            empty={null}
+            columns={[
+              {
+                key: 'title',
+                header: dict.careers.opportunity,
+                rowHeader: true,
+                cell: (form) => <span className="block text-body font-medium">{form.title}</span>,
+              },
+              {
+                key: 'kind',
+                header: dict.careers.opportunityKind,
+                cell: (form) => (
+                  <Badge tone="neutral" uppercase={false}>
+                    {dict.apply.kind[form.kind]}
+                  </Badge>
+                ),
+              },
+              {
+                key: 'closesAt',
+                header: dict.careers.deadline,
+                numeric: true,
+                align: 'start',
+                cell: (form) =>
+                  form.closesAt ? (
+                    <TimeCell dateTime={new Date(form.closesAt).toISOString()} locale={locale}>
+                      {formatDate(new Date(form.closesAt), locale)}
+                    </TimeCell>
+                  ) : (
+                    dict.careers.noDeadline
+                  ),
+              },
+            ]}
+          />
+        </Section>
+      ) : null}
     </Container>
   );
 }

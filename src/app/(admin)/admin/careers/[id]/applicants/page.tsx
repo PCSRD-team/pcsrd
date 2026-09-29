@@ -16,6 +16,7 @@ import { db } from '@/db';
 import { applicationStatus, type ApplicationStatus } from '@/db/schema/enums';
 import { requireAuth } from '@/lib/auth/guard';
 import { isAppError } from '@/lib/errors';
+import { can } from '@/services/_shared/permissions';
 import { getForm } from '@/services/applications/application-form.service';
 import {
   type ApplicantRow,
@@ -91,7 +92,10 @@ export default async function ApplicantsPage({
     return `/api/admin/careers/${id}/export${qs ? `?${qs}` : ''}`;
   };
 
-  const hasSensitiveFields = form.fields.some((field) => field.sensitive);
+  // The sensitive export is offered only to someone the service will let use
+  // it; a button that always answers "forbidden" is a trap, not a control.
+  const hasSensitiveFields =
+    form.fields.some((field) => field.sensitive) && can(actor, 'applications.sensitive');
 
   const columns: Column<ApplicantRow>[] = [
     {

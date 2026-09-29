@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { deleteApplicant, reviewApplicant } from '@/actions/admin/applications';
+import { admitApplicant, deleteApplicant, reviewApplicant } from '@/actions/admin/applications';
 import { adminDict, adminFormDict } from '@/components/admin/admin-dict';
 import { adminUi, fill } from '@/components/admin/admin-ui-dict';
 import { DateCell } from '@/components/admin/controls';
@@ -55,6 +55,16 @@ export default async function ApplicantPage({
     .filter((key) => !byKey.has(key))
     .map((key) => ({ field: null, key }));
 
+  // Sensitive answers the service withheld from this reviewer. Listed by
+  // label, so the reviewer knows the question was answered and who to ask.
+  const redacted = new Set(application.redactedKeys);
+  const withheld = application.fields
+    .filter((field) => redacted.has(field.key))
+    .map((field) => ({ field, key: field.key }));
+
+  const eventNote = (note: string | null) =>
+    note && note in t.eventNotes ? t.eventNotes[note as keyof typeof t.eventNotes] : (note ?? '—');
+
   return (
     <>
       <AdminHeader
@@ -87,7 +97,7 @@ export default async function ApplicantPage({
               { term: t.applicantEmail, value: <Bidi>{application.applicantEmail ?? '—'}</Bidi> },
               { term: t.applicantPhone, value: <Bidi>{application.applicantPhone ?? '—'}</Bidi> },
               { term: t.submittedAt, value: <DateCell value={application.createdAt} /> },
-              { term: t.retentionMonths, value: <Bidi>{String(application.purgeAfter)}</Bidi> },
+              { term: t.purgeAfter, value: <Bidi>{String(application.purgeAfter).slice(0, 10)}</Bidi> },
             ]}
           />
         </Panel>
@@ -125,12 +135,35 @@ export default async function ApplicantPage({
         <section>
           <Eyebrow className="mbe-3">{t.answers}</Eyebrow>
           <DefinitionList
-            items={[...answered, ...orphaned].map(({ field, key }) => ({
-              term: field ? field.labelAr : `${key} (${t.deletedField})`,
-              value: renderAnswer(application.answers[key], field),
-            }))}
+            items={[
+              ...[...answered, ...orphaned].map(({ field, key }) => ({
+                term: field ? field.labelAr : `${key} (${t.deletedField})`,
+                value: renderAnswer(application.answers[key], field),
+              })),
+              ...withheld.map(({ field }) => ({
+                term: field.labelAr,
+                value: <span className="text-caption text-ink-55">{t.redacted}</span>,
+              })),
+            ]}
           />
         </section>
+
+        {application.waitlisted ? (
+          <Panel tone="alt" padding="sm">
+            <form action={admitApplicant}>
+              <input type="hidden" name="id" value={application.id} />
+              <input type="hidden" name="slug" value={application.form.slug} />
+              <Stack gap={2}>
+                <p className="text-caption text-ink-70">{t.admitHint}</p>
+                <div>
+                  <Button type="submit" tone="secondary" size="sm">
+                    {t.admitFromWaitlist}
+                  </Button>
+                </div>
+              </Stack>
+            </form>
+          </Panel>
+        ) : null}
 
         <section>
           <Eyebrow className="mbe-3">{t.history}</Eyebrow>
@@ -140,19 +173,19 @@ export default async function ApplicantPage({
             rows={application.events}
             columns={[
               {
-                key: 'to',
-                header: adminUi.list.status,
-                cell: (row) => t.status[row.toStatus],
-              },
-              {
                 key: 'from',
-                header: t.history,
+                header: t.fromStatus,
                 cell: (row) => (row.fromStatus ? t.status[row.fromStatus] : '—'),
               },
-              { key: 'note', header: t.internalNote, cell: (row) => row.note ?? '—' },
+              {
+                key: 'to',
+                header: t.toStatus,
+                cell: (row) => t.status[row.toStatus],
+              },
+              { key: 'note', header: t.internalNote, cell: (row) => eventNote(row.note) },
               {
                 key: 'at',
-                header: t.submittedAt,
+                header: t.eventAt,
                 numeric: true,
                 cell: (row) => <DateCell value={row.createdAt} />,
               },
@@ -180,6 +213,7 @@ export default async function ApplicantPage({
           <form action={deleteApplicant}>
             <input type="hidden" name="id" value={application.id} />
             <input type="hidden" name="formId" value={application.form.id} />
+            <input type="hidden" name="slug" value={application.form.slug} />
             <Stack gap={2}>
               <p className="text-caption text-ink-70">{t.deleteApplicantConfirm}</p>
               <div>

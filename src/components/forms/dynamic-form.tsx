@@ -228,7 +228,9 @@ export function DynamicApplicationForm({
             data.waitlisted ? copy.successWaitlisted : dict.forms.successWithReference
           }
           reference={data.reference}
-          body={dict.forms.keepReference}
+          // The form's own confirmation text, when the admin wrote one — what
+          // happens next for *this* intake — ahead of the generic reminder.
+          body={[form.confirmation?.trim(), dict.forms.keepReference].filter(Boolean).join(' ')}
         />
       )}
     >

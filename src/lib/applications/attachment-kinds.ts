@@ -13,7 +13,12 @@
  * belongs: `accept` is a hint to the file picker and is trivially bypassed.
  */
 
-export type AttachmentKind = 'document' | 'image' | 'any';
+/**
+ * `scan` is a document **or** a photograph of one. An ID card or a
+ * certificate is, in practice, photographed with a phone; refusing a JPEG there
+ * refuses most of the people who have the document.
+ */
+export type AttachmentKind = 'document' | 'scan' | 'image' | 'any';
 
 /**
  * What the `accept` attribute should say for each kind.
@@ -25,6 +30,7 @@ export type AttachmentKind = 'document' | 'image' | 'any';
  */
 export const ACCEPT_ATTRIBUTE: Record<AttachmentKind, string> = {
   document: '.pdf,.doc,.docx,.rtf',
+  scan: '.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp',
   image: '.jpg,.jpeg,.png,.webp,.avif',
   any: '.pdf,.doc,.docx,.rtf,.jpg,.jpeg,.png,.webp,.avif,.zip',
 };

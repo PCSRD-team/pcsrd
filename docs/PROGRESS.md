@@ -1,6 +1,6 @@
 # Progress — where the project stands, and where to pick it up
 
-Last updated 2026-09-25, at commit `8367211`.
+Last updated 2026-09-29 (careers portal review and fixes, §3c).
 
 **If you are resuming: read §0, then start at the top of §5.** Everything above
 §5 is context; §5 is the queue. Nothing in §5 needs re-discovery — each item
@@ -248,8 +248,9 @@ function also owns the window check, the duplicate-email rule and
 that function is the only door — the same shape as `app.submit_form()`.
 
 `submission_count` counts **slots taken**, so a waitlisted row does not
-increment it; raising the capacity later therefore admits the people already on
-the list.
+increment it. A place goes to someone on the list only when a reviewer admits
+them (`admitFromWaitlist`); raising the capacity does not move anyone by itself.
+Erasing an application that held a place gives the place back.
 
 **The field catalogue** (`src/lib/applications/field-catalog.ts`) is 87
 ready-made bilingual fields in eleven groups, with validation an admin could
@@ -292,6 +293,43 @@ attachment paths so the objects are deleted with the rows.
 **Not yet exercised in a browser.** Typecheck, lint, 384 unit and integration
 tests and a production build all pass, but no screen in this feature has been
 opened by a human — the e2e suite holds no admin credentials. See §5.4.
+
+---
+
+## 3c. Careers portal — review and fixes (2026-09-29)
+
+A full review found fifteen defects. All code-side ones are fixed and tested;
+two need a step on the live project (below).
+
+| # | Defect | Fix |
+|---|---|---|
+| 1 | The `applications` bucket allowed only PDF/Word, so photos, ZIPs and RTF passed validation and then failed in Storage | `supabase/migrations/20260928120000_applications_bucket_mime.sql` — **not yet pushed** |
+| 1b | An ID copy or a certificate is usually a phone photo, and `document` refused it | New `scan` kind (document or image); the three catalogue fields use it |
+| 1c | RTF was offered but never detected; a DOCX sniffed from its first 4 KB could read as ZIP | `validateAttachment` sniffs the whole file and recognises `{\rtf` |
+| 2 | Uploaded files were orphaned when the database refused the application (duplicate, full, closed) | `apply.ts` removes them before rethrowing |
+| 2b | Deleting a form cascaded its applications but left every CV in the bucket | `deleteForm` returns the paths; the action removes them |
+| 3 | Standalone forms (volunteer, training) were linked from nowhere | Section on `/careers`, and in the sitemap |
+| 4 | Per-form `notifyEmails` and confirmation text were never used | Both wired; addresses are read server-side, never put on `PublicForm` |
+| 5 | Deadlines were parsed in the server's zone (UTC on Vercel) — 2–3 h late | `src/lib/time-zone.ts`, `Asia/Gaza`, both directions |
+| 6 | A required file field hidden by its condition still blocked the submission | `collectAttachments` honours `isFieldVisible` |
+| 7 | 3 attempts/hour/IP, charged before validation | New `apply` limiter, 10/hour, counted after validation and the captcha |
+| 8 | The waiting list never moved; erasing an application never freed its place | `admitFromWaitlist` + button; `deleteApplication` decrements |
+| 9 | Places-left could be an hour stale | Each submission busts the form's tags |
+| 10 | The publish rules were checked only at publish time | Re-checked after every change to a published form, in the same transaction |
+| 11 | Export: hard-coded headers, raw status enum, search ignored, truncation invisible | Dictionary labels, translated status, `q` applied, a visible last row |
+| 12 | Any content manager could export or view ID numbers; the screen view was not audited | `applications.sensitive` capability (admin only); redacted in the service; views audited |
+| 13 | Application emails said "job" for every kind, linked to `/admin/submissions`, and promised an attachment always | Per-kind subject, link to the applicant, real attachment flag, waitlist line for the applicant |
+| 14 | A second form linked to the same vacancy failed as `errors.unexpected` | `assertVacancyFree` → field error |
+| 15 | Dead code | `countApplications`, `assertFormEditable` removed |
+
+**Still needs the live project** (blocked on permission to touch production,
+§6): push the bucket migration above with `supabase db push`, then run the
+§5.4 browser pass.
+
+**Still the owner's decision:** the old `JobApplicationForm` (into
+`form_submissions`) and the portal both exist; a vacancy with a linked form
+uses the portal, one without falls back to the old form. Whether to retire the
+old path is not a code question.
 
 ---
 

@@ -24,6 +24,8 @@ export type SubmissionNotificationProps = {
   type: SubmissionType;
   reference: string;
   adminUrl: string;
+  /** Replaces the per-type heading — the careers portal names the form kind instead. */
+  heading?: string;
 } & (
   | { sensitive: true }
   | { sensitive: false; fields: readonly NotificationField[]; hasAttachment: boolean }
@@ -39,7 +41,7 @@ export function SubmissionNotification(props: SubmissionNotificationProps) {
       <Text style={styles.eyebrow}>{t.eyebrow}</Text>
       <div style={styles.headingMark} />
       <Heading as="h1" style={styles.h1}>
-        {props.sensitive ? t.sensitive.heading : t.subject[type]}
+        {props.sensitive ? t.sensitive.heading : (props.heading ?? t.subject[type])}
       </Heading>
 
       <Text style={styles.text}>

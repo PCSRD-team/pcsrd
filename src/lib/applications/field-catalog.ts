@@ -723,7 +723,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     labelEn: 'Academic certificates',
     helpAr: 'اجمع الشهادات في ملف واحد إن كانت أكثر من واحدة.',
     helpEn: 'Combine several certificates into a single file.',
-    config: { accept: 'document' },
+    config: { accept: 'scan' },
   },
   {
     key: 'experience_certificates_file',
@@ -731,7 +731,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     type: 'file',
     labelAr: 'شهادات الخبرة',
     labelEn: 'Experience certificates',
-    config: { accept: 'document' },
+    config: { accept: 'scan' },
   },
   {
     // Sensitive for the same reason as `national_id`: a scan of an ID card is
@@ -746,7 +746,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     labelEn: 'Copy of your ID card',
     helpAr: 'لا تطلبها إلا في مرحلة التعاقد؛ لا حاجة إليها لفرز الطلبات.',
     helpEn: 'Ask for this at the contracting stage only; shortlisting does not need it.',
-    config: { accept: 'document' },
+    config: { accept: 'scan' },
     sensitive: true,
   },
   {

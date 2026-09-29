@@ -6,7 +6,10 @@ import { requireActor } from '@/lib/auth/guard';
 import { type ActionResult, err, ok, runAction } from '@/lib/errors';
 import { fieldErrorsFrom } from '@/lib/validation/common';
 import { applicationReviewSchema } from '@/lib/validation/applications';
+import { revalidate } from '@/lib/cache/revalidate';
+import { TAGS } from '@/lib/cache/tags';
 import {
+  admitFromWaitlist,
   deleteApplication,
   reviewApplication,
 } from '@/services/applications/application.service';
@@ -15,12 +18,11 @@ import { withFlash } from './flash';
 /**
  * The applicant pipeline's POST endpoints.
  *
- * No `revalidateTag` anywhere in this file, and that is deliberate rather than
- * an omission. Nothing an applicant's record affects is cached: the applicants
- * table and the applicant screen are `force-dynamic` admin pages, and the
- * public side never reads an application at all. Busting a tag here would be
- * cargo cult — and worse, it would suggest to the next reader that some public
- * page shows this data.
+ * A review busts nothing: the applicants table and the applicant screen are
+ * `force-dynamic`, and the public side never reads an application. Admitting
+ * from the waiting list and erasing an application are different — both change
+ * `submission_count`, which the public form page shows as places left — so
+ * those two bust the form's tags.
  */
 
 export type ReviewResult = ActionResult<{ id: string }>;
@@ -63,6 +65,27 @@ export async function reviewApplicant(
   redirect(withFlash(returnTo ?? `/admin/careers/applicants/${id}`, result));
 }
 
+/** The form's public tags — its page shows how many places are left. */
+function bustFormPage(slug: FormDataEntryValue | null) {
+  const tags: string[] = [TAGS.applicationFormList];
+  if (typeof slug === 'string' && slug) tags.push(TAGS.applicationForm(slug));
+  revalidate(tags);
+}
+
+/** Moves a waitlisted applicant into a place. The rule lives in the service. */
+export async function admitApplicant(formData: FormData): Promise<void> {
+  const id = String(formData.get('id') ?? '');
+
+  const result = await runAction<{ id: string }>(async () => {
+    const actor = await requireActor();
+    await admitFromWaitlist(db, actor, id);
+    bustFormPage(formData.get('slug'));
+    return ok({ id }, 'admin.saved');
+  });
+
+  redirect(withFlash(`/admin/careers/applicants/${id}`, result));
+}
+
 /**
  * Erasure.
  *
@@ -71,11 +94,11 @@ export async function reviewApplicant(
  * honoured when the most identifying artefact is still stored — so the storage
  * deletion is not a follow-up task, it is part of this endpoint.
  *
- * The storage call is not awaited inside the same try as the row deletion by
- * accident: the row is already gone by the time it runs, and a storage outage
- * must not roll that back or report failure to someone exercising a right. A
- * file left behind is logged and caught by the retention purge later; a row
- * left behind is a breach.
+ * The storage call runs after the row deletion has committed, on purpose: a
+ * storage outage must not roll that back or report failure to someone
+ * exercising a right. A file left behind is logged with the application id and
+ * must be removed by hand — the retention purge cannot find it, because it
+ * reads paths from rows and this row is gone. A row left behind is a breach.
  */
 export async function deleteApplicant(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '');
@@ -88,7 +111,10 @@ export async function deleteApplicant(formData: FormData): Promise<void> {
     if (attachmentPaths.length > 0) {
       try {
         const { createSupabaseAdminClient } = await import('@/lib/auth/supabase-server');
-        await createSupabaseAdminClient().storage.from('applications').remove(attachmentPaths);
+        const { error } = await createSupabaseAdminClient()
+          .storage.from('applications')
+          .remove(attachmentPaths);
+        if (error) throw error;
       } catch (error) {
         console.error('[applications] attachment cleanup failed', {
           applicationId: id,
@@ -98,6 +124,7 @@ export async function deleteApplicant(formData: FormData): Promise<void> {
       }
     }
 
+    bustFormPage(formData.get('slug'));
     return ok({ id }, 'admin.deleted');
   });
 

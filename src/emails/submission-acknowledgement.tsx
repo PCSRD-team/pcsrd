@@ -8,6 +8,11 @@ export type SubmissionAcknowledgementProps = {
   dict: MailDict;
   organizationName: string;
   reference: string;
+  /**
+   * Extra paragraphs after the reference: the careers portal's waiting-list
+   * notice and a form's own confirmation text. Plain strings, never markup.
+   */
+  notes?: readonly string[];
 };
 
 /**
@@ -27,6 +32,7 @@ export function SubmissionAcknowledgement({
   dict,
   organizationName,
   reference,
+  notes = [],
 }: SubmissionAcknowledgementProps) {
   const t = dict.acknowledgement;
   return (
@@ -40,6 +46,11 @@ export function SubmissionAcknowledgement({
         <Text style={styles.text}>
           {t.referenceIntro} <Latin>{reference}</Latin>
         </Text>
+        {notes.map((note) => (
+          <Text key={note} style={styles.text}>
+            {note}
+          </Text>
+        ))}
         <Text style={styles.text}>{t.keepReference}</Text>
       </Section>
       <Section>

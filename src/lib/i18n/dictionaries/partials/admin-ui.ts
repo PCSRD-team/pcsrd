@@ -108,9 +108,9 @@ export const admin_uiAr = {
       linkedVacancy: 'الشاغر المرتبط',
       linkedVacancyHint: 'اختياري. يربط النموذج بإعلان وظيفة قائم.',
       opensAt: 'تاريخ فتح التقديم',
-      opensAtHint: 'اتركه فارغاً ليفتح فور النشر.',
+      opensAtHint: 'بتوقيت فلسطين. اتركه فارغاً ليفتح فور النشر.',
       closesAt: 'تاريخ إغلاق التقديم',
-      closesAtHint: 'نموذج بلا تاريخ إغلاق يستقبل طلبات إلى ما لا نهاية.',
+      closesAtHint: 'بتوقيت فلسطين. نموذج بلا تاريخ إغلاق يستقبل طلبات إلى ما لا نهاية.',
       capacity: 'الحد الأقصى للمتقدمين',
       capacityHint: 'اتركه فارغاً لعدم تحديد سقف.',
       capacityRule: 'عند اكتمال العدد',
@@ -162,6 +162,7 @@ export const admin_uiAr = {
       maxDate: 'أحدث تاريخ',
       accept: 'أنواع الملفات المقبولة',
       acceptDocument: 'مستندات (PDF / Word)',
+      acceptScan: 'مستند أو صورة عنه',
       acceptImage: 'صور',
       acceptAny: 'مستندات وصور وملفات مضغوطة',
       moveUp: 'تحريك لأعلى',
@@ -206,6 +207,20 @@ export const admin_uiAr = {
       exportSensitive: 'تصدير مع البيانات الحسّاسة',
       exportSensitiveHint: 'يُسجَّل هذا الإجراء في سجل التدقيق.',
       exportFiltered: 'يشمل التصفية الحالية.',
+      exportTruncated:
+        'الملف غير مكتمل: بلغ التصدير حدّه الأقصى ({n} طلب). ضيّق التصفية وصدّر على دفعات.',
+
+      purgeAfter: 'يُحذف تلقائياً في',
+      fromStatus: 'من',
+      toStatus: 'إلى',
+      eventAt: 'التاريخ',
+      eventNotes: {
+        waitlisted: 'سُجّل على قائمة الانتظار',
+        admitted_from_waitlist: 'قُبل من قائمة الانتظار',
+      },
+      admitFromWaitlist: 'قبول من قائمة الانتظار',
+      admitHint: 'ينقل المتقدم إلى مقعد ويحتسبه ضمن الحد الأقصى للنموذج.',
+      redacted: 'مخفي — يتطلب صلاحية الاطلاع على البيانات الحسّاسة.',
 
       status: {
         new: 'جديد',
@@ -957,9 +972,9 @@ export const admin_uiEn: Shape = {
       linkedVacancy: 'Linked vacancy',
       linkedVacancyHint: 'Optional. Attaches this form to an existing vacancy listing.',
       opensAt: 'Applications open',
-      opensAtHint: 'Leave blank to open as soon as it is published.',
+      opensAtHint: 'Palestine time. Leave blank to open as soon as it is published.',
       closesAt: 'Applications close',
-      closesAtHint: 'A form with no closing date accepts applications indefinitely.',
+      closesAtHint: 'Palestine time. A form with no closing date accepts applications indefinitely.',
       capacity: 'Maximum applicants',
       capacityHint: 'Leave blank for no cap.',
       capacityRule: 'When the cap is reached',
@@ -1010,6 +1025,7 @@ export const admin_uiEn: Shape = {
       maxDate: 'Latest date',
       accept: 'Accepted file types',
       acceptDocument: 'Documents (PDF / Word)',
+      acceptScan: 'A document, or a photo of one',
       acceptImage: 'Images',
       acceptAny: 'Documents, images and archives',
       moveUp: 'Move up',
@@ -1052,6 +1068,20 @@ export const admin_uiEn: Shape = {
       exportSensitive: 'Export including sensitive data',
       exportSensitiveHint: 'This action is written to the audit log.',
       exportFiltered: 'Includes the current filter.',
+      exportTruncated:
+        'This file is incomplete: the export reached its limit ({n} applications). Narrow the filter and export in batches.',
+
+      purgeAfter: 'Deleted automatically on',
+      fromStatus: 'From',
+      toStatus: 'To',
+      eventAt: 'Date',
+      eventNotes: {
+        waitlisted: 'Placed on the waiting list',
+        admitted_from_waitlist: 'Admitted from the waiting list',
+      },
+      admitFromWaitlist: 'Admit from the waiting list',
+      admitHint: "Moves the applicant into a place and counts them against the form's cap.",
+      redacted: 'Hidden — requires access to sensitive data.',
 
       status: {
         new: 'New',

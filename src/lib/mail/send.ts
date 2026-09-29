@@ -1,7 +1,7 @@
 import { render, toPlainText } from '@react-email/components';
 import { createElement, type ReactElement } from 'react';
 import { Resend } from 'resend';
-import type { SubmissionType } from '@/db/schema/enums';
+import type { ApplicationFormKind, SubmissionType } from '@/db/schema/enums';
 import { SubmissionAcknowledgement } from '@/emails/submission-acknowledgement';
 import {
   type NotificationField,
@@ -139,9 +139,15 @@ export async function renderNotification(input: {
   payload: Record<string, unknown>;
   organizationName: string;
   hasAttachment?: boolean;
+  /** Overrides the heading and subject line; the careers portal names the form kind. */
+  heading?: string;
+  /** Overrides the admin link; an application lives under /admin/careers, not /admin/submissions. */
+  adminPath?: string;
 }): Promise<RenderedMail> {
   const dict = mailDict[STAFF_LOCALE];
-  const adminUrl = `${publicEnv.NEXT_PUBLIC_SITE_URL}/admin/submissions?ref=${encodeURIComponent(input.reference)}`;
+  const adminUrl = `${publicEnv.NEXT_PUBLIC_SITE_URL}${
+    input.adminPath ?? `/admin/submissions?ref=${encodeURIComponent(input.reference)}`
+  }`;
   const base = {
     locale: STAFF_LOCALE,
     dict,
@@ -149,6 +155,7 @@ export async function renderNotification(input: {
     type: input.type,
     reference: input.reference,
     adminUrl,
+    heading: input.heading,
   };
 
   // The sensitive branch is built without ever touching `input.payload`.
@@ -162,7 +169,7 @@ export async function renderNotification(input: {
       });
 
   return {
-    subject: `${dict.notification.subject[input.type]} — ${input.reference}`,
+    subject: `${input.heading ?? dict.notification.subject[input.type]} — ${input.reference}`,
     ...(await renderBoth(element)),
   };
 }
@@ -172,6 +179,7 @@ export async function renderAcknowledgement(input: {
   locale: Locale;
   reference: string;
   organizationName: string;
+  notes?: readonly string[];
 }): Promise<RenderedMail> {
   const dict = mailDict[input.locale];
   const element = createElement(SubmissionAcknowledgement, {
@@ -179,6 +187,7 @@ export async function renderAcknowledgement(input: {
     dict,
     organizationName: input.organizationName,
     reference: input.reference,
+    notes: input.notes,
   });
   return {
     subject: `${dict.acknowledgement.subject} — ${input.reference}`,
@@ -264,13 +273,20 @@ export async function notifySubmission(input: NotifyInput): Promise<void> {
 // ── Careers portal ───────────────────────────────────────────────────────
 
 export type NotifyApplicationInput = {
+  /** The application's id, for the link straight to its admin screen. */
+  applicationId: string;
   reference: string;
+  kind: ApplicationFormKind;
+  /** The form's own confirmation text in the applicant's locale, if it has one. */
+  confirmation?: string | null;
   locale: Locale;
   /** The form's title in the applicant's locale, for the acknowledgement. */
   formTitle: string;
   applicantName: string | null;
   applicantEmail: string | null;
   waitlisted: boolean;
+  /** Whether the applicant attached any file, so the email does not promise one that is not there. */
+  hasAttachments?: boolean;
   answers: Record<string, unknown>;
   /** Extra recipients the form's own settings name, beyond the HR inbox. */
   notifyEmails?: string[];
@@ -318,7 +334,9 @@ export async function notifyApplication(input: NotifyApplicationInput): Promise<
     isSensitive: false,
     payload: summary,
     organizationName,
-    hasAttachment: true,
+    hasAttachment: input.hasAttachments ?? false,
+    heading: mailDict[STAFF_LOCALE].notification.application[input.kind],
+    adminPath: `/admin/careers/applicants/${input.applicationId}`,
   });
 
   const sends: Promise<unknown>[] = [
@@ -336,6 +354,10 @@ export async function notifyApplication(input: NotifyApplicationInput): Promise<
       locale: input.locale,
       reference: input.reference,
       organizationName: await resolveOrganizationName(input.locale),
+      notes: [
+        ...(input.waitlisted ? [mailDict[input.locale].acknowledgement.waitlisted] : []),
+        ...(input.confirmation?.trim() ? [input.confirmation.trim()] : []),
+      ],
     });
     sends.push(
       resend().emails.send({
