@@ -98,6 +98,12 @@ are globally available after `next dev` / `next build` — use them instead of h
   closed by the no-`dangerouslySetInnerHTML` rule and the no-third-party-scripts rule.
 - **Confidential attachments are refused, not gated.** `02-API §6.5` and `05-ADMIN §7`
   contradict each other; the stricter one wins.
+- **One way to apply for a job: the careers portal.** The spec's
+  `submitJobApplication` / `JobApplicationForm` (a fixed form on the vacancy
+  page, rows in `form_submissions`) was removed on 2026-09-29. A vacancy gets a
+  draft portal form automatically (`ensureFormForVacancy`); applicants use
+  `/[locale]/apply/[slug]`, rows land in `applications`. Do not bring the old
+  form back.
 
 ## The database is smarter than the spec — read this before touching a service
 
@@ -108,8 +114,8 @@ describe, and it was verified against the running project, not inferred:
 | What exists | Where |
 |---|---|
 | `app_runtime` login role, **no `BYPASSRLS`** | the connection `DATABASE_URL` uses |
-| `FORCE ROW LEVEL SECURITY` on all 21 tables | so even the owner is subject |
-| 85 policies | `anon` reads `status='published'`; staff read everything |
+| `FORCE ROW LEVEL SECURITY` on all 26 tables | so even the owner is subject |
+| 101 policies (verified 2026-09-29) | `anon` reads `status='published'`; staff read everything |
 | 11 gate functions | `app.actor_id()`, `app.actor_role()`, `app.can_publish()`, `app.can_view_sensitive()`, `app.is_admin()`, `app.is_staff()` … |
 | 9 trigger functions | consent gates, status-transition guard, append-only audit, privilege guard |
 | 31 CHECK constraints | including `submissions_sensitive_unlinkable` — DNH-8 as a constraint |
@@ -118,7 +124,7 @@ describe, and it was verified against the running project, not inferred:
 
 1. **`DATABASE_URL` connects as `app_runtime`, `DIRECT_URL` as `postgres`.**
    Runtime is subject to RLS; DDL needs the owner. Pointing runtime at
-   `postgres` silently disables all 85 policies, because `postgres` has
+   `postgres` silently disables every policy, because `postgres` has
    `BYPASSRLS` — the site keeps working and the second line of defence is gone.
 
 2. **Every service mutation goes through `withActor()`** (`src/db/session.ts`),

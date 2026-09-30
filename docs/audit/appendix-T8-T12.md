@@ -1,5 +1,7 @@
 # Tracks T8 / T10 / T11 / T12 — Performance · SEO · States · Operations (raw findings)
 
+> **Snapshot.** The pre-launch audit as of August 2026 (commit `5fb312a`), kept as a record and not updated — some of it no longer matches the code. Current state: `docs/PROGRESS.md`. Latest full review: `docs/audit/07-REVIEW-2026-09-29.md`.
+
 Working file. Merged into `01-AUDIT-REPORT.md`.
 
 ## Verification note — two P1 claims independently proven by me

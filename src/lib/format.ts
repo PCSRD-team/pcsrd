@@ -1,4 +1,5 @@
 import type { Locale } from './i18n/config';
+import { SITE_TIME_ZONE } from './time-zone';
 
 /**
  * Formatting that must not differ between two components rendering the same
@@ -29,7 +30,35 @@ export function formatDate(
   return new Intl.DateTimeFormat(DATE_LOCALE[locale], { ...options, timeZone: 'UTC' }).format(date);
 }
 
-/** `2024 — 2026`, or `منذ 2024` when the end is open. */
+/**
+ * An **instant** — a `timestamptz` such as a form's `closes_at` — on the
+ * organisation's wall clock.
+ *
+ * `formatDate` pins UTC, which is right for a `date` column (it has no time,
+ * and UTC keeps `2026-10-01` from sliding to 30 September on a server west of
+ * Greenwich) and wrong for an instant: a form closing at 23:59 on 1 October in
+ * Gaza is 20:59 UTC, and at 01:00 local it is still the previous day in UTC —
+ * so the careers page showed a deadline a day early. Instants are shown in
+ * `Asia/Gaza`, with the time, because the time is part of the promise.
+ */
+export function formatInstant(
+  value: Date | string | null | undefined,
+  locale: Locale,
+  options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  },
+): string {
+  if (!value) return '';
+  const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat(DATE_LOCALE[locale], { ...options, timeZone: SITE_TIME_ZONE }).format(date);
+}
+
 /**
  * A machine-readable `datetime` attribute from a value that may already be a
  * string.
@@ -53,6 +82,7 @@ export function timeOf(value: Date | string | null | undefined): number | null {
   return Number.isNaN(date.getTime()) ? null : date.getTime();
 }
 
+/** `2024 — 2026`, or `منذ 2024` when the end is open. */
 export function formatPeriod(
   start: string | null,
   end: string | null,
@@ -78,8 +108,16 @@ export function formatNumber(value: number | string, locale: Locale): string {
 export function formatFileSize(bytes: number | null | undefined, locale: Locale): string {
   if (!bytes) return '';
   const mb = bytes / (1024 * 1024);
-  if (mb >= 1) return `${formatNumber(Math.round(mb * 10) / 10, locale)} MB`;
-  return `${formatNumber(Math.round(bytes / 1024), locale)} KB`;
+  // The unit comes from Intl, so an Arabic page reads «ميغابايت», not a Latin
+  // "MB" inside an Arabic sentence. Long form in Arabic: CLDR's short Arabic
+  // unit is «م.ب», which nobody recognises.
+  const [unit, value] = mb >= 1 ? (['megabyte', Math.round(mb * 10) / 10] as const) : (['kilobyte', Math.round(bytes / 1024)] as const);
+  return new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-latn' : 'en-GB', {
+    style: 'unit',
+    unit,
+    unitDisplay: locale === 'ar' ? 'long' : 'short',
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
 /** Public URL for a Storage object. */

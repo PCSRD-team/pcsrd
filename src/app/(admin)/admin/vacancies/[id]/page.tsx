@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { createVacancyApplicationForm } from '@/actions/admin/application-forms';
 import { saveVacancyForm } from '@/actions/admin/entity-forms';
 import { adminFormDict } from '@/components/admin/admin-dict';
-import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { adminUi, count } from '@/components/admin/admin-ui-dict';
 import { ContentForm } from '@/components/admin/content-form';
 import { StatusBadge } from '@/components/admin/controls';
 import { VACANCY_FIELDS } from '@/components/admin/field-configs';
@@ -100,9 +100,9 @@ function VacancyFormPanel({
           <Caption className="mbs-1 mbe-3">{t.vacancyFormBody}</Caption>
           <Cluster gap={2} className="mbe-3">
             <StatusBadge status={form.status} />
-            <Badge tone="neutral">{fill(t.applicantCount, { n: form.applicationCount })}</Badge>
+            <Badge tone="neutral">{count(t.applicantCount, form.applicationCount)}</Badge>
             {form.newCount > 0 ? (
-              <Badge tone="accent">{fill(t.newApplicantCount, { n: form.newCount })}</Badge>
+              <Badge tone="accent">{count(t.newApplicantCount, form.newCount)}</Badge>
             ) : null}
           </Cluster>
           <Cluster gap={2}>

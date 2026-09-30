@@ -59,7 +59,7 @@ export const ar = {
 
   channels: {
     barLabel: 'القنوات الرسمية',
-    barText: 'تأكّد أنك تتعامل مع حساباتنا الرسمية',
+    barText: 'تأكّد من أنك تتعامل مع حساباتنا الرسمية',
     barCta: 'قائمة القنوات المعتمدة',
   },
 
@@ -86,10 +86,21 @@ export const ar = {
     targetGroups: 'الفئات المستهدفة',
     projectsInProgram: 'مشاريع هذا البرنامج',
     projectCount: 'عدد المشاريع',
+    /** A count of projects, by plural form — `plural()` in `lib/i18n/plural.ts`. */
+    projectsCount: {
+      zero: 'لا مشاريع',
+      one: 'مشروع واحد',
+      two: 'مشروعان',
+      few: '{n} مشاريع',
+      many: '{n} مشروعاً',
+      other: '{n} مشروع',
+    },
   },
 
   projects: {
     title: 'المشاريع',
+    /** Screen-reader heading above the result list (keeps h1 → h2 → h3). */
+    listHeading: 'قائمة المشاريع',
     lead: 'سجل المشاريع المنفَّذة والجارية.',
     filters: 'تصفية',
     clearFilters: 'إزالة التصفية',
@@ -101,10 +112,18 @@ export const ar = {
     statePlanned: 'مخطَّط',
     stateActive: 'جارٍ',
     stateCompleted: 'مكتمل',
-    results: 'نتيجة',
+    /** The filtered total, by plural form — `plural()` in `lib/i18n/plural.ts`. */
+    resultsCount: {
+      zero: 'لا نتائج',
+      one: 'نتيجة واحدة',
+      two: 'نتيجتان',
+      few: '{n} نتائج',
+      many: '{n} نتيجة',
+      other: '{n} نتيجة',
+    },
     objective: 'الهدف',
     activities: 'الأنشطة',
-    outcomes: 'المخرجات',
+    outcomes: 'النتائج',
     period: 'الفترة',
     locations: 'مناطق التنفيذ',
     implementingPartners: 'شركاء التنفيذ',
@@ -131,6 +150,8 @@ export const ar = {
     categoryStatement: 'بيان',
     categoryAnnouncement: 'إعلان',
     publishedOn: 'نُشر في',
+    /** Screen-reader heading above the post list (keeps h1 → h2 → h3). */
+    listHeading: 'قائمة الأخبار',
   },
 
   careers: {
@@ -151,6 +172,14 @@ export const ar = {
     opportunity: 'الفرصة',
     opportunityKind: 'النوع',
     noDeadline: 'مفتوح دون موعد نهائي',
+    /** `vacancies.employment_type` is schema.org vocabulary; this is what a reader sees. */
+    employmentTypes: {
+      FULL_TIME: 'دوام كامل',
+      PART_TIME: 'دوام جزئي',
+      VOLUNTEER: 'تطوّع',
+    },
+    noVacanciesSeeForms: 'لا شواغر وظيفية الآن — اطّلع على الفرص المفتوحة أدناه.',
+    vacancyDetails: 'تفاصيل الشاغر',
   },
 
   /**
@@ -164,25 +193,39 @@ export const ar = {
   apply: {
     title: 'التقديم',
     submit: 'إرسال الطلب',
-    submitting: 'جاري الإرسال…',
+    submitting: 'جارٍ الإرسال…',
     successWaitlisted:
       'وصلنا طلبك وسُجّل على قائمة الانتظار — اكتمل العدد المطلوب، وسنتواصل معك إن توفّر مكان.',
     deadline: 'آخر موعد للتقديم',
     opensAt: 'يبدأ التقديم',
     slotsLeft: 'المقاعد المتبقّية: {n}',
     closedTitle: 'أُغلق باب التقديم',
-    closedBody: 'انتهت فترة التقديم على هذا الإعلان. تابع صفحة الوظائف للإعلانات الجديدة.',
+    closedBody: 'انتهت فترة التقديم على هذه الفرصة. تابع صفحة الوظائف للفرص الجديدة.',
     notYetTitle: 'لم يُفتح التقديم بعد',
     notYetBody: 'يبدأ استقبال الطلبات في {date}.',
     fullTitle: 'اكتمل العدد',
-    fullBody: 'وصل هذا الإعلان إلى العدد المطلوب من المتقدمين.',
+    fullBody: 'وصلت هذه الفرصة إلى العدد المطلوب من المتقدمين.',
     waitlistNotice: 'اكتمل العدد المطلوب. ما زال بإمكانك التقديم وسيُسجَّل طلبك على قائمة الانتظار.',
     consentLabel: 'أوافق على معالجة بياناتي الشخصية لغرض النظر في هذا الطلب.',
     consentHelp:
-      'تُستخدم بياناتك لغرض التوظيف فقط، ولا تُشارك خارج المؤسسة، وتُحذف تلقائياً بعد انتهاء مدة الاحتفاظ.',
-    retentionNotice: 'تُحذف بيانات هذا الطلب تلقائياً بعد {months} شهراً.',
+      'تُستخدم بياناتك للنظر في هذا الطلب فقط، ولا تُشارَك خارج المؤسسة، وتُحذف تلقائياً بعد انتهاء مدة الاحتفاظ.',
+    /**
+     * `retentionNotice` with the month agreeing with its number. Pass the
+     * form's retention period to `plural()`; `retentionNotice` stays until
+     * the apply page has moved over.
+     */
+    retentionNoticeCount: {
+      zero: 'تُحذف بيانات هذا الطلب تلقائياً.',
+      one: 'تُحذف بيانات هذا الطلب تلقائياً بعد شهر واحد.',
+      two: 'تُحذف بيانات هذا الطلب تلقائياً بعد شهرين.',
+      few: 'تُحذف بيانات هذا الطلب تلقائياً بعد {n} أشهر.',
+      many: 'تُحذف بيانات هذا الطلب تلقائياً بعد {n} شهراً.',
+      other: 'تُحذف بيانات هذا الطلب تلقائياً بعد {n} شهر.',
+    },
     filesHint: 'مجموع حجم المرفقات لا يتجاوز 4 ميغابايت.',
     openFormsTitle: 'نماذج التقديم المفتوحة',
+    /** Follows a closing date and time: the window is on the Palestine clock. */
+    siteTimeZone: 'بتوقيت فلسطين',
     kind: {
       job: 'وظيفة',
       volunteer: 'تطوّع',
@@ -202,6 +245,8 @@ export const ar = {
     notOurs: 'ليس تابعاً لنا',
     reportTitle: 'أبلغ عن انتحال صفة',
     reportLead: 'إذا رأيت حساباً أو رقماً ينتحل اسمنا، أخبرنا.',
+    noChannelsPublished:
+      'لم تُنشر قائمة القنوات الرسمية بعد. لا تتعامل مع أي حساب يدّعي تمثيلنا، وتواصل معنا عبر صفحة التواصل.',
   },
 
   about: {
@@ -284,7 +329,7 @@ export const ar = {
     channel: 'القناة',
     identifier: 'المعرّف أو الرقم',
     evidenceUrl: 'رابط الدليل',
-    occurredOn: 'تاريخ الحادثة',
+    occurredOn: 'تاريخ الواقعة',
   },
 
   contactPage: {
@@ -293,11 +338,11 @@ export const ar = {
     formTitle: 'أرسل لنا رسالة',
     formLead: 'الحقول المعلّمة بنجمة مطلوبة. سنستخدم بياناتك للرد على هذا الطلب فقط.',
     detailsTitle: 'بيانات التواصل',
-    detailsLead: 'تواصل معنا مباشرة أو تحقق من حسابات المؤسسة الرسمية.',
+    detailsLead: 'تواصل معنا مباشرة أو تحقّق من حسابات المؤسسة الرسمية.',
     responseNote: 'تصل رسالتك مباشرة إلى فريق المؤسسة وتحصل على رقم مرجعي للمتابعة.',
     officialChannels: 'حساباتنا الرسمية',
     noContactDetails: 'ستظهر بيانات التواصل هنا بعد إضافتها من لوحة التحكم.',
-    verifyChannels: 'تحقق من جميع القنوات',
+    verifyChannels: 'تحقّق من جميع القنوات',
     complaintsEyebrow: 'مسار آمن ومستقل',
     complaintsLead: 'يمكنك تقديم شكوى بسرية، مع إمكانية عدم ذكر اسمك أو أي وسيلة تواصل.',
     complaintFormTitle: 'تفاصيل الشكوى',
@@ -324,7 +369,7 @@ export const ar = {
     field: {
       required: 'هذا الحقل مطلوب.',
       email: 'أدخل بريداً إلكترونياً صحيحاً.',
-      phone: 'أدخل رقم هاتف صحيحاً.',
+      phone: 'أدخل رقم هاتف صحيحاً، مثل 0599123456 أو ‎+970599123456.',
       url: 'أدخل رابطاً صحيحاً.',
       date: 'أدخل تاريخاً صحيحاً.',
       number: 'أدخل رقماً صحيحاً.',
@@ -332,6 +377,19 @@ export const ar = {
       slug: 'يُسمح بالحروف والأرقام والشرطة فقط.',
       uuid: 'معرّف غير صالح.',
       tooShort: 'النص أقصر من المطلوب.',
+      /**
+       * `tooShort` naming the minimum, by plural form. Used where the form
+       * knows the field's `minLength` — the portal forms — and filled with
+       * `plural()`.
+       */
+      tooShortMin: {
+        zero: 'هذا الحقل مطلوب.',
+        one: 'اكتب حرفاً واحداً على الأقل.',
+        two: 'اكتب حرفين على الأقل.',
+        few: 'اكتب {n} أحرف على الأقل.',
+        many: 'اكتب {n} حرفاً على الأقل.',
+        other: 'اكتب {n} حرف على الأقل.',
+      },
       tooLong: 'النص أطول من المسموح.',
       tooSmall: 'الرقم أصغر من المسموح.',
       tooLarge: 'الرقم أكبر من المسموح.',
@@ -366,10 +424,10 @@ export const ar = {
      * different next steps, which is why they are not one message.
      */
     apply: {
-      closed: 'انتهت فترة التقديم على هذا الإعلان.',
-      notYetOpen: 'لم يبدأ التقديم على هذا الإعلان بعد.',
-      full: 'اكتمل العدد المطلوب من المتقدمين لهذا الإعلان.',
-      duplicate: 'سبق أن قدّمت طلباً على هذا الإعلان بهذا البريد الإلكتروني.',
+      closed: 'انتهت فترة التقديم على هذه الفرصة.',
+      notYetOpen: 'لم يبدأ التقديم على هذه الفرصة بعد.',
+      full: 'اكتمل العدد المطلوب من المتقدمين لهذه الفرصة.',
+      duplicate: 'سبق أن قدّمت طلباً على هذه الفرصة بهذا البريد الإلكتروني.',
     },
 
     /** The careers portal, admin side: refusals from the form builder. */
@@ -512,7 +570,7 @@ export const ar = {
         'صلاحية قراءة الشكاوى السرّية تُمنح لكل شخص على حدة، ولا يمنحها دور المدير تلقائياً.',
       invite: 'دعوة مستخدم',
       inviteHint:
-        'يصل المدعوّ بريد لتعيين كلمة المرور. يبدأ الحساب بدور «محرّر» ما لم يُحدَّد غير ذلك.',
+        'يتلقّى المدعوّ رسالة بريد إلكتروني لتعيين كلمة المرور. يبدأ الحساب بدور «محرّر» ما لم يُحدَّد غير ذلك.',
       email: 'البريد الإلكتروني',
       fullName: 'الاسم الكامل',
       role: 'الدور',
@@ -536,7 +594,7 @@ export const ar = {
     redirects: {
       title: 'التحويلات',
       description:
-        'تسري فوراً على الموقع: يستشير الوكيل قائمة مخزّنة مؤقتاً ويُحدَّثها كل حفظ.',
+        'تسري فوراً على الموقع؛ إذ تُحدَّث القائمة المخزّنة مؤقتاً مع كل حفظ.',
       add: 'إضافة تحويل',
       source: 'من المسار',
       sourceHint: 'المسار القديم كما يظهر في الرابط، مثل /old-page. يُطابَق مع أو بدون بادئة اللغة.',
@@ -575,7 +633,7 @@ export const ar = {
         project: 'مشروع',
         story: 'قصة',
         post: 'خبر',
-        vacancy: 'وظيفة',
+        vacancy: 'شاغر',
         page: 'صفحة',
         partner: 'شريك',
         person: 'شخص',

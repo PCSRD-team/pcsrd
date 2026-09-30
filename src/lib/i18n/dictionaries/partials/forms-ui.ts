@@ -21,15 +21,25 @@ export const forms_uiAr = {
      */
     noScriptCaptcha:
       'خطوة التحقّق من أنك لست روبوتاً تعمل عبر JavaScript. فعّله في المتصفح ثم أعد الإرسال، أو تواصل معنا عبر القنوات المذكورة في هذه الصفحة.',
-    /** The partnership form's country field takes a two-letter code. */
-    countryHint: 'رمز الدولة المكوّن من حرفين، مثل PS أو JO.',
     /** Title of the notice above the complaint form's fields. */
     confidentialTitle: 'قناة سرّية',
     /**
      * A browser never re-fills a file input, so after a failed submission the
      * CV has to be chosen again. Said once, under the field, only then.
      */
-    reselectFile: 'اختر ملف السيرة الذاتية مجدداً بعد تصحيح الحقول.',
+    reselectFile: 'اختر الملف مجدداً بعد تصحيح الحقول.',
+    /**
+     * The careers portal's receipt. Distinct from `forms.successWithReference`
+     * because an applicant sent an application, not a message.
+     */
+    applicationSuccess: 'وصلنا طلبك. رقمك المرجعي:',
+    /**
+     * Under a field whose `visibleWhen` names another field. Every field is
+     * rendered — the server decides what counted — so the condition is said
+     * in words. `{field}` is the controlling field's label, `{values}` the
+     * matching options joined by `common.listSeparator`.
+     */
+    conditionHint: 'أجب عن هذا الحقل إذا كانت إجابتك في «{field}»: {values}.',
   },
 } satisfies Record<string, Record<string, string>>;
 
@@ -44,8 +54,9 @@ export const forms_uiEn: Shape = {
   formsUi: {
     noScriptCaptcha:
       'The "I am not a robot" check runs on JavaScript. Enable it in your browser and submit again, or reach us through the channels listed on this page.',
-    countryHint: 'Two-letter country code, such as PS or JO.',
     confidentialTitle: 'Confidential channel',
-    reselectFile: 'Choose your CV file again after correcting the fields.',
+    reselectFile: 'Choose the file again after correcting the fields.',
+    applicationSuccess: 'We have received your application. Your reference number:',
+    conditionHint: 'Answer this only if you chose {values} for "{field}".',
   },
 };

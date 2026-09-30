@@ -40,6 +40,22 @@ async function expectDocumentShape(page: Page, locale: Locale, route: string) {
   await expect(description, 'meta description').toHaveCount(1);
   expect((await description.getAttribute('content'))?.trim(), 'meta description content').toBeTruthy();
 
+  // Every page carries a share card and the feed link. A page-level
+  // `openGraph` replaces the layout's, so both are set by `buildMetadata`,
+  // and a regression there drops them from every static page at once.
+  await expect(page.locator('meta[property="og:image"]'), 'og:image').not.toHaveCount(0);
+  await expect(
+    page.locator('link[rel="alternate"][type="application/rss+xml"]'),
+    'RSS autodiscovery link',
+  ).toHaveCount(1);
+
+  // The language link is in the served HTML, not only after hydration: the
+  // Suspense fallback is a real link built from the path.
+  await expect(page.locator(`a[hreflang="${locale === 'ar' ? 'en' : 'ar'}"]`).first()).toHaveAttribute(
+    'href',
+    /^\/(ar|en)/,
+  );
+
   const canonical = page.locator('link[rel="canonical"]');
   await expect(canonical, 'canonical link').toHaveCount(1);
   const canonicalHref = await canonical.getAttribute('href');
@@ -89,13 +105,12 @@ async function expectDocumentShape(page: Page, locale: Locale, route: string) {
 }
 
 test.describe('static routes', () => {
-  for (const { route, implemented, contentGated } of STATIC_ROUTES) {
+  for (const { route, contentGated } of STATIC_ROUTES) {
     test(`${route}`, async ({ page, siteLocale }) => {
       const response = await go(page, path(siteLocale, route));
       expect(response, 'navigation produced a response').not.toBeNull();
       const status = response?.status() ?? 0;
 
-      test.fixme(!implemented && status === 404, `route ${route} exists in the spec but not in src/app yet`);
       test.skip(Boolean(contentGated) && status === 404, `no published CMS page behind ${route}`);
 
       expect(status, `${route} should answer 200`).toBe(200);

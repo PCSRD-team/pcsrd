@@ -118,7 +118,10 @@ export async function inviteUser(
 
   return withActor(db, actor, async (tx) => {
     // The trigger created this row with least privilege: editor, no sensitive
-    // access. Anything above that is an explicit, audited grant.
+    // access, and **inactive** (drizzle/0012). An account that signed itself up
+    // through the public Auth API gets the same row and stays locked out; only
+    // an invitation activates one. Anything above that is an explicit, audited
+    // grant.
     const [created] = await tx
       .select()
       .from(profiles)
@@ -128,18 +131,14 @@ export async function inviteUser(
 
     const role = input.role ?? 'editor';
     const canViewSensitive = input.canViewSensitive ?? false;
-    const needsUpdate = role !== created.role || canViewSensitive !== created.canViewSensitive;
-
-    const row = needsUpdate
-      ? one(
-          await tx
-            .update(profiles)
-            .set({ role, canViewSensitive, updatedAt: new Date() })
-            .where(eq(profiles.id, created.id))
-            .returning(),
-          'profile',
-        )
-      : created;
+    const row = one(
+      await tx
+        .update(profiles)
+        .set({ role, canViewSensitive, isActive: true, updatedAt: new Date() })
+        .where(eq(profiles.id, created.id))
+        .returning(),
+      'profile',
+    );
 
     await writeAudit(tx, actor, {
       action: 'invite',
@@ -149,6 +148,7 @@ export async function inviteUser(
         email: { from: null, to: row.email },
         role: { from: null, to: row.role },
         canViewSensitive: { from: null, to: row.canViewSensitive },
+        isActive: { from: created.isActive, to: row.isActive },
       },
     });
 

@@ -166,10 +166,9 @@ test.describe('header keyboard navigation', () => {
 
 test.describe('no horizontal overflow at 375px @mobile', () => {
   for (const locale of LOCALES) {
-    for (const { route, implemented } of STATIC_ROUTES) {
+    for (const { route } of STATIC_ROUTES) {
       test(`${locale} ${route}`, async ({ page }) => {
         const response = await go(page, path(locale, route));
-        test.fixme(!implemented && response?.status() === 404, `route ${route} is not implemented yet`);
         test.skip(response?.status() === 404, `no published content at ${route}`);
 
         const { scrollWidth, innerWidth } = await page.evaluate(() => ({

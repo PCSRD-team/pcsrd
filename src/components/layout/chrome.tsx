@@ -13,7 +13,7 @@ import { storageUrl } from '@/lib/format';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import { type Locale, localePath } from '@/lib/i18n/config';
 import { buildWhatsAppUrl } from '@/lib/utils';
-import { LanguageSwitcher } from './language-switcher';
+import { LanguageSwitcher, LanguageSwitcherStatic } from './language-switcher';
 
 /**
  * Persistent chrome — Server Components throughout.
@@ -238,7 +238,9 @@ export function ChannelsBar({ locale, dict }: { locale: Locale; dict: Dictionary
               </li>
             ))}
           </ul>
-          <Suspense fallback={<span className="inline-block min-h-target min-w-16" />}>
+          {/* The fallback is a working link built from the path alone — it is
+              what the static HTML carries (see `LanguageSwitcherStatic`). */}
+          <Suspense fallback={<LanguageSwitcherStatic locale={locale} label={dict.common.switchToEnglish} />}>
             <LanguageSwitcher locale={locale} label={dict.common.switchToEnglish} />
           </Suspense>
         </div>
@@ -623,38 +625,46 @@ export function SiteFooter({
             <Eyebrow as="p" id="footer-contact" className="mbe-4 text-paper">
               {dict.footer.contactTitle}
             </Eyebrow>
-            <ul className="space-y-2 text-small">
-              {phones.map((phone) => (
-                <li key={phone} className="flex items-center gap-2">
-                  <Icon name="phone" size={16} />
-                  <a href={`tel:${phone}`} className="text-paper hover:text-gold-050">
-                    <Bidi>{phone}</Bidi>
-                  </a>
-                </li>
-              ))}
-              {whatsapp ? (
-                <li className="flex flex-wrap items-center gap-2">
-                  <Icon name="phone" size={16} />
-                  <span className="text-paper/80">{dict.siteChrome.whatsapp}</span>
-                  <a href={buildWhatsAppUrl(whatsapp)} className="text-paper hover:text-gold-050" {...externalAttrs('https://wa.me')}>
-                    <Bidi>{whatsapp}</Bidi>
-                  </a>
-                </li>
-              ) : null}
-              {emails.map((email) => (
-                <li key={email} className="flex items-center gap-2">
-                  <Icon name="mail" size={16} />
-                  <a href={`mailto:${email}`} className="text-paper hover:text-gold-050">
-                    <Bidi>{email}</Bidi>
-                  </a>
-                </li>
-              ))}
-              {address ? (
-                <li className="flex items-start gap-2">
-                  <Icon name="pin" size={16} className="mbs-1" />
-                  <span className="text-paper">{address}</span>
-                </li>
-              ) : null}
+            {/* `<address>` holds the organisation's contact details and nothing
+                else — the page links below are navigation, not contact
+                information, so they are a separate list. `not-italic`
+                undoes the UA style; the design sets no italics. */}
+            <address className="not-italic">
+              <ul className="space-y-2 text-small">
+                {phones.map((phone) => (
+                  <li key={phone} className="flex items-center gap-2">
+                    <Icon name="phone" size={16} />
+                    <a href={`tel:${phone}`} className="text-paper hover:text-gold-050">
+                      <Bidi>{phone}</Bidi>
+                    </a>
+                  </li>
+                ))}
+                {whatsapp ? (
+                  <li className="flex flex-wrap items-center gap-2">
+                    <Icon name="phone" size={16} />
+                    <span className="text-paper/80">{dict.siteChrome.whatsapp}</span>
+                    <a href={buildWhatsAppUrl(whatsapp)} className="text-paper hover:text-gold-050" {...externalAttrs('https://wa.me')}>
+                      <Bidi>{whatsapp}</Bidi>
+                    </a>
+                  </li>
+                ) : null}
+                {emails.map((email) => (
+                  <li key={email} className="flex items-center gap-2">
+                    <Icon name="mail" size={16} />
+                    <a href={`mailto:${email}`} className="text-paper hover:text-gold-050">
+                      <Bidi>{email}</Bidi>
+                    </a>
+                  </li>
+                ))}
+                {address ? (
+                  <li className="flex items-start gap-2">
+                    <Icon name="pin" size={16} className="mbs-1" />
+                    <span className="text-paper">{address}</span>
+                  </li>
+                ) : null}
+              </ul>
+            </address>
+            <ul className="mbs-2 space-y-2 text-small">
               {[
                 { label: dict.nav.contact, href: localePath(locale, '/contact') },
                 { label: dict.nav.partner, href: localePath(locale, '/get-involved/partner') },

@@ -63,3 +63,39 @@ export function dateToZonedInput(date: Date, timeZone: string = SITE_TIME_ZONE):
   );
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
+
+/**
+ * Today's date in the organisation's zone, as `YYYY-MM-DD`.
+ *
+ * `new Date().toISOString().slice(0, 10)` is today **in UTC**, which in Gaza
+ * is yesterday for the first two or three hours of every day — so a vacancy
+ * whose deadline was today read as closed from midnight to 03:00 local time,
+ * and the sitemap dropped it. Deadlines are Palestine dates; they are compared
+ * with a Palestine date.
+ */
+export function siteToday(now: Date = new Date(), timeZone: string = SITE_TIME_ZONE): string {
+  return dateToZonedInput(now, timeZone).slice(0, 10);
+}
+
+/** `+03:00` / `+02:00` — the zone's UTC offset at `date`, in ISO-8601 form. */
+export function zoneOffset(date: Date, timeZone: string = SITE_TIME_ZONE): string {
+  const minutes = offsetMinutes(date, timeZone);
+  const sign = minutes < 0 ? '-' : '+';
+  const abs = Math.abs(minutes);
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+  const mm = String(abs % 60).padStart(2, '0');
+  return `${sign}${hh}:${mm}`;
+}
+
+/**
+ * The last second of a site-zone date, as an ISO-8601 string with its offset:
+ * `2026-10-01` → `2026-10-01T23:59:59+03:00`.
+ *
+ * A deadline column is a date, and "apply by 1 October" means until the end of
+ * that day in Gaza. Emitting the bare date in `JobPosting.validThrough` let
+ * aggregators read it as midnight UTC at the *start* of the day.
+ */
+export function endOfSiteDay(date: string, timeZone: string = SITE_TIME_ZONE): string {
+  const instant = zonedInputToDate(`${date}T23:59:59`, timeZone);
+  return `${date}T23:59:59${zoneOffset(instant, timeZone)}`;
+}

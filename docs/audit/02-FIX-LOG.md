@@ -1,5 +1,7 @@
 # 02 — Fix log
 
+> **Snapshot.** The pre-launch audit as of August 2026 (commit `5fb312a`), kept as a record and not updated — some of it no longer matches the code. Current state: `docs/PROGRESS.md`. Latest full review: `docs/audit/07-REVIEW-2026-09-29.md`.
+
 Every change made during this audit, in commit order. Each entry gives the root cause in one
 sentence, the files, the commit, and how the fix was verified.
 

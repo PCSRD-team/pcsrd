@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import {
+  listApplyFormLocales,
   listPageKeys,
   listPostSlugs,
   listProgramSlugs,
@@ -11,6 +12,7 @@ import { listProjectSlugs } from '@/db/queries/projects';
 import { publicEnv } from '@/lib/env.public';
 import { prerenderData } from '@/lib/build-time';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/lib/i18n/config';
+import { siteToday } from '@/lib/time-zone';
 
 /**
  * The sitemap.
@@ -45,6 +47,10 @@ type ChangeFrequency = NonNullable<Entry['changeFrequency']>;
 const STATIC_PATHS: { path: string; changeFrequency: ChangeFrequency; priority: number }[] = [
   { path: '', changeFrequency: 'weekly', priority: 1 },
   { path: '/about', changeFrequency: 'monthly', priority: 0.8 },
+  { path: '/about/vision-mission', changeFrequency: 'yearly', priority: 0.6 },
+  { path: '/about/strategy', changeFrequency: 'yearly', priority: 0.6 },
+  { path: '/about/governance', changeFrequency: 'yearly', priority: 0.6 },
+  { path: '/about/memberships', changeFrequency: 'yearly', priority: 0.5 },
   { path: '/programs', changeFrequency: 'monthly', priority: 0.9 },
   { path: '/projects', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/impact', changeFrequency: 'monthly', priority: 0.8 },
@@ -54,7 +60,9 @@ const STATIC_PATHS: { path: string; changeFrequency: ChangeFrequency; priority: 
   { path: '/careers', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/contact', changeFrequency: 'yearly', priority: 0.5 },
   { path: '/verify', changeFrequency: 'yearly', priority: 0.7 },
+  { path: '/get-involved', changeFrequency: 'yearly', priority: 0.6 },
   { path: '/get-involved/partner', changeFrequency: 'yearly', priority: 0.6 },
+  { path: '/get-involved/support', changeFrequency: 'yearly', priority: 0.5 },
   { path: '/get-involved/volunteer', changeFrequency: 'yearly', priority: 0.6 },
 ];
 
@@ -97,6 +105,7 @@ type SluggedRow = {
   slugAr: string;
   slugEn: string;
   translationStatus: string;
+  noIndex: boolean;
   updatedAt: Date | string;
   publishedAt: Date | string | null;
 };
@@ -117,15 +126,26 @@ const lastModified = (row: {
   return published && published > updated ? published : updated;
 };
 
+/** A record that asked not to be indexed is not advertised to the indexer either. */
+const indexable = <T extends { noIndex: boolean }>(rows: T[]): T[] => rows.filter((row) => !row.noIndex);
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [programs, projects, posts, stories, vacancies, pageKeys] = await Promise.all([
-    prerenderData('sitemap programmes', () => listProgramSlugs(), []),
-    prerenderData('sitemap projects', () => listProjectSlugs(), []),
-    prerenderData('sitemap posts', () => listPostSlugs(), []),
-    prerenderData('sitemap stories', () => listStorySlugs(), []),
-    prerenderData('sitemap vacancies', () => listVacancySlugs(), []),
-    prerenderData('sitemap pages', () => listPageKeys(), []),
+  const [programs, projects, posts, stories, vacancies, pageKeys, formLocales] = await Promise.all([
+    prerenderData('sitemap programmes', () => listProgramSlugs(), []).then(indexable),
+    prerenderData('sitemap projects', () => listProjectSlugs(), []).then(indexable),
+    prerenderData('sitemap posts', () => listPostSlugs(), []).then(indexable),
+    prerenderData('sitemap stories', () => listStorySlugs(), []).then(indexable),
+    prerenderData('sitemap vacancies', () => listVacancySlugs(), []).then(indexable),
+    prerenderData('sitemap pages', () => listPageKeys(), []).then(indexable),
+    prerenderData('sitemap form locales', () => listApplyFormLocales(), []),
   ]);
+  const formLocale = new Map(formLocales.map((row) => [row.slug, row]));
+
+  // Static pages have no row of their own; the newest content edit anywhere
+  // is an honest upper bound and costs nothing — every list is already here.
+  const newest = [...programs, ...projects, ...posts, ...stories, ...pageKeys]
+    .map((row) => lastModified(row))
+    .reduce<Date | null>((max, date) => (!max || date > max ? date : max), null);
 
   // Portal forms that are taking applications now. Uncached on purpose: the
   // sitemap is regenerated on its own schedule and must not serve a form that
@@ -135,12 +155,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Open positions only. A closed vacancy stays reachable for whoever
   // bookmarked it, but a sitemap that keeps advertising it invites Google
   // Jobs to list a job nobody can apply for.
-  const today = new Date().toISOString().slice(0, 10);
+  // Today in Gaza — deadlines are Palestine dates (see `siteToday`).
+  const today = siteToday();
   const openVacancies = vacancies.filter((vacancy) => vacancy.deadline >= today);
 
   return [
     ...STATIC_PATHS.flatMap(({ path, changeFrequency, priority }) =>
-      entriesFor({ ar: path, en: path }, { changeFrequency, priority }),
+      entriesFor({ ar: path, en: path }, { lastModified: newest, changeFrequency, priority }),
     ),
 
     ...programs.flatMap((row) =>
@@ -183,18 +204,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ),
 
-    ...openForms.flatMap((form) =>
-      entriesFor(
-        { ar: `/apply/${form.slug}`, en: `/apply/${form.slug}` },
-        { changeFrequency: 'weekly', priority: 0.6 },
-      ),
-    ),
+    // The English URL is listed only when the form has an English title —
+    // otherwise it is the Arabic form, `noindex`, canonicalised to Arabic.
+    ...openForms.flatMap((form) => {
+      const locales = formLocale.get(form.slug);
+      return entriesFor(
+        locales?.hasEnglish
+          ? { ar: `/apply/${form.slug}`, en: `/apply/${form.slug}` }
+          : { ar: `/apply/${form.slug}` },
+        {
+          lastModified: locales ? new Date(locales.updatedAt) : undefined,
+          changeFrequency: 'weekly',
+          priority: 0.6,
+        },
+      );
+    }),
 
     // Legal pages are addressed by key, and the key is the same in both
     // locales. Only the keys the legal route serves are listed; `verify` is
     // a page record too but is rendered at `/verify`, which is static above.
     ...pageKeys
-      .filter((row) => ['privacy', 'accessibility', 'terms'].includes(row.key))
+      // An empty legal page renders a placeholder, not a policy.
+      .filter((row) => row.hasBody && ['privacy', 'accessibility', 'terms'].includes(row.key))
       .flatMap((row) =>
         entriesFor(
           row.translationStatus === 'ar_only'

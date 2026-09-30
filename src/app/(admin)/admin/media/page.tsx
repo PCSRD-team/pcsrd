@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { adminDict } from '@/components/admin/admin-dict';
-import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { adminUi, fill, count } from '@/components/admin/admin-ui-dict';
 import { AdminPagination } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { MediaUploader } from '@/components/admin/media-uploader';
@@ -60,7 +60,7 @@ export default async function MediaPage({ searchParams }: PageProps<'/admin/medi
 
   return (
     <>
-      <AdminHeader title={t.title} description={fill(t.fileCount, { n: result.total })} />
+      <AdminHeader title={t.title} description={count(t.fileCount, result.total)} />
 
       <Flash searchParams={search} />
 

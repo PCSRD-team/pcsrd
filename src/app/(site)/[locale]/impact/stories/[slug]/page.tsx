@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { mediaImage } from '@/components/content/media';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { mediaImage, mediaSrc } from '@/components/content/media';
 import { ContentBreadcrumbs, TranslationNotice } from '@/components/content/page-chrome';
 import { RichText } from '@/components/content/rich-text';
 import { getSiteName, toTranslationStatus } from '@/components/content/site';
@@ -10,10 +10,10 @@ import { Notice } from '@/components/ui/notice';
 import { Figure } from '@/components/ui/figure';
 import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { Meta, Prose } from '@/components/ui/typography';
-import { getStoryBySlug, listStorySlugs } from '@/db/queries/content';
+import { findSlugForLocale, getStoryBySlug, listStorySlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
 import { formatDate, toDateTimeAttr } from '@/lib/format';
-import { isLocale, localePath } from '@/lib/i18n/config';
+import { DEFAULT_LOCALE, isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
@@ -51,6 +51,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/impact/s
     modifiedTime: story.updatedAt,
     translationStatus: toTranslationStatus(story.translationStatus),
     noIndex: story.noIndex,
+    ownCard: true,
   });
 }
 
@@ -65,8 +66,17 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
   if (!isLocale(locale)) notFound();
 
   const [dict, story] = await Promise.all([getDictionary(locale), getStoryBySlug(slug, locale)]);
-  if (!story) notFound();
+  if (!story) {
+    // A slug from the other locale (the language switcher keeps it) redirects
+    // to this locale's URL rather than 404ing.
+    const localized = await findSlugForLocale('story', slug, locale);
+    if (localized) permanentRedirect(localePath(locale, `/impact/stories/${encodeURIComponent(localized)}`));
+    notFound();
+  }
 
+  const canonicalPath = story.isTranslated
+    ? localePath(locale, `/impact/stories/${slug}`)
+    : localePath(DEFAULT_LOCALE, `/impact/stories/${story.slugAr}`);
   const storyHero = mediaImage(story.hero?.path, story.hero?.blur, story.hero);
 
   return (
@@ -74,10 +84,17 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
       <StoryJsonLd
         title={story.title}
         description={story.summary}
-        url={localePath(locale, `/impact/stories/${slug}`)}
-        locale={locale}
+        url={canonicalPath}
+        locale={story.isTranslated ? locale : DEFAULT_LOCALE}
         publishedAt={story.publishedAt}
         updatedAt={story.updatedAt}
+        // An Article without an image is ineligible for most rich results;
+        // the news template has always passed its hero, this one did not.
+        image={
+          story.hero
+            ? { url: mediaSrc(story.hero.path), width: story.hero.width, height: story.hero.height, alt: story.hero.alt }
+            : null
+        }
       />
 
       <TranslationNotice
@@ -95,9 +112,12 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
               dict={dict}
               trail={[
                 { label: dict.impact.title, path: '/impact' },
-                { label: dict.impact.storiesTitle, path: '/impact' },
+                // The stories section of the impact page, not a second
+                // crumb to the same URL as the first.
+                { label: dict.impact.storiesTitle, path: '/impact#impact-stories' },
                 { label: story.title ?? '' },
               ]}
+              currentPath={canonicalPath}
             />
           }
           eyebrow={dict.impact.storiesTitle}
@@ -135,8 +155,8 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
         {storyHero ? (
           <Figure
             image={storyHero}
-            alt={story.hero?.alt ?? ''}
-            decorative={!story.hero?.alt}
+            alt={story.hero?.alt || story.title || ''}
+            decorative={!(story.hero?.alt || story.title)}
             // The reading column caps at 760px and only reaches it once the
             // viewport clears 760 + the 2×64px desktop gutter.
             sizes="(min-width: 888px) 760px, 100vw"
@@ -172,7 +192,7 @@ export default async function StoryPage({ params }: PageProps<'/[locale]/impact/
                       the schema, so a published image always has one. */}
                   <Figure
                     image={mediaImage(item.path, item.blur, item)}
-                    alt={item.alt ?? ''}
+                    alt={item.alt || story.title || ''}
                     ratio="portrait"
                     // Three-up inside the 760px reading column: ~245px a tile.
                     sizes="(min-width: 888px) 245px, (min-width: 640px) 30vw, 100vw"

@@ -68,7 +68,14 @@
      origin, which is also what keeps the CSP free of a font host. */
   --font-sans:
     var(--font-plex-arabic), "IBM Plex Sans Arabic", system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+
+  /* The mono face is Latin-only. Eyebrows, badges, the "optional" marker and
+     dates are mono by design and carry Arabic words on an Arabic page; without
+     the Arabic face next in the chain those glyphs fell through to whatever
+     the OS had. Plex Mono still draws every Latin glyph and digit. */
+  --font-mono:
+    var(--font-plex-mono), "IBM Plex Mono", var(--font-plex-arabic),
+    "IBM Plex Sans Arabic", ui-monospace, monospace;
 
   --text-display: 3.75rem;
   --text-display--line-height: 1.08;
@@ -136,6 +143,14 @@
 
   html {
     overflow-inline: clip;
+  }
+
+  /* Semibold is the heaviest weight loaded (fonts.ts). A UA "bold" on
+     <strong>, <b> or <th> would otherwise be synthesised from it. */
+  b,
+  strong,
+  th {
+    font-weight: 600;
   }
 
   body {
@@ -778,6 +793,15 @@ select.control[multiple] {
   .icon-button {
     transform: none !important;
   }
+}
+
+/* Tracking separates Arabic letters that are meant to join. Mono text is
+   tracked for Latin eyebrows and codes; on an Arabic page the same classes
+   carry Arabic words, so the tracking goes. Unlayered, so it wins over the
+   utilities that set it. */
+:lang(ar) .eyebrow,
+:lang(ar) .font-mono {
+  letter-spacing: 0;
 }
 
 /* Skip link — visible only when focused, positioned logically so it lands on

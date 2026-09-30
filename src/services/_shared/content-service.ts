@@ -82,8 +82,19 @@ export type ContentServiceConfig<TInput extends ContentInputBase> = {
   ) => Record<string, unknown>;
   /** Media that must clear the consent gate before this row may be published. */
   mediaIds?: (input: TInput) => (string | null | undefined)[];
-  /** Extra work inside the same transaction — junction rows, derived columns. */
-  afterWrite?: (tx: Tx, id: string, input: TInput) => Promise<void>;
+  /**
+   * Extra work inside the same transaction — junction rows, derived columns,
+   * a dependent record kept in step. `context` carries the row before and
+   * after the write (`before` is null on a create) and the actor, so a hook
+   * can react to what actually changed and audit what it does.
+   */
+  afterWrite?: (tx: Tx, id: string, input: TInput, context: WriteContext) => Promise<void>;
+  /**
+   * Extra work inside a status-only transition's transaction. `upsert` does
+   * not call it — a status posted through the edit form reaches `afterWrite`,
+   * which sees the same before/after rows.
+   */
+  afterStatusChange?: (tx: Tx, context: WriteContext) => Promise<void>;
   /** Media referenced by an already-stored row, for a status-only transition. */
   storedMediaIds?: (tx: Tx, row: ContentRow) => Promise<(string | null | undefined)[]>;
   /**
@@ -96,6 +107,12 @@ export type ContentServiceConfig<TInput extends ContentInputBase> = {
    * reason `assertSlugsUnique` is: so the refusal is a field error.
    */
   uniqueKey?: PgColumn;
+};
+
+export type WriteContext = {
+  actor: Actor;
+  before: ContentRow | null;
+  after: ContentRow;
 };
 
 export type ContentService<TInput extends ContentInputBase> = {
@@ -192,7 +209,7 @@ export function createContentService<TInput extends ContentInputBase>(
               .returning();
 
         const row = written[0] as ContentRow;
-        await config.afterWrite?.(tx, row.id, input);
+        await config.afterWrite?.(tx, row.id, input, { actor, before: existing, after: row });
 
         await writeAudit(tx, actor, {
           action: existing ? 'update' : 'create',
@@ -213,9 +230,27 @@ export function createContentService<TInput extends ContentInputBase>(
     },
 
     async setStatus(db, actor, id, status) {
+      // Before anything is read. `assertCanTransition` returns early for a
+      // same-status request, so without this an actor with no write access at
+      // all reached the update and the audit log.
+      assertCan(actor, 'content.write');
+
       return withActor(db, actor, async (tx) => {
         const existing = await loadRow(tx, id);
         if (!existing) throw notFound(entityType);
+
+        // Publishing a published page is a double-click, not a change. No
+        // write, no `updated_at` bump, no audit entry claiming a transition
+        // that did not happen.
+        if (existing.status === status) {
+          return {
+            id: existing.id,
+            slugAr: existing.slugAr,
+            slugEn: existing.slugEn,
+            status: existing.status,
+            key: keyOf(existing),
+          };
+        }
 
         assertCanTransition(actor, existing.status, status);
 
@@ -242,6 +277,8 @@ export function createContentService<TInput extends ContentInputBase>(
           entityId: id,
           diff: { status: { from: existing.status, to: status } },
         });
+
+        await config.afterStatusChange?.(tx, { actor, before: existing, after: row });
 
         return { id: row.id, slugAr: row.slugAr, slugEn: row.slugEn, status: row.status, key: keyOf(row) };
       });

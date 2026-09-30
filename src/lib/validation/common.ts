@@ -21,17 +21,52 @@ export const emailSchema = z
   .max(160, { message: 'errors.field.tooLong' });
 
 /**
- * E.164-ish. Deliberately permissive about formatting and strict about shape:
- * a Gaza number is written half a dozen ways and rejecting the wrong one is a
- * lost enquiry, but a field of prose is not a phone number.
+ * A phone number as a person types it, reduced to digits and an optional
+ * leading `+`.
+ *
+ * The previous rule, `^\+?[1-9]\d{7,14}$`, was E.164 and nothing else, and a
+ * Gaza number is almost never typed that way: `0599 123 456` has a leading
+ * zero, a space and — on an Arabic keyboard — Eastern-Arabic digits
+ * (`٠٥٩٩١٢٣٤٥٦`). Every one of those refused a real applicant. So the digits
+ * are mapped to ASCII (both the Arabic-Indic and the Persian block), and the
+ * separators people use — spaces, dashes, dots, brackets — are dropped before
+ * the shape is checked.
+ */
+export function normalizePhone(value: string): string {
+  return value
+    .trim()
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[\s\-().‎‏]/g, '');
+}
+
+/** `+970…`, `00970…` or a local `059…`: eight to fifteen digits. */
+const PHONE_SHAPE = /^(\+|00)?\d{8,15}$/;
+
+export const isValidPhone = (value: string): boolean => PHONE_SHAPE.test(normalizePhone(value));
+
+/**
+ * A phone number, **stored normalised**: `0599 123-456` arrives as
+ * `0599123456`. Used by every public form, where the value is data to act on
+ * and the spacing the visitor happened to type carries no meaning.
  */
 export const phoneSchema = z
   .string()
+  .transform(normalizePhone)
+  .pipe(z.string().regex(PHONE_SHAPE, { message: 'errors.field.phone' }));
+
+/**
+ * The same rule, but the value is kept **as typed**. For the organisation's
+ * own published numbers in the admin, where `+970 8 282 0000` is formatted
+ * that way on purpose because it is printed on the site.
+ */
+export const displayPhoneSchema = z
+  .string()
   .trim()
-  .regex(/^\+?[1-9]\d{7,14}$/, { message: 'errors.field.phone' });
+  .refine(isValidPhone, { message: 'errors.field.phone' });
 
 /** Optional in the HTML sense: an untouched input posts `''`, not `undefined`. */
-export const optionalPhone = z.union([phoneSchema, z.literal('')]).optional();
+export const optionalPhone = z.union([z.literal(''), phoneSchema]).optional();
 
 export const optionalUrl = z
   .union([z.url({ message: 'errors.field.url' }).max(300), z.literal('')])

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { adminUi, fill } from '@/components/admin/admin-ui-dict';
 import { db } from '@/db';
 import type { ApplicationStatus } from '@/db/schema/enums';
@@ -36,7 +37,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireActor();
-    const { id } = await context.params;
+    // A malformed id is a missing page, not a Postgres `invalid input syntax
+    // for type uuid` surfacing as a 500.
+    const parsedId = z.uuid().safeParse((await context.params).id);
+    if (!parsedId.success) return new Response('Not found', { status: 404 });
+    const id = parsedId.data;
     const url = new URL(_request.url);
 
     const rawStatus = url.searchParams.get('status') ?? '';

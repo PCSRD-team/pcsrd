@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 
 /**
@@ -55,11 +56,20 @@ export function cached<TArgs extends unknown[], TResult>(
   keyParts: string[],
   options: { tags: string[] | ((...args: TArgs) => string[]); revalidate?: number },
 ): (...args: TArgs) => Promise<Serialized<TResult>> {
-  return (...args: TArgs) =>
+  // React `cache()` on the outside: `unstable_cache` is a Data Cache read —
+  // a lookup plus a JSON parse — every time it is called, and the layout,
+  // `generateMetadata` and the page each ask for the organisation, the
+  // record and the site name in one render. `cache()` makes the second and
+  // third calls in the same request share the first's promise. It memoises by
+  // argument identity: primitives (slug, locale) match by value, an options
+  // object only by reference, so the worst case is the old behaviour. Outside
+  // a React render (a route handler, the proxy) it is a pass-through.
+  return cache((...args: TArgs) =>
     unstable_cache(() => fn(...args) as Promise<Serialized<TResult>>, [...keyParts, ...args.map(stableKey)], {
       tags: typeof options.tags === 'function' ? options.tags(...args) : options.tags,
       revalidate: options.revalidate ?? DEFAULT_REVALIDATE,
-    })();
+    })(),
+  );
 }
 
 /**

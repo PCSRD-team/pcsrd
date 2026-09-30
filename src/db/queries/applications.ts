@@ -220,27 +220,6 @@ export const listOpenForms = cached(_listOpenForms, ['application-form-list'], {
 export { _listOpenForms };
 
 /**
- * The form attached to a vacancy, for the "apply" button on its page.
- *
- * Returns the slug only. The vacancy page needs a link, not a form, and
- * fetching the fields to render a button would pull a dozen rows per card.
- */
-async function _getFormSlugForVacancy(vacancyId: string): Promise<string | null> {
-  const [row] = await db
-    .select({ slug: applicationForms.slug })
-    .from(applicationForms)
-    .where(
-      and(
-        eq(applicationForms.vacancyId, vacancyId),
-        eq(applicationForms.status, 'published'),
-      ),
-    )
-    .limit(1);
-
-  return row?.slug ?? null;
-}
-
-/**
  * Where a new application on this form is announced, beyond the HR inbox.
  *
  * Uncached and never part of `PublicForm`: that object is handed to a Client
@@ -257,10 +236,25 @@ export async function _getFormNotifyEmails(formId: string): Promise<string[]> {
   return row?.notifyEmails ?? [];
 }
 
-export const getFormSlugForVacancy = cached(
-  _getFormSlugForVacancy,
-  ['application-form-for-vacancy'],
-  { tags: [TAGS.applicationFormList] },
-);
-
-export { _getFormSlugForVacancy };
+/**
+ * Where each field on a published form came from — its catalogue key and its
+ * type — for the submission path only.
+ *
+ * `PublicForm` drops `catalogKey` because that object is handed to a Client
+ * Component; this reads it separately, server-side, so `extractIdentity` can
+ * match on real provenance rather than assuming a field's key is its
+ * catalogue key.
+ */
+export async function _getFormFieldProvenance(
+  formId: string,
+): Promise<{ key: string; catalogKey: string | null; type: ApplicationFieldType }[]> {
+  return db
+    .select({
+      key: applicationFormFields.key,
+      catalogKey: applicationFormFields.catalogKey,
+      type: applicationFormFields.type,
+    })
+    .from(applicationFormFields)
+    .innerJoin(applicationForms, eq(applicationForms.id, applicationFormFields.formId))
+    .where(and(eq(applicationFormFields.formId, formId), eq(applicationForms.status, 'published')));
+}

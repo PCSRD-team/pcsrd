@@ -111,7 +111,7 @@ src/app/
 │       │   ├── page.tsx
 │       │   └── [slug]/
 │       │       ├── page.tsx
-│       │       └── actions.ts               # submitJobApplication
+│       │       (no form here: applying goes through /apply/[slug], the careers portal)
 │       │
 │       ├── verify/
 │       │   ├── page.tsx

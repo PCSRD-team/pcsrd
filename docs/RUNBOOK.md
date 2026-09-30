@@ -88,7 +88,8 @@ add-on is enabled; the free tier has **no** automatic backups. Check which appli
    npx drizzle-kit check              # the schema still matches the migrations
    ```
 4. A restore from before a migration was applied needs that migration re-applied:
-   `npm run db:migrate`, then `supabase db push` for storage.
+   `npx tsx scripts/apply-pending-migrations.ts --apply` (not `db:migrate` — the live
+   database has no Drizzle journal), then `supabase db push` for storage.
 5. Un-pause the purge.
 
 **Manual export**, which the organisation should hold itself on a schedule (the build plan's
@@ -104,8 +105,8 @@ paths that return 404.
 
 - **Prevention** is the only real answer: a periodic copy of `media` and `documents` with
   the Supabase CLI or S3-compatible tooling, kept with the database dump. `applications`
-  (CVs) is deliberately **not** something to copy around: a CV is retained twelve months and
-  then purged, and a backup that outlives the purge defeats it.
+  (CVs) is deliberately **not** something to copy around: a CV is retained for the period its
+  form sets (`retentionMonths`, 1–60) and then purged, and a backup that outlives the purge defeats it.
 - **After a loss**: re-upload through `/admin/media`; every image is re-normalised and
   stripped of metadata on the way in. A missing hero image degrades to no image — the
   components are designed to render without one.

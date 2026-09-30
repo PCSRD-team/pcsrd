@@ -1,5 +1,7 @@
 # Tracks T1 / T2 / T3 — Architecture · Types · Duplication (raw findings)
 
+> **Snapshot.** The pre-launch audit as of August 2026 (commit `5fb312a`), kept as a record and not updated — some of it no longer matches the code. Current state: `docs/PROGRESS.md`. Latest full review: `docs/audit/07-REVIEW-2026-09-29.md`.
+
 Working file. Merged into `01-AUDIT-REPORT.md`. Every finding [VERIFIED-CODE]; the track
 produced no [ASSUMPTION] findings. Tools run: `tsc --noEmit` (exit 0), the same with
 `noUncheckedIndexedAccess` (32 `src/` errors), `eslint` (exit 0), a custom whole-tree

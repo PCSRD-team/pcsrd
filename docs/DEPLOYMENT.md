@@ -102,20 +102,23 @@ out:
 ### 3a. Apply the migrations
 
 ```bash
-npm run db:migrate      # uses DIRECT_URL
+npx tsx scripts/apply-pending-migrations.ts           # dry run: says what is pending
+npx tsx scripts/apply-pending-migrations.ts --apply   # applies it, over DIRECT_URL (:5432)
 ```
 
-This applies `drizzle/0000` … `0003` in journal order. Against a database that already has
-`0000`–`0002`, it applies **`0003` only**, which is the one-line grant the CMS needs:
+**Not `npm run db:migrate`.** The live database was built from hand-written DDL and
+carries no Drizzle journal, so `drizzle-kit migrate` would start again from
+`0000_baseline` and abort on the first table that already exists. The script checks
+each hand-written migration (`0003` onwards) with a probe against the live catalogue
+and applies only the ones that are missing, each in its own transaction.
 
-```sql
-grant usage on sequence public.audit_logs_id_seq to app_runtime;
-```
+Pending as of 2026-09-29 (`docs/PROGRESS.md` has the current list):
 
-**If you apply nothing else from this runbook, apply that.** Without it every audited
-mutation aborts — publishing a post, saving a project, uploading media — because every
-service writes its audit entry inside the same transaction as the change it records. You can
-also run that single line in the Supabase SQL editor; `GRANT` is idempotent.
+| File | What it does |
+|---|---|
+| `0010_pin_submission_reference_search_path.sql` | drops an unused function PostgREST exposed to anyone |
+| `0011_harden_and_dedupe.sql` | revokes PUBLIC execute on the portal functions, drops 29 duplicate indexes, archives vacancies on Palestine's calendar day |
+| `0012_*`, `0013_*` | see the header of each file |
 
 ### 3b. Verify the authorisation layer
 
@@ -131,7 +134,7 @@ Five assertions. It fails loudly if any of them stopped being true:
 4. all six `app.*` gate functions exist
 5. `app_runtime` holds its four grants, **including USAGE on `audit_logs_id_seq`**
 
-Expected: `Database authorisation layer intact.` — with 21 tables and 85 policies.
+Expected: `Database authorisation layer intact.` — with 26 tables and 101 policies (verified 2026-09-29).
 
 ### 3c. Seed the structural rows
 
@@ -326,7 +329,7 @@ been exercised against your database.
 - [ ] Upload an image with Arabic alt text → it appears in `/admin/media`
 - [ ] Submit the contact form on `/ar/contact` → it appears in `/admin/submissions`
 - [ ] Submit a complaint → it appears under `/admin/submissions/sensitive` **and opens**
-- [ ] Download a CV from a job application
+- [ ] Apply on a published portal form (`/ar/apply/<slug>`) with a CV → it appears under `/admin/careers/<form>/applicants` and the CV downloads
 - [ ] Check `/admin/audit` — every action above should be recorded
 
 If publishing fails, `0003` was not applied. If sign-in fails with "your account has been
@@ -397,7 +400,7 @@ exact steps are in `docs/RUNBOOK.md` → "Pause the retention purge".
 
 | Task | Command |
 |---|---|
-| New migration | `npm run db:generate`, review the SQL, `npm run db:migrate` |
+| New migration | Write `drizzle/NNNN_*.sql` by hand, add a probe to `scripts/apply-pending-migrations.ts`, run it without then with `--apply` |
 | Check schema/migration parity | `npx drizzle-kit check` |
 | Verify the authorisation layer | `npx tsx scripts/assert-rls.ts` |
 | Inspect data | `npm run db:studio` |

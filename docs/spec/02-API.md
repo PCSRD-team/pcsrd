@@ -11,7 +11,7 @@ The "backend" is three things: the **query layer** (Drizzle, read), **Server Act
 | Server Action | `(site)/…/partner/actions.ts` → `submitPartnership` | public + Turnstile | Partnership inquiry |
 | Server Action | `(site)/…/contact/actions.ts` → `submitContact` | public + Turnstile | General enquiry |
 | Server Action | `(site)/…/volunteer/actions.ts` → `submitVolunteer` | public + Turnstile | Volunteer application |
-| Server Action | `(site)/…/careers/[slug]/actions.ts` → `submitJobApplication` | public + Turnstile | Job application + CV |
+| ~~Server Action~~ | ~~`submitJobApplication`~~ — **replaced** by the careers portal: `src/actions/public/apply.ts` → `submitApplicationForm`, posted from `/[locale]/apply/[slug]` (see CLAUDE.md, deliberate deviations) | public + Turnstile | Job / volunteer application + files |
 | Server Action | `(site)/…/contact/actions.ts` → `submitComplaint` | public + Turnstile | CFM (anonymous allowed) |
 | Server Action | `(site)/…/verify/actions.ts` → `submitFraudReport` | public + Turnstile | Impersonation report |
 | Server Action | `(admin)/admin/**/actions.ts` | session + role | All CMS mutations (`05-ADMIN §4`) |
@@ -450,7 +450,7 @@ export async function submitPartnership(
 |---|---|
 | `submitContact` | Adds `enquiryType: 'general'\|'partnership'\|'media'\|'complaint'`; routes to a different `MAIL_TO_*`; retention 12 mo |
 | `submitVolunteer` | Collects **age band, not date of birth**; **governorate, not address**; no national ID (spec §20.5 minimization). Retention 12 mo |
-| `submitJobApplication` | Accepts a `File`; runs `validateUpload()`; stores in the private `applications` bucket; `attachmentPath` on the row; `upload` rate limiter; retention 12 mo after the vacancy closes |
+| ~~`submitJobApplication`~~ | **Replaced** by the careers portal (`app.submit_application()`): per-form fields and files, per-form retention (`retentionMonths`), rows in `applications`, not `form_submissions` |
 | `submitComplaint` | **`isSensitive: true`**. `ipHash = null`, `userAgent = null`. Identity fields optional (anonymous permitted). Notifies `MAIL_TO_SENSITIVE` only. **No analytics event fires.** |
 | `submitFraudReport` | Reporter contact optional. Retention 24 mo |
 

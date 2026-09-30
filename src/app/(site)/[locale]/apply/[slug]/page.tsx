@@ -7,18 +7,21 @@ import { DynamicApplicationForm } from '@/components/forms/dynamic-form';
 import { Badge } from '@/components/ui/badge';
 import { DateText } from '@/components/ui/bidi';
 import { ButtonLink } from '@/components/ui/button';
+import { Panel } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/feedback';
 import { Container, PageHeader, Section } from '@/components/ui/layout';
 import { Prose } from '@/components/ui/typography';
 import { getApplicationForm } from '@/db/queries/applications';
-import { formatDate } from '@/lib/format';
-import { isLocale, localePath } from '@/lib/i18n/config';
+import { getApplyFormContext } from '@/db/queries/content';
+import { formatInstant, toDateTimeAttr } from '@/lib/format';
+import { type Locale, isLocale, localePath } from '@/lib/i18n/config';
 import { formSlice } from '@/lib/i18n/form-dict';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
 import { isFormOpen } from '@/services/applications/application-form.service';
 import { decodeParam } from '@/lib/route-params';
+import { plural } from '@/lib/i18n/plural';
 
 /**
  * The public application page.
@@ -47,9 +50,10 @@ export async function generateMetadata({
   const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
 
-  const [form, siteName] = await Promise.all([
+  const [form, siteName, context] = await Promise.all([
     getApplicationForm(slug, locale),
     getSiteName(locale),
+    getApplyFormContext(slug, locale),
   ]);
   if (!form) return {};
 
@@ -68,6 +72,10 @@ export async function generateMetadata({
     title: seoFallback(null, form.title, siteName),
     description: seoFallback(null, richTextToPlainText(form.intro, 160)),
     siteName,
+    // A form with no English title renders the Arabic form on /en: that URL
+    // is the untranslated case, not an English alternate (noindex, canonical
+    // to Arabic, no `en` hreflang on either side).
+    translationStatus: context?.hasEnglish === false ? 'ar_only' : 'human_translated',
     // A closed form stays reachable but leaves the index — the same rule the
     // vacancy page applies to a closed vacancy.
     noIndex: !state.open,
@@ -79,8 +87,18 @@ export default async function ApplyPage({ params }: PageProps<'/[locale]/apply/[
   const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
-  const [dict, form] = await Promise.all([getDictionary(locale), getApplicationForm(slug, locale)]);
+  const [dict, form, context] = await Promise.all([
+    getDictionary(locale),
+    getApplicationForm(slug, locale),
+    getApplyFormContext(slug, locale),
+  ]);
   if (!form) notFound();
+
+  // A form behind a vacancy sits under that vacancy in the trail, and links
+  // back to it: an applicant who landed here from a shared link has not read
+  // the posting yet.
+  const vacancy = form.vacancyId ? (context?.vacancy ?? null) : null;
+  const vacancyPath = vacancy ? `/careers/${vacancy.slug}` : null;
 
   const t = dict.apply;
 
@@ -117,7 +135,12 @@ export default async function ApplyPage({ params }: PageProps<'/[locale]/apply/[
       <ContentBreadcrumbs
         locale={locale}
         dict={dict}
-        trail={[{ path: '/careers', label: dict.careers.title }, { label: form.title }]}
+        trail={[
+          { path: '/careers', label: dict.careers.title },
+          ...(vacancy && vacancyPath ? [{ path: vacancyPath, label: vacancy.title ?? dict.careers.vacancyDetails }] : []),
+          { label: form.title },
+        ]}
+        currentPath={`/apply/${form.slug}`}
       />
 
       <PageHeader
@@ -126,8 +149,14 @@ export default async function ApplyPage({ params }: PageProps<'/[locale]/apply/[
         meta={
           <>
             {closesAt ? (
+              // A form closes at an instant, shown on the Palestine clock with
+              // the zone named — "23:59" alone would be read in the reader's.
               <Badge tone="neutral">
-                {t.deadline}: <DateText locale={locale}>{formatDate(closesAt, locale)}</DateText>
+                {t.deadline}:{' '}
+                <time dateTime={toDateTimeAttr(closesAt)}>
+                  <DateText locale={locale}>{formatInstant(closesAt, locale)}</DateText>
+                </time>{' '}
+                {t.siteTimeZone}
               </Badge>
             ) : null}
             {slotsLeft !== null && state.open && !waitlisting ? (
@@ -138,6 +167,13 @@ export default async function ApplyPage({ params }: PageProps<'/[locale]/apply/[
       />
 
       <Section>
+        {vacancyPath ? (
+          <p className="mbe-6">
+            <ButtonLink href={localePath(locale, vacancyPath)} tone="secondary" size="sm">
+              {dict.careers.vacancyDetails}
+            </ButtonLink>
+          </p>
+        ) : null}
         {form.intro ? (
           <Prose>
             <RichText doc={form.intro} />
@@ -158,7 +194,7 @@ export default async function ApplyPage({ params }: PageProps<'/[locale]/apply/[
                 waitlistNotice: t.waitlistNotice,
                 successWaitlisted: t.successWaitlisted,
                 filesHint: t.filesHint,
-                retentionNotice: fill(t.retentionNotice, { months: form.retentionMonths }),
+                retentionNotice: plural(locale, form.retentionMonths, t.retentionNoticeCount),
               }}
             />
           </div>
@@ -193,33 +229,65 @@ function ClosedState({
   careersLabel,
 }: {
   reason: 'unpublished' | 'not_yet' | 'closed' | 'full' | undefined;
-  copy: { notYetTitle: string; notYetBody: string; fullTitle: string; fullBody: string; closedTitle: string; closedBody: string };
+  copy: {
+    notYetTitle: string;
+    notYetBody: string;
+    fullTitle: string;
+    fullBody: string;
+    closedTitle: string;
+    closedBody: string;
+    siteTimeZone: string;
+  };
   opensAt: Date | null;
-  locale: 'ar' | 'en';
+  locale: Locale;
   careersHref: string;
   careersLabel: string;
 }) {
+  const careersLink = (
+    <div className="mbs-6">
+      <ButtonLink href={careersHref} tone="secondary">
+        {careersLabel}
+      </ButtonLink>
+    </div>
+  );
+
+  if (reason === 'not_yet') {
+    // The opening date is its own isolated node, not text spliced into the
+    // sentence: an Arabic sentence carrying a Latin-digit date and time
+    // reorders around it unless the date is a bidi island. Same markup as
+    // `EmptyState`, whose `body` takes only a string.
+    const [before, after] = copy.notYetBody.split('{date}');
+    return (
+      <div className="mbs-8">
+        <Panel tone="alt" padding="lg" className="text-center">
+          <p className="text-h3 font-semibold text-ink text-balance">{copy.notYetTitle}</p>
+          <p className="measure-lead mx-auto mbs-3 text-small text-ink-55">
+            {before}
+            {opensAt ? (
+              <>
+                <time dateTime={toDateTimeAttr(opensAt)}>
+                  <DateText locale={locale}>{formatInstant(opensAt, locale)}</DateText>
+                </time>{' '}
+                {copy.siteTimeZone}
+              </>
+            ) : null}
+            {after}
+          </p>
+        </Panel>
+        {careersLink}
+      </div>
+    );
+  }
+
   const content =
-    reason === 'not_yet'
-      ? {
-          title: copy.notYetTitle,
-          body: copy.notYetBody.replace(
-            '{date}',
-            opensAt ? formatDate(opensAt, locale) : '',
-          ),
-        }
-      : reason === 'full'
-        ? { title: copy.fullTitle, body: copy.fullBody }
-        : { title: copy.closedTitle, body: copy.closedBody };
+    reason === 'full'
+      ? { title: copy.fullTitle, body: copy.fullBody }
+      : { title: copy.closedTitle, body: copy.closedBody };
 
   return (
     <div className="mbs-8">
       <EmptyState title={content.title} body={content.body} />
-      <div className="mbs-6">
-        <ButtonLink href={careersHref} tone="secondary">
-          {careersLabel}
-        </ButtonLink>
-      </div>
+      {careersLink}
     </div>
   );
 }

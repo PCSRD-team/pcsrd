@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { adminDict } from '@/components/admin/admin-dict';
-import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { adminUi, count } from '@/components/admin/admin-ui-dict';
 import { AdminPagination, DateCell } from '@/components/admin/controls';
 import { AdminHeader } from '@/components/admin/shell';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
@@ -110,7 +110,7 @@ export async function SubmissionListPage({
     <>
       <AdminHeader
         title={title}
-        description={sensitive ? t.sensitiveLede : fill(t.count, { n: result.total })}
+        description={sensitive ? t.sensitiveLede : count(t.count, result.total)}
       />
 
       <form method="get" className="mbe-6">

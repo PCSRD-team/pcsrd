@@ -12,6 +12,35 @@ import {
   turnstileToken,
 } from './common';
 
+// The option lists live in an import-free module so the Client Component
+// forms can read them without pulling Zod into the browser bundle.
+import {
+  ORGANIZATION_TYPES,
+  PARTNERSHIP_INTERESTS,
+  PROGRAM_KEYS,
+  ENQUIRY_TYPES,
+  AGE_BANDS,
+  GOVERNORATES,
+  VOLUNTEER_AREAS,
+  AVAILABILITY,
+  COMPLAINT_CATEGORIES,
+  FRAUD_CHANNELS,
+  CONTACT_PREFERENCES,
+} from './form-options';
+export {
+  ORGANIZATION_TYPES,
+  PARTNERSHIP_INTERESTS,
+  PROGRAM_KEYS,
+  ENQUIRY_TYPES,
+  AGE_BANDS,
+  GOVERNORATES,
+  VOLUNTEER_AREAS,
+  AVAILABILITY,
+  COMPLAINT_CATEGORIES,
+  FRAUD_CHANNELS,
+  CONTACT_PREFERENCES,
+} from './form-options';
+
 /**
  * The six public forms (02-API §5.2, §5.3).
  *
@@ -38,26 +67,6 @@ const envelope = {
 
 // ── Partnership ──────────────────────────────────────────────────────────
 
-export const ORGANIZATION_TYPES = [
-  'un',
-  'ingo',
-  'foundation',
-  'government',
-  'local_ngo',
-  'private',
-  'other',
-] as const;
-
-export const PARTNERSHIP_INTERESTS = [
-  'funding',
-  'consortium',
-  'implementation',
-  'technical',
-  'other',
-] as const;
-
-export const PROGRAM_KEYS = ['protection', 'humanitarian_response', 'early_recovery'] as const;
-
 export const partnershipSchema = z.object({
   organizationName: shortText(2, 120),
   organizationType: z.enum(ORGANIZATION_TYPES, { message: 'errors.field.required' }),
@@ -79,8 +88,6 @@ export const PARTNERSHIP_MULTI = ['interest', 'programs'] as const;
 
 // ── Contact ──────────────────────────────────────────────────────────────
 
-export const ENQUIRY_TYPES = ['general', 'partnership', 'media', 'complaint'] as const;
-
 export const contactSchema = z.object({
   name: shortText(2, 80),
   email: emailSchema,
@@ -93,33 +100,6 @@ export const contactSchema = z.object({
 export type ContactInput = z.infer<typeof contactSchema>;
 
 // ── Volunteer ────────────────────────────────────────────────────────────
-
-/**
- * An age *band*, not a date of birth. The only thing the organisation needs to
- * know is whether a volunteer is a minor and roughly which cohort they belong
- * to; a birth date is a permanent identifier collected for no reason.
- */
-export const AGE_BANDS = ['under_18', '18_24', '25_34', '35_49', '50_plus'] as const;
-
-export const GOVERNORATES = [
-  'north_gaza',
-  'gaza',
-  'middle',
-  'khan_younis',
-  'rafah',
-] as const;
-
-export const VOLUNTEER_AREAS = [
-  'psychosocial',
-  'education',
-  'relief_distribution',
-  'media',
-  'logistics',
-  'administration',
-  'other',
-] as const;
-
-export const AVAILABILITY = ['weekdays', 'weekends', 'evenings', 'flexible'] as const;
 
 export const volunteerSchema = z.object({
   name: shortText(2, 80),
@@ -140,15 +120,6 @@ export const VOLUNTEER_MULTI = ['areas'] as const;
 
 // ── Complaint (CFM) ──────────────────────────────────────────────────────
 
-export const COMPLAINT_CATEGORIES = [
-  'service_quality',
-  'staff_conduct',
-  'selection_process',
-  'safeguarding',
-  'corruption',
-  'other',
-] as const;
-
 /**
  * Every identity field is optional and there is no `email` requirement, because
  * an anonymous complaint is a valid complaint. `contactPreference` exists so a
@@ -168,26 +139,13 @@ export const complaintSchema = z.object({
   name: optionalText(80),
   email: z.union([emailSchema, z.literal('')]).optional(),
   phone: optionalPhone,
-  contactPreference: z.enum(['none', 'email', 'phone'], { message: 'errors.field.invalidChoice' }).default('none'),
+  contactPreference: z.enum(CONTACT_PREFERENCES, { message: 'errors.field.invalidChoice' }).default('none'),
 
   ...envelope,
 });
 export type ComplaintInput = z.infer<typeof complaintSchema>;
 
 // ── Fraud / impersonation report ─────────────────────────────────────────
-
-export const FRAUD_CHANNELS = [
-  'facebook',
-  'instagram',
-  'whatsapp',
-  'telegram',
-  'x',
-  'website',
-  'phone_call',
-  'sms',
-  'in_person',
-  'other',
-] as const;
 
 export const fraudReportSchema = z.object({
   channel: z.enum(FRAUD_CHANNELS, { message: 'errors.field.required' }),

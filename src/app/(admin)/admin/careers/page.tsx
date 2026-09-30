@@ -1,5 +1,5 @@
 import { adminDict } from '@/components/admin/admin-dict';
-import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { adminUi, count } from '@/components/admin/admin-ui-dict';
 import { DateCell, StatusBadge } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { AdminHeader } from '@/components/admin/shell';
@@ -85,7 +85,7 @@ export default async function CareersPage({ searchParams }: PageProps<'/admin/ca
       <AdminHeader
         title={t.title}
         description={t.description}
-        meta={fill(t.formCount, { n: rows.length })}
+        meta={count(t.formCount, rows.length)}
         action={<ButtonLink href="/admin/careers/new">{t.newForm}</ButtonLink>}
       />
 

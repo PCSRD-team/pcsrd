@@ -368,10 +368,15 @@ describe('app.submit_application', () => {
     expect(row.ipHash).toMatch(/^[0-9a-f]{64}$/);
     expect(row.answers).toMatchObject({ full_name_ar: 'سارة خليل' });
 
-    // Two years out, from the form's own `retentionMonths` — not a global default.
-    const expected = new Date();
-    expected.setMonth(expected.getMonth() + 24);
-    expect(created.purgeAfter.slice(0, 7)).toBe(expected.toISOString().slice(0, 7));
+    // Two years out, from the form's own `retentionMonths` — not a global
+    // default. The expectation is computed by Postgres with the same interval
+    // arithmetic the function uses: JS `setMonth(+24)` disagrees with
+    // `make_interval` at month ends (31 Jan + 1 month) and around midnight
+    // UTC, which made this flaky.
+    const [check] = (await getDb().execute(
+      `select to_char((now() + make_interval(months => 24))::date, 'YYYY-MM-DD') as expected`,
+    )).rows as { expected: string }[];
+    expect(created.purgeAfter).toBe(check!.expected);
   });
 
   it('enforces the cap atomically and counts only the slots taken', async () => {
@@ -631,9 +636,9 @@ describe('the export', () => {
     const plainKeys = plain.columns.map((column) => column.key);
     expect(plainKeys).toContain('full_name_ar');
     expect(plainKeys).not.toContain('national_id');
-    // A key the form no longer declares still has a column: the applicant did
-    // answer it, and the spreadsheet must not disagree with the screen.
-    expect(plainKeys).toContain('removed_field');
+    // A key the form no longer declares is sensitive by default: nothing is
+    // left to say it was not an ID number.
+    expect(plainKeys).not.toContain('removed_field');
 
     // Sensitive columns are an admin's act: the manager runs the pipeline but
     // is refused the ID numbers, and the admin gets them.
@@ -643,6 +648,9 @@ describe('the export', () => {
 
     const full = await buildExportTable(db(), ADMIN, form.id, { includeSensitive: true });
     expect(full.columns.map((column) => column.key)).toContain('national_id');
+    // It still has a column for whoever may see it: the applicant did answer
+    // it, and the spreadsheet must not disagree with the screen.
+    expect(full.columns.map((column) => column.key)).toContain('removed_field');
     expect(full.truncated).toBe(false);
   });
 });

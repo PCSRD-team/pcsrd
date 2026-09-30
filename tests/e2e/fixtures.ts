@@ -49,38 +49,35 @@ export function path(locale: Locale, route: string): string {
  * `[slug]` ones — those are discovered at run time from the list pages, because
  * the live database decides which slugs exist.
  *
- * `implemented: false` marks a route the spec lists that has no page file yet
- * (none at the moment — all 24 exist).
- * A 404 there is reported as `fixme` (route missing) rather than a failure;
- * every other assertion stays strict. Flip the flag when the page lands.
+ * Every one of them has a page file, so a 404 on any of them is a failure.
  */
-export type StaticRoute = { route: string; implemented: boolean; contentGated?: boolean };
+export type StaticRoute = { route: string; contentGated?: boolean };
 
 export const STATIC_ROUTES: readonly StaticRoute[] = [
-  { route: '/', implemented: true },
-  { route: '/about', implemented: true },
-  { route: '/about/vision-mission', implemented: true },
-  { route: '/about/governance', implemented: true },
-  { route: '/about/strategy', implemented: true },
-  { route: '/about/memberships', implemented: true },
-  { route: '/programs', implemented: true },
-  { route: '/projects', implemented: true },
-  { route: '/impact', implemented: true },
-  { route: '/news', implemented: true },
-  { route: '/partners', implemented: true },
-  { route: '/get-involved', implemented: true },
-  { route: '/get-involved/partner', implemented: true },
-  { route: '/get-involved/volunteer', implemented: true },
-  { route: '/get-involved/support', implemented: true },
-  { route: '/careers', implemented: true },
-  { route: '/verify', implemented: true },
-  { route: '/contact', implemented: true },
-  { route: '/resources', implemented: true },
+  { route: '/' },
+  { route: '/about' },
+  { route: '/about/vision-mission' },
+  { route: '/about/governance' },
+  { route: '/about/strategy' },
+  { route: '/about/memberships' },
+  { route: '/programs' },
+  { route: '/projects' },
+  { route: '/impact' },
+  { route: '/news' },
+  { route: '/partners' },
+  { route: '/get-involved' },
+  { route: '/get-involved/partner' },
+  { route: '/get-involved/volunteer' },
+  { route: '/get-involved/support' },
+  { route: '/careers' },
+  { route: '/verify' },
+  { route: '/contact' },
+  { route: '/resources' },
   // The legal pages exist as a route but render 404 until the CMS page with
   // that key is published — a 404 there is missing content, not a missing route.
-  { route: '/legal/privacy', implemented: true, contentGated: true },
-  { route: '/legal/accessibility', implemented: true, contentGated: true },
-  { route: '/legal/terms', implemented: true, contentGated: true },
+  { route: '/legal/privacy', contentGated: true },
+  { route: '/legal/accessibility', contentGated: true },
+  { route: '/legal/terms', contentGated: true },
 ];
 
 /** List page → the prefix a detail link under it must start with. */
@@ -112,7 +109,7 @@ export async function discoverDetail(
 // ── Designed states ──────────────────────────────────────────────────────
 
 /**
- * The empty-state panel from `src/components/ui/states.tsx`.
+ * The empty-state panel from `src/components/ui/feedback.tsx`.
  *
  * Matched by its copy — every caller passes `dict.states.emptyTitle` or a
  * section-specific title such as `careers.noOpenings`, and the body is always

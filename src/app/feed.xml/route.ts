@@ -1,6 +1,7 @@
 import { listFeedPosts, getOrganization } from '@/db/queries/content';
 import { publicEnv } from '@/lib/env.public';
 import { prerenderData } from '@/lib/build-time';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
 
 /**
  * The news feed. Arabic, latest twenty published posts.
@@ -45,10 +46,26 @@ function rfc822(value: Date | string | null | undefined): string | null {
 }
 
 export async function GET() {
-  const [posts, org] = await Promise.all([
+  const [posts, org, dict] = await Promise.all([
     prerenderData('feed posts', () => listFeedPosts(20), []),
     prerenderData('feed organisation', () => getOrganization('ar'), null),
+    getDictionary('ar'),
   ]);
+
+  // The enum value (`statement`) is a machine key; a reader shows the label.
+  const categoryLabel: Record<string, string> = {
+    news: dict.news.categoryNews,
+    statement: dict.news.categoryStatement,
+    announcement: dict.news.categoryAnnouncement,
+  };
+
+  // Every step is a real value from the settings or the dictionary, so an
+  // organisation that has not filled one field still gets a titled channel —
+  // an empty <title> makes some readers refuse the feed outright.
+  const channelTitle =
+    org?.legalNameAr?.trim() || org?.shortNameAr?.trim() || org?.acronym?.trim() || dict.news.title;
+  const channelDescription =
+    org?.shortDescriptionAr?.trim() || org?.missionAr?.trim() || dict.news.lead;
 
   const newest = posts[0]?.publishedAt ?? null;
 
@@ -60,7 +77,7 @@ export async function GET() {
       <link>${escapeXml(url)}</link>
       <guid isPermaLink="true">${escapeXml(url)}</guid>
       ${rfc822(post.publishedAt) ? `<pubDate>${rfc822(post.publishedAt)}</pubDate>` : ''}
-      <category>${escapeXml(post.category)}</category>
+      <category>${escapeXml(categoryLabel[post.category] ?? post.category)}</category>
       ${post.excerpt ? `<description>${escapeXml(post.excerpt)}</description>` : ''}
     </item>`;
     })
@@ -69,10 +86,10 @@ export async function GET() {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${escapeXml(org?.legalNameAr ?? org?.acronym ?? '')}</title>
+    <title>${escapeXml(channelTitle)}</title>
     <link>${BASE}/ar/news</link>
     <language>ar</language>
-    <description>${escapeXml(org?.missionAr ?? '')}</description>
+    <description>${escapeXml(channelDescription)}</description>
     ${rfc822(newest) ? `<lastBuildDate>${rfc822(newest)}</lastBuildDate>` : ''}
     <ttl>60</ttl>
     <atom:link href="${BASE}/feed.xml" rel="self" type="application/rss+xml" />

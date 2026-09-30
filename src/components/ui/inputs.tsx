@@ -202,6 +202,7 @@ export function Checkbox({
   error,
   className,
   id,
+  announce = true,
   ...rest
 }: NativeChoice & {
   /** Omit for a controlled box that is not posted — a row toggle behind a JSON field. */
@@ -212,6 +213,8 @@ export function Checkbox({
   className?: string;
   /** Defaults to `name`; pass when several boxes share a name. */
   id?: string;
+  /** `false` where a surrounding live region already announces the failure. See `FieldError`. */
+  announce?: boolean;
 }) {
   const controlId = controlIdOf(id, name);
   const message = errorText(error);
@@ -245,7 +248,7 @@ export function Checkbox({
       {message ? (
         <p
           id={controlId ? `${controlId}-error` : undefined}
-          role="alert"
+          role={announce ? 'alert' : undefined}
           className="ps-8 text-caption text-destructive"
         >
           {message}
@@ -322,6 +325,7 @@ export function CheckboxGroup({
   columns = 2,
   className,
   disabled,
+  announce,
 }: {
   name: string;
   legend: string;
@@ -330,6 +334,8 @@ export function CheckboxGroup({
   error?: string | string[] | null;
   required?: boolean;
   optionalLabel?: string;
+  /** See `FieldError`. */
+  announce?: boolean;
   defaultValue?: string[];
   columns?: 1 | 2;
   className?: string;
@@ -345,6 +351,7 @@ export function CheckboxGroup({
       optionalLabel={optionalLabel}
       className={className}
       disabled={disabled}
+      announce={announce}
     >
       <ChoiceList
         name={name}
@@ -370,6 +377,7 @@ export function RadioGroup({
   columns = 1,
   className,
   disabled,
+  announce,
 }: {
   name: string;
   legend: string;
@@ -378,6 +386,8 @@ export function RadioGroup({
   error?: string | string[] | null;
   required?: boolean;
   optionalLabel?: string;
+  /** See `FieldError`. */
+  announce?: boolean;
   defaultValue?: string;
   columns?: 1 | 2;
   className?: string;
@@ -393,6 +403,7 @@ export function RadioGroup({
       optionalLabel={optionalLabel}
       className={className}
       disabled={disabled}
+      announce={announce}
     >
       <ChoiceList
         name={name}

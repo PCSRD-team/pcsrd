@@ -97,20 +97,33 @@ export function MediaPickerImpl({
           setError(t.loadError);
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        // A superseded request must not end the loading state of its successor.
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
   }, [kind, open, page, search, t.loadError]);
 
-  const runSearch = () => {
+  // Every control that triggers a fetch starts it from a clean slate: a page
+  // change used to keep the previous request's error on screen. Set in the
+  // handlers rather than at the top of the effect, which would render twice.
+  const startFetch = () => {
     setError('');
     setLoading(true);
+  };
+
+  const runSearch = () => {
+    startFetch();
     setPage(1);
     setSearch(query.trim());
   };
 
   return (
     <>
-      <input type="hidden" id={name} name={name} value={value} aria-describedby={describedBy} aria-invalid={invalid} />
+      {/* The value travels in a hidden input, which cannot be labelled or
+          focused. The field's `<label for>`, its hint and its error point at
+          the choose button instead — the control a keyboard user operates. */}
+      <input type="hidden" name={name} value={value} />
       <Panel padding="sm" className={cn(invalid && 'border-destructive')}>
         {selected ? (
           <div className="flex items-center gap-3">
@@ -137,9 +150,11 @@ export function MediaPickerImpl({
           <Button
             type="button"
             size="sm"
+            id={name}
+            aria-describedby={describedBy}
+            aria-invalid={invalid || undefined}
             onClick={() => {
-              setError('');
-              setLoading(true);
+              startFetch();
               setOpen(true);
             }}
           >
@@ -247,7 +262,7 @@ export function MediaPickerImpl({
                 size="sm"
                 disabled={page <= 1 || loading}
                 onClick={() => {
-                  setLoading(true);
+                  startFetch();
                   setPage((current) => current - 1);
                 }}
               >
@@ -260,7 +275,7 @@ export function MediaPickerImpl({
                 size="sm"
                 disabled={page >= totalPages || loading}
                 onClick={() => {
-                  setLoading(true);
+                  startFetch();
                   setPage((current) => current + 1);
                 }}
               >

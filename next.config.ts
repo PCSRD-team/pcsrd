@@ -65,9 +65,11 @@ const config: NextConfig = {
     // 768, 1024 and the 1180px content column; 420/828 and 1080/1200 are the
     // 1× and 2× candidates for the two ends of that range.
     deviceSizes: [360, 420, 640, 828, 1080, 1200, 1920],
-    // 48 and 64 are the header and footer logo squares; 256/384 cover the
-    // partner tile and the news thumbnail at 2×.
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // 48 and 64 are the header and footer logo squares; 256 covers the
+    // partner tile at 2×. Every entry must sit below the smallest device size
+    // (the Image docs say so; the two lists are concatenated into one srcset),
+    // so there is no 384 — the news thumbnail at 2× is served from 360/420.
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
 
   // Prerendering reads the database, and the database is in Tokyo. A page that
@@ -86,9 +88,10 @@ const config: NextConfig = {
     // is why it survived several passes.
 
     serverActions: {
-      // The job-application form posts a CV through a Server Action, and the
-      // default limit is 1 MB. 4.5 MB is Vercel's platform ceiling; uploads are
-      // rejected at 4 MB in src/lib/security/upload.ts so the message comes
+      // The careers portal posts its attachments through a Server Action
+      // (src/actions/public/apply.ts), and the default limit is 1 MB. 4.5 MB is
+      // Vercel's platform ceiling; that action rejects anything over
+      // MAX_TOTAL_UPLOAD_BYTES (4 MB across all files) so the message comes
       // from us rather than as an opaque 413 from the edge.
       bodySizeLimit: '4.5mb',
     },
@@ -98,17 +101,21 @@ const config: NextConfig = {
     return [
       {
         source: '/:path*',
-        headers: [
-          ...securityHeaders,
-          { key: 'Content-Security-Policy', value: siteCsp },
-        ],
+        headers: securityHeaders,
       },
       {
-        source: '/fonts/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
+        // Everything except `/admin`. The admin gets only the per-request
+        // nonce policy from `src/proxy.ts`; with this one on it as well, the
+        // browser enforces both, and the static policy's `'unsafe-inline'` is
+        // what a reviewer would see and trust. The lookahead is anchored to a
+        // whole segment, so `/admin` and `/admin/…` are excluded and nothing
+        // else is.
+        source: '/((?!admin(?:/|$)).*)',
+        headers: [{ key: 'Content-Security-Policy', value: siteCsp }],
       },
+      // There is no `/fonts` caching rule: `public/fonts` does not exist.
+      // next/font self-hosts under `/_next/static/media`, which Next already
+      // serves as immutable.
     ];
   },
 

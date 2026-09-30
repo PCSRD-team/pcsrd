@@ -22,6 +22,7 @@ import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { StrategicObjectives } from './about/_components/strategy';
 import { InvolvementCards } from './get-involved/_components/involvement-cards';
+import { plural } from '@/lib/i18n/plural';
 
 export const revalidate = 3600;
 
@@ -390,7 +391,7 @@ function WhereWeWork({
                 <span className="text-body font-medium text-ink">{dict.enums.governorate[row.key]}</span>
               </span>
               <span className="font-mono text-caption text-ink-70 tabular-nums">
-                <Bidi>{formatNumber(row.count, locale)}</Bidi> {dict.homePage.projectsUnit}
+                {plural(locale, row.count, dict.programs.projectsCount, formatNumber(row.count, locale))}
               </span>
             </RuledListItem>
           ))}
@@ -657,13 +658,19 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       listPosts(locale, { limit: 3, featuredOnly: true }),
     ]);
 
-  const story = featuredStories[0] ?? (await listStories(locale, { limit: 1 }))[0] ?? null;
-  const shownMetrics = metrics.length > 0 ? metrics : await listMetrics(locale, { status: 'verified' });
-  // Featured first, latest as the fallback — the same idiom as the story and
-  // the metrics two lines up. The `is_featured` checkbox had a writer in the
-  // news form and no reader anywhere on the site, so marking a post as
-  // featured did nothing at all.
-  const shownPosts = posts.items.length > 0 ? posts : await listPosts(locale, { limit: 3 });
+  // Featured first, latest as the fallback, for the story, the metrics and the
+  // posts. The `is_featured` checkbox had a writer in the news form and no
+  // reader anywhere on the site, so marking a post as featured did nothing.
+  // The three fallbacks are independent, so they run together rather than as
+  // up to three more round trips in series after the first wave.
+  const [fallbackStories, fallbackMetrics, fallbackPosts] = await Promise.all([
+    featuredStories.length > 0 ? null : listStories(locale, { limit: 1 }),
+    metrics.length > 0 ? null : listMetrics(locale, { status: 'verified' }),
+    posts.items.length > 0 ? null : listPosts(locale, { limit: 3 }),
+  ]);
+  const story = featuredStories[0] ?? fallbackStories?.[0] ?? null;
+  const shownMetrics = fallbackMetrics ?? metrics;
+  const shownPosts = fallbackPosts ?? posts;
   const memberships = partners.filter((partner) => partner.type === 'network' || partner.type === 'membership');
 
   return (

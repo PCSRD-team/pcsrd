@@ -1,5 +1,7 @@
 # 04 — Open questions
 
+> **Snapshot.** The pre-launch audit as of August 2026 (commit `5fb312a`), kept as a record and not updated — some of it no longer matches the code. Current state: `docs/PROGRESS.md`. Latest full review: `docs/audit/07-REVIEW-2026-09-29.md`.
+
 Everything here is blocked on a decision, a credential or an access grant that I do not
 have. Nothing in this file is a finding — findings are in `01-AUDIT-REPORT.md`. Each item
 says what I did in the meantime so no question blocks progress.

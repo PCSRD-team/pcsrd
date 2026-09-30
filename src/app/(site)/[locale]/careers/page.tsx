@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { vacancyTypeLabel } from '@/components/content/cards';
-import { ContentBreadcrumbs } from '@/components/content/page-chrome';
+import { ContentBreadcrumbs, employmentTypeLabel } from '@/components/content/page-chrome';
 import { getSiteName } from '@/components/content/site';
 import { CollectionPageJsonLd } from '@/components/seo/json-ld';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { Table, TimeCell } from '@/components/ui/table';
 import { listOpenForms } from '@/db/queries/applications';
 import { listOpenVacancies } from '@/db/queries/content';
 import { vacancyType, type VacancyType } from '@/db/schema/enums';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatInstant, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -104,7 +104,14 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
       <PageHeader
         title={dict.careers.title}
         lede={dict.careers.lead}
-        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.careers.title }]} />}
+        breadcrumbs={
+          <ContentBreadcrumbs
+            locale={locale}
+            dict={dict}
+            trail={[{ label: dict.careers.title }]}
+            currentPath={listHref(locale, type)}
+          />
+        }
       />
 
       <Tabs items={tabs} label={dict.contentUi.vacancyType} className="mbe-8" />
@@ -115,10 +122,19 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
         rowHref={(vacancy) => localePath(locale, `/careers/${vacancy.slug}`)}
         // "No openings" is a real answer, not an error. The generic empty
         // state would leave an applicant wondering whether the page failed.
+        // It must not contradict the page either: "content will appear here
+        // once published" above a list of open opportunities read as broken,
+        // and a filtered view that is empty is a filter result, not a verdict.
         empty={
           <EmptyState
             title={dict.careers.noOpenings}
-            body={dict.states.emptyBody}
+            body={
+              type
+                ? dict.states.emptyFiltered
+                : standaloneForms.length > 0
+                  ? dict.careers.noVacanciesSeeForms
+                  : dict.states.emptyBody
+            }
             bounded
             action={
               <ButtonLink href={localePath(locale, '/get-involved/volunteer')} tone="secondary" size="sm">
@@ -153,9 +169,9 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
           {
             key: 'employmentType',
             header: dict.careers.employmentType,
-            numeric: true,
+            // A label, not a figure: no tabular numerals, no LTR cell.
             align: 'start',
-            cell: (vacancy) => vacancy.employmentType ?? '—',
+            cell: (vacancy) => employmentTypeLabel(vacancy.employmentType, dict) ?? '—',
           },
           {
             key: 'deadline',
@@ -202,8 +218,10 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
                 align: 'start',
                 cell: (form) =>
                   form.closesAt ? (
-                    <TimeCell dateTime={new Date(form.closesAt).toISOString()} locale={locale}>
-                      {formatDate(new Date(form.closesAt), locale)}
+                    // An instant, on the Palestine clock: `formatDate` pins UTC
+                    // and showed a late-evening deadline a day early.
+                    <TimeCell dateTime={toDateTimeAttr(form.closesAt) ?? ''} locale={locale}>
+                      {formatInstant(form.closesAt, locale)} {dict.apply.siteTimeZone}
                     </TimeCell>
                   ) : (
                     dict.careers.noDeadline

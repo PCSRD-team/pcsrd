@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { projectStateLabel } from '@/components/content/cards';
 import { mediaImage, mediaSrc } from '@/components/content/media';
 import { ContentBreadcrumbs, ProjectsRail, TranslationNotice } from '@/components/content/page-chrome';
@@ -13,10 +13,15 @@ import { DefinitionList } from '@/components/ui/definition-list';
 import { Figure } from '@/components/ui/figure';
 import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { Eyebrow, Prose } from '@/components/ui/typography';
-import { getProjectBySlug, listProjectSlugs, listProjects } from '@/db/queries/projects';
+import {
+  findProjectSlugForLocale,
+  getProjectBySlug,
+  listProjectSlugs,
+  listProjects,
+} from '@/db/queries/projects';
 import { prerenderData } from '@/lib/build-time';
-import { formatPeriod } from '@/lib/format';
-import { isLocale, localePath } from '@/lib/i18n/config';
+import { formatDate } from '@/lib/format';
+import { DEFAULT_LOCALE, isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
 import { decodeParam } from '@/lib/route-params';
@@ -57,6 +62,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/projects
     siteName,
     translationStatus,
     noIndex: project.noIndex,
+    ownCard: true,
   });
 }
 
@@ -69,7 +75,13 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
   if (!isLocale(locale)) notFound();
 
   const [dict, project] = await Promise.all([getDictionary(locale), getProjectBySlug(slug, locale)]);
-  if (!project) notFound();
+  if (!project) {
+    // A slug from the other locale (the language switcher keeps it) redirects
+    // to this locale's URL rather than 404ing.
+    const localized = await findProjectSlugForLocale(slug, locale);
+    if (localized) permanentRedirect(localePath(locale, `/projects/${encodeURIComponent(localized)}`));
+    notFound();
+  }
 
   // Related projects: the same programme, minus this one. The rail reads
   // from the cached list query, so it costs nothing on a warm cache.
@@ -83,9 +95,24 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
   // Arabic comma for Arabic lists, Latin comma for English — from the
   // dictionary, not a ternary here.
   const separator = dict.common.listSeparator;
-  const period = formatPeriod(project.startDate, project.endDate, locale);
+  // Each end of the period is its own `<time>`: a range is not a valid
+  // `datetime` value, two dates are.
+  const monthYear = { year: 'numeric', month: 'short' } as const;
+  const periodStart = formatDate(project.startDate, locale, monthYear);
+  const periodEnd = formatDate(project.endDate, locale, monthYear);
+  const period =
+    periodStart || periodEnd ? (
+      <DateText locale={locale}>
+        {periodStart ? <time dateTime={project.startDate ?? undefined}>{periodStart}</time> : null}
+        {periodStart && periodEnd ? ' – ' : null}
+        {periodEnd ? <time dateTime={project.endDate ?? undefined}>{periodEnd}</time> : null}
+      </DateText>
+    ) : null;
   const hero = mediaImage(project.hero?.path, project.hero?.blur, project.hero);
-  const url = localePath(locale, `/projects/${slug}`);
+  // An untranslated project's canonical is the Arabic URL.
+  const url = project.isTranslated
+    ? localePath(locale, `/projects/${slug}`)
+    : localePath(DEFAULT_LOCALE, `/projects/${project.slugAr}`);
 
   return (
     <Container className="section-gap">
@@ -93,7 +120,7 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
         name={project.title}
         description={project.summary}
         url={url}
-        locale={locale}
+        locale={project.isTranslated ? locale : DEFAULT_LOCALE}
         startDate={project.startDate}
         endDate={project.endDate}
         areaServed={project.governorates.map(govLabel)}
@@ -125,6 +152,7 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
                 locale={locale}
                 dict={dict}
                 trail={[{ label: dict.projects.title, path: '/projects' }, { label: project.title ?? '' }]}
+                currentPath={url}
               />
             }
             eyebrow={project.program?.title ?? undefined}
@@ -145,8 +173,8 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
           {hero ? (
             <Figure
               image={hero}
-              alt={project.hero?.alt ?? ''}
-              decorative={!project.hero?.alt}
+              alt={project.hero?.alt || project.title || ''}
+              decorative={!(project.hero?.alt || project.title)}
               // The narrative column is 600px at the 1180px content width
               // (1052px of column, minus the 380px record aside and the 72px
               // gap), not the 760px the old hint claimed — every desktop load
@@ -194,7 +222,7 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
                         the schema, so a published image always has one. */}
                     <Figure
                       image={mediaImage(item.path, item.blur, item)}
-                      alt={item.alt ?? ''}
+                      alt={item.alt || project.title || ''}
                       ratio="portrait"
                       // Three-up inside the 600px narrative column, not the
                       // full content width: ~190px a tile at the top end.
@@ -222,7 +250,7 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/proje
             items={[
               {
                 term: dict.projects.period,
-                value: period ? <DateText locale={locale}>{period}</DateText> : null,
+                value: period,
               },
               {
                 term: dict.projects.governorate,

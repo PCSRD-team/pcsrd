@@ -92,7 +92,8 @@ async function submit<TSchema extends z.ZodType>(
     const ip = await getClientIp();
     const sensitive = isSensitiveType(pipeline.type);
 
-    const rate = await checkRateLimit('form', hashIp(ip) ?? 'unknown');
+    const clientKey = hashIp(ip) ?? 'unknown';
+    const rate = await checkRateLimit('form', clientKey);
 
     // A safeguarding disclosure and a partnership enquiry do not deserve the
     // same treatment when anti-abuse is down. A degraded limiter means the primary
@@ -102,6 +103,14 @@ async function submit<TSchema extends z.ZodType>(
     // than an unthrottled complaint: the honeypot and Turnstile still stand,
     // and the throttle is the outer wall, not the only one.
     if (!rate.success && !(rate.degraded && sensitive)) {
+      return err('rate_limited', 'errors.rateLimited');
+    }
+
+    // The site-wide window as well, so a client cannot rotate between the
+    // forms and the careers portal with a fresh allowance on each. The same
+    // degraded-backend exception holds for a complaint.
+    const site = await checkRateLimit('global', clientKey);
+    if (!site.success && !(site.degraded && sensitive)) {
       return err('rate_limited', 'errors.rateLimited');
     }
 

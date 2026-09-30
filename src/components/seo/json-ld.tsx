@@ -129,6 +129,8 @@ export function JobPostingJsonLd({
         hiringOrganization: {
           name: org?.legalName ?? org?.shortName ?? null,
           logo: org ? organizationLogoUrl(org) : null,
+          // Already null unless the organisation opted to publish it (DNH-6).
+          address: org?.address ?? null,
         },
       })}
     />

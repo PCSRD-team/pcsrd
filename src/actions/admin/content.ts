@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import type { ContentStatus } from '@/db/schema/enums';
 import { requireActor } from '@/lib/auth/guard';
-import { revalidateEntity } from '@/lib/cache/revalidate';
-import type { Entity } from '@/lib/cache/tags';
+import { revalidate, revalidateEntity } from '@/lib/cache/revalidate';
+import { type Entity, TAGS } from '@/lib/cache/tags';
 import { type ActionResult, err, ok, runAction } from '@/lib/errors';
 import { fieldErrorsFrom } from '@/lib/validation/common';
 import { rowDeleteSchema, rowStatusSchema } from '@/lib/validation/admin';
@@ -107,6 +107,11 @@ function revalidateResult(entity: Entity, result: unknown) {
   }
   // A partner logo appears on project pages, so those go stale too.
   if (entity === 'partner') revalidateEntity('project');
+  // A vacancy leaving `published` takes its portal form down with it (the
+  // service does that in the same transaction), and deleting one unlinks it.
+  if (entity === 'vacancy') {
+    revalidate([TAGS.applicationFormList, TAGS.applicationFormVacancyLink]);
+  }
 }
 
 function fields(formData: FormData) {

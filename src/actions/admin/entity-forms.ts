@@ -5,8 +5,8 @@ import { db } from '@/db';
 import { getMediaUsage } from '@/db/queries/admin';
 import { requireActor } from '@/lib/auth/guard';
 import { publicEnv } from '@/lib/env.public';
-import { revalidateEntity } from '@/lib/cache/revalidate';
-import type { Entity } from '@/lib/cache/tags';
+import { revalidate, revalidateEntity } from '@/lib/cache/revalidate';
+import { type Entity, TAGS } from '@/lib/cache/tags';
 import { type ActionResult, err, ok, runAction } from '@/lib/errors';
 import type { Actor } from '@/services/_shared/actor';
 import { fieldErrorsFrom } from '@/lib/validation/common';
@@ -34,7 +34,6 @@ import {
   storyService,
   vacancyService,
 } from '@/services/content';
-import { ensureFormForVacancy } from '@/services/applications/application-form.service';
 import { upsertMetric, upsertPartner, upsertPerson } from '@/services/content/catalog.service';
 import { upsertProject } from '@/services/content/project.service';
 import { createRedirect } from '@/services/content/redirect.service';
@@ -272,10 +271,13 @@ export async function saveVacancyForm(_prev: EntityResult | null, formData: Form
     'vacancy',
     vacancySchema,
     async (actor, input) => {
+      // The service creates a new vacancy's draft portal form, moves its
+      // deadline and takes it down with the vacancy, in one transaction.
       const vacancy = await vacancyService.upsert(db, actor, input);
-      // A new vacancy arrives with its application form already in the
-      // careers portal, as a draft — the portal is the one way to apply.
-      if (!input.id) await ensureFormForVacancy(db, actor, vacancy.id);
+      // Any of those changes the form's page, the careers index and the
+      // vacancy page's "apply" link. Form pages are tagged with the list tag
+      // too, so these two reach every one of them.
+      revalidate([TAGS.applicationFormList, TAGS.applicationFormVacancyLink]);
       return vacancy;
     },
   );

@@ -114,6 +114,10 @@ export function FormShell<TData extends { reference: string } = { reference: str
   }
 
   const failure = state && !state.ok ? state : null;
+  // A refusal other than field validation means the action already verified
+  // — and so spent — the captcha token. The state object is new on every
+  // submission, so it doubles as the key that resets the widget.
+  const captchaResetKey = failure && failure.code !== 'validation' ? failure : null;
   const fieldState: FieldState = failure
     ? { errors: failure.fieldErrors, values: failure.values }
     : {};
@@ -146,7 +150,7 @@ export function FormShell<TData extends { reference: string } = { reference: str
 
       <FormStack>{children(fieldState)}</FormStack>
 
-      <Turnstile locale={locale} dict={dict} />
+      <Turnstile locale={locale} dict={dict} resetKey={captchaResetKey} />
 
       <FormActions>
         <SubmitButton

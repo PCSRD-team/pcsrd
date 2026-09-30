@@ -55,7 +55,7 @@ export default async function PartnersPage({ params }: PageProps<'/[locale]/part
       <PageHeader
         title={dict.partners.title}
         lede={dict.partners.lead}
-        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.partners.title }]} />}
+        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.partners.title }]} currentPath="/partners" />}
       />
 
       {partners.length === 0 ? (

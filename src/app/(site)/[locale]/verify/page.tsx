@@ -129,7 +129,10 @@ export default async function VerifyPage({ params }: PageProps<'/[locale]/verify
           captionHidden
           rows={official}
           columns={columns}
-          empty={<EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} />}
+          // Not the generic "content will appear here": on the
+          // anti-impersonation page an empty list is itself a warning, and
+          // the reader must be told what to do meanwhile.
+          empty={<EmptyState title={dict.states.emptyTitle} body={dict.verify.noChannelsPublished} />}
         />
       </Panel>
 

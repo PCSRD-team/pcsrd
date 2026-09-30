@@ -183,7 +183,8 @@ describe('record builders', () => {
 
     expect(data).toMatchObject({
       '@type': 'JobPosting',
-      validThrough: '2026-12-31',
+      // End of the deadline day in Gaza (UTC+2 in December).
+      validThrough: '2026-12-31T23:59:59+02:00',
       datePosted: '2026-09-01',
       description: 'وظيفة',
       employmentType: 'FULL_TIME',
@@ -191,6 +192,8 @@ describe('record builders', () => {
       jobLocation: { address: { addressLocality: 'غزة' } },
     });
     expect(data.description).not.toBe('غزة');
+    // `inLanguage` is not a JobPosting property; it was dropped.
+    expect(data).not.toHaveProperty('inLanguage');
   });
 
   it('volunteer postings default employmentType to VOLUNTEER when the column is empty', () => {

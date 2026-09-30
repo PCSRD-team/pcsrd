@@ -21,8 +21,9 @@ about the validation response — `aria-invalid`, `aria-describedby`, the
 test that fills a form in, it must still be invalid when it reaches the server
 (no Turnstile token is the last line of defence, but do not rely on it).
 
-The rate limiter runs **before** validation and allows five submissions per
-hour per client. Each describe block forwards a unique `x-forwarded-for` so
+On the five public forms the rate limiter runs **before** validation and allows
+five submissions per hour per client; on the careers portal (`/apply/[slug]`)
+it runs after validation, so a refused form does not spend a slot. Each describe block forwards a unique `x-forwarded-for` so
 the suite never trips it; do not remove that header.
 
 ## Running locally
@@ -65,7 +66,7 @@ not touch `package.json`).
 
 The live content is mostly draft. `expectListOrEmpty()` in `fixtures.ts`
 passes when a list has items **or** the designed `EmptyState` from
-`src/components/ui/states.tsx` is rendered. A list that is empty *without*
+`src/components/ui/feedback.tsx` is rendered. A list that is empty *without*
 that panel is a failure — that is non-negotiable #10. Journeys that need a
 published item (a vacancy, a project) verify the empty state and `skip` the
 rest with a reason, so the report says "missing content", not "broken".

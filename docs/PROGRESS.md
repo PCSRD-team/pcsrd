@@ -326,10 +326,8 @@ two need a step on the live project (below).
 the Supabase MCP (`storage.buckets.allowed_mime_types` carries all nine types).
 The §5.4 admin browser pass still needs an admin session.
 
-**Still the owner's decision:** the old `JobApplicationForm` (into
-`form_submissions`) and the portal both exist; a vacancy with a linked form
-uses the portal, one without falls back to the old form. Whether to retire the
-old path is not a code question.
+~~The old `JobApplicationForm` and the portal both exist.~~ Decided by the owner
+on 2026-09-29: the portal is the only way to apply — see §3e.
 
 ---
 
@@ -368,6 +366,28 @@ vacancies, forms, applications or `job` submissions, so nothing was migrated.
   applicant counts, manage / applicants, or a create button for an older
   vacancy). The sidebar has one "بوابة الوظائف" group: vacancies, then
   forms and applicants.
+
+## 3f. Full pre-launch review (2026-09-29)
+
+Seven parallel reviews (security, SEO/HTML5, performance/Next 16, backend,
+database, translation/RTL/UX, QA) and four fix streams. Everything found, done
+and left open is in **`docs/audit/07-REVIEW-2026-09-29.md`**. The headline:
+
+- Next 16.3.7 (RCE in the image optimiser), sharp, tiptap; `npm audit` clean.
+- New migrations, **not yet applied live**: `drizzle/0010` (drop an exposed
+  function), `0011` (portal function grants, 29 duplicate indexes, Gaza-day
+  archive), `0012` (new auth users inactive until invited), and
+  `supabase/migrations/20260929120000_drop_public_list_policies.sql`.
+- New facts worth knowing:
+  - `inviteUser` activates the profile; the trigger creates it inactive.
+  - Form settings that route or keep applicant data need `submissions.handle`;
+    un-flagging or deleting a sensitive field needs `applications.sensitive`.
+  - A vacancy and its form are kept in step inside the vacancy's transaction
+    (`syncFormWithVacancy`).
+  - Counts in the dictionaries are plural objects; render them with
+    `plural()` from `src/lib/i18n/plural.ts`.
+  - Every "today" or "closed" decision uses the Asia/Gaza date
+    (`siteToday()`, `formatInstant()`).
 
 ## 4. Facts that will bite if forgotten
 

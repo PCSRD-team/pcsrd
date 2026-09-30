@@ -3,6 +3,7 @@ import type {
   ApplicationFieldOption,
 } from '@/db/schema/applications';
 import type { ApplicationFieldType, ApplicationFormKind } from '@/db/schema/enums';
+import { admin_uiAr, admin_uiEn } from '@/lib/i18n/dictionaries/partials/admin-ui';
 
 /**
  * The field catalogue — the vetted half of the form builder.
@@ -120,33 +121,16 @@ export const CATALOG_GROUPS: readonly CatalogGroup[] = [
   'other',
 ];
 
-export const GROUP_LABEL_AR: Record<CatalogGroup, string> = {
-  identity: 'البيانات الشخصية',
-  contact: 'بيانات التواصل',
-  location: 'مكان السكن',
-  education: 'المؤهل العلمي',
-  experience: 'الخبرة العملية',
-  skills: 'المهارات واللغات',
-  attachments: 'المرفقات',
-  availability: 'الجاهزية والتفرغ',
-  compliance: 'الإقرارات والسياسات',
-  references: 'المُعرِّفون',
-  other: 'حقول أخرى',
-};
+/**
+ * The group labels are copy, so they live in the dictionary
+ * (`adminUi.careers.catalogGroups`); these names are kept so existing callers
+ * and the catalogue test read them unchanged.
+ */
+export const GROUP_LABEL_AR: Record<CatalogGroup, string> =
+  admin_uiAr.adminUi.careers.catalogGroups;
 
-export const GROUP_LABEL_EN: Record<CatalogGroup, string> = {
-  identity: 'Personal details',
-  contact: 'Contact details',
-  location: 'Location',
-  education: 'Education',
-  experience: 'Work experience',
-  skills: 'Skills and languages',
-  attachments: 'Attachments',
-  availability: 'Availability',
-  compliance: 'Declarations and policies',
-  references: 'Referees',
-  other: 'Other fields',
-};
+export const GROUP_LABEL_EN: Record<CatalogGroup, string> =
+  admin_uiEn.adminUi.careers.catalogGroups;
 
 /**
  * Language proficiency, shared by the three language fields.
@@ -224,7 +208,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     labelEn: 'National ID number',
     helpAr: 'تسعة أرقام كما في بطاقة الهوية الفلسطينية. لا يُطلب إلا عند الحاجة لإجراءات التعاقد.',
     helpEn: 'Nine digits, as on the Palestinian ID card. Asked only where contracting requires it.',
-    placeholderAr: '٩ أرقام',
+    placeholderAr: '9 أرقام',
     // The pattern is the catalogue's, not the author's: `config.pattern` is
     // documented as never author-supplied, precisely so that a checked shape
     // cannot be relaxed from the admin screen.
@@ -268,11 +252,11 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     helpEn:
       'The recommended alternative to a date of birth: it answers what we actually need — whether the applicant is a minor, and roughly which cohort they belong to — without holding a permanent identifier.',
     options: [
-      { value: 'under_18', labelAr: 'أقل من ١٨ سنة', labelEn: 'Under 18' },
-      { value: '18_24', labelAr: '١٨ – ٢٤ سنة', labelEn: '18–24' },
-      { value: '25_34', labelAr: '٢٥ – ٣٤ سنة', labelEn: '25–34' },
-      { value: '35_49', labelAr: '٣٥ – ٤٩ سنة', labelEn: '35–49' },
-      { value: '50_plus', labelAr: '٥٠ سنة فأكثر', labelEn: '50 and over' },
+      { value: 'under_18', labelAr: 'أقل من 18 سنة', labelEn: 'Under 18' },
+      { value: '18_24', labelAr: '18 – 24 سنة', labelEn: '18–24' },
+      { value: '25_34', labelAr: '25 – 34 سنة', labelEn: '25–34' },
+      { value: '35_49', labelAr: '35 – 49 سنة', labelEn: '35–49' },
+      { value: '50_plus', labelAr: '50 سنة فأكثر', labelEn: '50 and over' },
     ],
   },
   {
@@ -320,7 +304,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     labelEn: 'Mobile number',
     helpAr: 'الرقم الذي نتصل به لترتيب المقابلة، فتأكد من أنه يعمل.',
     helpEn: 'The number we will call to arrange an interview, so make sure it is reachable.',
-    placeholderAr: '٠٥٩ ١٢٣ ٤٥٦٧',
+    placeholderAr: '059 123 4567',
     defaultRequired: true,
     identityRole: 'phone',
   },
@@ -487,7 +471,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     type: 'short_text',
     labelAr: 'المعدل أو التقدير',
     labelEn: 'GPA or grade',
-    placeholderAr: '٨٤٪ أو جيد جداً أو ٣٫٤ من ٤',
+    placeholderAr: '84% أو جيد جداً أو 3.4 من 4',
     config: { maxLength: 40 },
   },
   {
@@ -585,7 +569,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     key: 'worked_with_pcsrd_before',
     group: 'experience',
     type: 'checkbox',
-    labelAr: 'سبق لي العمل أو التطوّع مع الجمعية',
+    labelAr: 'سبق لي العمل أو التطوّع مع المؤسسة',
     labelEn: 'I have worked or volunteered with the organisation before',
   },
   {
@@ -702,7 +686,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     type: 'file',
     labelAr: 'السيرة الذاتية',
     labelEn: 'CV',
-    helpAr: 'ملف PDF أو Word، بحجم لا يتجاوز ٤ ميغابايت.',
+    helpAr: 'ملف PDF أو Word، بحجم لا يتجاوز 4 ميغابايت.',
     helpEn: 'A PDF or Word file, no larger than 4 MB.',
     config: { accept: 'document' },
     defaultRequired: true,
@@ -766,7 +750,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     labelAr: 'صورة شخصية',
     labelEn: 'Personal photograph',
     helpAr:
-      'الصورة ليست شرطاً للنظر في الطلب، والجمعية لا تفاضل بين المتقدّمين على أساس المظهر. تُستخدم عند الحاجة لإصدار بطاقة تعريف بعد التعاقد.',
+      'الصورة ليست شرطاً للنظر في الطلب، والمؤسسة لا تفاضل بين المتقدّمين على أساس المظهر. تُستخدم عند الحاجة لإصدار بطاقة تعريف بعد التعاقد.',
     helpEn:
       'A photograph is not required for your application to be considered, and the organisation does not screen on appearance. It is used, where needed, to issue a staff card after contracting.',
     config: { accept: 'image' },
@@ -844,7 +828,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     labelEn:
       'I confirm that I have read and will abide by the policy on protection from sexual exploitation and abuse, and the code of conduct',
     helpAr:
-      'الحماية من الاستغلال والانتهاك الجنسي (PSEA) التزام غير قابل للتفاوض على كل من يعمل أو يتطوّع مع الجمعية: لا علاقة جنسية مع متلقّي المساعدة، ولا مقابل من أي نوع لقاء خدمة، وواجب الإبلاغ عن أي شبهة. تُسلَّم لك السياسة كاملة عند التعاقد.',
+      'الحماية من الاستغلال والانتهاك الجنسي (PSEA) التزام غير قابل للتفاوض على كل من يعمل أو يتطوّع مع المؤسسة: لا علاقة جنسية مع متلقّي المساعدة، ولا مقابل من أي نوع لقاء خدمة، وواجب الإبلاغ عن أي شبهة. تُسلَّم لك السياسة كاملة عند التعاقد.',
     helpEn:
       'Protection from sexual exploitation and abuse (PSEA) is a non-negotiable commitment for everyone who works or volunteers with the organisation: no sexual relationship with people receiving assistance, no exchange of any kind for a service, and a duty to report any concern. The full policy is given to you on contracting.',
     defaultRequired: true,
@@ -864,7 +848,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     key: 'relative_at_pcsrd',
     group: 'compliance',
     type: 'checkbox',
-    labelAr: 'لديّ قريب يعمل في الجمعية أو في مجلس إدارتها',
+    labelAr: 'لديّ قريب يعمل في المؤسسة أو في مجلس إدارتها',
     labelEn: 'I have a relative who works for the organisation or sits on its board',
     helpAr:
       'الإفصاح لا يستبعدك من التقديم. إخفاء القرابة هو ما يُبطل الطلب، لأن تعارض المصالح يُدار بإخراج القريب من لجنة الاختيار، وهذا لا يمكن فعله إن لم نعلم.',
@@ -1129,7 +1113,7 @@ export const FIELD_CATALOG: readonly CatalogField[] = [
     type: 'section',
     labelAr: 'المرفقات',
     labelEn: 'Attachments',
-    helpAr: 'حجم كل ملف لا يتجاوز ٤ ميغابايت.',
+    helpAr: 'حجم كل ملف لا يتجاوز 4 ميغابايت.',
     helpEn: 'Each file must be 4 MB or smaller.',
   },
   {

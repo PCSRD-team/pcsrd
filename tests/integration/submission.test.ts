@@ -10,6 +10,7 @@ import {
   createSubmission,
   getSubmission,
   purgeExpiredSubmissions,
+  resolveSubmissionAttachment,
   setSubmissionState,
 } from '@/services/submission/submission.service';
 import { rowsOf } from '@/db/session';
@@ -280,5 +281,71 @@ describe('countNewSubmissions', () => {
 
     expect(await countNewSubmissions(db(), ADMIN)).toBe(1);
     expect(await countNewSubmissions(db(), SAFEGUARDING)).toBe(2);
+  });
+});
+
+describe('setSubmissionState keeps what it was not asked to change', () => {
+  it('records the prior state in the audit diff', async () => {
+    const created = await createSubmission(db(), { type: 'contact', locale: 'ar', payload: {} });
+    const id = await idOf(created.reference);
+
+    await setSubmissionState(db(), ADMIN, id, { state: 'in_progress' });
+
+    const [entry] = await getDb().query.auditLogs.findMany({
+      where: (log, { eq: equals }) => equals(log.entityId, id),
+    });
+    expect(entry?.diff).toMatchObject({ state: { from: 'new', to: 'in_progress' } });
+  });
+
+  it('keeps the note when none is posted, and clears it when a blank one is', async () => {
+    const created = await createSubmission(db(), { type: 'contact', locale: 'ar', payload: {} });
+    const id = await idOf(created.reference);
+    const noteOf = async () =>
+      row1(await getDb().select().from(formSubmissions).where(eq(formSubmissions.id, id)))
+        .internalNote;
+
+    await setSubmissionState(db(), ADMIN, id, { state: 'in_progress', internalNote: 'رد عليه' });
+    await setSubmissionState(db(), ADMIN, id, { state: 'handled' });
+    expect(await noteOf()).toBe('رد عليه');
+
+    await setSubmissionState(db(), ADMIN, id, { state: 'handled', internalNote: '' });
+    expect(await noteOf()).toBeNull();
+  });
+});
+
+describe('resolveSubmissionAttachment', () => {
+  it('refuses a confidential submission’s attachment outright, even with sensitive access', async () => {
+    const created = await createSubmission(db(), { type: 'complaint', locale: 'ar', payload: {} });
+    const id = await idOf(created.reference);
+    await getDb()
+      .update(formSubmissions)
+      .set({ attachmentPath: 'complaint/x/abc.pdf' })
+      .where(eq(formSubmissions.id, id));
+
+    await expect(resolveSubmissionAttachment(db(), SAFEGUARDING, id)).rejects.toMatchObject({
+      code: 'forbidden',
+      message: 'errors.attachment.sensitiveRefused',
+    });
+  });
+
+  it('returns the path of an ordinary submission’s attachment', async () => {
+    const created = await createSubmission(db(), {
+      type: 'contact',
+      locale: 'ar',
+      payload: {},
+      attachmentPath: 'contact/x/abc.pdf',
+    });
+    const id = await idOf(created.reference);
+    await expect(resolveSubmissionAttachment(db(), ADMIN, id)).resolves.toEqual({
+      id,
+      path: 'contact/x/abc.pdf',
+    });
+  });
+
+  it('reports a submission without an attachment as not found', async () => {
+    const created = await createSubmission(db(), { type: 'contact', locale: 'ar', payload: {} });
+    await expect(
+      resolveSubmissionAttachment(db(), ADMIN, await idOf(created.reference)),
+    ).rejects.toMatchObject({ code: 'not_found' });
   });
 });

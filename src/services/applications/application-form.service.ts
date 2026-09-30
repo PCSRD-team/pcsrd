@@ -8,6 +8,7 @@ import {
   type ApplicationForm,
   type ApplicationFormField,
   type ApplicationFieldOption,
+  type Vacancy,
 } from '@/db/schema';
 import type { ApplicationFormKind, ContentStatus } from '@/db/schema/enums';
 import { readAsActor, withActor } from '@/db/session';
@@ -19,6 +20,7 @@ import type { Actor } from '../_shared/actor';
 import { writeAudit } from '../_shared/audit';
 import { computeDiff } from '../_shared/diff';
 import { one } from '../_shared/one';
+import { valuesEqual } from '../_shared/diff';
 import { assertCan } from '../_shared/permissions';
 import type {
   ApplicationFieldInput,
@@ -206,13 +208,12 @@ async function insertForm(
   // created by a seed script or a test arrives usable. `sortOrder` counts in
   // tens, leaving room to insert between two fields without renumbering the
   // whole form.
-  let order = 0;
-  for (const key of starterFields) {
-    const entry = catalogField(key);
-    if (!entry) continue;
-    await tx.insert(applicationFormFields).values(rowFromCatalog(form.id, entry, order));
-    order += 10;
-  }
+  // One statement for the whole set rather than one per field.
+  const starters = starterFields
+    .map((key) => catalogField(key))
+    .filter((entry) => entry !== undefined)
+    .map((entry, index) => rowFromCatalog(form.id, entry, index * 10));
+  if (starters.length > 0) await tx.insert(applicationFormFields).values(starters);
 
   await writeAudit(tx, actor, {
     action: 'create',
@@ -249,42 +250,127 @@ export async function ensureFormForVacancy(
       await tx.select().from(vacancies).where(eq(vacancies.id, vacancyId)).limit(1),
       'vacancy',
     );
-    if (vacancy.applicationMethod !== 'form') return null;
+    return ensureFormInTx(tx, actor, vacancy);
+  });
+}
 
-    const [existing] = await tx
-      .select({ id: applicationForms.id })
-      .from(applicationForms)
-      .where(eq(applicationForms.vacancyId, vacancyId))
-      .limit(1);
-    if (existing) return loadForm(tx, existing.id);
+/** `ensureFormForVacancy` inside a transaction the caller already holds. */
+async function ensureFormInTx(
+  tx: Tx,
+  actor: Actor,
+  vacancy: Vacancy,
+): Promise<FormWithFields | null> {
+  if (vacancy.applicationMethod !== 'form') return null;
 
-    const kind: ApplicationFormKind = vacancy.type === 'volunteer' ? 'volunteer' : 'job';
+  const [existing] = await tx
+    .select({ id: applicationForms.id })
+    .from(applicationForms)
+    .where(eq(applicationForms.vacancyId, vacancy.id))
+    .limit(1);
+  if (existing) return loadForm(tx, existing.id);
 
-    return insertForm(
-      tx,
-      actor,
-      {
-        kind,
-        slug: await freeSlug(tx, slugify(vacancy.slugEn || vacancy.slugAr) || 'vacancy'),
-        titleAr: vacancy.titleAr,
-        titleEn: vacancy.titleEn,
-        introAr: null,
-        introEn: null,
-        status: 'draft',
-        opensAt: null,
-        closesAt: `${vacancy.deadline}T23:59`,
-        capacity: null,
-        capacityRule: 'close',
-        confirmationAr: null,
-        confirmationEn: null,
-        notifyEmails: [],
-        retentionMonths: 12,
-        allowMultiplePerEmail: false,
-        requireConsent: true,
-        vacancyId,
-      },
-      STARTER_FIELDS[kind],
-    );
+  const kind: ApplicationFormKind = vacancy.type === 'volunteer' ? 'volunteer' : 'job';
+
+  return insertForm(
+    tx,
+    actor,
+    {
+      kind,
+      slug: await freeSlug(tx, slugify(vacancy.slugEn || vacancy.slugAr) || 'vacancy'),
+      titleAr: vacancy.titleAr,
+      titleEn: vacancy.titleEn,
+      introAr: null,
+      introEn: null,
+      status: 'draft',
+      opensAt: null,
+      closesAt: `${vacancy.deadline}T23:59`,
+      capacity: null,
+      capacityRule: 'close',
+      confirmationAr: null,
+      confirmationEn: null,
+      notifyEmails: [],
+      retentionMonths: 12,
+      allowMultiplePerEmail: false,
+      requireConsent: true,
+      vacancyId: vacancy.id,
+    },
+    STARTER_FIELDS[kind],
+  );
+}
+
+/**
+ * Keeps a vacancy's form in step with the vacancy, inside the vacancy's own
+ * write.
+ *
+ * Called by `vacancyService` (its `afterWrite` and `afterStatusChange` hooks),
+ * so it shares the vacancy's transaction: the vacancy and its form commit
+ * together or not at all. Before, the action created the vacancy and then, in
+ * a second transaction, its form — a failure between the two left a vacancy
+ * whose page said "applications not open yet" forever.
+ *
+ * Three rules:
+ *
+ * 1. **A new vacancy gets its draft form** (see `ensureFormForVacancy`).
+ * 2. **A moved deadline moves the form's.** The form closes at the end of the
+ *    vacancy's last day in Gaza; a vacancy extended by a week whose form still
+ *    closed on the old date turned applicants away from a post it advertised
+ *    as open.
+ * 3. **A vacancy that leaves `published` takes its form with it.** An
+ *    unpublished or archived vacancy whose form stayed live kept collecting
+ *    applications for a post nobody could see. Archived → archived; anything
+ *    else → draft. Only a *published* form is touched: a draft stays a draft.
+ */
+export async function syncFormWithVacancy(
+  tx: Tx,
+  actor: Actor,
+  before: Vacancy | null,
+  after: Vacancy,
+): Promise<void> {
+  if (!before) {
+    await ensureFormInTx(tx, actor, after);
+    return;
+  }
+
+  const [form] = await tx
+    .select()
+    .from(applicationForms)
+    .where(eq(applicationForms.vacancyId, after.id))
+    .limit(1)
+    .for('update');
+  if (!form) return;
+
+  const changes: Partial<typeof applicationForms.$inferInsert> = {};
+
+  if (before.deadline !== after.deadline && after.deadline) {
+    changes.closesAt = zonedInputToDate(`${after.deadline}T23:59`);
+  }
+
+  if (before.status === 'published' && after.status !== 'published' && form.status === 'published') {
+    changes.status = after.status === 'archived' ? 'archived' : 'draft';
+  }
+
+  if (Object.keys(changes).length === 0) return;
+
+  const updated = one(
+    await tx
+      .update(applicationForms)
+      .set({ ...changes, updatedBy: actor.id })
+      .where(eq(applicationForms.id, form.id))
+      .returning(),
+    'application_form',
+  );
+
+  await writeAudit(tx, actor, {
+    action: changes.status ? (changes.status === 'archived' ? 'archive' : 'unpublish') : 'update',
+    entityType: 'application_form',
+    entityId: form.id,
+    diff: {
+      ...computeDiff(
+        form as unknown as Record<string, unknown>,
+        updated as unknown as Record<string, unknown>,
+      ),
+      cause: { from: null, to: `vacancy ${after.id}` },
+    },
   });
 }
 
@@ -319,11 +405,18 @@ export async function updateForm(
     await assertSlugFree(tx, columns.slug, id);
     await assertVacancyFree(tx, columns.vacancyId, id);
 
-    // Shortening retention shortens the life of rows already stored, which is
-    // the right behaviour — a decision to keep recruitment files for less time
-    // should apply to the files that exist, not only to future ones. It is
-    // also irreversible for anything the purge then removes, so it is recorded
-    // in the audit diff like any other change rather than applied quietly.
+    // Three settings decide what happens to applicants' data rather than how
+    // the form looks: who is emailed about every application, how long it is
+    // kept, and whether consent is asked. An editor writes content; these are
+    // data-handling decisions, and they belong to whoever handles the data.
+    // Checked only when one actually changes, so an editor can still fix a
+    // typo in the title of a form whose settings someone else chose.
+    const handlingChanged =
+      !valuesEqual(before.notifyEmails, columns.notifyEmails) ||
+      before.retentionMonths !== columns.retentionMonths ||
+      before.requireConsent !== columns.requireConsent;
+    if (handlingChanged) assertCan(actor, 'submissions.handle');
+
     const after = one(
       await tx
         .update(applicationForms)
@@ -335,14 +428,35 @@ export async function updateForm(
 
     await assertStillPublishable(tx, id);
 
+    // A new retention period applies to the rows already stored, not only to
+    // future ones: a decision to keep recruitment files for less time is about
+    // the files that exist. Each deadline is recomputed from the row's own
+    // arrival, exactly as `app.submit_application()` computed it. Shortening
+    // is irreversible for anything the purge then removes, so the number of
+    // rows it moved is in the audit diff rather than applied quietly.
+    let retimed: number | null = null;
+    if (before.retentionMonths !== after.retentionMonths) {
+      const moved = await tx
+        .update(applications)
+        .set({
+          purgeAfter: sql`(${applications.createdAt} + make_interval(months => ${after.retentionMonths}::int))::date`,
+        })
+        .where(eq(applications.formId, id))
+        .returning({ id: applications.id });
+      retimed = moved.length;
+    }
+
     await writeAudit(tx, actor, {
       action: 'update',
       entityType: 'application_form',
       entityId: id,
-      diff: computeDiff(
-        before as unknown as Record<string, unknown>,
-        after as unknown as Record<string, unknown>,
-      ),
+      diff: {
+        ...computeDiff(
+          before as unknown as Record<string, unknown>,
+          after as unknown as Record<string, unknown>,
+        ),
+        ...(retimed !== null ? { applicationsRetimed: { from: null, to: retimed } } : {}),
+      },
     });
 
     return loadForm(tx, id);
@@ -425,7 +539,7 @@ export async function setFormStatus(
     );
 
     await writeAudit(tx, actor, {
-      action: status === 'published' ? 'publish' : 'unpublish',
+      action: status === 'published' ? 'publish' : status === 'archived' ? 'archive' : 'unpublish',
       entityType: 'application_form',
       entityId: id,
       diff: { status: { from: form.status, to: after.status } },
@@ -451,6 +565,14 @@ export async function deleteForm(
   assertCan(actor, 'content.delete');
 
   return withActor(db, actor, async (tx) => {
+    // Locked first — the same lock `app.submit_application()` takes — so an
+    // application arriving while this runs either commits before the paths
+    // are collected or waits and then finds no form. Without it, a CV
+    // uploaded in that window was cascaded away with its row while its path
+    // was never returned, and the file stayed in the bucket for good.
+    await tx.execute(
+      sql`select 1 from ${applicationForms} where ${applicationForms.id} = ${id} for update`,
+    );
     const form = await loadForm(tx, id);
 
     // Collected before the cascade removes the rows that record them. The
@@ -646,6 +768,12 @@ export async function saveField(
       });
     }
 
+    // Unflagging a sensitive field hands every stored answer to it — a
+    // national ID, a date of birth — to anyone who can read applications, on
+    // screen and in the export. That is the decision `applications.sensitive`
+    // exists for, so it takes that capability, not `content.write`.
+    if (existing?.sensitive && !input.sensitive) assertCan(actor, 'applications.sensitive');
+
     assertConditionIsBackwards(input, siblings, existing?.id);
 
     const columns = {
@@ -738,6 +866,12 @@ export async function deleteField(
       'application_form_field',
     );
 
+    // Deleting a sensitive field is treated like unflagging it. The answers
+    // stay in `applications.answers`, and the readers treat a key with no
+    // field as sensitive — but the decision to take the field off the form
+    // still belongs to someone who may see what it collected.
+    if (field.sensitive) assertCan(actor, 'applications.sensitive');
+
     // A field that another field's condition points at cannot go quietly: the
     // dependent field would become unconditionally visible, which is the
     // opposite of what the admin set up.
@@ -813,12 +947,18 @@ export async function reorderFields(
       }
     }
 
-    for (const [index, field] of ordered.entries()) {
-      await tx
-        .update(applicationFormFields)
-        .set({ sortOrder: index * 10 })
-        .where(eq(applicationFormFields.id, field.id));
-    }
+    // One statement for the whole renumber, from a VALUES list of
+    // (id, position) pairs, rather than one UPDATE per field.
+    const pairs = sql.join(
+      ordered.map((field, index) => sql`(${field.id}::uuid, ${index * 10}::int)`),
+      sql`, `,
+    );
+    await tx.execute(sql`
+      update ${applicationFormFields} as f
+         set sort_order = v.sort_order
+        from (values ${pairs}) as v(id, sort_order)
+       where f.id = v.id and f.form_id = ${formId}::uuid
+    `);
 
     await writeAudit(tx, actor, {
       action: 'update',

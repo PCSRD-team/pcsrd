@@ -41,10 +41,16 @@ export type BuildMetadataInput = {
   siteName: string;
   /**
    * An explicit card image. Leave unset on any route that has an
-   * `opengraph-image.tsx` — the file convention wins over this field and the
-   * two would only disagree.
+   * `opengraph-image.tsx` and pass `ownCard` instead — an explicit image
+   * would replace the route's own card.
    */
   ogImage?: OgImageMeta | null;
+  /**
+   * `true` on a route whose own segment has an `opengraph-image.tsx` (the five
+   * record templates). Every other route gets the site-wide card by URL — see
+   * `siteCardImage`.
+   */
+  ownCard?: boolean;
   /** The record's `translation_status`. Omit for static pages, which are always translated. */
   translationStatus?: TranslationStatus | null;
   /** The record's `no_index` column. */
@@ -62,6 +68,38 @@ export function ogLocale(locale: Locale): string {
 }
 
 export const metadataBase = new URL(publicEnv.NEXT_PUBLIC_SITE_URL);
+
+/**
+ * The URL segment Next serves `src/app/(site)/[locale]/opengraph-image.tsx` at.
+ *
+ * A file-convention card is merged into the metadata of **its own segment
+ * only**, and a child page that declares `openGraph` replaces the parent's
+ * object wholesale (`mergeMetadata` in `next/dist/lib/metadata/resolve-metadata.js`
+ * assigns, it does not deep-merge). So every static page — which all declare
+ * `openGraph` through this builder — shipped with no `og:image` at all: the
+ * `[locale]` card was built and referenced by nothing but the layout.
+ *
+ * The fix names the card explicitly. Because the file sits under a route group,
+ * Next suffixes its segment with a hash of the parent path
+ * (`getMetadataRouteSuffix` → `djb2Hash('/(site)/[locale]')`), which is
+ * deterministic per path, not per build. `tests/unit/seo-site-card.test.ts`
+ * recomputes it with Next's own function and fails if Next ever changes the
+ * scheme or the file moves. `isSiteSection` already lets the `opengraph-image`
+ * prefix through the proxy's 404 rule.
+ */
+export const SITE_CARD_SEGMENT = 'opengraph-image-1yhjss';
+/** `generateImageMetadata` id in the `[locale]` card. */
+export const SITE_CARD_ID = 'default';
+const SITE_CARD_SIZE = { width: 1200, height: 630 };
+
+/** The site-wide card for `locale`, as an `openGraph.images` entry. */
+export function siteCardImage(locale: Locale, alt: string): OgImageMeta {
+  return {
+    url: `/${locale}/${SITE_CARD_SEGMENT}/${SITE_CARD_ID}`,
+    ...SITE_CARD_SIZE,
+    alt: alt || undefined,
+  };
+}
 
 function pathFor(path: LocalizedPath, locale: Locale): string {
   return localePath(locale, typeof path === 'string' ? path : path[locale]);
@@ -146,13 +184,17 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
   }
   languages['x-default'] = arabicUrl;
 
-  const images = input.ogImage
+  // An explicit image wins; a route with its own card file is left to it; every
+  // other route names the site card, because omitting `images` would not
+  // inherit it (see `SITE_CARD_SEGMENT`).
+  const image = input.ogImage ?? (input.ownCard ? null : siteCardImage(locale, siteName));
+  const images = image
     ? [
         {
-          url: input.ogImage.url,
-          width: input.ogImage.width,
-          height: input.ogImage.height,
-          alt: input.ogImage.alt,
+          url: image.url,
+          width: image.width,
+          height: image.height,
+          alt: image.alt,
         },
       ]
     : undefined;
@@ -199,6 +241,9 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
     alternates: {
       canonical,
       languages,
+      // Declared here, not in the layout: a page's `alternates` replaces the
+      // layout's whole object, so the layout's RSS link never reached a page.
+      types: { 'application/rss+xml': '/feed.xml' },
     },
     openGraph,
     // Same omission rule as `openGraph.images` above: an absent key lets the
@@ -214,7 +259,7 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
 
   if (input.noIndex) {
     metadata.robots = { index: false, follow: false };
-    metadata.alternates = { canonical: ownUrl };
+    metadata.alternates = { canonical: ownUrl, types: { 'application/rss+xml': '/feed.xml' } };
   } else if (!translated) {
     metadata.robots = { index: false, follow: true };
   }

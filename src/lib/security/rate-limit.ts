@@ -180,19 +180,31 @@ export async function checkRateLimit(key: LimiterKey, id: string): Promise<RateL
   if (cached === undefined) cached = build();
   if (cached === null) return { success: true, retryAfterSeconds: 0, degraded: false };
 
+  let failure: unknown;
   try {
-    const { success, reset } = await cached[key].limit(id);
-    return {
-      success,
-      retryAfterSeconds: Math.max(0, Math.ceil((reset - Date.now()) / 1000)),
-      degraded: false,
-    };
+    const { success, reset, reason } = await cached[key].limit(id);
+    // `@upstash/ratelimit` does not throw when its `timeout` fires: it races
+    // the request against a promise that *resolves* `{ success: true,
+    // reason: 'timeout' }` (`applyTimeout` in its dist). Read at face value,
+    // a hanging Upstash would allow every request and never reach the
+    // database fallback — the one outage mode the fallback exists for.
+    if (reason === 'timeout') {
+      failure = new Error(`Upstash did not answer within the ${key} limiter's timeout`);
+    } else {
+      return {
+        success,
+        retryAfterSeconds: Math.max(0, Math.ceil((reset - Date.now()) / 1000)),
+        degraded: false,
+      };
+    }
   } catch (error) {
-    reportOutage(error);
-    const ok = await checkInDatabase(key, id);
-    // Neither backend answered. Refuse, and say the limiter is degraded so the
-    // caller can override for a channel that must survive an outage.
-    if (ok === null) return { success: false, retryAfterSeconds: 60, degraded: true };
-    return { success: ok, retryAfterSeconds: ok ? 0 : LIMITS[key].windowSeconds, degraded: true };
+    failure = error;
   }
+
+  reportOutage(failure);
+  const ok = await checkInDatabase(key, id);
+  // Neither backend answered. Refuse, and say the limiter is degraded so the
+  // caller can override for a channel that must survive an outage.
+  if (ok === null) return { success: false, retryAfterSeconds: 60, degraded: true };
+  return { success: ok, retryAfterSeconds: ok ? 0 : LIMITS[key].windowSeconds, degraded: true };
 }

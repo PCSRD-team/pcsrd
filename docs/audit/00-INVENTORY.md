@@ -1,5 +1,7 @@
 # 00 — Verified Ground Truth (Phase 0)
 
+> **Snapshot.** The pre-launch audit as of August 2026 (commit `5fb312a`), kept as a record and not updated — some of it no longer matches the code. Current state: `docs/PROGRESS.md`. Latest full review: `docs/audit/07-REVIEW-2026-09-29.md`.
+
 Read-only discovery. Every row below was verified by reading a file or running a
 command in this repository. Nothing here is inferred from convention.
 

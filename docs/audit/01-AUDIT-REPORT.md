@@ -1,5 +1,7 @@
 # 01 — Pre-launch audit report
 
+> **Snapshot.** The pre-launch audit as of August 2026 (commit `5fb312a`), kept as a record and not updated — some of it no longer matches the code. Current state: `docs/PROGRESS.md`. Latest full review: `docs/audit/07-REVIEW-2026-09-29.md`.
+
 PCSRD website · branch `chore/pre-launch-audit` · baseline commit `5fb312a`
 Next.js 16.3.1 · React 19.2.8 · TypeScript 5.9.3 strict · Tailwind v4 · Supabase Postgres 17
 

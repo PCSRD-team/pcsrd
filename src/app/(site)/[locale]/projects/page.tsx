@@ -6,7 +6,6 @@ import { ProjectFilterPanel } from '@/components/content/project-filters';
 import { getSiteName } from '@/components/content/site';
 import { CollectionPageJsonLd } from '@/components/seo/json-ld';
 import { Badge } from '@/components/ui/badge';
-import { Bidi } from '@/components/ui/bidi';
 import { ButtonLink } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/feedback';
 import { Container, Grid, PageHeader } from '@/components/ui/layout';
@@ -19,6 +18,7 @@ import { formatNumber } from '@/lib/format';
 import { isLocale, localePath, type Locale } from '@/lib/i18n/config';
 import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata, withPagination } from '@/lib/seo/metadata';
+import { plural } from '@/lib/i18n/plural';
 
 export const revalidate = 3600;
 
@@ -154,7 +154,14 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<'
       <PageHeader
         title={dict.projects.title}
         lede={dict.projects.lead}
-        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.projects.title }]} />}
+        breadcrumbs={
+          <ContentBreadcrumbs
+            locale={locale}
+            dict={dict}
+            trail={[{ label: dict.projects.title }]}
+            currentPath={pageHref(locale, filters, result.page)}
+          />
+        }
       />
 
       {/* The facet column splits off at `lg`, not `md`.
@@ -176,7 +183,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<'
             aria-live="polite"
           >
             <Meta as="p">
-              <Bidi>{formatNumber(result.total, locale)}</Bidi> {dict.projects.results}
+              {plural(locale, result.total, dict.projects.resultsCount, formatNumber(result.total, locale))}
             </Meta>
             {chips.length > 0 ? (
               <ul className="flex flex-wrap gap-2" aria-label={dict.filters.activeFilters}>
@@ -209,6 +216,9 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<'
             />
           ) : (
             <>
+              {/* The cards title themselves at h3; without a level-2 heading
+                  the outline jumps from the page's h1 straight to them. */}
+              <h2 className="sr-only">{dict.projects.listHeading}</h2>
               <Grid as="ul" cols={2} className="mbs-6">
                 {result.items.map((project) => (
                   <li key={project.id} className="flex">

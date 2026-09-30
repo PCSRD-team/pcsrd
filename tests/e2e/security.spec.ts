@@ -70,7 +70,7 @@ test.describe('security headers on /ar', () => {
 
 test.describe('no third-party scripts on (site) routes', () => {
   for (const locale of LOCALES) {
-    for (const { route, implemented } of STATIC_ROUTES.filter((r) => r.implemented)) {
+    for (const { route } of STATIC_ROUTES) {
       test(`${locale} ${route}`, async ({ page }) => {
         const external: string[] = [];
         page.on('request', (req) => {
@@ -81,7 +81,7 @@ test.describe('no third-party scripts on (site) routes', () => {
         });
 
         const response = await go(page, path(locale, route));
-        test.skip(!implemented || response?.status() === 404, `${route} not available`);
+        test.skip(response?.status() === 404, `${route} not available`);
         await page.waitForLoadState('networkidle').catch(() => undefined);
 
         // 1. Script tags in the served document and after hydration.

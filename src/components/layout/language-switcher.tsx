@@ -18,18 +18,60 @@ import { cn } from '@/lib/utils';
  * So: `usePathname` and `useSearchParams`, and everything else in the chrome
  * stays a Server Component.
  */
-export function LanguageSwitcher({ locale, label, className }: { locale: Locale; label: string; className?: string }) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const target = otherLocale(locale);
+type SwitcherProps = { locale: Locale; label: string; className?: string };
 
+/** The other locale's URL for `pathname`, with `query` kept when given. */
+function switchHref(pathname: string, target: Locale, query: string): string {
   // `splitLocalePath` rather than a comparison against the two locale codes:
   // the prefix it strips is whatever is in `LOCALES`.
   const withoutLocale = splitLocalePath(pathname)?.rest ?? pathname;
-  const query = searchParams.toString();
+  return `/${target}${withoutLocale === '/' ? '' : withoutLocale}${query ? `?${query}` : ''}`;
+}
 
-  const href = `/${target}${withoutLocale === '/' ? '' : withoutLocale}${query ? `?${query}` : ''}`;
+/**
+ * The switcher with the query preserved. `useSearchParams` suspends during a
+ * static render, so this sits in a `Suspense` whose fallback is
+ * `LanguageSwitcherStatic` below.
+ *
+ * On a record page the slug differs per locale and this link keeps the
+ * current one; the detail route looks the slug up in the other locale's
+ * column and permanently redirects, so the link lands on the right page.
+ */
+export function LanguageSwitcher({ locale, label, className }: SwitcherProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  return (
+    <SwitcherLink
+      href={switchHref(pathname, otherLocale(locale), searchParams.toString())}
+      target={otherLocale(locale)}
+      label={label}
+      className={className}
+    />
+  );
+}
 
+/**
+ * The same link built from the path alone — the Suspense fallback.
+ *
+ * The fallback used to be an empty `<span>`, and it is what the statically
+ * generated HTML contains: every prerendered page shipped with no language
+ * link at all until hydration, which is never for a crawler and a long time on
+ * a slow connection. `usePathname` does not suspend, so this renders a real,
+ * working link into the HTML; only the query string waits for the client.
+ */
+export function LanguageSwitcherStatic({ locale, label, className }: SwitcherProps) {
+  const pathname = usePathname();
+  return (
+    <SwitcherLink
+      href={switchHref(pathname, otherLocale(locale), '')}
+      target={otherLocale(locale)}
+      label={label}
+      className={className}
+    />
+  );
+}
+
+function SwitcherLink({ href, target, label, className }: { href: string; target: Locale; label: string; className?: string }) {
   return (
     <Link
       href={href}

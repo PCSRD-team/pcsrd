@@ -1,5 +1,7 @@
 # 05 — Health Gate: Before / After
 
+> **Snapshot.** The pre-launch audit as of August 2026 (commit `5fb312a`), kept as a record and not updated — some of it no longer matches the code. Current state: `docs/PROGRESS.md`. Latest full review: `docs/audit/07-REVIEW-2026-09-29.md`.
+
 ## Baseline (Phase 1) — recorded before any edit
 
 Commit at baseline: `5fb312a` · branch `chore/pre-launch-audit` · working tree clean.

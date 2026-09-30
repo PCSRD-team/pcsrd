@@ -107,6 +107,16 @@ const MIGRATIONS: Pending[] = [
              as ok`
       )[0]?.ok === true,
   },
+  {
+    // Applied when the trigger function inserts new profiles inactive.
+    file: '0012_new_users_inactive.sql',
+    probe: async (sql) =>
+      (
+        await sql`
+          select pg_get_functiondef('app.handle_new_user()'::regprocedure)
+                 like '%inactive until an invitation%' as ok`
+      )[0]?.ok === true,
+  },
 ];
 
 /** Splits a drizzle migration on its own breakpoint marker. */

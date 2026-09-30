@@ -325,7 +325,7 @@ Marks are allow-listed too: `bold`, `italic`, `link` (external links get `rel="n
 | `PartnershipForm` | CC | `useActionState(submitPartnership, null)` |
 | `ContactForm` | CC | enquiry-type routing |
 | `VolunteerForm` | CC | age band + governorate only |
-| `JobApplicationForm` | CC | file input, client-side size check before upload |
+| ~~`JobApplicationForm`~~ | — | **removed**: the careers portal's `DynamicForm` renders each vacancy's form |
 | `ComplaintForm` | CC | anonymous permitted; **no analytics event** |
 | `FraudReportForm` | CC | optional reporter contact |
 | `TurnstileWidget` | CC | loads the script once, per-form instance |

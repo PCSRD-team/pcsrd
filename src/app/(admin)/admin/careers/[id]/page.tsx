@@ -5,7 +5,7 @@ import {
   updateApplicationForm,
 } from '@/actions/admin/application-forms';
 import { adminDict, adminFormDict } from '@/components/admin/admin-dict';
-import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { adminUi, count } from '@/components/admin/admin-ui-dict';
 import { ApplicationFormEditor } from '@/components/admin/application-form-editor';
 import { StatusBadge } from '@/components/admin/controls';
 import { FieldBuilder } from '@/components/admin/field-builder';
@@ -77,7 +77,7 @@ export default async function CareersFormPage({
             ) : state.reason && state.reason !== 'unpublished' ? (
               <Badge tone="neutral">{t.openState[state.reason]}</Badge>
             ) : null}
-            <Badge tone="neutral">{fill(t.applicantCount, { n: form.applicationCount })}</Badge>
+            <Badge tone="neutral">{count(t.applicantCount, form.applicationCount)}</Badge>
           </Cluster>
         }
         action={

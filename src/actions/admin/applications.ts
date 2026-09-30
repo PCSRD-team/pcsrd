@@ -67,9 +67,10 @@ export async function reviewApplicant(
 
 /** The form's public tags — its page shows how many places are left. */
 function bustFormPage(slug: FormDataEntryValue | null) {
-  const tags: string[] = [TAGS.applicationFormList];
-  if (typeof slug === 'string' && slug) tags.push(TAGS.applicationForm(slug));
-  revalidate(tags);
+  // The form's own page now; the shared list stale-while-revalidate, as the
+  // public apply action does — see there.
+  if (typeof slug === 'string' && slug) revalidate([TAGS.applicationForm(slug)]);
+  revalidate([TAGS.applicationFormList], 'stale');
 }
 
 /** Moves a waitlisted applicant into a place. The rule lives in the service. */

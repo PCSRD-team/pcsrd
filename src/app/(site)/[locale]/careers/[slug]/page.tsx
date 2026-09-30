@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { vacancyTypeLabel } from '@/components/content/cards';
-import { ContentBreadcrumbs, TranslationNotice } from '@/components/content/page-chrome';
+import { ContentBreadcrumbs, TranslationNotice, employmentTypeLabel } from '@/components/content/page-chrome';
 import { RichText } from '@/components/content/rich-text';
 import { getSiteName, toTranslationStatus } from '@/components/content/site';
 import { JobPostingJsonLd } from '@/components/seo/json-ld';
@@ -13,11 +13,10 @@ import { DefinitionList } from '@/components/ui/definition-list';
 import { Notice } from '@/components/ui/notice';
 import { Container, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { Eyebrow, Prose } from '@/components/ui/typography';
-import { getFormSlugForVacancy } from '@/db/queries/applications';
-import { getOrganization, getVacancyBySlug, listVacancySlugs } from '@/db/queries/content';
+import { findSlugForLocale, getOrganization, getVacancyBySlug, listVacancySlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
 import { formatDate } from '@/lib/format';
-import { isLocale, localePath } from '@/lib/i18n/config';
+import { DEFAULT_LOCALE, isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
@@ -54,6 +53,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/careers/
     // A closed vacancy stays reachable — an applicant following an old link
     // deserves to be told it closed — but it leaves the index.
     noIndex: vacancy.noIndex || vacancy.isClosed,
+    ownCard: true,
   });
 }
 
@@ -67,25 +67,40 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
     getVacancyBySlug(slug, locale),
     getOrganization(locale),
   ]);
-  if (!vacancy) notFound();
+  if (!vacancy) {
+    // The language switcher keeps the slug and swaps the prefix; the other
+    // locale's slug is a different string. Send that visitor to the right URL.
+    const localized = await findSlugForLocale('vacancy', slug, locale);
+    if (localized) permanentRedirect(localePath(locale, `/careers/${encodeURIComponent(localized)}`));
+    notFound();
+  }
 
   // Applications go through the vacancy's form in the careers portal: it asks
   // the questions this role actually needs, and its deadline and applicant cap
   // are enforced by `app.submit_application()` rather than only by this page's
-  // `isClosed` check. Looked up after the vacancy because it needs its id.
-  const applyFormSlug = await getFormSlugForVacancy(vacancy.id);
+  // `isClosed` check. The form slug comes back with the vacancy row.
+  const applyFormSlug = vacancy.applyFormSlug;
+  const applyHref = applyFormSlug ? localePath(locale, `/apply/${applyFormSlug}`) : null;
+  const canApply = !vacancy.isClosed && (vacancy.applicationMethod === 'email' ? Boolean(vacancy.applicationEmail) : Boolean(applyHref));
 
-  const url = localePath(locale, `/careers/${slug}`);
+  // An untranslated record's canonical is the Arabic URL, and its content is
+  // Arabic — the structured data says the same thing the metadata does.
+  const ownPath = localePath(locale, `/careers/${slug}`);
+  const canonicalPath = vacancy.isTranslated ? ownPath : localePath(DEFAULT_LOCALE, `/careers/${vacancy.slugAr}`);
+  const employmentType = employmentTypeLabel(vacancy.employmentType, dict);
 
   return (
     <Container className="section-gap">
       {/* SEO-015: the description is the posting's own text, never the
-          location; `org` attributes the posting by name and logo. */}
+          location; `org` attributes the posting by name and logo. Not emitted
+          for a closed or no-index vacancy: Google Jobs would list a job
+          nobody can apply for, from a page that asked not to be indexed. */}
+      {vacancy.isClosed || vacancy.noIndex ? null : (
       <JobPostingJsonLd
         title={vacancy.title}
         description={richTextToPlainText(vacancy.description)}
-        url={url}
-        locale={locale}
+        url={canonicalPath}
+        locale={vacancy.isTranslated ? locale : DEFAULT_LOCALE}
         deadline={vacancy.deadline}
         postedAt={vacancy.postedAt}
         employmentType={vacancy.employmentType}
@@ -93,6 +108,7 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
         org={org}
         volunteer={vacancy.type === 'volunteer'}
       />
+      )}
 
       <TranslationNotice
         locale={locale}
@@ -109,6 +125,7 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
                 locale={locale}
                 dict={dict}
                 trail={[{ label: dict.careers.title, path: '/careers' }, { label: vacancy.title ?? '' }]}
+                currentPath={canonicalPath}
               />
             }
             eyebrow={vacancyTypeLabel(vacancy.type, dict)}
@@ -166,7 +183,7 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
               deadline column exists to prevent. */}
           {vacancy.isClosed ? null : (
             <Section labelledBy="vacancy-apply">
-              <SectionHeading id="vacancy-apply" title={dict.careers.applyNow} />
+              <SectionHeading id="vacancy-apply" title={dict.apply.title} />
               {vacancy.applicationMethod === 'email' && vacancy.applicationEmail ? (
                 <Panel>
                   <p className="text-small text-ink">
@@ -176,15 +193,13 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
                     </a>
                   </p>
                 </Panel>
-              ) : applyFormSlug ? (
+              ) : applyHref ? (
                 // The portal's form lives on its own page rather than being
                 // embedded here: it can run to forty fields across six
                 // sections, and a form that long inside a vacancy record buries
                 // the description an applicant is still reading.
                 <Panel>
-                  <ButtonLink href={localePath(locale, `/apply/${applyFormSlug}`)}>
-                    {dict.careers.applyNow}
-                  </ButtonLink>
+                  <ButtonLink href={applyHref}>{dict.careers.applyNow}</ButtonLink>
                 </Panel>
               ) : (
                 // The careers portal is the one way to apply. A vacancy whose
@@ -220,7 +235,7 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
               { term: dict.contentUi.vacancyType, value: vacancyTypeLabel(vacancy.type, dict) },
               {
                 term: dict.careers.employmentType,
-                value: vacancy.employmentType ? <Bidi>{vacancy.employmentType}</Bidi> : null,
+                value: employmentType,
               },
               { term: dict.careers.location, value: vacancy.location },
               {
@@ -233,6 +248,19 @@ export default async function VacancyPage({ params }: PageProps<'/[locale]/caree
               },
             ]}
           />
+          {/* The record is sticky on wide screens, so the one action an
+              applicant came for stays in reach while they read. */}
+          {canApply ? (
+            <div className="mbs-6">
+              {vacancy.applicationMethod === 'email' && vacancy.applicationEmail ? (
+                <ButtonLink href={`mailto:${vacancy.applicationEmail}`} tone="secondary">
+                  {dict.careers.applyByEmail}
+                </ButtonLink>
+              ) : applyHref ? (
+                <ButtonLink href={applyHref}>{dict.careers.applyNow}</ButtonLink>
+              ) : null}
+            </div>
+          ) : null}
         </aside>
       </div>
     </Container>

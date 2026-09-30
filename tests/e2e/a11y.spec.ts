@@ -55,11 +55,10 @@ async function audit(page: Page, info: TestInfo) {
 }
 
 test.describe('axe — public routes', () => {
-  for (const { route, implemented, contentGated } of STATIC_ROUTES) {
+  for (const { route, contentGated } of STATIC_ROUTES) {
     test(`${route}`, async ({ page, siteLocale }, info) => {
       const response = await go(page, path(siteLocale, route));
       const status = response?.status() ?? 0;
-      test.fixme(!implemented && status === 404, `route ${route} is not implemented yet`);
       test.skip(Boolean(contentGated) && status === 404, `no published CMS page behind ${route}`);
       expect(status).toBe(200);
       await audit(page, info);

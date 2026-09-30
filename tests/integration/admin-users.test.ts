@@ -29,8 +29,8 @@ const EDITOR: Actor = { ...ADMIN, id: '33333333-3333-3333-3333-333333333333', ro
 /**
  * Stands in for Supabase Auth **and** the `handle_new_user` trigger: in
  * production the trigger on `auth.users` creates the profile with least
- * privilege, and PGlite has no `auth` schema, so the fake does what the
- * trigger would.
+ * privilege and inactive (drizzle/0012), and PGlite has no `auth` schema, so
+ * the fake does what the trigger would.
  */
 function fakeAuth(id = '55555555-5555-4555-8555-555555555555'): AuthAdminPort & { calls: string[] } {
   const port = {
@@ -39,7 +39,7 @@ function fakeAuth(id = '55555555-5555-4555-8555-555555555555'): AuthAdminPort & 
       port.calls.push(email);
       await getDb()
         .insert(profiles)
-        .values({ id, email, fullName, role: 'editor', canViewSensitive: false, isActive: true });
+        .values({ id, email, fullName, role: 'editor', canViewSensitive: false, isActive: false });
       return { id };
     },
   };
@@ -73,6 +73,9 @@ describe('inviteUser', () => {
 
     const entry = row1(await getDb().select().from(auditLogs));
     expect(entry).toMatchObject({ action: 'invite', entityType: 'profile', entityId: user.id });
+    // The trigger creates every profile inactive; the invitation is what
+    // activates it, and the log says so.
+    expect(entry.diff).toMatchObject({ isActive: { from: false, to: true } });
   });
 
   it('applies a requested role and sensitive access as an explicit grant', async () => {

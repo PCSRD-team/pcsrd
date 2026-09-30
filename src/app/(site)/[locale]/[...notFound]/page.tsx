@@ -30,7 +30,15 @@ import { getDictionary } from '@/lib/i18n/get-dictionary';
  *
  * No `generateStaticParams`: an empty list told Next the segment had no valid
  * paths at all and routing skipped it entirely.
+ *
+ * **`force-dynamic`.** Without it every junk URL a scanner tried became its
+ * own ISR entry under the layout's `revalidate` — written to the cache,
+ * never read again. Rendered per request instead; the proxy's rewrite still
+ * sets the 404 status, because a rewrite carries its status whatever the
+ * target's rendering mode.
  */
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/[...notFound]'>): Promise<Metadata> {

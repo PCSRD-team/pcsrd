@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { admitApplicant, deleteApplicant, reviewApplicant } from '@/actions/admin/applications';
 import { adminDict, adminFormDict } from '@/components/admin/admin-dict';
-import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { adminUi, count } from '@/components/admin/admin-ui-dict';
 import { DateCell } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { ApplicantReview } from '@/components/admin/applicant-review';
@@ -97,7 +97,7 @@ export default async function ApplicantPage({
               { term: t.applicantEmail, value: <Bidi>{application.applicantEmail ?? '—'}</Bidi> },
               { term: t.applicantPhone, value: <Bidi>{application.applicantPhone ?? '—'}</Bidi> },
               { term: t.submittedAt, value: <DateCell value={application.createdAt} /> },
-              { term: t.purgeAfter, value: <Bidi>{String(application.purgeAfter).slice(0, 10)}</Bidi> },
+              { term: t.purgeAfter, value: <DateCell value={new Date(application.purgeAfter)} /> },
             ]}
           />
         </Panel>
@@ -105,7 +105,7 @@ export default async function ApplicantPage({
         {application.attachments.length > 0 ? (
           <section>
             <Eyebrow className="mbe-3">
-              {fill(t.attachmentCount, { n: application.attachments.length })}
+              {count(t.attachmentCount, application.attachments.length)}
             </Eyebrow>
             <Stack gap={2}>
               {application.attachments.map((file) => (

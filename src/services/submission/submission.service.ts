@@ -1,9 +1,9 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, count, eq, sql } from 'drizzle-orm';
 import type { Db, Tx } from '@/db';
 import { readAsActor, rowsOf, withActor } from '@/db/session';
 import { formSubmissions, profiles } from '@/db/schema';
 import type { LocaleCode, SubmissionState, SubmissionType } from '@/db/schema/enums';
-import { notFound } from '@/lib/errors';
+import { AppError, notFound } from '@/lib/errors';
 import { decryptPayload, encryptPayload } from '@/lib/security/crypto';
 import { hashIp } from '@/lib/security/ip';
 import { addMonths, toDateString } from '@/lib/utils';
@@ -216,6 +216,13 @@ export async function getSubmission(
   });
 }
 
+/**
+ * Moves a submission through the inbox.
+ *
+ * `internalNote` omitted (`undefined`) keeps the stored note; `null` or `''`
+ * clears it. A state button that posts no note used to wipe whatever a
+ * colleague had written.
+ */
 export async function setSubmissionState(
   db: Db,
   actor: Actor,
@@ -230,7 +237,11 @@ export async function setSubmissionState(
   // nothing.
   await withActor(db, actor, async (tx) => {
     const [existing] = await tx
-      .select({ id: formSubmissions.id, isSensitive: formSubmissions.isSensitive })
+      .select({
+        id: formSubmissions.id,
+        isSensitive: formSubmissions.isSensitive,
+        state: formSubmissions.state,
+      })
       .from(formSubmissions)
       .where(eq(formSubmissions.id, id))
       .limit(1);
@@ -242,7 +253,7 @@ export async function setSubmissionState(
       .update(formSubmissions)
       .set({
         state: next.state,
-        internalNote: next.internalNote ?? null,
+        ...(next.internalNote !== undefined ? { internalNote: next.internalNote || null } : {}),
         handledBy: actor.id,
         handledAt: new Date(),
       })
@@ -255,7 +266,7 @@ export async function setSubmissionState(
       action: 'update',
       entityType: 'form_submission',
       entityId: id,
-      diff: { state: { from: null, to: next.state } },
+      diff: { state: { from: existing.state, to: next.state } },
     });
   });
 }
@@ -295,12 +306,15 @@ export async function purgeExpiredSubmissions(db: Db | Tx): Promise<PurgeResult>
   };
 }
 
-/** Counts unhandled submissions for the admin dashboard badge. */
+/**
+ * Counts unhandled submissions for the admin dashboard badge — as a `count()`
+ * in the database, not by fetching every id to measure the array.
+ */
 export async function countNewSubmissions(db: Db, actor: Actor): Promise<number> {
   assertCan(actor, 'submissions.read');
-  const rows = await readAsActor(db, actor, (tx) =>
+  const [row] = await readAsActor(db, actor, (tx) =>
     tx
-      .select({ id: formSubmissions.id })
+      .select({ n: count() })
       .from(formSubmissions)
       .where(
         and(
@@ -309,5 +323,70 @@ export async function countNewSubmissions(db: Db, actor: Actor): Promise<number>
         ),
       ),
   );
-  return rows.length;
+  return row?.n ?? 0;
+}
+
+// ── Attachment download ──────────────────────────────────────────────────
+
+/**
+ * The attachment a reviewer asked to download, or a refusal.
+ *
+ * **Confidential attachments are refused, not gated.** 02-API §6.5 allows a
+ * sensitive submission's file after an extra permission check; 05-ADMIN §7
+ * allows none. The stricter rule wins: a downloaded file leaves the audited
+ * system for a downloads folder, a shared laptop, a backup — and for a
+ * safeguarding complaint that is the whole risk.
+ *
+ * Split from `recordSubmissionAttachmentDownload` because the signed-URL call
+ * between them is a network round trip to Supabase Storage, and holding a
+ * transaction open across it on a `max: 1` pool would serialise every other
+ * request behind this one.
+ */
+export async function resolveSubmissionAttachment(
+  db: Db,
+  actor: Actor,
+  id: string,
+): Promise<{ id: string; path: string }> {
+  assertCan(actor, 'submissions.read');
+
+  const [row] = await readAsActor(db, actor, (tx) =>
+    tx
+      .select({
+        id: formSubmissions.id,
+        isSensitive: formSubmissions.isSensitive,
+        attachmentPath: formSubmissions.attachmentPath,
+      })
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, id))
+      .limit(1),
+  );
+
+  if (!row?.attachmentPath) throw notFound('attachment');
+  if (row.isSensitive) {
+    throw new AppError('forbidden', 'errors.attachment.sensitiveRefused');
+  }
+  return { id: row.id, path: row.attachmentPath };
+}
+
+/**
+ * The audit entry for a download, written once a usable link exists so the
+ * log records downloads that could actually happen.
+ *
+ * `download_attachment` is not in the database's `audit_action_known` CHECK,
+ * so it is recorded as `view_sensitive` with a diff naming the attachment.
+ */
+export async function recordSubmissionAttachmentDownload(
+  db: Db,
+  actor: Actor,
+  id: string,
+): Promise<void> {
+  assertCan(actor, 'submissions.read');
+  await withActor(db, actor, (tx) =>
+    writeAudit(tx, actor, {
+      action: 'view_sensitive',
+      entityType: 'form_submission',
+      entityId: id,
+      diff: { attachment: { from: null, to: 'download' } },
+    }),
+  );
 }

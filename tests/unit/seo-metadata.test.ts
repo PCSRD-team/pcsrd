@@ -116,7 +116,10 @@ describe('buildMetadata — noIndex', () => {
     });
 
     expect(meta.robots).toEqual({ index: false, follow: false });
-    expect(meta.alternates).toEqual({ canonical: '/en/projects/b' });
+    expect(meta.alternates).toEqual({
+      canonical: '/en/projects/b',
+      types: { 'application/rss+xml': '/feed.xml' },
+    });
   });
 
   it('wins over the untranslated rule', () => {
@@ -145,12 +148,28 @@ describe('buildMetadata — Open Graph and Twitter', () => {
       type: 'website',
     });
     expect(meta.twitter).toMatchObject({ card: 'summary_large_image', title: 'عنوان' });
-    // The key must be ABSENT, not undefined. Next merges a route's
+    // A page's `openGraph` replaces the layout's, so a static route names the
+    // site-wide card explicitly or ships none.
+    expect(meta.openGraph && 'images' in meta.openGraph ? meta.openGraph.images : null).toEqual([
+      { url: '/ar/opengraph-image-1yhjss/default', width: 1200, height: 630, alt: 'المركز' },
+    ]);
+    expect(meta.twitter && 'images' in meta.twitter ? meta.twitter.images : null).toEqual([
+      '/ar/opengraph-image-1yhjss/default',
+    ]);
+  });
+
+  it('leaves images absent on a route with its own card file', () => {
+    const meta = buildMetadata({ ...base, locale: 'ar', path: '/news/x', ownCard: true });
+    // The key must be ABSENT, not undefined. Next merges a segment's
     // file-convention `opengraph-image` only when the page's own metadata does
-    // not declare images, and it tests that with `hasOwnProperty('images')` —
-    // so `{ images: undefined }` silently suppresses every generated card.
+    // not declare images, and it tests that with `hasOwnProperty('images')`.
     expect(meta.openGraph && 'images' in meta.openGraph).toBe(false);
     expect(meta.twitter && 'images' in meta.twitter).toBe(false);
+  });
+
+  it('advertises the RSS feed on every page', () => {
+    const meta = buildMetadata({ ...base, locale: 'en', path: '/about' });
+    expect(meta.alternates?.types).toEqual({ 'application/rss+xml': '/feed.xml' });
   });
 
   it('emits article times only for articles', () => {

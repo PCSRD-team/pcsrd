@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { adminDict } from '@/components/admin/admin-dict';
-import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { adminUi, count } from '@/components/admin/admin-ui-dict';
 import { AdminPagination, DateCell } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { AdminHeader } from '@/components/admin/shell';
@@ -152,7 +152,7 @@ export default async function ApplicantsPage({
     <>
       <AdminHeader
         title={`${t.applicants} — ${form.titleAr}`}
-        description={fill(t.applicantCount, { n: result.total })}
+        description={count(t.applicantCount, result.total)}
         action={
           <Cluster gap={2}>
             <ButtonLink href={`/admin/careers/${id}`} tone="quiet">

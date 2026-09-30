@@ -12,7 +12,7 @@ import type { E2EOptions } from './tests/e2e/fixtures';
  * | `chromium-en` | the same specs in English, LTR                                   |
  * | `chromium`    | specs that loop both locales themselves (forms, admin, security, |
  * |               | visual) — run once, not once per locale project                  |
- * | `no-js`       | the six public forms and the admin login with JavaScript off —   |
+ * | `no-js`       | the public forms, the portal and the admin login, JS off —      |
  * |               | non-negotiable #7, "every form works with JavaScript disabled"   |
  * | `mobile`      | 375px overflow checks on every route (`@mobile`-tagged tests)    |
  *
@@ -38,7 +38,9 @@ export default defineConfig<E2EOptions>({
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFileName}/{arg}-{platform}{ext}',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 1,
+  // No local retries: a retry that passes hides a flaky test from the person
+  // who could fix it. CI keeps two for the runner's cold-compile timeouts.
+  retries: process.env.CI ? 2 : 0,
   // The dev server compiles routes on first hit; a burst of parallel first
   // hits makes every one of them slow, and the CI runner has two cores. Two
   // either way — this used to be written `process.env.CI ? 2 : 2`, which reads

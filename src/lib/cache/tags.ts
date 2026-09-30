@@ -45,6 +45,16 @@ export const TAGS = {
    */
   applicationFormList: 'application-form:list',
   applicationForm: (slug: string) => `application-form:${slug}`,
+  /**
+   * Which vacancy has a published form — the "apply" button on a vacancy page.
+   *
+   * Its own tag rather than the list tag. Every application busts the list tag
+   * (the careers index shows places left), and hanging the vacancy lookup off
+   * it meant every submission threw away every vacancy page's link. The link
+   * changes only when a form is linked, unlinked, published, unpublished or
+   * deleted, and those are the paths that bust this.
+   */
+  applicationFormVacancyLink: 'application-form:vacancy-link',
 
   publicationList: 'publication:list',
   publication: (slug: string) => `publication:${slug}`,
@@ -130,6 +140,9 @@ export function tagsFor(entity: Entity, keys?: { ar?: string | null; en?: string
     if (keys?.en) tags.push(ITEM_TAG[entity](keys.en));
   }
 
+  // A programme card carries the programme's title on every project card, and
+  // the project list is the one that renders it.
+  if (entity === 'program') tags.push(TAGS.projectList);
   if (entity === 'project') tags.push(TAGS.programList);
   if (entity === 'story' || entity === 'post') tags.push(TAGS.projectList);
   if (entity === 'orgSettings') tags.push(TAGS.pageList);

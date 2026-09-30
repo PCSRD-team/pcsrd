@@ -14,6 +14,7 @@ import type { ApplicationStatus, LocaleCode } from '@/db/schema/enums';
 import { readAsActor, rowsOf, withActor } from '@/db/session';
 import { AppError, forbidden, notFound } from '@/lib/errors';
 import { hashIp } from '@/lib/security/ip';
+import { CONSENT_FIELD_KEY } from '@/lib/applications/answer-schema';
 import type { Actor } from '../_shared/actor';
 import { writeAudit } from '../_shared/audit';
 import { one } from '../_shared/one';
@@ -157,6 +158,28 @@ export async function submitApplication(
 }
 
 // ── Reading the pipeline ─────────────────────────────────────────────────
+
+/**
+ * Which answer keys and attachment field keys are sensitive, given the form's
+ * **current** fields.
+ *
+ * A key with no field behind it is sensitive by default. Answers outlive their
+ * fields (`deleteField` leaves them in place, and the export unions them back
+ * in), so "not declared sensitive" used to mean "declared by nothing": delete
+ * the national-ID field and every stored ID number came back unredacted to
+ * anyone who can read applications. Nothing is left to say what an orphaned
+ * answer was, so it is treated as the most protected thing it could have been.
+ *
+ * The one exception is the synthetic consent tick, which has no field row by
+ * design (`parseAnswers`) and records a yes, not a secret.
+ */
+function sensitivityOf(fields: Pick<ApplicationFormField, 'key' | 'sensitive'>[]) {
+  const byKey = new Map(fields.map((field) => [field.key, field.sensitive]));
+  return (key: string): boolean => {
+    if (key === CONSENT_FIELD_KEY && !byKey.has(key)) return false;
+    return byKey.get(key) ?? true;
+  };
+}
 
 export type ApplicantRow = {
   id: string;
@@ -364,11 +387,10 @@ export async function getApplication(
         .orderBy(asc(applicationEvents.createdAt)),
     ]);
 
-    const sensitiveKeys = fields
-      .filter((field) => field.sensitive && field.key in found.application.answers)
-      .map((field) => field.key);
+    const isSensitive = sensitivityOf(fields);
+    const sensitiveKeys = Object.keys(found.application.answers).filter(isSensitive);
     const sensitiveFiles = found.application.attachments.filter((file) =>
-      fields.some((field) => field.sensitive && field.key === file.fieldKey),
+      isSensitive(file.fieldKey),
     );
     const holdsSensitive = sensitiveKeys.length > 0 || sensitiveFiles.length > 0;
 
@@ -420,37 +442,42 @@ export async function admitFromWaitlist(
   assertCan(actor, 'submissions.handle');
 
   return withActor(db, actor, async (tx) => {
-    const before = one(
-      await tx.select().from(applications).where(eq(applications.id, id)).limit(1),
+    const target = one(
+      await tx
+        .select({ formId: applications.formId })
+        .from(applications)
+        .where(eq(applications.id, id))
+        .limit(1),
       'application',
     );
-    if (!before.waitlisted) {
+
+    // The form row is locked **before** the waitlist flag is read, and the
+    // flag is then cleared by a conditional update rather than checked and
+    // written separately. Read-then-write let two reviewers clicking "admit"
+    // together both see `waitlisted = true`, and the place was counted twice.
+    await tx.execute(
+      sql`select 1 from ${applicationForms} where ${applicationForms.id} = ${target.formId} for update`,
+    );
+
+    const [after] = await tx
+      .update(applications)
+      .set({ waitlisted: false })
+      .where(and(eq(applications.id, id), eq(applications.waitlisted, true)))
+      .returning();
+    if (!after) {
       throw new AppError('conflict', 'errors.applicationForm.notWaitlisted');
     }
-
-    await tx.execute(
-      sql`select 1 from ${applicationForms} where ${applicationForms.id} = ${before.formId} for update`,
-    );
-
-    const after = one(
-      await tx
-        .update(applications)
-        .set({ waitlisted: false })
-        .where(eq(applications.id, id))
-        .returning(),
-      'application',
-    );
 
     await tx
       .update(applicationForms)
       .set({ submissionCount: sql`${applicationForms.submissionCount} + 1` })
-      .where(eq(applicationForms.id, before.formId));
+      .where(eq(applicationForms.id, after.formId));
 
     await tx.insert(applicationEvents).values({
       applicationId: id,
       actorId: actor.id,
-      fromStatus: before.status,
-      toStatus: before.status,
+      fromStatus: after.status,
+      toStatus: after.status,
       note: 'admitted_from_waitlist',
     });
 
@@ -549,9 +576,15 @@ export async function reviewApplication(
  * application sitting in the bucket, which makes the erasure a gesture rather
  * than an erasure.
  *
- * The audit entry is written **before** the delete and records the reference
- * rather than the person: the log must show that an application was erased
- * without becoming the copy of it that survived.
+ * The audit entry records the reference rather than the person: the log must
+ * show that an application was erased without becoming the copy of it that
+ * survived. It shares the delete's transaction, so neither commits alone.
+ *
+ * The row that comes back from `delete … returning` is the one that decides
+ * whether a place is given back — not a row read beforehand. Between a read
+ * and the delete, an admission could clear `waitlisted` (or a second erasure
+ * could remove the row), and the counter was then decremented for a place
+ * that was never held, or twice for one that was.
  */
 export async function deleteApplication(
   db: Db,
@@ -562,7 +595,15 @@ export async function deleteApplication(
 
   return withActor(db, actor, async (tx) => {
     const row = one(
-      await tx.select().from(applications).where(eq(applications.id, id)).limit(1),
+      await tx
+        .delete(applications)
+        .where(eq(applications.id, id))
+        .returning({
+          reference: applications.reference,
+          formId: applications.formId,
+          waitlisted: applications.waitlisted,
+          attachments: applications.attachments,
+        }),
       'application',
     );
 
@@ -572,8 +613,6 @@ export async function deleteApplication(
       entityId: id,
       diff: { reference: { from: row.reference, to: null } },
     });
-
-    await tx.delete(applications).where(eq(applications.id, id));
 
     // An erased application that held a place gives it back. Without this the
     // cap counted people who, as far as the organisation's records go, never
@@ -630,7 +669,9 @@ export type ExportTable = {
  * - **The column list unions the form's current fields with the keys actually
  *   present in the stored answers.** A field deleted in week three still has
  *   answers from week one, and an export that silently dropped them would be a
- *   spreadsheet that disagrees with the screen.
+ *   spreadsheet that disagrees with the screen. Such an orphaned key is
+ *   treated as sensitive (see `sensitivityOf`), so it is in the file only
+ *   when sensitive columns were asked for — the same rule as the screen.
  *
  * - **Sensitive columns are opt-in.** `includeSensitive` defaults to false, so
  *   a routine export of a shortlist does not put ninety national ID numbers in
@@ -659,12 +700,17 @@ export async function buildExportTable(
       .where(eq(applicationFormFields.formId, formId))
       .orderBy(asc(applicationFormFields.sortOrder));
 
-    const rows = await tx
+    // One row past the cap, so "exactly the cap" and "more than the cap" can
+    // be told apart. Comparing `>=` against the cap called a complete export
+    // of exactly the cap's size truncated.
+    const fetched = await tx
       .select()
       .from(applications)
       .where(applicantConditions(formId, options.filters ?? {}))
       .orderBy(desc(applications.createdAt))
-      .limit(EXPORT_LIMIT);
+      .limit(EXPORT_LIMIT + 1);
+    const truncated = fetched.length > EXPORT_LIMIT;
+    const rows = truncated ? fetched.slice(0, EXPORT_LIMIT) : fetched;
 
     const visible = fields.filter(
       (field) =>
@@ -680,13 +726,11 @@ export async function buildExportTable(
 
     // Orphans: answered keys the form no longer declares. Appended after the
     // known columns so the familiar ones stay where the reader expects them.
-    const sensitiveKeys = new Set(
-      fields.filter((field) => field.sensitive).map((field) => field.key),
-    );
+    const isSensitive = sensitivityOf(fields);
     for (const row of rows) {
       for (const key of Object.keys(row.answers)) {
         if (labelled.has(key)) continue;
-        if (!options.includeSensitive && sensitiveKeys.has(key)) continue;
+        if (!options.includeSensitive && isSensitive(key)) continue;
         labelled.set(key, key);
       }
     }
@@ -703,11 +747,11 @@ export async function buildExportTable(
     // Sensitive files are left out of the attachment count too, so the count
     // does not reveal that an ID copy exists when the columns are withheld.
     const visibleFile = (fieldKey: string) =>
-      options.includeSensitive || !sensitiveKeys.has(fieldKey);
+      options.includeSensitive || !isSensitive(fieldKey);
 
     return {
       columns: [...labelled].map(([key, label]) => ({ key, label })),
-      truncated: rows.length >= EXPORT_LIMIT,
+      truncated,
       rows: rows.map((row) => ({
         __reference: row.reference,
         __status: row.status,
@@ -717,7 +761,7 @@ export async function buildExportTable(
         __attachments: row.attachments.filter((file) => visibleFile(file.fieldKey)),
         ...Object.fromEntries(
           Object.entries(row.answers).filter(
-            ([key]) => options.includeSensitive || !sensitiveKeys.has(key),
+            ([key]) => options.includeSensitive || !isSensitive(key),
           ),
         ),
       })),
@@ -761,14 +805,15 @@ export async function resolveAttachment(
     if (!file) throw notFound('attachment');
 
     // An ID copy is a sensitive answer in file form: the same capability as
-    // reading the ID number on screen.
+    // reading the ID number on screen. A file whose field no longer exists is
+    // sensitive by default, for the reason `sensitivityOf` gives.
     const [field] = await tx
       .select({ sensitive: applicationFormFields.sensitive })
       .from(applicationFormFields)
       .innerJoin(applications, eq(applications.formId, applicationFormFields.formId))
       .where(and(eq(applications.id, applicationId), eq(applicationFormFields.key, file.fieldKey)))
       .limit(1);
-    if (field?.sensitive && !can(actor, 'applications.sensitive')) {
+    if ((field?.sensitive ?? true) && !can(actor, 'applications.sensitive')) {
       throw forbidden('missing capability: applications.sensitive');
     }
 

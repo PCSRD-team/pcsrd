@@ -40,6 +40,22 @@ import { type MailDict, mailDict } from '@/lib/i18n/mail-dict';
 let client: Resend | null = null;
 const resend = () => (client ??= new Resend(serverEnv.RESEND_API_KEY));
 
+type Outgoing = Parameters<Resend['emails']['send']>[0];
+
+/**
+ * One send, with Resend's refusal turned into a rejection.
+ *
+ * Resend v6 does not throw on an API error — a bad sender domain, a rejected
+ * address, an exhausted quota. It **resolves** with `{ data: null, error }`.
+ * `Promise.allSettled` saw every one of those as fulfilled, so a notification
+ * that never left was indistinguishable in the logs from one that did. The
+ * callers below log a rejection; this makes a refusal one.
+ */
+async function deliver(message: Outgoing): Promise<void> {
+  const { error } = await resend().emails.send(message);
+  if (error) throw new Error(`resend: ${error.name}: ${error.message}`);
+}
+
 /**
  * Staff notifications are written in the admin's language. The visitor's
  * locale governs only the acknowledgement they receive.
@@ -51,8 +67,9 @@ function recipientFor(type: SubmissionType, enquiryType?: unknown): string {
   switch (type) {
     case 'partnership':
       return serverEnv.MAIL_TO_PARTNERSHIP;
-    case 'job':
-      return serverEnv.MAIL_TO_HR;
+    // No `job` case: job applications arrive through the careers portal and
+    // `notifyApplication`, never here. A legacy `job` row is read in the
+    // admin, not re-notified.
     case 'complaint':
       return serverEnv.MAIL_TO_SENSITIVE;
     case 'contact':
@@ -227,11 +244,10 @@ export async function notifySubmission(input: NotifyInput): Promise<void> {
     isSensitive: input.isSensitive,
     payload: input.payload,
     organizationName: staffOrganizationName,
-    hasAttachment: input.type === 'job',
   });
 
   const sends: Promise<unknown>[] = [
-    resend().emails.send({
+    deliver({
       from: serverEnv.MAIL_FROM,
       to,
       subject: notification.subject,
@@ -251,7 +267,7 @@ export async function notifySubmission(input: NotifyInput): Promise<void> {
       organizationName,
     });
     sends.push(
-      resend().emails.send({
+      deliver({
         from: serverEnv.MAIL_FROM,
         to: email,
         subject: acknowledgement.subject,
@@ -340,7 +356,7 @@ export async function notifyApplication(input: NotifyApplicationInput): Promise<
   });
 
   const sends: Promise<unknown>[] = [
-    resend().emails.send({
+    deliver({
       from: serverEnv.MAIL_FROM,
       to: [...new Set(recipients)],
       subject: notification.subject,
@@ -360,7 +376,7 @@ export async function notifyApplication(input: NotifyApplicationInput): Promise<
       ],
     });
     sends.push(
-      resend().emails.send({
+      deliver({
         from: serverEnv.MAIL_FROM,
         to: input.applicantEmail,
         subject: acknowledgement.subject,

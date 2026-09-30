@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { db } from '@/db';
 import {
   _getApplicationForm,
+  _getFormFieldProvenance,
   _getFormNotifyEmails,
   type PublicForm,
 } from '@/db/queries/applications';
@@ -211,6 +212,10 @@ export async function submitApplicationForm(
 
   const slug = String(formData.get('formSlug') ?? '');
   const locale = (formData.get('locale') === 'en' ? 'en' : 'ar') as LocaleCode;
+  // Known once the form is loaded. The failure path echoes the answers back,
+  // and a multi-select with one box ticked must come back as a list or the
+  // re-rendered form loses the tick.
+  let multiKeys: string[] = [];
 
   const result = await runAction<{ reference: string; waitlisted: boolean }>(async () => {
     // The uncached read. `getApplicationForm` would serve an entry up to an
@@ -220,10 +225,10 @@ export async function submitApplicationForm(
     const form = await _getApplicationForm(slug, locale);
     if (!form) return err('not_found', 'errors.notFound');
 
-    const raw = formDataToObject(
-      formData,
-      form.fields.filter((field) => field.type === 'multi_select').map((field) => field.key),
-    );
+    multiKeys = form.fields
+      .filter((field) => field.type === 'multi_select')
+      .map((field) => field.key);
+    const raw = formDataToObject(formData, multiKeys);
 
     const answers = parseAnswers(form.fields, raw, { requireConsent: form.requireConsent });
     if (!answers.ok) {
@@ -235,23 +240,22 @@ export async function submitApplicationForm(
     const token = String(formData.get('cf-turnstile-response') ?? '');
     if (!(await verifyTurnstile(token, ip))) return err('captcha', 'errors.captcha');
 
-    const rate = await checkRateLimit('apply', hashIp(ip) ?? 'unknown');
+    // The per-form window and the site-wide one. Without the second, a
+    // client could spend its `apply` allowance and then move on to the six
+    // fixed forms with a fresh one, and the other way round.
+    const clientKey = hashIp(ip) ?? 'unknown';
+    const rate = await checkRateLimit('apply', clientKey);
     if (!rate.success) return err('rate_limited', 'errors.rateLimited');
+    const site = await checkRateLimit('global', clientKey);
+    if (!site.success) return err('rate_limited', 'errors.rateLimited');
 
     const uploaded = await collectAttachments(form, formData, raw);
     if ('ok' in uploaded) return uploaded;
 
-    const identity = extractIdentity(
-      form.fields.map((field) => ({
-        key: field.key,
-        // The public projection drops `catalogKey`; the fallback key match in
-        // `extractIdentity` is what covers it, and a catalogue field's key *is*
-        // its catalogue key, so nothing is lost.
-        catalogKey: field.key,
-        type: field.type,
-      })),
-      answers.answers,
-    );
+    // The real provenance, read server-side: the public projection drops
+    // `catalogKey`, and a field's key is only its catalogue key until an admin
+    // renames it.
+    const identity = extractIdentity(await _getFormFieldProvenance(form.id), answers.answers);
 
     let created: Awaited<ReturnType<typeof submitApplication>>;
     try {
@@ -277,7 +281,12 @@ export async function submitApplicationForm(
     }
 
     // The page shows how many places are left, and that number just changed.
-    revalidate([TAGS.applicationForm(form.slug), TAGS.applicationFormList]);
+    // The form's own page drops now — the applicant may reload it. The list is
+    // shared by every form page and the careers index, so it is refreshed
+    // stale-while-revalidate: one busy recruitment must not turn every
+    // submission into a cold render of every form on the site.
+    revalidate([TAGS.applicationForm(form.slug)]);
+    revalidate([TAGS.applicationFormList], 'stale');
 
     // Persist before notify, always. Email is the least reliable link in the
     // chain and a lost application is the most expensive failure this portal
@@ -318,5 +327,5 @@ export async function submitApplicationForm(
   // What the visitor typed, so a no-JavaScript re-render keeps it. Files are
   // never echoed: a browser will not re-fill a file input from markup, and the
   // bytes have no business in a rendered page.
-  return { ...result, values: echoFormValues(formData) };
+  return { ...result, values: echoFormValues(formData, multiKeys) };
 }
