@@ -56,7 +56,7 @@ export default async function ResourcesPage({ params }: PageProps<'/[locale]/res
       <PageHeader
         title={dict.resources.title}
         lede={dict.resources.lead}
-        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.resources.title }]} />}
+        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.resources.title }]} currentPath="/resources" />}
       />
 
       <Table

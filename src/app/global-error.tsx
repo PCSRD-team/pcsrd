@@ -37,10 +37,11 @@ import './globals.css';
  */
 export default function GlobalError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  /** Next 16.3: re-fetches and re-renders the segment. `reset` only re-renders. */
+  retry: () => void;
 }) {
   useEffect(() => {
     Sentry.captureException(error);
@@ -67,7 +68,7 @@ export default function GlobalError({
             <p className="mbs-4" lang="ar" dir="rtl">
               <button
                 type="button"
-                onClick={reset}
+                onClick={retry}
                 className="border-be-2 border-gold-600 py-1 text-small font-medium text-ink hover:bg-gold-050"
               >
                 {ar.retry}
@@ -85,7 +86,7 @@ export default function GlobalError({
             <p className="mbs-4" lang="en" dir="ltr">
               <button
                 type="button"
-                onClick={reset}
+                onClick={retry}
                 className="border-be-2 border-gold-600 py-1 text-small font-medium text-ink hover:bg-gold-050"
               >
                 {en.retry}

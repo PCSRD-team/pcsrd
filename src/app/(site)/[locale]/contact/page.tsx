@@ -96,31 +96,35 @@ export default async function ContactPage({ params }: PageProps<'/[locale]/conta
             </Eyebrow>
             <p className="mbe-4 text-small text-ink-70">{dict.contactPage.detailsLead}</p>
             {hasContactDetails ? (
-              <RuledList bounded>
-                {phone ? (
-                  <ChannelRow label={dict.siteChrome.phone}>
-                    <a href={`tel:${phone}`}>
-                      <Bidi>{phone}</Bidi>
-                    </a>
-                  </ChannelRow>
-                ) : null}
-                {whatsapp ? (
-                  <ChannelRow label={dict.siteChrome.whatsapp}>
-                    <a href={buildWhatsAppUrl(whatsapp)} rel="noopener noreferrer" target="_blank">
-                      <Bidi>{whatsapp}</Bidi>
-                    </a>
-                  </ChannelRow>
-                ) : null}
-                {email ? (
-                  <ChannelRow label={dict.siteChrome.email}>
-                    <a href={`mailto:${email}`}>
-                      <Bidi>{email}</Bidi>
-                    </a>
-                  </ChannelRow>
-                ) : null}
-                {officeHours ? <ChannelRow label={dict.siteChrome.officeHours}>{officeHours}</ChannelRow> : null}
-                {address ? <ChannelRow label={dict.siteChrome.address}>{address}</ChannelRow> : null}
-              </RuledList>
+              // The organisation's own contact details — what `<address>` is
+              // for. `not-italic` undoes the user-agent style.
+              <address className="not-italic">
+                <RuledList bounded>
+                  {phone ? (
+                    <ChannelRow label={dict.siteChrome.phone}>
+                      <a href={`tel:${phone}`}>
+                        <Bidi>{phone}</Bidi>
+                      </a>
+                    </ChannelRow>
+                  ) : null}
+                  {whatsapp ? (
+                    <ChannelRow label={dict.siteChrome.whatsapp}>
+                      <a href={buildWhatsAppUrl(whatsapp)} rel="noopener noreferrer" target="_blank">
+                        <Bidi>{whatsapp}</Bidi>
+                      </a>
+                    </ChannelRow>
+                  ) : null}
+                  {email ? (
+                    <ChannelRow label={dict.siteChrome.email}>
+                      <a href={`mailto:${email}`}>
+                        <Bidi>{email}</Bidi>
+                      </a>
+                    </ChannelRow>
+                  ) : null}
+                  {officeHours ? <ChannelRow label={dict.siteChrome.officeHours}>{officeHours}</ChannelRow> : null}
+                  {address ? <ChannelRow label={dict.siteChrome.address}>{address}</ChannelRow> : null}
+                </RuledList>
+              </address>
             ) : (
               <p className="text-small text-ink-55">{dict.contactPage.noContactDetails}</p>
             )}

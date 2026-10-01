@@ -4,13 +4,13 @@ import { Flash } from '@/components/admin/flash';
 import { RowActions } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
 import { VerificationBadge } from '@/components/ui/badge';
-import { Bidi } from '@/components/ui/bidi';
 import { ButtonLink } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/feedback';
 import { Table } from '@/components/ui/table';
 import { listAdminMetrics } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
 import { ADMIN_OPTIONS } from '@/lib/admin-options';
+import { formatPeriod } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,7 +68,7 @@ export default async function MetricsAdminPage({ searchParams }: PageProps<'/adm
             header: t.columns.period,
             numeric: true,
             align: 'start',
-            cell: (r) => <Bidi>{`${r.periodStart} → ${r.periodEnd}`}</Bidi>,
+            cell: (r) => formatPeriod(r.periodStart, r.periodEnd, 'ar'),
           },
           {
             key: 'status',

@@ -28,7 +28,7 @@ import { adminUi } from './admin-ui-dict';
  *   catalogue by the service. A hand-typed regex is the one field property
  *   that can hang the server, and `(a+)+$` looks like a typo rather than an
  *   attack.
- * - **No free-text file types.** `accept` is a named choice of three, so a
+ * - **No free-text file types.** `accept` is a named choice of four, so a
  *   field cannot be widened to take any byte stream by typing a wildcard.
  *
  * Options are three parallel arrays — value, Arabic label, English label —
@@ -245,6 +245,7 @@ export function FieldEditor({
                 placeholder={adminUi.list.all}
                 options={[
                   { value: 'document', label: t.acceptDocument },
+                  { value: 'scan', label: t.acceptScan },
                   { value: 'image', label: t.acceptImage },
                   { value: 'any', label: t.acceptAny },
                 ]}

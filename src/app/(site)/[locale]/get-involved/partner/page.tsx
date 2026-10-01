@@ -10,6 +10,7 @@ import { isLocale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { formSlice, optionLabels } from '@/lib/i18n/form-dict';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { countryOptions } from '@/lib/i18n/countries';
 
 export const revalidate = 3600;
 
@@ -53,7 +54,12 @@ export default async function PartnerPage({ params }: PageProps<'/[locale]/get-i
       />
       <Panel tone="white" className="max-w-narrow rule-section">
         <p className="mbe-6 text-small text-ink-70">{dict.getInvolved.partnerFormLead}</p>
-        <PartnershipForm dict={formSlice(dict)} locale={locale} labels={optionLabels(dict)} />
+        <PartnershipForm
+          dict={formSlice(dict)}
+          locale={locale}
+          labels={optionLabels(dict)}
+          countries={countryOptions(locale)}
+        />
       </Panel>
     </Container>
   );

@@ -1,4 +1,4 @@
-import type { SubmissionType } from '@/db/schema/enums';
+import type { ApplicationFormKind, SubmissionType } from '@/db/schema/enums';
 import type { Locale } from './config';
 
 /**
@@ -36,6 +36,15 @@ const mailAr = {
       complaint: 'شكوى جديدة عبر آلية تقديم الشكاوى',
       fraud_report: 'بلاغ انتحال صفة',
     } satisfies Record<SubmissionType, string>,
+    /** The careers portal: one subject per form kind, so a volunteer drive is not announced as a job. */
+    application: {
+      job: 'طلب توظيف جديد',
+      volunteer: 'طلب تطوّع جديد',
+      internship: 'طلب تدريب عملي جديد',
+      training: 'طلب التحاق بتدريب جديد',
+      consultancy: 'عرض استشارة جديد',
+      other: 'طلب جديد عبر بوابة التقديم',
+    } satisfies Record<ApplicationFormKind, string>,
     preview: 'رسالة جديدة من الموقع',
     eyebrow: 'إشعار من الموقع',
     reference: 'الرقم المرجعي',
@@ -57,6 +66,7 @@ const mailAr = {
     received: 'وصلتنا رسالتك إلى {organization}.',
     referenceIntro: 'رقمك المرجعي هو',
     keepReference: 'احتفظ بهذا الرقم لأي متابعة.',
+    waitlisted: 'اكتمل العدد المطلوب قبل وصول طلبك، فسُجّل في قائمة الانتظار. سنتواصل معك إن توفّر مكان.',
     noReply: 'أُرسلت هذه الرسالة تلقائياً. لا تردّ عليها؛ للتواصل استخدم القنوات المنشورة على الموقع.',
     footer: 'موقع {organization}',
   },
@@ -79,6 +89,14 @@ const mailEn: MailDict = {
       complaint: 'New complaint through the complaints mechanism',
       fraud_report: 'Impersonation report',
     },
+    application: {
+      job: 'New job application',
+      volunteer: 'New volunteer application',
+      internship: 'New internship application',
+      training: 'New training application',
+      consultancy: 'New consultancy offer',
+      other: 'New application through the portal',
+    },
     preview: 'New message from the website',
     eyebrow: 'Website notification',
     reference: 'Reference',
@@ -99,6 +117,7 @@ const mailEn: MailDict = {
     received: 'Your message to {organization} has been received.',
     referenceIntro: 'Your reference number is',
     keepReference: 'Please keep it for any follow-up.',
+    waitlisted: 'The places had been filled before your application arrived, so it is on the waiting list. We will contact you if a place becomes available.',
     noReply: 'This message was sent automatically. Do not reply to it; to get in touch, use the channels published on the website.',
     footer: '{organization} website',
   },

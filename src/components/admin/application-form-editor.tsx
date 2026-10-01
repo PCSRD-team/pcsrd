@@ -11,6 +11,7 @@ import { Field, FieldRow } from '@/components/ui/field';
 import { Checkbox, Input, Select, Textarea } from '@/components/ui/inputs';
 import { Stack } from '@/components/ui/layout';
 import { Notice } from '@/components/ui/notice';
+import { dateToZonedInput } from '@/lib/time-zone';
 import type { RichText } from '@/db/schema/_shared';
 import {
   applicationCapacityRule,
@@ -57,15 +58,14 @@ export type ApplicationFormValues = {
 };
 
 /**
- * `datetime-local` wants `YYYY-MM-DDTHH:mm` in **local** time and will silently
- * ignore anything else, leaving the control blank — which reads as "no
- * deadline" on a form that has one. `toISOString()` is UTC and would be wrong
- * by the timezone offset, so the parts are assembled by hand.
+ * `datetime-local` wants `YYYY-MM-DDTHH:mm` and will silently ignore anything
+ * else, leaving the control blank — which reads as "no deadline" on a form
+ * that has one. Written in the organisation's zone rather than the machine's,
+ * so the server render and the browser agree and the value round-trips through
+ * `zonedInputToDate` in the service unchanged.
  */
 function toLocalInput(date: Date | null): string {
-  if (!date) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return date ? dateToZonedInput(new Date(date)) : '';
 }
 
 export function ApplicationFormEditor({

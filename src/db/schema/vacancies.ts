@@ -68,12 +68,10 @@ export const vacancies = pgTable(
       .on(t.type, t.deadline.desc())
       .where(sql`${t.status} = 'published'`),
     // The `ix_*` / `ux_*` family is the hand-written DDL the live database was
-    // built from; the two `ux_*` duplicate the slug indexes above.
+    // built from; its exact duplicates were dropped in drizzle/0011.
     index('ix_vacancies_open')
       .on(t.deadline)
       .where(sql`${t.status} = 'published'`),
-    uniqueIndex('ux_vacancies_slug_ar').on(t.slugAr),
-    uniqueIndex('ux_vacancies_slug_en').on(t.slugEn),
   ],
 );
 

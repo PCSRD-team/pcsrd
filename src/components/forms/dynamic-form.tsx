@@ -5,17 +5,17 @@
 // the six fixed forms use, and a plain POST without scripting produces the same
 // markup, the same errors and the same receipt.
 
-import type { ReactNode } from 'react';
 import type { PublicForm, PublicFormField } from '@/db/queries/applications';
-import { CONSENT_FIELD_KEY } from '@/lib/applications/answer-schema';
+import { CONSENT_FIELD_KEY } from '@/lib/applications/consent-key';
 import { ACCEPT_ATTRIBUTE } from '@/lib/applications/attachment-kinds';
+import { plural } from '@/lib/i18n/plural';
 import { submitApplicationForm } from '@/actions/public/apply';
 import { Checkbox, RadioGroup } from '@/components/ui/inputs';
 import { SubmissionReceipt } from '@/components/ui/feedback';
 import { Notice } from '@/components/ui/notice';
-import { Eyebrow } from '@/components/ui/typography';
 import {
   CheckboxGroup,
+  type ErrorOverrides,
   type FieldState,
   FileField,
   type FormDict,
@@ -66,14 +66,43 @@ export type DynamicFormProps = {
     successWaitlisted: string;
     filesHint: string;
   };
-  /** Shown above the fields — the deadline, the places left, the waitlist warning. */
-  notice?: ReactNode;
   /** True when the cap is reached and the form's rule is `waitlist`. */
   waitlisting?: boolean;
 };
 
+/**
+ * The browser's autofill token for the catalogue fields that have one. Keyed
+ * by the field key, which defaults to the catalogue key. A field built by
+ * hand under another key gets none — guessing from a label is how autofill
+ * puts a phone number into a name box.
+ */
+const AUTOCOMPLETE: Record<string, string> = {
+  full_name_ar: 'name',
+  full_name_en: 'name',
+  first_name: 'given-name',
+  given_name: 'given-name',
+  last_name: 'family-name',
+  family_name: 'family-name',
+  date_of_birth: 'bday',
+  city: 'address-level2',
+  address_detail: 'street-address',
+  last_employer: 'organization',
+  email: 'email',
+  mobile_number: 'tel',
+  alt_phone: 'tel',
+};
+
+/** Fills `{name}` placeholders in a dictionary template. */
+function fillTemplate(template: string, values: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
+}
+
 /** Describes a condition in words, since the field is always rendered. */
-function conditionHint(field: PublicFormField, form: PublicForm): string | undefined {
+function conditionHint(
+  field: PublicFormField,
+  form: PublicForm,
+  dict: FormDict,
+): string | undefined {
   const condition = field.visibleWhen;
   if (!condition) return undefined;
   const controller = form.fields.find((candidate) => candidate.key === condition.field);
@@ -81,13 +110,32 @@ function conditionHint(field: PublicFormField, form: PublicForm): string | undef
 
   const values = condition.equals
     .map((value) => controller.options.find((option) => option.value === value)?.label ?? value)
-    .join('، ');
+    .join(dict.common.listSeparator);
 
-  return `${controller.label}: ${values}`;
+  return fillTemplate(dict.formsUi.conditionHint, { field: controller.label, values });
 }
 
-function renderField(field: PublicFormField, form: PublicForm, dict: FormDict, state: FieldState) {
-  const hint = [field.help, conditionHint(field, form)].filter(Boolean).join(' — ') || undefined;
+function renderField(
+  field: PublicFormField,
+  form: PublicForm,
+  dict: FormDict,
+  locale: 'ar' | 'en',
+  state: FieldState,
+  filesHint: string,
+) {
+  // Sentences joined by a space: each one carries its own full stop.
+  const hint =
+    [field.help, conditionHint(field, form, dict), field.type === 'file' ? filesHint : null]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  // The generic "too short" says nothing a visitor can act on; this form knows
+  // the minimum, so the message names it.
+  const minLength = field.config.minLength;
+  const errorOverrides: ErrorOverrides | undefined = minLength
+    ? { 'errors.field.tooShort': plural(locale, minLength, dict.errors.field.tooShortMin) }
+    : undefined;
+
   const common = {
     name: field.key,
     label: field.label,
@@ -95,35 +143,68 @@ function renderField(field: PublicFormField, form: PublicForm, dict: FormDict, s
     hint,
     required: field.required,
     state,
+    errorOverrides,
   };
+  const placeholder = field.placeholder ?? undefined;
+  const autoComplete = AUTOCOMPLETE[field.key];
 
   switch (field.type) {
     case 'section':
-      // A heading inside the field flow. `<Eyebrow>` is the mono eyebrow the
-      // design system uses for section marks; the rule beneath it is the 2px
-      // ink section boundary, which is the only weight allowed to separate
+      // A real heading inside the field flow, so a screen-reader user can move
+      // between the parts of a forty-field form; it wears the mono eyebrow the
+      // design system uses for section marks. `h2` because the page title is
+      // the only `h1` and the form sits directly under it. The rule above it
+      // is the 2px ink section boundary, the only weight allowed to separate
       // parts of one page.
       return (
         <div key={field.id} className="mbs-4 border-bs-2 border-ink pbs-6 first:mbs-0 first:border-bs-0 first:pbs-0">
-          <Eyebrow>{field.label}</Eyebrow>
+          <h2 className="eyebrow">{field.label}</h2>
           {field.help ? <p className="mbs-2 text-caption text-ink-70">{field.help}</p> : null}
         </div>
       );
 
     case 'long_text':
-      return <TextArea key={field.id} {...common} rows={5} />;
+      return <TextArea key={field.id} {...common} rows={5} placeholder={placeholder} />;
 
     case 'email':
-      return <TextField key={field.id} {...common} type="email" inputMode="email" autoComplete="email" />;
+      return (
+        <TextField
+          key={field.id}
+          {...common}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder={placeholder}
+        />
+      );
 
     case 'phone':
-      return <TextField key={field.id} {...common} type="tel" inputMode="tel" autoComplete="tel" />;
+      return (
+        <TextField
+          key={field.id}
+          {...common}
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder={placeholder}
+        />
+      );
 
     case 'date':
-      return <TextField key={field.id} {...common} type="date" />;
+      return <TextField key={field.id} {...common} type="date" autoComplete={autoComplete} />;
 
     case 'number':
-      return <TextField key={field.id} {...common} inputMode="numeric" />;
+      // `ltr`: digits typed into a right-aligned field read backwards while
+      // they are being typed.
+      return (
+        <TextField
+          key={field.id}
+          {...common}
+          inputMode="numeric"
+          dir="ltr"
+          placeholder={placeholder}
+        />
+      );
 
     case 'radio':
       // Radios, not checkboxes. `radio` and `multi_select` differ in what they
@@ -140,6 +221,7 @@ function renderField(field: PublicFormField, form: PublicForm, dict: FormDict, s
           required={field.required}
           optionalLabel={dict.common.optional}
           error={resolveErrors(dict, state.errors, field.key)}
+          announce={false}
           options={field.options}
           defaultValue={
             typeof state.values?.[field.key] === 'string'
@@ -151,7 +233,9 @@ function renderField(field: PublicFormField, form: PublicForm, dict: FormDict, s
       );
 
     case 'select':
-      return <SelectField key={field.id} {...common} options={field.options} />;
+      return (
+        <SelectField key={field.id} {...common} options={field.options} autoComplete={autoComplete} />
+      );
 
     case 'multi_select':
       return (
@@ -179,6 +263,7 @@ function renderField(field: PublicFormField, form: PublicForm, dict: FormDict, s
           label={field.label}
           hint={hint}
           error={resolveErrors(dict, state.errors, field.key)}
+          announce={false}
           required={field.required}
           defaultChecked={state.values?.[field.key] === 'on'}
         />
@@ -195,7 +280,14 @@ function renderField(field: PublicFormField, form: PublicForm, dict: FormDict, s
 
     case 'short_text':
     default:
-      return <TextField key={field.id} {...common} />;
+      return (
+        <TextField
+          key={field.id}
+          {...common}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+        />
+      );
   }
 }
 
@@ -204,7 +296,6 @@ export function DynamicApplicationForm({
   dict,
   locale,
   copy,
-  notice,
   waitlisting,
 }: DynamicFormProps) {
   const hasOwnConsentField = form.fields.some((field) => field.key === CONSENT_FIELD_KEY);
@@ -216,19 +307,14 @@ export function DynamicApplicationForm({
       dict={dict}
       locale={locale}
       submitLabel={copy.submit}
-      intro={
-        <>
-          {notice}
-          {waitlisting ? <Notice tone="warning">{copy.waitlistNotice}</Notice> : null}
-        </>
-      }
+      intro={waitlisting ? <Notice tone="warning">{copy.waitlistNotice}</Notice> : null}
       renderReceipt={(data) => (
         <SubmissionReceipt
-          title={
-            data.waitlisted ? copy.successWaitlisted : dict.forms.successWithReference
-          }
+          title={data.waitlisted ? copy.successWaitlisted : dict.formsUi.applicationSuccess}
           reference={data.reference}
-          body={dict.forms.keepReference}
+          // The form's own confirmation text, when the admin wrote one — what
+          // happens next for *this* intake — ahead of the generic reminder.
+          body={[form.confirmation?.trim(), dict.forms.keepReference].filter(Boolean).join(' ')}
         />
       )}
     >
@@ -239,7 +325,9 @@ export function DynamicApplicationForm({
               shape from the client. */}
           <input type="hidden" name="formSlug" value={form.slug} />
 
-          {form.fields.map((field) => renderField(field, form, dict, state))}
+          {form.fields.map((field) =>
+            renderField(field, form, dict, locale, state, copy.filesHint),
+          )}
 
           {hasFiles ? <p className="text-caption text-ink-70">{copy.filesHint}</p> : null}
 
@@ -252,7 +340,11 @@ export function DynamicApplicationForm({
               label={copy.consentLabel}
               hint={copy.consentHelp}
               error={resolveErrors(dict, state.errors, CONSENT_FIELD_KEY)}
+              announce={false}
               required
+              // Restored after a refused submission, as every other field is;
+              // without it a no-JavaScript retry comes back unticked.
+              defaultChecked={state.values?.[CONSENT_FIELD_KEY] === 'on'}
             />
           ) : null}
 

@@ -5,8 +5,8 @@ import { db } from '@/db';
 import { getMediaUsage } from '@/db/queries/admin';
 import { requireActor } from '@/lib/auth/guard';
 import { publicEnv } from '@/lib/env.public';
-import { revalidateEntity } from '@/lib/cache/revalidate';
-import type { Entity } from '@/lib/cache/tags';
+import { revalidate, revalidateEntity } from '@/lib/cache/revalidate';
+import { type Entity, TAGS } from '@/lib/cache/tags';
 import { type ActionResult, err, ok, runAction } from '@/lib/errors';
 import type { Actor } from '@/services/_shared/actor';
 import { fieldErrorsFrom } from '@/lib/validation/common';
@@ -270,7 +270,16 @@ export async function saveVacancyForm(_prev: EntityResult | null, formData: Form
     formData,
     'vacancy',
     vacancySchema,
-    (actor, input) => vacancyService.upsert(db, actor, input),
+    async (actor, input) => {
+      // The service creates a new vacancy's draft portal form, moves its
+      // deadline and takes it down with the vacancy, in one transaction.
+      const vacancy = await vacancyService.upsert(db, actor, input);
+      // Any of those changes the form's page, the careers index and the
+      // vacancy page's "apply" link. Form pages are tagged with the list tag
+      // too, so these two reach every one of them.
+      revalidate([TAGS.applicationFormList, TAGS.applicationFormVacancyLink]);
+      return vacancy;
+    },
   );
   if (result.ok) redirect(`/admin/vacancies/${result.data.id}?saved=1`);
   return result;

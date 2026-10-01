@@ -86,6 +86,35 @@ export async function listAdminForms(actor: Actor): Promise<AdminFormRow[]> {
   );
 }
 
+/** The portal form behind one vacancy, for the vacancy editor. Null when it has none. */
+export async function getFormForVacancy(
+  actor: Actor,
+  vacancyId: string,
+): Promise<{ id: string; status: ContentStatus; applicationCount: number; newCount: number } | null> {
+  assertCan(actor, 'content.read');
+
+  const [row] = await readAsActor(db, actor, async (tx) =>
+    tx
+      .select({
+        id: applicationForms.id,
+        status: applicationForms.status,
+        applicationCount: sql<number>`(
+          select count(*)::int from ${applications}
+           where ${applications.formId} = ${applicationForms.id}
+        )`,
+        newCount: sql<number>`(
+          select count(*)::int from ${applications}
+           where ${applications.formId} = ${applicationForms.id}
+             and ${applications.status} = 'new'
+        )`,
+      })
+      .from(applicationForms)
+      .where(eq(applicationForms.vacancyId, vacancyId))
+      .limit(1),
+  );
+  return row ?? null;
+}
+
 /**
  * Vacancies a form could be attached to.
  *

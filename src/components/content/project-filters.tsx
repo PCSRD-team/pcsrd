@@ -9,6 +9,7 @@ import { formatNumber } from '@/lib/format';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import { type Locale, localePath } from '@/lib/i18n/config';
 import { projectStateLabel } from './cards';
+import { plural } from '@/lib/i18n/plural';
 
 /**
  * The project facet panel.
@@ -111,7 +112,7 @@ export function ProjectFilterPanel({
             {dict.projects.filters}
           </Heading>
           <Meta as="p">
-            <Bidi>{formatNumber(total, locale)}</Bidi> {dict.projects.results}
+            {plural(locale, total, dict.projects.resultsCount, formatNumber(total, locale))}
           </Meta>
         </div>
 

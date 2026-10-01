@@ -3,7 +3,7 @@
 // the channel editors keep rows in state. The form posts to a Server Action
 // and works with JavaScript disabled.
 
-import { useActionState, useId, useMemo, useState } from 'react';
+import { useActionState, useId, useMemo } from 'react';
 import { saveOrganizationForm, type OrganizationResult } from '@/actions/admin/organization';
 import { SaveBar } from '@/components/admin/controls';
 import { MediaPicker } from '@/components/admin/media-picker';
@@ -23,6 +23,7 @@ import { Section, Stack } from '@/components/ui/layout';
 import { LiveRegion, Notice } from '@/components/ui/notice';
 import { Caption, Heading } from '@/components/ui/typography';
 import { adminUi } from './admin-ui-dict';
+import { useKeyedRows } from './keyed-rows';
 
 /**
  * The organisation settings editor.
@@ -199,19 +200,21 @@ function SocialChannelsEditor({
   socialError?: string;
   officialError?: string;
 }) {
-  const [socials, setSocials] = useState(initialSocials);
-  const [officialChannels, setOfficialChannels] = useState(initialOfficialChannels);
+  const socialRows = useKeyedRows(initialSocials);
+  const officialRows = useKeyedRows(initialOfficialChannels);
+  const socials = socialRows.items;
+  const officialChannels = officialRows.items;
   const socialPayload = useMemo(() => JSON.stringify(compactSocialRows(socials)), [socials]);
   const officialPayload = useMemo(() => JSON.stringify(compactOfficialRows(officialChannels)), [officialChannels]);
   const socialId = useId();
   const officialId = useId();
   const t = adminUi.organization.channels;
 
-  const updateSocial = (index: number, patch: Partial<SocialRow>) => {
-    setSocials((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
+  const updateSocial = (uid: string, patch: Partial<SocialRow>) => {
+    socialRows.update(uid, (row) => ({ ...row, ...patch }));
   };
-  const updateOfficial = (index: number, patch: Partial<OfficialChannelRow>) => {
-    setOfficialChannels((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
+  const updateOfficial = (uid: string, patch: Partial<OfficialChannelRow>) => {
+    officialRows.update(uid, (row) => ({ ...row, ...patch }));
   };
 
   return (
@@ -230,10 +233,13 @@ function SocialChannelsEditor({
               tone="secondary"
               size="sm"
               onClick={() =>
-                setSocials((rows) => [
-                  ...rows,
-                  { platform: 'facebook', url: '', is_official: true, visible: true, display_order: rows.length + 1 },
-                ])
+                socialRows.add({
+                  platform: 'facebook',
+                  url: '',
+                  is_official: true,
+                  visible: true,
+                  display_order: socials.length + 1,
+                })
               }
             >
               {t.addSocial}
@@ -241,21 +247,21 @@ function SocialChannelsEditor({
           </div>
           {socialError ? <FieldError id="socials-error">{socialError}</FieldError> : null}
           {socials.length === 0 ? <Caption>{t.noSocial}</Caption> : null}
-          {socials.map((row, index) => (
-            <Panel key={index} tone="alt" padding="sm">
+          {socialRows.rows.map(({ uid, value: row }, index) => (
+            <Panel key={uid} tone="alt" padding="sm">
               <div className="grid gap-3 md:grid-cols-[1fr_1.6fr_0.55fr_auto]">
                 <Field name={`social-platform-${index}`} label={t.platform}>
                   <PlatformSelect
                     id={`social-platform-${index}`}
                     value={row.platform}
-                    onChange={(platform) => updateSocial(index, { platform })}
+                    onChange={(platform) => updateSocial(uid, { platform })}
                   />
                 </Field>
                 <Field name={`social-url-${index}`} label={t.url}>
                   <Input
                     id={`social-url-${index}`}
                     value={row.url}
-                    onChange={(event) => updateSocial(index, { url: event.currentTarget.value })}
+                    onChange={(event) => updateSocial(uid, { url: event.currentTarget.value })}
                     dir="ltr"
                     inputMode="url"
                     className="text-start"
@@ -265,20 +271,20 @@ function SocialChannelsEditor({
                   <Input
                     id={`social-order-${index}`}
                     value={row.display_order}
-                    onChange={(event) => updateSocial(index, { display_order: Number(event.currentTarget.value) })}
+                    onChange={(event) => updateSocial(uid, { display_order: Number(event.currentTarget.value) })}
                     type="number"
                     min="0"
                     dir="ltr"
                   />
                 </Field>
                 <div className="flex flex-col justify-end gap-2">
-                  <RowToggle checked={row.is_official} label={t.isOfficial} onChange={(is_official) => updateSocial(index, { is_official })} />
-                  <RowToggle checked={row.visible} label={t.visible} onChange={(visible) => updateSocial(index, { visible })} />
+                  <RowToggle checked={row.is_official} label={t.isOfficial} onChange={(is_official) => updateSocial(uid, { is_official })} />
+                  <RowToggle checked={row.visible} label={t.visible} onChange={(visible) => updateSocial(uid, { visible })} />
                   <Button
                     type="button"
                     tone="quiet"
                     size="sm"
-                    onClick={() => setSocials((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}
+                    onClick={() => socialRows.remove(uid)}
                   >
                     {t.remove}
                   </Button>
@@ -300,19 +306,16 @@ function SocialChannelsEditor({
               tone="secondary"
               size="sm"
               onClick={() =>
-                setOfficialChannels((rows) => [
-                  ...rows,
-                  {
-                    platform: 'facebook',
-                    handle: '',
-                    url: '',
-                    is_official: true,
-                    visible: true,
-                    display_order: rows.length + 1,
-                    note_ar: '',
-                    note_en: '',
-                  },
-                ])
+                officialRows.add({
+                  platform: 'facebook',
+                  handle: '',
+                  url: '',
+                  is_official: true,
+                  visible: true,
+                  display_order: officialChannels.length + 1,
+                  note_ar: '',
+                  note_en: '',
+                })
               }
             >
               {t.addOfficial}
@@ -320,21 +323,21 @@ function SocialChannelsEditor({
           </div>
           {officialError ? <FieldError id="officialChannels-error">{officialError}</FieldError> : null}
           {officialChannels.length === 0 ? <Caption>{t.noOfficial}</Caption> : null}
-          {officialChannels.map((row, index) => (
-            <Panel key={index} tone="alt" padding="sm">
+          {officialRows.rows.map(({ uid, value: row }, index) => (
+            <Panel key={uid} tone="alt" padding="sm">
               <div className="grid gap-3 md:grid-cols-[1fr_1fr_1.4fr_0.55fr_auto]">
                 <Field name={`official-platform-${index}`} label={t.platform}>
                   <PlatformSelect
                     id={`official-platform-${index}`}
                     value={row.platform}
-                    onChange={(platform) => updateOfficial(index, { platform })}
+                    onChange={(platform) => updateOfficial(uid, { platform })}
                   />
                 </Field>
                 <Field name={`official-handle-${index}`} label={t.handle}>
                   <Input
                     id={`official-handle-${index}`}
                     value={row.handle}
-                    onChange={(event) => updateOfficial(index, { handle: event.currentTarget.value })}
+                    onChange={(event) => updateOfficial(uid, { handle: event.currentTarget.value })}
                     dir="ltr"
                     className="text-start"
                   />
@@ -343,7 +346,7 @@ function SocialChannelsEditor({
                   <Input
                     id={`official-url-${index}`}
                     value={row.url}
-                    onChange={(event) => updateOfficial(index, { url: event.currentTarget.value })}
+                    onChange={(event) => updateOfficial(uid, { url: event.currentTarget.value })}
                     dir="ltr"
                     inputMode="url"
                     className="text-start"
@@ -353,20 +356,20 @@ function SocialChannelsEditor({
                   <Input
                     id={`official-order-${index}`}
                     value={row.display_order}
-                    onChange={(event) => updateOfficial(index, { display_order: Number(event.currentTarget.value) })}
+                    onChange={(event) => updateOfficial(uid, { display_order: Number(event.currentTarget.value) })}
                     type="number"
                     min="0"
                     dir="ltr"
                   />
                 </Field>
                 <div className="flex flex-col justify-end gap-2">
-                  <RowToggle checked={row.is_official} label={t.isOfficial} onChange={(is_official) => updateOfficial(index, { is_official })} />
-                  <RowToggle checked={row.visible} label={t.visible} onChange={(visible) => updateOfficial(index, { visible })} />
+                  <RowToggle checked={row.is_official} label={t.isOfficial} onChange={(is_official) => updateOfficial(uid, { is_official })} />
+                  <RowToggle checked={row.visible} label={t.visible} onChange={(visible) => updateOfficial(uid, { visible })} />
                   <Button
                     type="button"
                     tone="quiet"
                     size="sm"
-                    onClick={() => setOfficialChannels((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}
+                    onClick={() => officialRows.remove(uid)}
                   >
                     {t.remove}
                   </Button>
@@ -455,6 +458,16 @@ export function OrganizationForm({ values }: { values: Values }) {
             </Notice>
           ) : null}
         </LiveRegion>
+
+        {/* The channel and list editors post one hidden JSON field each, built
+            from their rows in state. Without JavaScript those rows cannot be
+            edited and the hidden fields carry the stored values unchanged —
+            the plain fields still save, so say so before anyone types. */}
+        <noscript>
+          <Notice tone="warning" live="off">
+            {t.noScriptEditor}
+          </Notice>
+        </noscript>
 
         <FormSection
           title={t.sections.identity}

@@ -5,8 +5,10 @@ import { NotFoundBody } from '@/components/layout/not-found-body';
  * resolve, or an unknown locale. It renders inside `[locale]/layout.tsx`, so
  * the document, `lang`, `dir` and the site chrome are already in place.
  *
- * A URL that matches no route at all never reaches here; `src/app/not-found.tsx`
- * handles that one, and has to emit its own document.
+ * There is no `src/app/not-found.tsx` — there is no root layout above the
+ * route groups for it to render in. A path under a known locale that matches
+ * no route is caught by `[...notFound]/page.tsx` instead, which renders this
+ * same body; a path with no locale is redirected to one by `src/proxy.ts`.
  */
 export default function NotFound() {
   return <NotFoundBody />;

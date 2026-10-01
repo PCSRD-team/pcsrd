@@ -22,7 +22,7 @@ import {
   userRole,
   vacancyType,
 } from '@/db/schema/enums';
-import { emailSchema, optionalText, phoneSchema, shortText, slugSchema } from './common';
+import { displayPhoneSchema, emailSchema, optionalText, shortText, slugSchema } from './common';
 
 /**
  * Admin input schemas.
@@ -33,7 +33,9 @@ import { emailSchema, optionalText, phoneSchema, shortText, slugSchema } from '.
  * instead of a type error.
  */
 
-const enumOf = <T extends readonly [string, ...string[]]>(values: T) => z.enum(values);
+/** Every enum speaks through the dictionary — Zod's own default is English prose. */
+const enumOf = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.enum(values, { message: 'errors.field.invalidChoice' });
 
 const status = enumOf(contentStatus.enumValues).default('draft');
 const translation = enumOf(translationStatus.enumValues).default('ar_only');
@@ -65,6 +67,22 @@ const richText: z.ZodType<RichText | null | undefined> = z
 
 const uuid = z.uuid({ message: 'errors.field.uuid' });
 const optionalUuid = z.union([uuid, z.literal('')]).nullable().optional();
+
+/**
+ * A link the public site will render as an `href`. `z.url()` alone accepts
+ * any scheme the WHATWG parser does — `javascript:`, `data:`, `vbscript:` —
+ * and React only *warns* about a `javascript:` href, it still renders it. So
+ * the scheme is pinned: `http`/`https`, spelled with `//` (passing zod's own
+ * `httpProtocol` regex is what switches that check on; `http:example.org`
+ * would otherwise normalise into a valid URL).
+ */
+const webUrl = () => z.url({ protocol: z.regexes.httpProtocol, message: 'errors.field.url' });
+
+/** As `webUrl`, plus `mailto:` — an official channel may be an address. */
+const channelUrl = () =>
+  z
+    .url({ protocol: /^(?:https?|mailto)$/, message: 'errors.field.url' })
+    .refine((v) => /^mailto:/i.test(v) || /^https?:\/\//i.test(v), { message: 'errors.field.url' });
 
 const seo = {
   seoTitleAr: optionalText(120).nullable(),
@@ -233,14 +251,14 @@ export const vacancySchema = z
     type: enumOf(vacancyType.enumValues).default('job'),
     locationAr: optionalText(120).nullable(),
     locationEn: optionalText(120).nullable(),
-    employmentType: z.enum(['FULL_TIME', 'PART_TIME', 'VOLUNTEER']).nullable().optional(),
+    employmentType: z.enum(['FULL_TIME', 'PART_TIME', 'VOLUNTEER'], { message: 'errors.field.invalidChoice' }).nullable().optional(),
     descriptionAr: richText,
     descriptionEn: richText,
     requirementsAr: richText,
     requirementsEn: richText,
     /** Required. A vacancy without a deadline never closes. */
     deadline: z.iso.date({ message: 'errors.field.required' }),
-    applicationMethod: z.enum(['form', 'email']).default('form'),
+    applicationMethod: z.enum(['form', 'email'], { message: 'errors.field.invalidChoice' }).default('form'),
     applicationEmail: z.union([z.email(), z.literal('')]).nullable().optional(),
     /**
      * Blank means "leave it alone": the service writes the column only when a
@@ -291,7 +309,7 @@ export const partnerSchema = z.object({
   sectorEn: optionalText(120).nullable(),
   descriptionAr: optionalText(800).nullable(),
   descriptionEn: optionalText(800).nullable(),
-  website: z.union([z.url(), z.literal('')]).nullable().optional(),
+  website: z.union([webUrl(), z.literal('')]).nullable().optional(),
   logoMediaId: optionalUuid,
   logoPermission: enumOf(logoPermission.enumValues).default('pending'),
   isFeatured: z.coerce.boolean().default(false),
@@ -331,7 +349,7 @@ export const metricSchema = z
     /** Kept as a string: a float would round a beneficiary count. */
     value: z.string().regex(/^\d{1,12}(\.\d{1,2})?$/, { message: 'errors.field.number' }),
     unit: shortText(1, 40),
-    displayPrefix: z.enum(['+', '~']).nullable().optional(),
+    displayPrefix: z.enum(['+', '~'], { message: 'errors.field.invalidChoice' }).nullable().optional(),
     programId: optionalUuid,
     projectId: optionalUuid,
     periodStart: z.iso.date(),
@@ -419,7 +437,7 @@ const bilingualLineSchema = z.object({
 
 const socialLinkSchema = z.object({
   platform: shortText(1, 40),
-  url: z.url({ message: 'errors.field.url' }).max(300),
+  url: webUrl().max(300),
   is_official: z.coerce.boolean().default(true),
   visible: z.coerce.boolean().default(true),
   display_order: z.coerce.number().int().min(0).max(999).optional().nullable(),
@@ -428,7 +446,7 @@ const socialLinkSchema = z.object({
 const officialChannelSchema = z.object({
   platform: shortText(1, 40),
   handle: shortText(1, 120),
-  url: z.url({ message: 'errors.field.url' }).max(300),
+  url: channelUrl().pipe(z.string().max(300)),
   is_official: z.coerce.boolean().default(true),
   visible: z.coerce.boolean().default(true),
   display_order: z.coerce.number().int().min(0).max(999).optional().nullable(),
@@ -459,8 +477,8 @@ export const organizationSchema = z
     coreValues: z.array(titledBlockSchema).max(20),
     principles: z.array(titledBlockSchema).max(20),
     strategicObjectives: z.array(bilingualLineSchema).max(20),
-    primaryPhone: z.union([phoneSchema, z.literal('')]).nullable(),
-    additionalPhones: z.array(phoneSchema).max(10),
+    primaryPhone: z.union([displayPhoneSchema, z.literal('')]).nullable(),
+    additionalPhones: z.array(displayPhoneSchema).max(10),
     // Digits only, no leading `+` — this is the `wa.me` path format, and the
     // same shape `NEXT_PUBLIC_WHATSAPP_NUMBER` is checked against.
     whatsappNumber: z
@@ -481,7 +499,7 @@ export const organizationSchema = z
     footerCtaDescriptionEn: optionalText(500).nullable(),
     footerCtaButtonLabelAr: optionalText(80).nullable(),
     footerCtaButtonLabelEn: optionalText(80).nullable(),
-    footerCtaUrl: z.union([z.url({ message: 'errors.field.url' }), z.literal('')]).nullable(),
+    footerCtaUrl: z.union([webUrl(), z.literal('')]).nullable(),
     footerCtaEnabled: z.coerce.boolean(),
     logoPrimaryId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
     footerLogoId: z.uuid({ message: 'errors.field.uuid' }).nullable(),
@@ -495,12 +513,18 @@ export const organizationSchema = z
 // Appended rather than interleaved: the schemas above are being aligned to
 // the database by a separate change.
 
-/** An absolute site path — `/old-page`, never a host or a query string. */
+/**
+ * An absolute site path — `/old-page`, never a host or a query string.
+ *
+ * Not `//host` (protocol-relative) and no backslash anywhere: browsers parse
+ * `/\evil.com` as `//evil.com`, so either one stored as a destination is an
+ * open redirect. `src/proxy.ts` refuses both again before following a rule.
+ */
 const sitePath = z
   .string()
   .trim()
   .max(300, { message: 'errors.field.tooLong' })
-  .regex(/^\/[^\s?#]*$/, { message: 'errors.redirects.pathFormat' });
+  .regex(/^\/(?!\/)[^\s?#\\]*$/, { message: 'errors.redirects.pathFormat' });
 
 export const REDIRECT_STATUS_CODES = ['301', '302', '307', '308'] as const;
 
@@ -513,7 +537,7 @@ export const redirectSchema = z
      * `proxy` resolves the destination against the site anyway.
      */
     destinationPath: sitePath,
-    statusCode: z.enum(REDIRECT_STATUS_CODES).default('308'),
+    statusCode: z.enum(REDIRECT_STATUS_CODES, { message: 'errors.field.invalidChoice' }).default('308'),
   })
   .refine((v) => v.sourcePath !== v.destinationPath, {
     path: ['destinationPath'],
@@ -546,7 +570,7 @@ export const setUserFlagSchema = z.object({
    * `'true'` or `'false'` from a submit button's value. Not `z.coerce.boolean()`,
    * which is `Boolean(value)` and turns the string `'false'` into `true`.
    */
-  value: z.enum(['true', 'false']).transform((v) => v === 'true'),
+  value: z.enum(['true', 'false'], { message: 'errors.field.invalidChoice' }).transform((v) => v === 'true'),
 });
 
 // ── Row actions ──────────────────────────────────────────────────────────
@@ -586,14 +610,14 @@ export const ADMIN_RETURN_PATH = /^\/admin(?:\/[\w-]+)*\/?(?:\?[\w=&%+.-]*)?$/;
 const adminReturnPath = z.string().regex(ADMIN_RETURN_PATH).default('/admin');
 
 export const rowStatusSchema = z.object({
-  entity: z.enum(STATUS_ENTITIES),
+  entity: z.enum(STATUS_ENTITIES, { message: 'errors.field.invalidChoice' }),
   id: uuid,
   status: enumOf(contentStatus.enumValues),
   returnTo: adminReturnPath,
 });
 
 export const rowDeleteSchema = z.object({
-  entity: z.enum(DELETE_ENTITIES),
+  entity: z.enum(DELETE_ENTITIES, { message: 'errors.field.invalidChoice' }),
   id: uuid,
   returnTo: adminReturnPath,
 });

@@ -76,9 +76,6 @@ export const programs = pgTable(
     index('ix_programs_public')
       .on(t.displayOrder, t.publishedAt.desc())
       .where(sql`${t.status} = 'published'`),
-    // Live duplicates of the two slug indexes from the hand-written DDL.
-    uniqueIndex('ux_programs_slug_ar').on(t.slugAr),
-    uniqueIndex('ux_programs_slug_en').on(t.slugEn),
   ],
 );
 

@@ -32,7 +32,9 @@ import { optionalText, shortText, slugSchema } from './common';
  * renamed, whether a condition points backwards, whether the form may publish.
  */
 
-const enumOf = <T extends readonly [string, ...string[]]>(values: T) => z.enum(values);
+/** Every enum speaks through the dictionary — Zod's own default is English prose. */
+const enumOf = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.enum(values, { message: 'errors.field.invalidChoice' });
 
 const uuid = z.uuid({ message: 'errors.field.uuid' });
 
@@ -154,7 +156,7 @@ const fieldConfig = z
     max: z.coerce.number().optional(),
     minDate: z.union([z.iso.date(), z.literal('today')]).optional(),
     maxDate: z.union([z.iso.date(), z.literal('today')]).optional(),
-    accept: z.enum(['document', 'image', 'any']).optional(),
+    accept: z.enum(['document', 'scan', 'image', 'any'], { message: 'errors.field.invalidChoice' }).optional(),
     minChoices: z.coerce.number().int().min(0).max(50).optional(),
     maxChoices: z.coerce.number().int().min(1).max(50).optional(),
     columns: z.union([z.literal(1), z.literal(2)]).optional(),

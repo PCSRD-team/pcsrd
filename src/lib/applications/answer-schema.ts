@@ -6,6 +6,8 @@ import type {
 } from '@/db/schema/applications';
 import type { ApplicationFieldType } from '@/db/schema/enums';
 import type { FieldErrors } from '@/lib/errors';
+import { phoneSchema } from '@/lib/validation/common';
+import { CONSENT_FIELD_KEY } from './consent-key';
 
 /**
  * Compiles a form's stored field definitions into a Zod schema, per request.
@@ -66,7 +68,7 @@ export type CompilableField = {
 };
 
 /** `requireConsent` on a form renders and requires this, even with no such row. */
-export const CONSENT_FIELD_KEY = 'data_processing_consent';
+export { CONSENT_FIELD_KEY };
 
 /** Field types that carry no answer and take no part in validation. */
 const INERT: ReadonlySet<ApplicationFieldType> = new Set(['section', 'file']);
@@ -130,13 +132,11 @@ function baseSchema(field: CompilableField): z.ZodType {
       });
 
     case 'phone':
-      // The same permissive-about-formatting, strict-about-shape rule as
-      // `phoneSchema`: a Gaza number is written half a dozen ways and refusing
-      // the wrong one is a lost applicant.
-      return z
-        .string()
-        .trim()
-        .regex(/^\+?[1-9]\d{7,14}$/, { message: 'errors.field.phone' });
+      // `phoneSchema` itself, so a portal form and a fixed form accept the same
+      // numbers: a Gaza number is written half a dozen ways — `0599…`, with
+      // spaces, in Eastern-Arabic digits — and refusing the wrong one is a lost
+      // applicant. The answer is stored normalised.
+      return phoneSchema;
 
     case 'number': {
       let schema = z.coerce.number({ message: 'errors.field.number' });
@@ -330,6 +330,8 @@ const IDENTITY_FALLBACK = {
   phone: ['mobile_number', 'phone', 'phone_number', 'mobile'],
 } as const;
 
+const IDENTITY_EMAIL = z.email().max(160);
+
 export function extractIdentity(
   fields: Pick<ApplicationFormField, 'key' | 'catalogKey' | 'type'>[],
   answers: Record<string, unknown>,
@@ -337,11 +339,18 @@ export function extractIdentity(
   const pick = (role: keyof typeof IDENTITY_FALLBACK): string | null => {
     for (const candidate of IDENTITY_FALLBACK[role]) {
       const field = fields.find(
-        (f) => f.catalogKey === candidate || f.key === candidate,
+        (f) =>
+          (f.catalogKey === candidate || f.key === candidate) &&
+          // The email column is where the acknowledgement is sent. A hand-built
+          // short-text field that happens to be keyed `email` holds whatever
+          // was typed into it, and mail must not go to that.
+          (role !== 'email' || f.type === 'email'),
       );
       if (!field) continue;
       const value = asString(answers[field.key]);
-      if (value) return value.slice(0, 200);
+      if (!value) continue;
+      if (role === 'email' && !IDENTITY_EMAIL.safeParse(value).success) continue;
+      return value.slice(0, 200);
     }
     return null;
   };

@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
 import { alias, type PgColumn } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
 import {
+  applicationForms,
   impactMetrics,
   mediaAssets,
   organizationSettings,
@@ -21,6 +22,7 @@ import {
 import type { PostCategory, VacancyType } from '@/db/schema/enums';
 import { TAGS, detailTags } from '@/lib/cache/tags';
 import type { Locale } from '@/lib/i18n/config';
+import { SITE_TIME_ZONE, siteToday } from '@/lib/time-zone';
 import { cached } from './_cache';
 import {
   developmentOrganization,
@@ -293,6 +295,7 @@ export async function _listProgramSlugs() {
       slugAr: programs.slugAr,
       slugEn: programs.slugEn,
       translationStatus: programs.translationStatus,
+      noIndex: programs.noIndex,
       updatedAt: programs.updatedAt,
       publishedAt: programs.publishedAt,
     })
@@ -347,9 +350,13 @@ export async function _listPosts(
           title: pickCol(posts.titleAr, posts.titleEn, locale),
           excerpt: pickCol(posts.excerptAr, posts.excerptEn, locale),
           publishedAt: posts.publishedAt,
-          heroMediaId: posts.heroMediaId,
+          // Joined, not fetched in a second round trip after the page of
+          // posts came back: one query instead of two in series.
+          ...hero,
+          heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
         })
         .from(posts)
+        .leftJoin(mediaAssets, eq(mediaAssets.id, posts.heroMediaId))
         .where(where)
         .orderBy(desc(posts.publishedAt))
         .limit(perPage)
@@ -364,33 +371,7 @@ export async function _listPosts(
   }
 
   const total = counted[0]?.count ?? 0;
-  const heroIds = Array.from(
-    new Set(rows.map((row) => row.heroMediaId).filter((id): id is string => Boolean(id))),
-  );
-  const heroRows =
-    heroIds.length > 0
-      ? await db
-          .select({
-            id: mediaAssets.id,
-            heroPath: mediaAssets.path,
-            heroBlur: mediaAssets.blurDataUrl,
-            heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-          })
-          .from(mediaAssets)
-          .where(inArray(mediaAssets.id, heroIds))
-      : [];
-  const mediaById = new Map(heroRows.map((row) => [row.id, row]));
-  const items = rows.map(({ heroMediaId, ...row }) => {
-    const media = heroMediaId ? mediaById.get(heroMediaId) : null;
-    return {
-      ...row,
-      heroPath: media?.heroPath ?? null,
-      heroBlur: media?.heroBlur ?? null,
-      heroAlt: media?.heroAlt ?? null,
-    };
-  });
-
-  return { items, total, page, perPage, totalPages: Math.max(1, Math.ceil(total / perPage)) };
+  return { items: rows, total, page, perPage, totalPages: Math.max(1, Math.ceil(total / perPage)) };
 }
 
 export const listPosts = cached(_listPosts, ['posts:list'], { tags: [TAGS.postList] });
@@ -402,6 +383,7 @@ export async function _listPostSlugs() {
       slugAr: posts.slugAr,
       slugEn: posts.slugEn,
       translationStatus: posts.translationStatus,
+      noIndex: posts.noIndex,
       updatedAt: posts.updatedAt,
       publishedAt: posts.publishedAt,
     })
@@ -503,6 +485,7 @@ export async function _listStorySlugs() {
       slugAr: stories.slugAr,
       slugEn: stories.slugEn,
       translationStatus: stories.translationStatus,
+      noIndex: stories.noIndex,
       updatedAt: stories.updatedAt,
       publishedAt: stories.publishedAt,
     })
@@ -615,7 +598,9 @@ export async function _listOpenVacancies(locale: Locale, options: { type?: Vacan
     .where(
       and(
         eq(vacancies.status, 'published'),
-        gte(vacancies.deadline, sql`current_date`),
+        // Today in Gaza, not in the database session's zone (UTC): a deadline
+        // is a Palestine date, and `current_date` rolled over hours late.
+        gte(vacancies.deadline, sql`(now() at time zone ${SITE_TIME_ZONE})::date`),
         options.type ? eq(vacancies.type, options.type) : undefined,
       ),
     )
@@ -637,6 +622,7 @@ export async function _listVacancySlugs() {
       slugAr: vacancies.slugAr,
       slugEn: vacancies.slugEn,
       translationStatus: vacancies.translationStatus,
+      noIndex: vacancies.noIndex,
       deadline: vacancies.deadline,
       updatedAt: vacancies.updatedAt,
       publishedAt: vacancies.publishedAt,
@@ -651,8 +637,19 @@ export const listVacancySlugs = cached(_listVacancySlugs, ['vacancies:slugs'], {
 });
 
 export async function _getVacancyBySlug(slug: string, locale: Locale) {
-  const [row] = await db
-    .select()
+  // The portal form's slug rides along as a scalar subquery rather than a
+  // second query that had to wait for this row's id. Its invalidation follows
+  // it: the entry carries the vacancy-link tag the form mutations bust.
+  const [found] = await db
+    .select({
+      row: vacancies,
+      applyFormSlug: sql<string | null>`(
+        select ${applicationForms.slug} from ${applicationForms}
+        where ${applicationForms.vacancyId} = ${vacancies.id}
+          and ${applicationForms.status} = 'published'
+        limit 1
+      )`,
+    })
     .from(vacancies)
     .where(
       and(
@@ -661,23 +658,27 @@ export async function _getVacancyBySlug(slug: string, locale: Locale) {
       ),
     )
     .limit(1);
-  if (!row) return null;
+  if (!found) return null;
+  const { row, applyFormSlug } = found;
 
   const en = locale === 'en';
   return {
     ...row,
+    applyFormSlug,
     title: en ? (row.titleEn?.trim() || row.titleAr) : row.titleAr,
     location: en ? (row.locationEn?.trim() || row.locationAr) : row.locationAr,
     description: en ? (row.descriptionEn ?? row.descriptionAr) : row.descriptionAr,
     requirements: en ? (row.requirementsEn ?? row.requirementsAr) : row.requirementsAr,
     isTranslated: hasLocale(row, locale),
     /** Computed here so no component has to reason about dates. */
-    isClosed: row.deadline < new Date().toISOString().slice(0, 10),
+    // Compared with today *in Gaza*: the UTC date is still yesterday there for
+    // the first hours of every day.
+    isClosed: row.deadline < siteToday(),
   };
 }
 
 export const getVacancyBySlug = cached(_getVacancyBySlug, ['vacancies:detail'], {
-  tags: (slug) => detailTags('vacancy', slug),
+  tags: (slug) => [...detailTags('vacancy', slug), TAGS.applicationFormVacancyLink],
 });
 
 // ── Publications ─────────────────────────────────────────────────────────
@@ -850,6 +851,10 @@ export async function _listPageKeys() {
     .select({
       key: pages.key,
       translationStatus: pages.translationStatus,
+      noIndex: pages.noIndex,
+      // A legal page whose body is still empty renders a placeholder; the
+      // sitemap must not advertise it.
+      hasBody: sql<boolean>`coalesce(jsonb_array_length(${pages.bodyAr}->'content'), 0) > 0`,
       updatedAt: pages.updatedAt,
       publishedAt: pages.publishedAt,
     })
@@ -907,3 +912,102 @@ export async function _listFeedPosts(limit = 20) {
 }
 
 export const listFeedPosts = cached(_listFeedPosts, ['posts:feed'], { tags: [TAGS.postList] });
+
+// ── Cross-locale slugs ───────────────────────────────────────────────────
+
+const SLUGGED = {
+  program: programs,
+  post: posts,
+  story: stories,
+  vacancy: vacancies,
+} as const;
+
+export type CrossLocaleEntity = keyof typeof SLUGGED;
+
+/**
+ * The slug this record has in `locale`, found by the slug it has in the
+ * **other** locale.
+ *
+ * The language switcher swaps only the locale prefix — it cannot know the
+ * other slug from the client — so `/en/news/<arabic-slug>` is what it links to.
+ * A detail route that misses on its own slug column asks this, and
+ * permanently redirects to the right URL instead of rendering a 404. Returns
+ * `null` when nothing matches, so a genuinely unknown slug still 404s.
+ */
+export async function _findSlugForLocale(entity: CrossLocaleEntity, slug: string, locale: Locale) {
+  const table = SLUGGED[entity];
+  const [row] = await db
+    .select({ slug: slugCol(table.slugAr, table.slugEn, locale) })
+    .from(table)
+    .where(
+      and(
+        eq(table.status, 'published'),
+        eq(locale === 'ar' ? table.slugEn : table.slugAr, slug),
+      ),
+    )
+    .limit(1);
+  return row?.slug ?? null;
+}
+
+export const findSlugForLocale = cached(_findSlugForLocale, ['slug:cross-locale'], {
+  tags: (entity) => [
+    {
+      program: TAGS.programList,
+      post: TAGS.postList,
+      story: TAGS.storyList,
+      vacancy: TAGS.vacancyList,
+    }[entity],
+  ],
+});
+
+// ── Careers portal: what the public apply page and the sitemap need ───────
+
+/**
+ * The facts about a portal form that `getApplicationForm` does not carry:
+ * whether it has an English title (so the English URL is a translation, not
+ * the Arabic form under an `hreflang="en"` badge), and the vacancy it belongs
+ * to — its slug and title in this locale — for the breadcrumb and the
+ * "vacancy details" link.
+ */
+export async function _getApplyFormContext(slug: string, locale: Locale) {
+  const [row] = await db
+    .select({
+      hasEnglish: sql<boolean>`coalesce(trim(${applicationForms.titleEn}), '') <> ''`,
+      updatedAt: applicationForms.updatedAt,
+      vacancySlug: slugCol(vacancies.slugAr, vacancies.slugEn, locale),
+      vacancyTitle: pickCol(vacancies.titleAr, vacancies.titleEn, locale),
+    })
+    .from(applicationForms)
+    .leftJoin(
+      vacancies,
+      and(eq(vacancies.id, applicationForms.vacancyId), eq(vacancies.status, 'published')),
+    )
+    .where(and(eq(applicationForms.slug, slug), eq(applicationForms.status, 'published')))
+    .limit(1);
+  if (!row) return null;
+  return {
+    hasEnglish: row.hasEnglish,
+    updatedAt: row.updatedAt,
+    vacancy: row.vacancySlug ? { slug: row.vacancySlug, title: row.vacancyTitle } : null,
+  };
+}
+
+export const getApplyFormContext = cached(_getApplyFormContext, ['application-form:context'], {
+  tags: (slug) => [TAGS.applicationForm(slug), TAGS.applicationFormList, TAGS.vacancyList],
+});
+
+/** Every published form's English availability and last edit, for the sitemap. */
+export async function _listApplyFormLocales() {
+  return db
+    .select({
+      slug: applicationForms.slug,
+      hasEnglish: sql<boolean>`coalesce(trim(${applicationForms.titleEn}), '') <> ''`,
+      updatedAt: applicationForms.updatedAt,
+    })
+    .from(applicationForms)
+    .where(eq(applicationForms.status, 'published'));
+}
+
+export const listApplyFormLocales = cached(_listApplyFormLocales, ['application-form:locales'], {
+  tags: [TAGS.applicationFormList],
+});

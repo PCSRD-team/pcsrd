@@ -9,6 +9,7 @@ import {
   stories,
   storyMedia,
   vacancies,
+  type Vacancy,
 } from '@/db/schema';
 import type { RichText } from '@/db/schema/_shared';
 import type {
@@ -22,6 +23,7 @@ import type {
 } from '@/db/schema/enums';
 import type { Tx } from '@/db';
 import { assertStoryConsent } from '../_shared/publish';
+import { syncFormWithVacancy } from '../applications/application-form.service';
 import {
   type ContentInputBase,
   createContentService,
@@ -358,6 +360,12 @@ export const vacancyService = createContentService<VacancyInput>({
     ...seoColumns(input),
   }),
   mediaIds: (input) => [input.ogMediaId],
+  // The vacancy's portal form is created, re-dated and taken down with it, in
+  // the same transaction — see `syncFormWithVacancy`.
+  afterWrite: (tx, _id, _input, { actor, before, after }) =>
+    syncFormWithVacancy(tx, actor, before as Vacancy | null, after as Vacancy),
+  afterStatusChange: (tx, { actor, before, after }) =>
+    syncFormWithVacancy(tx, actor, before as Vacancy | null, after as Vacancy),
 });
 
 // ── Publications ─────────────────────────────────────────────────────────

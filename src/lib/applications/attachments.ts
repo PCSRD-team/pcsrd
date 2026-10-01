@@ -58,6 +58,7 @@ const ARCHIVE_MIME = new Set(['application/zip']);
 
 const ALLOWED: Record<AttachmentKind, ReadonlySet<string>> = {
   document: DOCUMENT_MIME,
+  scan: new Set([...DOCUMENT_MIME, ...IMAGE_MIME]),
   image: IMAGE_MIME,
   any: new Set([...DOCUMENT_MIME, ...IMAGE_MIME, ...ARCHIVE_MIME]),
 };
@@ -76,18 +77,23 @@ export async function validateAttachment(
   if (file.size === 0) return { ok: false, reason: 'empty' };
   if (file.size > MAX_UPLOAD_BYTES) return { ok: false, reason: 'too_large' };
 
-  // Only the head is needed to identify a format, and reading 4 KB instead of
-  // four megabytes keeps a rejected upload cheap. The full bytes are read once,
-  // by the caller, and only for a file that passed.
-  const head = Buffer.from(await file.slice(0, 4100).arrayBuffer());
-  const sniffed = await fileTypeFromBuffer(head);
+  // The whole file, not its head. A `.docx` is a ZIP whose type is decided by
+  // the entries inside it, and `file-type` reading only the first few KB of
+  // one routinely answers `application/zip` — which `document` refuses, so a
+  // perfectly ordinary CV was turned away. The file is at most 4 MB and is read
+  // in full for the upload anyway.
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const sniffed = await fileTypeFromBuffer(buffer);
 
   const isLegacyDoc =
     sniffed?.mime === 'application/x-cfb' && file.name.toLowerCase().endsWith('.doc');
-  const mime = isLegacyDoc ? 'application/msword' : sniffed?.mime;
+  // RTF is plain text with a fixed prefix, and `file-type` does not detect it
+  // at all; without this every `.rtf` the picker offers would be refused.
+  const isRtf = !sniffed && buffer.subarray(0, 5).toString('latin1') === '{\\rtf';
+  const mime = isLegacyDoc ? 'application/msword' : isRtf ? 'application/rtf' : sniffed?.mime;
 
   if (!mime || !ALLOWED[kind].has(mime)) return { ok: false, reason: 'bad_type' };
 
   // The stored extension follows the sniffed type, never the upload's name.
-  return { ok: true, mime, ext: isLegacyDoc ? 'doc' : (sniffed?.ext ?? 'bin') };
+  return { ok: true, mime, ext: isLegacyDoc ? 'doc' : isRtf ? 'rtf' : (sniffed?.ext ?? 'bin') };
 }

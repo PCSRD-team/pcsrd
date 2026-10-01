@@ -75,10 +75,6 @@ export const mediaAssets = pgTable(
     index('media_bucket_idx').on(t.bucket),
     index('media_consent_idx').on(t.consent).where(sql`${t.hasIdentifiableMinors}`),
     index('ix_media_created_by').on(t.createdBy),
-    // Live duplicates of `media_kind_idx` / `media_consent_idx` from the
-    // hand-written DDL the database was built from.
-    index('ix_media_kind').on(t.kind, t.createdAt.desc()),
-    index('ix_media_consent').on(t.consent).where(sql`${t.hasIdentifiableMinors}`),
   ],
 );
 

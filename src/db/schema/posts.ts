@@ -76,7 +76,7 @@ export const posts = pgTable(
       .on(t.expiresAt)
       .where(sql`${t.expiresAt} is not null`),
     // The `ix_*` / `ux_*` family is the hand-written DDL the live database was
-    // built from; the two `ux_*` duplicate the slug indexes above.
+    // built from; its exact duplicates were dropped in drizzle/0011.
     index('ix_posts_program').on(t.programId),
     index('ix_posts_project').on(t.projectId),
     index('ix_posts_public')
@@ -86,8 +86,6 @@ export const posts = pgTable(
       'gin',
       sql`to_tsvector('simple'::regconfig, ((COALESCE(${t.titleAr}, ''::text) || ' '::text) || COALESCE(${t.excerptAr}, ''::text)))`,
     ),
-    uniqueIndex('ux_posts_slug_ar').on(t.slugAr),
-    uniqueIndex('ux_posts_slug_en').on(t.slugEn),
   ],
 );
 

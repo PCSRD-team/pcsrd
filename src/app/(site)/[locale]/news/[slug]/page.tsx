@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { postCategoryLabel } from '@/components/content/cards';
 import { mediaImage, mediaSrc } from '@/components/content/media';
 import { ContentBreadcrumbs, TranslationNotice } from '@/components/content/page-chrome';
@@ -10,12 +10,14 @@ import { DateText } from '@/components/ui/bidi';
 import { Figure } from '@/components/ui/figure';
 import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { Meta, Prose } from '@/components/ui/typography';
-import { getPostBySlug, listPostSlugs } from '@/db/queries/content';
+import { findSlugForLocale, getPostBySlug, listPostSlugs } from '@/db/queries/content';
 import { prerenderData } from '@/lib/build-time';
 import { formatDate, timeOf, toDateTimeAttr } from '@/lib/format';
-import { isLocale, localePath } from '@/lib/i18n/config';
+import { DEFAULT_LOCALE, isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
+import { decodeParam } from '@/lib/route-params';
 
 export const revalidate = 3600;
 
@@ -28,9 +30,14 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/news/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
-  const [post, siteName] = await Promise.all([getPostBySlug(slug, locale), getSiteName(locale)]);
+  const [post, siteName, dict] = await Promise.all([
+    getPostBySlug(slug, locale),
+    getSiteName(locale),
+    getDictionary(locale),
+  ]);
   if (!post) return {};
 
   // SEO-013: the English SEO title is read on English pages, falling back to Arabic.
@@ -42,22 +49,44 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/news/[sl
     locale,
     path: { ar: `/news/${post.slugAr}`, en: `/news/${post.slugEn}` },
     title: seoFallback(seoTitle, post.title, siteName),
-    description: seoFallback(seoDescription, post.excerpt),
+    // The body, then the section's own lead, so a post with no excerpt — or
+    // no text at all — still ships a description rather than none.
+    description: seoFallback(
+      seoDescription,
+      post.excerpt,
+      richTextToPlainText(post.body, 160),
+      dict.news.lead,
+    ),
     siteName,
     type: 'article',
     publishedTime: post.publishedAt,
     modifiedTime: post.updatedAt,
     translationStatus: toTranslationStatus(post.translationStatus),
     noIndex: post.noIndex,
+    ownCard: true,
   });
 }
 
 export default async function PostPage({ params }: PageProps<'/[locale]/news/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
   const [dict, post] = await Promise.all([getDictionary(locale), getPostBySlug(slug, locale)]);
-  if (!post) notFound();
+  if (!post) {
+    // The language switcher keeps the slug and swaps the prefix; redirect a
+    // slug from the other locale to this locale's URL instead of a 404.
+    const localized = await findSlugForLocale('post', slug, locale);
+    if (localized) permanentRedirect(localePath(locale, `/news/${encodeURIComponent(localized)}`));
+    notFound();
+  }
+
+  // An untranslated post's canonical is the Arabic URL and its text is
+  // Arabic; the structured data must not claim an English article.
+  const canonicalPath = post.isTranslated
+    ? localePath(locale, `/news/${slug}`)
+    : localePath(DEFAULT_LOCALE, `/news/${post.slugAr}`);
+  const contentLocale = post.isTranslated ? locale : DEFAULT_LOCALE;
 
   const hero = mediaImage(post.hero?.path, post.hero?.blur, post.hero);
   const showUpdated =
@@ -68,8 +97,8 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
       <ArticleJsonLd
         title={post.title}
         description={post.excerpt}
-        url={localePath(locale, `/news/${slug}`)}
-        locale={locale}
+        url={canonicalPath}
+        locale={contentLocale}
         publishedAt={post.publishedAt}
         updatedAt={post.updatedAt}
         image={
@@ -88,6 +117,7 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
               locale={locale}
               dict={dict}
               trail={[{ label: dict.news.title, path: '/news' }, { label: post.title ?? '' }]}
+              currentPath={canonicalPath}
             />
           }
           eyebrow={postCategoryLabel(post.category, dict)}
@@ -118,8 +148,10 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
         {hero ? (
           <Figure
             image={hero}
-            alt={post.hero?.alt ?? ''}
-            decorative={!post.hero?.alt}
+            // The asset's own alt; failing that, the headline the image
+            // illustrates — never an empty alt on the article's lead image.
+            alt={post.hero?.alt || post.title || ''}
+            decorative={!(post.hero?.alt || post.title)}
             // The narrow container caps at 760px, but it only *reaches* 760px
             // once the viewport clears 760 + the 2×64px desktop gutter. Below
             // 888px the column is narrower than the old hint claimed.
@@ -143,7 +175,7 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
                       the schema, so a published image always has one. */}
                   <Figure
                     image={mediaImage(item.path, item.blur, item)}
-                    alt={item.alt ?? ''}
+                    alt={item.alt || post.title || ''}
                     ratio="portrait"
                     // Three-up inside the 760px reading column, not the full
                     // content width: ~245px a tile at the top end.

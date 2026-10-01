@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { SubmissionResult } from '@/actions/public/forms';
 import type { ActionErr } from '@/lib/errors';
@@ -13,7 +13,7 @@ import { type FieldState, type FormDict, Honeypot, resolveKey } from './fields';
 import { Turnstile } from './turnstile';
 
 /**
- * The one shell behind the six public forms.
+ * The one shell behind the five public forms and the careers portal's forms.
  *
  * **A Client Component, and the reason is `useActionState`.** It is the only
  * way React hands an action's return value back to the form — with JavaScript
@@ -26,7 +26,7 @@ import { Turnstile } from './turnstile';
  *
  * `method` and `encType` are not set on the `<form>`: React sets both
  * (`POST`, `multipart/form-data`) for any form whose action is a function and
- * warns if a caller sets them too. The job application's file therefore
+ * warns if a caller sets them too. A portal form's file fields therefore
  * travels correctly before hydration without a prop for it.
  *
  * The fields are a render prop rather than children because they need the
@@ -84,6 +84,22 @@ export function FormShell<TData extends { reference: string } = { reference: str
   intro?: ReactNode;
 }) {
   const [state, formAction] = useActionState(action, null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Where focus goes after a refusal. The submit button is disabled while the
+  // action runs, so the browser drops focus to <body> and a keyboard or
+  // screen-reader user is sent back to the top of the page. The first invalid
+  // field is where they need to be; failing that — a captcha or rate-limit
+  // refusal names no field — the submit button they just pressed. The
+  // assertive live region still announces the message either way.
+  useEffect(() => {
+    if (!state || state.ok) return;
+    const form = formRef.current;
+    const target =
+      form?.querySelector<HTMLElement>('[aria-invalid="true"]') ??
+      form?.querySelector<HTMLElement>('button[type="submit"]');
+    target?.focus();
+  }, [state]);
 
   if (state?.ok) {
     return (
@@ -98,6 +114,10 @@ export function FormShell<TData extends { reference: string } = { reference: str
   }
 
   const failure = state && !state.ok ? state : null;
+  // A refusal other than field validation means the action already verified
+  // — and so spent — the captcha token. The state object is new on every
+  // submission, so it doubles as the key that resets the widget.
+  const captchaResetKey = failure && failure.code !== 'validation' ? failure : null;
   const fieldState: FieldState = failure
     ? { errors: failure.fieldErrors, values: failure.values }
     : {};
@@ -106,7 +126,7 @@ export function FormShell<TData extends { reference: string } = { reference: str
     // `noValidate`: the server is the validator, and its messages are the
     // translated ones. The browser's own bubbles would pre-empt them in the
     // browser's language, not the page's.
-    <form action={formAction} noValidate className="grid gap-6">
+    <form ref={formRef} action={formAction} noValidate className="grid gap-6">
       {/* The locale travels with the submission so the acknowledgement email is
           written in the language the sender used, not the language of whoever
           reads the inbox. */}
@@ -130,7 +150,7 @@ export function FormShell<TData extends { reference: string } = { reference: str
 
       <FormStack>{children(fieldState)}</FormStack>
 
-      <Turnstile locale={locale} dict={dict} />
+      <Turnstile locale={locale} dict={dict} resetKey={captchaResetKey} />
 
       <FormActions>
         <SubmitButton

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { MetricCard } from '@/components/content/cards';
 import { mediaImage } from '@/components/content/media';
 import { ContentBreadcrumbs, ProjectsRail, TranslationNotice } from '@/components/content/page-chrome';
@@ -15,12 +15,20 @@ import { Figure } from '@/components/ui/figure';
 import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
 import { StatGroup } from '@/components/ui/stat';
 import { Eyebrow, Heading, Lede, Prose } from '@/components/ui/typography';
-import { getProgramBySlug, listMetrics, listProgramSlugs, listPrograms } from '@/db/queries/content';
+import {
+  findSlugForLocale,
+  getProgramBySlug,
+  listMetrics,
+  listProgramSlugs,
+  listPrograms,
+} from '@/db/queries/content';
 import { listProjects } from '@/db/queries/projects';
 import { prerenderData } from '@/lib/build-time';
-import { isLocale, localePath } from '@/lib/i18n/config';
+import { DEFAULT_LOCALE, isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
+import { decodeParam } from '@/lib/route-params';
 
 export const revalidate = 3600;
 
@@ -38,7 +46,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/programs/[slug]'>): Promise<Metadata> {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
   const [program, siteName] = await Promise.all([getProgramBySlug(slug, locale), getSiteName(locale)]);
   if (!program) return {};
@@ -52,15 +61,21 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/programs
     locale,
     path: { ar: `/programs/${program.slugAr}`, en: `/programs/${program.slugEn}` },
     title: seoFallback(seoTitle, program.title, siteName),
-    description: seoFallback(seoDescription, program.tagline),
+    description: seoFallback(
+      seoDescription,
+      program.tagline,
+      richTextToPlainText(program.introduction, 160),
+    ),
     siteName,
     translationStatus: toTranslationStatus(program.translationStatus),
     noIndex: program.noIndex,
+    ownCard: true,
   });
 }
 
 export default async function ProgramPage({ params }: PageProps<'/[locale]/programs/[slug]'>) {
-  const { locale, slug } = await params;
+  const { locale, slug: rawSlug } = await params;
+  const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
 
   // `listPrograms` needs nothing from this programme, so it belongs in the
@@ -72,7 +87,13 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
     getProgramBySlug(slug, locale),
     listPrograms(locale),
   ]);
-  if (!program) notFound();
+  if (!program) {
+    // A slug from the other locale (the language switcher keeps it) redirects
+    // to this locale's URL rather than 404ing.
+    const localized = await findSlugForLocale('program', slug, locale);
+    if (localized) permanentRedirect(localePath(locale, `/programs/${encodeURIComponent(localized)}`));
+    notFound();
+  }
 
   // These two genuinely depend on `program.key`.
   const [projects, metrics] = await Promise.all([
@@ -86,14 +107,16 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
   const otherPrograms = allPrograms.filter((other) => other.id !== program.id);
   const accent = `var(${program.accentToken})`;
   const path = `/programs/${program.slugAr}`;
+  // An untranslated programme's canonical is the Arabic URL.
+  const canonicalPath = program.isTranslated ? localePath(locale, `/programs/${slug}`) : localePath(DEFAULT_LOCALE, path);
 
   return (
     <Container className="section-gap">
       <ProgramJsonLd
         name={program.title}
         description={program.tagline}
-        url={localePath(locale, `/programs/${slug}`)}
-        locale={locale}
+        url={canonicalPath}
+        locale={program.isTranslated ? locale : DEFAULT_LOCALE}
         audience={audience}
       />
 
@@ -112,6 +135,7 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
               locale={locale}
               dict={dict}
               trail={[{ label: dict.programs.title, path: '/programs' }, { label: program.title ?? '' }]}
+              currentPath={canonicalPath}
             />
           }
           eyebrow={dict.programs.title}
@@ -133,8 +157,8 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
         />
         <Figure
           image={mediaImage(program.hero?.path, program.hero?.blur, program.hero)}
-          alt={program.hero?.alt ?? ''}
-          decorative={!program.hero?.alt}
+          alt={program.hero?.alt || program.title || ''}
+          decorative={!(program.hero?.alt || program.title)}
           sizes="(min-width: 1180px) 500px, (min-width: 768px) 46vw, 100vw"
           // The LCP element on this route: the largest thing above the fold on
           // a desktop viewport. The only `preload` on the page.
@@ -267,7 +291,7 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
                     schema, so a published image always has one. */}
                 <Figure
                   image={mediaImage(item.path, item.blur, item)}
-                  alt={item.alt ?? ''}
+                  alt={item.alt || program.title || ''}
                   ratio="portrait"
                   // Three-up across the 1180px content column: ~380px a tile.
                   sizes="(min-width: 1180px) 380px, (min-width: 640px) 30vw, 100vw"

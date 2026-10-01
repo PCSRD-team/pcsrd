@@ -2,7 +2,7 @@
 // Client Component: each editor keeps a list in state and serialises it into
 // one hidden JSON input; adding and removing rows is what needs the script.
 
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Panel } from '@/components/ui/card';
 import { Field, FieldError, FieldRow } from '@/components/ui/field';
@@ -10,6 +10,7 @@ import { Input, Textarea } from '@/components/ui/inputs';
 import { Stack } from '@/components/ui/layout';
 import { Caption, Heading } from '@/components/ui/typography';
 import { adminUi, fill } from './admin-ui-dict';
+import { useKeyedRows } from './keyed-rows';
 
 export type TitledBlock = {
   title_ar: string;
@@ -64,7 +65,7 @@ export function StringListEditor({
   error?: string;
   dir?: 'ltr' | 'rtl';
 }) {
-  const [items, setItems] = useState(initialItems);
+  const { rows, items, add, remove, update } = useKeyedRows(initialItems);
   const headingId = useId();
   const t = adminUi.organization.lists;
   const payload = useMemo(
@@ -76,22 +77,21 @@ export function StringListEditor({
     <Panel as="section" padding="sm" labelledBy={headingId}>
       <Stack gap={3}>
         <input type="hidden" name={name} value={payload} />
-        <EditorHeader id={headingId} label={label} onAdd={() => setItems((rows) => [...rows, ''])} />
+        <EditorHeader id={headingId} label={label} onAdd={() => add('')} />
         {error ? <FieldError id={`${name}-error`}>{error}</FieldError> : null}
         {items.length === 0 ? <Caption>{t.empty}</Caption> : null}
-        {items.map((item, index) => (
-          <div key={index} className="flex items-end gap-3">
+        {rows.map(({ uid, value: item }, index) => (
+          <div key={uid} className="flex items-end gap-3">
             <Field name={`${name}-${index}`} label={fill(t.item, { n: index + 1 })} className="flex-1">
               <Input
                 id={`${name}-${index}`}
                 value={item}
                 placeholder={placeholder}
                 dir={dir}
-                onChange={(event) =>
-                  setItems((rows) =>
-                    rows.map((row, rowIndex) => (rowIndex === index ? event.currentTarget.value : row)),
-                  )
-                }
+                onChange={(event) => {
+                  const next = event.currentTarget.value;
+                  update(uid, () => next);
+                }}
                 className={dir === 'ltr' ? 'text-start' : undefined}
               />
             </Field>
@@ -99,7 +99,7 @@ export function StringListEditor({
               type="button"
               tone="quiet"
               size="sm"
-              onClick={() => setItems((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}
+              onClick={() => remove(uid)}
             >
               {t.remove}
             </Button>
@@ -121,7 +121,7 @@ export function TitledBlocksEditor({
   initialItems: TitledBlock[];
   error?: string;
 }) {
-  const [items, setItems] = useState(initialItems);
+  const { rows, items, add, remove, update: updateRow } = useKeyedRows(initialItems);
   const headingId = useId();
   const t = adminUi.organization.lists;
   const payload = useMemo(
@@ -138,8 +138,8 @@ export function TitledBlocksEditor({
       ),
     [items],
   );
-  const update = (index: number, patch: Partial<TitledBlock>) =>
-    setItems((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
+  const update = (uid: string, patch: Partial<TitledBlock>) =>
+    updateRow(uid, (row) => ({ ...row, ...patch }));
 
   return (
     <Panel as="section" padding="sm" labelledBy={headingId}>
@@ -148,14 +148,12 @@ export function TitledBlocksEditor({
         <EditorHeader
           id={headingId}
           label={label}
-          onAdd={() =>
-            setItems((rows) => [...rows, { title_ar: '', title_en: '', body_ar: '', body_en: '' }])
-          }
+          onAdd={() => add({ title_ar: '', title_en: '', body_ar: '', body_en: '' })}
         />
         {error ? <FieldError id={`${name}-error`}>{error}</FieldError> : null}
         {items.length === 0 ? <Caption>{t.empty}</Caption> : null}
-        {items.map((item, index) => (
-          <Panel key={index} tone="alt" padding="sm">
+        {rows.map(({ uid, value: item }, index) => (
+          <Panel key={uid} tone="alt" padding="sm">
             <Stack gap={3}>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-caption font-semibold text-ink">{fill(t.item, { n: index + 1 })}</p>
@@ -163,7 +161,7 @@ export function TitledBlocksEditor({
                   type="button"
                   tone="quiet"
                   size="sm"
-                  onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))}
+                  onClick={() => remove(uid)}
                 >
                   {t.remove}
                 </Button>
@@ -173,14 +171,14 @@ export function TitledBlocksEditor({
                   <Input
                     id={`${name}-title-ar-${index}`}
                     value={item.title_ar}
-                    onChange={(e) => update(index, { title_ar: e.currentTarget.value })}
+                    onChange={(e) => update(uid, { title_ar: e.currentTarget.value })}
                   />
                 </Field>
                 <Field name={`${name}-title-en-${index}`} label={t.titleEn}>
                   <Input
                     id={`${name}-title-en-${index}`}
                     value={item.title_en ?? ''}
-                    onChange={(e) => update(index, { title_en: e.currentTarget.value })}
+                    onChange={(e) => update(uid, { title_en: e.currentTarget.value })}
                     dir="ltr"
                     className="text-start"
                   />
@@ -190,7 +188,7 @@ export function TitledBlocksEditor({
                     id={`${name}-body-ar-${index}`}
                     rows={3}
                     value={item.body_ar ?? ''}
-                    onChange={(e) => update(index, { body_ar: e.currentTarget.value })}
+                    onChange={(e) => update(uid, { body_ar: e.currentTarget.value })}
                     className="min-h-24"
                   />
                 </Field>
@@ -199,7 +197,7 @@ export function TitledBlocksEditor({
                     id={`${name}-body-en-${index}`}
                     rows={3}
                     value={item.body_en ?? ''}
-                    onChange={(e) => update(index, { body_en: e.currentTarget.value })}
+                    onChange={(e) => update(uid, { body_en: e.currentTarget.value })}
                     dir="ltr"
                     className="min-h-24 text-start"
                   />
@@ -224,7 +222,7 @@ export function BilingualLinesEditor({
   initialItems: BilingualLine[];
   error?: string;
 }) {
-  const [items, setItems] = useState(initialItems);
+  const { rows, items, add, remove, update: updateRow } = useKeyedRows(initialItems);
   const headingId = useId();
   const t = adminUi.organization.lists;
   const payload = useMemo(
@@ -236,8 +234,8 @@ export function BilingualLinesEditor({
       ),
     [items],
   );
-  const update = (index: number, patch: Partial<BilingualLine>) =>
-    setItems((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
+  const update = (uid: string, patch: Partial<BilingualLine>) =>
+    updateRow(uid, (row) => ({ ...row, ...patch }));
 
   return (
     <Panel as="section" padding="sm" labelledBy={headingId}>
@@ -246,19 +244,19 @@ export function BilingualLinesEditor({
         <EditorHeader
           id={headingId}
           label={label}
-          onAdd={() => setItems((rows) => [...rows, { text_ar: '', text_en: '' }])}
+          onAdd={() => add({ text_ar: '', text_en: '' })}
         />
         {error ? <FieldError id={`${name}-error`}>{error}</FieldError> : null}
         {items.length === 0 ? <Caption>{t.empty}</Caption> : null}
-        {items.map((item, index) => (
-          <Panel key={index} tone="alt" padding="sm">
+        {rows.map(({ uid, value: item }, index) => (
+          <Panel key={uid} tone="alt" padding="sm">
             <div className="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]">
               <Field name={`${name}-ar-${index}`} label={t.textAr} required>
                 <Textarea
                   id={`${name}-ar-${index}`}
                   rows={2}
                   value={item.text_ar}
-                  onChange={(e) => update(index, { text_ar: e.currentTarget.value })}
+                  onChange={(e) => update(uid, { text_ar: e.currentTarget.value })}
                   className="min-h-20"
                 />
               </Field>
@@ -267,7 +265,7 @@ export function BilingualLinesEditor({
                   id={`${name}-en-${index}`}
                   rows={2}
                   value={item.text_en ?? ''}
-                  onChange={(e) => update(index, { text_en: e.currentTarget.value })}
+                  onChange={(e) => update(uid, { text_en: e.currentTarget.value })}
                   dir="ltr"
                   className="min-h-20 text-start"
                 />
@@ -276,7 +274,7 @@ export function BilingualLinesEditor({
                 type="button"
                 tone="quiet"
                 size="sm"
-                onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))}
+                onClick={() => remove(uid)}
               >
                 {t.remove}
               </Button>

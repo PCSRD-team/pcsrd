@@ -17,7 +17,7 @@ import {
   GROUP_LABEL_AR,
 } from '@/lib/applications/field-catalog';
 import { adminDict } from './admin-dict';
-import { adminUi, fill } from './admin-ui-dict';
+import { adminUi, count } from './admin-ui-dict';
 
 /**
  * The field builder.
@@ -199,7 +199,7 @@ function FieldCard({
           ) : null}
           {field.options.length > 0 ? (
             <p className="mbs-2 text-caption text-ink-55">
-              {fill(t.fieldCount, { n: field.options.length })} —{' '}
+              {count(t.optionCount, field.options.length)} —{' '}
               {field.options
                 .slice(0, 6)
                 .map((option) => option.labelAr)

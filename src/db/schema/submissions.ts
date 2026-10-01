@@ -99,11 +99,7 @@ export const formSubmissions = pgTable(
     index('submissions_state_idx').on(t.state).where(sql`${t.state} = 'new'`),
     index('submissions_purge_idx').on(t.purgeAfter),
     index('submissions_sensitive_idx').on(t.isSensitive, t.createdAt.desc()),
-    // The `ix_*` family is the hand-written DDL the live database was built
-    // from; `ix_submissions_type` / `ix_submissions_purge` duplicate the above.
-    index('ix_submissions_type').on(t.type, t.createdAt.desc()),
     index('ix_submissions_state').on(t.state, t.createdAt.desc()),
-    index('ix_submissions_purge').on(t.purgeAfter),
     index('ix_submissions_handler').on(t.handledBy),
   ],
 );

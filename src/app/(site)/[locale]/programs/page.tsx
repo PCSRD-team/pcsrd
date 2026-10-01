@@ -63,7 +63,7 @@ export default async function ProgramsPage({ params }: PageProps<'/[locale]/prog
       <PageHeader
         title={dict.programs.title}
         lede={dict.programs.lead}
-        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.programs.title }]} />}
+        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.programs.title }]} currentPath="/programs" />}
       />
 
       {programs.length === 0 ? (

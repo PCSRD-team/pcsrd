@@ -68,9 +68,8 @@ export const impactMetrics = pgTable(
     index('metrics_program_idx').on(t.programId).where(sql`${t.isPublic}`),
     index('metrics_project_idx').on(t.projectId),
     // The `ix_*` family is the hand-written DDL the live database was built
-    // from; `ix_metrics_project` duplicates `metrics_project_idx` exactly.
+    // from; its exact duplicates were dropped in drizzle/0011.
     index('ix_metrics_program').on(t.programId),
-    index('ix_metrics_project').on(t.projectId),
     index('ix_metrics_public')
       .on(t.displayOrder, t.periodEnd.desc())
       .where(sql`${t.isPublic}`),

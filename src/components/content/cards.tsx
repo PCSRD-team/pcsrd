@@ -66,10 +66,17 @@ export function ProjectCard({
   locale,
   dict,
   sizes = CARD_SIZES,
+  headingLevel = 3,
 }: {
   project: ProjectCardRecord;
   locale: Locale;
   dict: Dictionary;
+  /**
+   * The title's level in the page outline. `3` under a section `h2` (the
+   * home page, a detail page's related list); `2` on a list page where the
+   * cards sit directly under the page `h1`. The visual size does not change.
+   */
+  headingLevel?: 2 | 3;
   /**
    * The default assumes the three-up grid this card appears in most often
    * (~335px at the 1180px content width). A two-up grid gives it ~515px, so
@@ -94,7 +101,7 @@ export function ProjectCard({
       </CardMedia>
       <CardBody>
         {project.programTitle ? <Eyebrow>{project.programTitle}</Eyebrow> : null}
-        <Heading level={3} size="h3" className="mbs-2">
+        <Heading level={headingLevel} size="h3" className="mbs-2">
           <Link href={href} className={titleLink}>
             {project.title}
           </Link>
@@ -134,6 +141,7 @@ export function PostCard({
   post,
   locale,
   dict,
+  headingLevel = 3,
 }: {
   post: {
     id: string;
@@ -148,6 +156,12 @@ export function PostCard({
   };
   locale: Locale;
   dict: Dictionary;
+  /**
+   * The title's level in the page outline. `3` under a section `h2` (the
+   * home page, a detail page's related list); `2` on a list page where the
+   * cards sit directly under the page `h1`. The visual size does not change.
+   */
+  headingLevel?: 2 | 3;
 }) {
   const href = localePath(locale, `/news/${post.slug}`);
 
@@ -177,7 +191,7 @@ export function PostCard({
             </Meta>
           ) : null}
         </div>
-        <Heading level={3} size="h3" className="mbs-2">
+        <Heading level={headingLevel} size="h3" className="mbs-2">
           <Link href={href} className={titleLink}>
             {post.title}
           </Link>
@@ -277,6 +291,7 @@ export function StoryCard({
   story,
   locale,
   dict,
+  headingLevel = 3,
 }: {
   story: {
     id: string;
@@ -292,6 +307,12 @@ export function StoryCard({
   };
   locale: Locale;
   dict: Dictionary;
+  /**
+   * The title's level in the page outline. `3` under a section `h2` (the
+   * home page, a detail page's related list); `2` on a list page where the
+   * cards sit directly under the page `h1`. The visual size does not change.
+   */
+  headingLevel?: 2 | 3;
 }) {
   const href = localePath(locale, `/impact/stories/${story.slug}`);
 
@@ -308,7 +329,7 @@ export function StoryCard({
       </CardMedia>
       <CardBody>
         <Eyebrow>{dict.impact.storiesTitle}</Eyebrow>
-        <Heading level={3} size="h3" className="mbs-2">
+        <Heading level={headingLevel} size="h3" className="mbs-2">
           <Link href={href} className={titleLink}>
             {story.title}
           </Link>

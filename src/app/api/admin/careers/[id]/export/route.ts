@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { adminUi, fill } from '@/components/admin/admin-ui-dict';
 import { db } from '@/db';
 import type { ApplicationStatus } from '@/db/schema/enums';
 import { applicationStatus } from '@/db/schema/enums';
@@ -35,7 +37,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireActor();
-    const { id } = await context.params;
+    // A malformed id is a missing page, not a Postgres `invalid input syntax
+    // for type uuid` surfacing as a 500.
+    const parsedId = z.uuid().safeParse((await context.params).id);
+    if (!parsedId.success) return new Response('Not found', { status: 404 });
+    const id = parsedId.data;
     const url = new URL(_request.url);
 
     const rawStatus = url.searchParams.get('status') ?? '';
@@ -52,28 +58,42 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const table = await buildExportTable(db, actor, id, {
       includeSensitive,
       filters: {
+        search: url.searchParams.get('q')?.trim().slice(0, 120) || undefined,
         status,
         waitlistedOnly: url.searchParams.get('waitlisted') === '1',
       },
     });
 
+    const t = adminUi.careers;
+
     // The five columns the portal owns come first, before the form's own
     // questions: a reviewer opening the file wants the reference and the
     // status without scrolling past forty answers to find them.
     const meta = [
-      { key: '__reference', label: 'الرقم المرجعي' },
-      { key: '__status', label: 'الحالة' },
-      { key: '__waitlisted', label: 'قائمة الانتظار' },
-      { key: '__rating', label: 'التقييم' },
-      { key: '__createdAt', label: 'تاريخ التقديم' },
-      { key: '__attachments', label: 'المرفقات' },
+      { key: '__reference', label: t.reference },
+      { key: '__status', label: adminUi.list.status },
+      { key: '__waitlisted', label: t.waitlisted },
+      { key: '__rating', label: t.rating },
+      { key: '__createdAt', label: t.submittedAt },
+      { key: '__attachments', label: t.attachments },
     ];
 
     const columns = [...meta, ...table.columns];
 
+    // The status as the reviewer reads it on screen, not the enum value.
     const rows: XlsxCellValue[][] = table.rows.map((row) =>
-      columns.map(({ key }) => toCell(row[key])),
+      columns.map(({ key }) =>
+        key === '__status'
+          ? t.status[row[key] as ApplicationStatus]
+          : toCell(row[key], { yes: t.yes, no: t.no }),
+      ),
     );
+
+    // A header only a script reads is no warning at all. When the cap was hit,
+    // the file says so in its own last row, where the reader will see it.
+    if (table.truncated) {
+      rows.push([fill(t.exportTruncated, { n: EXPORT_ROW_LIMIT })]);
+    }
 
     const workbook = buildXlsx([
       {
@@ -91,7 +111,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     ]);
 
     const asciiName = `applicants-${form.slug.replace(/[^\w.-]/g, '_')}.xlsx`;
-    const utf8Name = encodeURIComponent(`متقدمو-${form.titleAr}.xlsx`);
+    const utf8Name = encodeURIComponent(`${t.applicants}-${form.titleAr}.xlsx`);
 
     return new Response(new Uint8Array(workbook), {
       headers: {
@@ -104,7 +124,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
         // Says plainly whether the file is the whole set. A truncated export
         // that looks complete is how a shortlist quietly loses its last
         // hundred applicants.
-        'x-export-complete': String(table.rows.length < EXPORT_ROW_LIMIT),
+        'x-export-complete': String(!table.truncated),
       },
     });
   } catch (error) {
@@ -122,10 +142,10 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
  * Attachments become a count — a signed URL expires in sixty seconds and would
  * be dead before anyone opened the file.
  */
-function toCell(value: unknown): XlsxCellValue {
+function toCell(value: unknown, words: { yes: string; no: string }): XlsxCellValue {
   if (value === null || value === undefined) return null;
   if (value instanceof Date) return value;
-  if (typeof value === 'boolean') return value ? 'نعم' : 'لا';
+  if (typeof value === 'boolean') return value ? words.yes : words.no;
   if (typeof value === 'number') return value;
   if (Array.isArray(value)) {
     if (value.length === 0) return null;

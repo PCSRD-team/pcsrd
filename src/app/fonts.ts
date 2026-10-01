@@ -23,7 +23,10 @@ import { IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google';
 
 export const plexArabic = IBM_Plex_Sans_Arabic({
   subsets: ['arabic', 'latin'],
-  weight: ['400', '500', '600', '700'],
+  // No 700: nothing sets it (the heaviest weight in the design is semibold,
+  // and globals.css maps <strong>/<b>/<th> to 600), and each weight is a
+  // separate download per subset.
+  weight: ['400', '500', '600'],
   variable: '--font-plex-arabic',
   display: 'swap',
 });
@@ -33,6 +36,10 @@ export const plexMono = IBM_Plex_Mono({
   weight: ['400', '500', '600'],
   variable: '--font-plex-mono',
   display: 'swap',
+  // Not preloaded: mono is eyebrows, codes and dates — never the first text
+  // a reader needs — and a preload competes with the Arabic text face for the
+  // first round trips on a slow connection. `swap` covers the gap.
+  preload: false,
 });
 
 /** The class pair every root layout puts on `<body>`. */

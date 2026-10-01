@@ -18,8 +18,12 @@ import { site_coreAr, site_coreEn } from '@/lib/i18n/dictionaries/partials/site-
  * partial are imported directly instead — still a dictionary lookup, not a
  * literal (RULE 5) — and both languages are shown, each with its own `lang`
  * and `dir`, which is the honest answer when the locale is unknown.
+ *
+ * `retry`, not `reset` (stable since Next 16.3): `reset` only re-renders the
+ * children from the payload already on the client, so a failed server fetch
+ * failed again identically; `retry` re-fetches the segment first.
  */
-export default function SiteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function SiteError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   const ar = site_coreAr.boundary;
   const en = site_coreEn.boundary;
 
@@ -33,7 +37,7 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
             reference={error.digest ?? null}
             referenceLabel={ar.referenceLabel}
             action={
-              <Button type="button" onClick={reset}>
+              <Button type="button" onClick={() => retry()}>
                 {ar.retry}
               </Button>
             }
@@ -46,7 +50,7 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
             reference={error.digest ?? null}
             referenceLabel={en.referenceLabel}
             action={
-              <Button type="button" onClick={reset} tone="secondary">
+              <Button type="button" onClick={() => retry()} tone="secondary">
                 {en.retry}
               </Button>
             }

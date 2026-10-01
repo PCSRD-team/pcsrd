@@ -39,10 +39,6 @@ export const people = pgTable(
     index('people_public_idx')
       .on(t.category, t.displayOrder)
       .where(sql`${t.isPublic}`),
-    // Live duplicate of `people_public_idx` from the hand-written DDL.
-    index('ix_people_public')
-      .on(t.category, t.displayOrder)
-      .where(sql`${t.isPublic}`),
   ],
 );
 

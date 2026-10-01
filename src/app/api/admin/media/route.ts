@@ -13,6 +13,20 @@ import { processImageUpload, storagePath, validateCvUpload } from '@/lib/securit
 import { registerMedia } from '@/services/media/media.service';
 
 export const dynamic = 'force-dynamic';
+
+async function registerMediaOrRemove<T>(
+  bucket: string,
+  path: string,
+  register: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await register();
+  } catch (error) {
+    const { error: removeError } = await createSupabaseAdminClient().storage.from(bucket).remove([path]);
+    if (removeError) console.error('[media] orphaned upload could not be removed', { bucket, path });
+    throw error;
+  }
+}
 /** sharp can exceed the default 10 s on a large photograph. */
 export const maxDuration = 30;
 
@@ -101,6 +115,33 @@ function pickerItem(item: MediaAsset) {
 }
 
 /**
+ * CSRF check for the upload.
+ *
+ * Server Actions get an Origin-vs-Host comparison from Next for free; a route
+ * handler gets nothing, and this one accepts an ordinary `multipart/form-data`
+ * POST — the one request shape a hostile page can send cross-site without a
+ * preflight. The `SameSite=Lax` session cookie already stops the cookie riding
+ * along on such a POST; this is the second wall, not the first.
+ *
+ * `Sec-Fetch-Site` is authoritative when present (every current browser sends
+ * it, and page script cannot set it). Otherwise `Origin` must match this
+ * request's own origin or the configured site's. A request carrying neither
+ * is not from a browser, so it is not a CSRF vector — it still needs a session.
+ */
+function isSameOrigin(request: Request): boolean {
+  const site = request.headers.get('sec-fetch-site');
+  if (site) return site === 'same-origin';
+
+  const origin = request.headers.get('origin');
+  if (!origin) return true;
+  const allowed = new Set([new URL(request.url).origin]);
+  if (URL.canParse(publicEnv.NEXT_PUBLIC_SITE_URL)) {
+    allowed.add(new URL(publicEnv.NEXT_PUBLIC_SITE_URL).origin);
+  }
+  return allowed.has(origin);
+}
+
+/**
  * Multipart upload.
  *
  * A route handler rather than a Server Action because it streams a file and
@@ -122,6 +163,10 @@ function pickerItem(item: MediaAsset) {
  * `"[object File]"`, written straight into a text column.
  */
 export async function POST(request: Request) {
+  // Before the session is even read: a cross-site POST learns nothing.
+  if (!isSameOrigin(request)) {
+    return Response.json(err('forbidden', 'errors.forbidden'), { status: 403 });
+  }
   try {
     const actor = await requireActor();
     const form = await request.formData();
@@ -173,7 +218,10 @@ export async function POST(request: Request) {
       return respond(request, returnTo, err('internal', 'errors.upload.failed'), 500);
     }
 
-    const record = await registerMedia(db, actor, {
+    // The object is already in the bucket. If the row is refused — a consent
+    // rule, a constraint, the pooler — nothing would ever point at it again,
+    // so it is removed before the error goes on to the catch below.
+    const record = await registerMediaOrRemove(bucket, path, () => registerMedia(db, actor, {
       kind: isDocument ? 'document' : 'image',
       bucket,
       path,
@@ -191,7 +239,7 @@ export async function POST(request: Request) {
       consentReference: metadata.data.consentReference,
       hasIdentifiableMinors: metadata.data.hasIdentifiableMinors,
       exifStripped: 'exifStripped' in processed ? processed.exifStripped : false,
-    });
+    }));
 
     return respond(request, returnTo, ok(record, 'admin.saved'), 201);
   } catch (error) {

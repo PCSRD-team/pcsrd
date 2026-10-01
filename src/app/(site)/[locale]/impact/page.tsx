@@ -109,7 +109,7 @@ export default async function ImpactPage({ params }: PageProps<'/[locale]/impact
           className="mbe-0"
           title={dict.impact.title}
           lede={dict.impact.lead}
-          breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.impact.title }]} />}
+          breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.impact.title }]} currentPath="/impact" />}
         />
         <MethodPanel dict={dict} />
       </div>

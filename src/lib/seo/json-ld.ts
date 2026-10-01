@@ -2,6 +2,7 @@ import type { RichText, RichTextNode } from '@/db/schema/_shared';
 import { publicEnv } from '@/lib/env.public';
 import { storageUrl } from '@/lib/format';
 import { LOCALES, type Locale } from '@/lib/i18n/config';
+import { endOfSiteDay } from '@/lib/time-zone';
 
 /**
  * Structured-data builders — pure functions returning plain objects.
@@ -331,7 +332,6 @@ export function programServiceJsonLd(input: {
     name: input.name ?? undefined,
     description: input.description ?? undefined,
     url: absoluteUrl(input.url),
-    inLanguage: input.locale,
     provider: { '@id': ORGANIZATION_ID },
     audience: input.audience?.length
       ? input.audience.map((name) => ({ '@type': 'Audience', audienceType: name }))
@@ -358,7 +358,6 @@ export function projectJsonLd(input: {
     name: input.name ?? undefined,
     description: input.description ?? undefined,
     url: absoluteUrl(input.url),
-    inLanguage: input.locale,
     foundingDate: input.startDate ?? undefined,
     dissolutionDate: input.endDate ?? undefined,
     areaServed: input.areaServed?.length ? input.areaServed : undefined,
@@ -386,7 +385,7 @@ export type JobPostingInput = {
   employmentType?: string | null;
   location?: string | null;
   /** From `organization_settings`, so the posting is attributed by name as well as `@id`. */
-  hiringOrganization: { name: string | null; logo?: string | null };
+  hiringOrganization: { name: string | null; logo?: string | null; address?: string | null };
   /** `true` when the vacancy is a `volunteer` type. */
   volunteer?: boolean;
 };
@@ -408,9 +407,10 @@ export function jobPostingJsonLd(input: JobPostingInput): JsonLdObject {
     title: input.title ?? undefined,
     description,
     url: absoluteUrl(input.url),
-    inLanguage: input.locale,
     datePosted: input.postedAt,
-    validThrough: input.deadline,
+    // The deadline is a Palestine date: open until the last second of that
+    // day in Gaza, not midnight UTC at its start.
+    validThrough: /^\d{4}-\d{2}-\d{2}$/.test(input.deadline) ? endOfSiteDay(input.deadline) : input.deadline,
     employmentType: input.employmentType ?? (input.volunteer ? 'VOLUNTEER' : undefined),
     hiringOrganization: compact({
       '@type': 'NGO',
@@ -418,8 +418,20 @@ export function jobPostingJsonLd(input: JobPostingInput): JsonLdObject {
       name: input.hiringOrganization.name ?? undefined,
       logo: input.hiringOrganization.logo ?? undefined,
     }),
-    jobLocation: input.location
-      ? { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: input.location } }
-      : undefined,
+    // Always emitted when anything is known about the place: the vacancy's
+    // own location, and the organisation's published address behind it.
+    // `addressCountry` is not set because `organization_settings` has no
+    // country column, and a country typed here would be an invented fact.
+    jobLocation:
+      input.location || input.hiringOrganization.address
+        ? {
+            '@type': 'Place',
+            address: compact({
+              '@type': 'PostalAddress',
+              addressLocality: input.location ?? undefined,
+              streetAddress: input.hiringOrganization.address ?? undefined,
+            }),
+          }
+        : undefined,
   });
 }

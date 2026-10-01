@@ -57,3 +57,8 @@ next-env.d.ts
 # agent tooling
 /.agents/
 /skills-lock.json
+
+# Written by `next dev`; not part of the site.
+AGENTS.md
+CLAUDE.md
+.playwright-mcp/

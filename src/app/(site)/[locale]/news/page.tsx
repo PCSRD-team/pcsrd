@@ -95,7 +95,14 @@ export default async function NewsPage({ params, searchParams }: PageProps<'/[lo
       <PageHeader
         title={dict.news.title}
         lede={dict.news.lead}
-        breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.news.title }]} />}
+        breadcrumbs={
+          <ContentBreadcrumbs
+            locale={locale}
+            dict={dict}
+            trail={[{ label: dict.news.title }]}
+            currentPath={listHref(locale, category, result.page)}
+          />
+        }
       />
 
       <Tabs items={tabs} label={dict.filters.newsCategories} className="mbe-8" />
@@ -114,7 +121,12 @@ export default async function NewsPage({ params, searchParams }: PageProps<'/[lo
         />
       ) : (
         <>
-          <ul className="grid gap-4">
+          {/* The cards title themselves at h3; without a level-2 heading the
+              outline jumps from the page's h1 straight to them. */}
+          <h2 id="news-list" className="sr-only">
+            {dict.news.listHeading}
+          </h2>
+          <ul className="grid gap-4" aria-labelledby="news-list">
             {result.items.map((post) => (
               <li key={post.id} className="flex">
                 <PostCard post={post} locale={locale} dict={dict} />

@@ -2,16 +2,16 @@
 
 Server Components unless stated. Radius 0, no shadow, three rule weights, gold as a
 marking colour only, logical properties only, no copy of its own. Import from
-`@/components/ui` (barrel) or the file; `primitives.tsx` and `states.tsx` are
-compatibility re-exports and define nothing.
+`@/components/ui` (barrel) or the file. The loading, empty and error states live in
+`feedback.tsx`.
 
 Every component takes `className` and applies it **last**, so a call site can override a
 utility (`cn()` in `src/lib/utils.ts` is configured with the design tokens — see the
 comment there for why that mattered).
 
 `better-tailwindcss/no-restricted-classes` in `eslint.config.mjs` reports `rounded-*`,
-`shadow-*`, `drop-shadow-*`, `blur-*`, `bg-gold-600/500` and `text-gold-600` at **warn**
-until the call sites are migrated, then it becomes an error.
+`shadow-*`, `drop-shadow-*`, `blur-*`, `bg-gold-600/500` and `text-gold-600` as an
+**error**.
 
 ---
 

@@ -29,6 +29,14 @@ export const CAPABILITIES = [
    * service can assert it rather than compare a role string.
    */
   'redirects.manage',
+  /**
+   * The careers portal's sensitive answers — a national ID, a date of birth, a
+   * scan of an ID card — on screen, in an export, or as a download. Not a row
+   * in 02-API §7, which predates the portal. Admin only: a content manager
+   * runs the pipeline and reads every other answer, and shortlisting does not
+   * need an ID number. Every use is audited as `view_sensitive`.
+   */
+  'applications.sensitive',
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];

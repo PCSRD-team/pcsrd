@@ -80,10 +80,19 @@ export const en: Dictionary = {
     targetGroups: 'Target groups',
     projectsInProgram: 'Projects in this programme',
     projectCount: 'Projects',
+    projectsCount: {
+      zero: 'No projects',
+      one: 'One project',
+      two: 'Two projects',
+      few: '{n} projects',
+      many: '{n} projects',
+      other: '{n} projects',
+    },
   },
 
   projects: {
     title: 'Projects',
+    listHeading: 'Project list',
     lead: 'The record of completed and ongoing projects.',
     filters: 'Filters',
     clearFilters: 'Clear filters',
@@ -95,7 +104,14 @@ export const en: Dictionary = {
     statePlanned: 'Planned',
     stateActive: 'Ongoing',
     stateCompleted: 'Completed',
-    results: 'results',
+    resultsCount: {
+      zero: 'No results',
+      one: 'One result',
+      two: 'Two results',
+      few: '{n} results',
+      many: '{n} results',
+      other: '{n} results',
+    },
     objective: 'Objective',
     activities: 'Activities',
     outcomes: 'Outcomes',
@@ -125,6 +141,7 @@ export const en: Dictionary = {
     categoryStatement: 'Statement',
     categoryAnnouncement: 'Announcement',
     publishedOn: 'Published',
+    listHeading: 'News list',
   },
 
   careers: {
@@ -137,8 +154,21 @@ export const en: Dictionary = {
     requirements: 'Requirements',
     applyNow: 'Apply now',
     applyByEmail: 'Apply by email',
+    notOpenYet: 'Applications for this position are not open yet. Check back on this page or the careers page.',
     closed: 'Applications are closed',
     noOpenings: 'There are no open positions at the moment.',
+    openForms: 'Opportunities you can apply for directly',
+    openFormsLead: 'Volunteering, training and other opportunities that are taking applications now.',
+    opportunity: 'Opportunity',
+    opportunityKind: 'Type',
+    noDeadline: 'Open, no closing date',
+    employmentTypes: {
+      FULL_TIME: 'Full-time',
+      PART_TIME: 'Part-time',
+      VOLUNTEER: 'Volunteer',
+    },
+    noVacanciesSeeForms: 'No job vacancies right now — see the open opportunities below.',
+    vacancyDetails: 'Vacancy details',
   },
 
   apply: {
@@ -161,10 +191,18 @@ export const en: Dictionary = {
       'This opening is full. You can still apply and your application will be placed on the waiting list.',
     consentLabel: 'I consent to my personal data being processed for this application.',
     consentHelp:
-      'Your details are used for recruitment only, are not shared outside the organisation, and are deleted automatically at the end of the retention period.',
-    retentionNotice: 'The details in this application are deleted automatically after {months} months.',
+      'Your details are used only to consider this application, are not shared outside the organisation, and are deleted automatically at the end of the retention period.',
+    retentionNoticeCount: {
+      zero: 'The details in this application are deleted automatically.',
+      one: 'The details in this application are deleted automatically after one month.',
+      two: 'The details in this application are deleted automatically after two months.',
+      few: 'The details in this application are deleted automatically after {n} months.',
+      many: 'The details in this application are deleted automatically after {n} months.',
+      other: 'The details in this application are deleted automatically after {n} months.',
+    },
     filesHint: 'Your attachments must come to no more than 4 MB in total.',
     openFormsTitle: 'Open application forms',
+    siteTimeZone: 'Palestine time',
     kind: {
       job: 'Job',
       volunteer: 'Volunteering',
@@ -184,6 +222,8 @@ export const en: Dictionary = {
     notOurs: 'Not ours',
     reportTitle: 'Report an impersonation',
     reportLead: 'If you see an account or a number using our name, tell us.',
+    noChannelsPublished:
+      'Our list of official channels has not been published yet. Do not deal with any account claiming to represent us — contact us through the contact page.',
   },
 
   about: {
@@ -306,7 +346,7 @@ export const en: Dictionary = {
     field: {
       required: 'This field is required.',
       email: 'Enter a valid email address.',
-      phone: 'Enter a valid phone number.',
+      phone: 'Enter a valid phone number, e.g. 0599123456 or +970599123456.',
       url: 'Enter a valid link.',
       date: 'Enter a valid date.',
       number: 'Enter a valid number.',
@@ -314,6 +354,14 @@ export const en: Dictionary = {
       slug: 'Only letters, numbers and hyphens are allowed.',
       uuid: 'Invalid identifier.',
       tooShort: 'This is shorter than allowed.',
+      tooShortMin: {
+        zero: 'This field is required.',
+        one: 'Enter at least one character.',
+        two: 'Enter at least two characters.',
+        few: 'Enter at least {n} characters.',
+        many: 'Enter at least {n} characters.',
+        other: 'Enter at least {n} characters.',
+      },
       tooLong: 'This is longer than allowed.',
       tooSmall: 'This number is below the allowed minimum.',
       tooLarge: 'This number is above the allowed maximum.',
@@ -358,9 +406,9 @@ export const en: Dictionary = {
 
     /** The careers portal, admin side: refusals from the form builder. */
     applicationForm: {
-      noFields: 'A form cannot be published with no fields. Add at least one.',
+      noFields: 'A published form cannot have no fields. Add at least one.',
       consentRequired:
-        'This form asks for sensitive details (such as an ID number or date of birth). Turn on the data-processing consent before publishing.',
+        'This form asks for sensitive details (such as an ID number or date of birth), so it cannot be published, or stay published, without the data-processing consent. Turn it on first.',
       deadlinePassed: 'The closing date has already passed. Update it before publishing.',
       fieldExists: 'That field is already on this form.',
       keyFrozen:
@@ -371,6 +419,9 @@ export const en: Dictionary = {
       reorderIncomplete: "The reordered list does not match the form's fields.",
       fieldHasDependents:
         'Other fields use this one as their visibility condition. Remove or re-point them first.',
+      vacancyTaken: 'That vacancy is already linked to another form. Each vacancy has one form.',
+      vacancyByEmail: 'This vacancy takes applications by email. Switch its application method to form first.',
+      notWaitlisted: 'This application is not on the waiting list.',
     },
 
     // Thrown by the service layer. These twelve keys were referenced in code
@@ -584,7 +635,7 @@ export const en: Dictionary = {
     identityTitle: 'Identity record',
     channelsTitle: 'Official channels',
     programsTitle: 'Programmes',
-    brandTitle: 'Organization',
+    brandTitle: 'Organisation',
     quickLinksTitle: 'Quick links',
     getInvolvedTitle: 'Get involved',
     contactTitle: 'Contact and social',

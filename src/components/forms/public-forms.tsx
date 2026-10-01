@@ -4,7 +4,6 @@ import {
   submitComplaint,
   submitContact,
   submitFraudReport,
-  submitJobApplication,
   submitPartnership,
   submitVolunteer,
 } from '@/actions/public/forms';
@@ -14,6 +13,7 @@ import {
   AGE_BANDS,
   AVAILABILITY,
   COMPLAINT_CATEGORIES,
+  CONTACT_PREFERENCES,
   ENQUIRY_TYPES,
   FRAUD_CHANNELS,
   GOVERNORATES,
@@ -21,11 +21,11 @@ import {
   PARTNERSHIP_INTERESTS,
   PROGRAM_KEYS,
   VOLUNTEER_AREAS,
-} from '@/lib/validation/forms';
+} from '@/lib/validation/form-options';
+import { type CountryOption, countryOptions } from '@/lib/i18n/countries';
 import type { Locale } from '@/lib/i18n/config';
 import {
   CheckboxGroup,
-  FileField,
   type FormDict,
   type OptionLabels,
   SelectField,
@@ -35,7 +35,7 @@ import {
 import { FormShell } from './form-shell';
 
 /**
- * The six public forms — each one declares its fields and nothing else.
+ * The five public forms — each one declares its fields and nothing else.
  *
  * The shell owns everything they share: the locale, the honeypot, the result
  * region, the captcha and the submit. The field wrappers own the dictionary
@@ -46,8 +46,9 @@ import { FormShell } from './form-shell';
  * function cannot cross the server → client boundary. It holds no state and
  * no effects of its own.
  *
- * Option **values** come from the Zod schemas, so a value the server would
- * reject cannot be offered in the UI. Option **labels** come from a `labels`
+ * Option **values** come from `lib/validation/form-options` — the same lists
+ * the Zod schemas build their enums from — so a value the server would reject
+ * cannot be offered in the UI, and Zod stays out of the browser bundle. Option **labels** come from a `labels`
  * map the server page builds from the dictionary — rule 5 keeps copy out of
  * components, and these run on the client where the dictionary is not
  * available.
@@ -61,9 +62,6 @@ type PublicFormProps = {
 
 const opts = (values: readonly string[], labels: OptionLabels) =>
   values.map((value) => ({ value, label: labels[value] ?? value }));
-
-const CV_ACCEPT =
-  '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 // ── Contact ──────────────────────────────────────────────────────────────
 
@@ -138,7 +136,7 @@ export function ComplaintForm({ dict, locale, labels }: PublicFormProps) {
               name="contactPreference"
               label={dict.forms.contactPreference}
               dict={dict}
-              options={opts(['none', 'email', 'phone'], labels)}
+              options={opts(CONTACT_PREFERENCES, labels)}
               defaultValue="none"
               state={state}
             />
@@ -151,7 +149,19 @@ export function ComplaintForm({ dict, locale, labels }: PublicFormProps) {
 
 // ── Partnership ──────────────────────────────────────────────────────────
 
-export function PartnershipForm({ dict, locale, labels }: PublicFormProps) {
+/**
+ * `countries` is the localised list built on the server
+ * (`countryOptions(locale)` from `lib/i18n/countries`). Without it the list is
+ * built here, which works but lets the browser's CLDR data disagree with
+ * Node's during hydration.
+ */
+export function PartnershipForm({
+  dict,
+  locale,
+  labels,
+  countries,
+}: PublicFormProps & { countries?: CountryOption[] }) {
+  const countryList = countries ?? countryOptions(locale);
   return (
     <FormShell action={submitPartnership} dict={dict} locale={locale}>
       {(state) => (
@@ -167,14 +177,14 @@ export function PartnershipForm({ dict, locale, labels }: PublicFormProps) {
               state={state}
             />
           </FieldRow>
-          <TextField
+          <SelectField
             name="country"
             label={dict.forms.country}
             dict={dict}
+            options={countryList}
             required
             state={state}
             autoComplete="country"
-            hint={dict.formsUi.countryHint}
           />
           <FieldRow>
             <TextField name="contactName" label={dict.forms.name} dict={dict} required state={state} autoComplete="name" />
@@ -242,7 +252,9 @@ export function FraudReportForm({ dict, locale, labels }: PublicFormProps) {
         <>
           <FieldRow>
             <SelectField name="channel" label={dict.forms.channel} dict={dict} options={opts(FRAUD_CHANNELS, labels)} required state={state} />
-            <TextField name="identifier" label={dict.forms.identifier} dict={dict} required state={state} />
+            {/* A handle or a number, in either script: `auto` lets the first
+                strong character set the direction as it is typed. */}
+            <TextField name="identifier" label={dict.forms.identifier} dict={dict} required state={state} dir="auto" />
           </FieldRow>
           <FieldRow>
             <TextField name="evidenceUrl" label={dict.forms.evidenceUrl} dict={dict} type="url" state={state} />
@@ -261,49 +273,3 @@ export function FraudReportForm({ dict, locale, labels }: PublicFormProps) {
   );
 }
 
-// ── Job application ──────────────────────────────────────────────────────
-
-/**
- * The only form that carries a file. React sets `multipart/form-data` on any
- * form whose action is a function, in the server-rendered markup too, so the
- * file posts correctly before hydration.
- *
- * The accept list is a convenience for the file picker, not a check. The real
- * validation reads magic bytes on the server, because both the extension and
- * the browser-supplied MIME type are attacker-controlled.
- */
-export function JobApplicationForm({
-  dict,
-  locale,
-  vacancyId,
-}: {
-  dict: FormDict;
-  locale: Locale;
-  vacancyId: string;
-}) {
-  return (
-    <FormShell action={submitJobApplication} dict={dict} locale={locale}>
-      {(state) => (
-        <>
-          <input type="hidden" name="vacancyId" value={vacancyId} />
-          <TextField name="name" label={dict.forms.name} dict={dict} required state={state} autoComplete="name" />
-          <FieldRow>
-            <TextField name="email" label={dict.forms.email} dict={dict} type="email" required state={state} autoComplete="email" />
-            <TextField name="phone" label={dict.forms.phone} dict={dict} type="tel" required state={state} autoComplete="tel" />
-          </FieldRow>
-          <FileField
-            name="cv"
-            label={dict.forms.cv}
-            dict={dict}
-            hint={dict.forms.cvHint}
-            required
-            state={state}
-            accept={CV_ACCEPT}
-          />
-          <TextArea name="coverNote" label={dict.forms.coverNote} dict={dict} rows={5} state={state} />
-          <TextField name="portfolioUrl" label={dict.forms.portfolioUrl} dict={dict} type="url" state={state} autoComplete="url" />
-        </>
-      )}
-    </FormShell>
-  );
-}

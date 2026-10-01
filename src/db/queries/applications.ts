@@ -155,6 +155,8 @@ export type OpenFormCard = {
   kind: ApplicationFormKind;
   title: string;
   closesAt: Date | null;
+  /** Set when a vacancy page already links to this form. */
+  vacancyId: string | null;
   /** Null when uncapped; otherwise how many slots are left, floored at zero. */
   slotsLeft: number | null;
 };
@@ -181,6 +183,7 @@ async function _listOpenForms(locale: Locale): Promise<OpenFormCard[]> {
       titleAr: applicationForms.titleAr,
       titleEn: applicationForms.titleEn,
       closesAt: applicationForms.closesAt,
+      vacancyId: applicationForms.vacancyId,
       capacity: applicationForms.capacity,
       submissionCount: applicationForms.submissionCount,
     })
@@ -204,6 +207,7 @@ async function _listOpenForms(locale: Locale): Promise<OpenFormCard[]> {
     kind: row.kind,
     title: pick(row, 'title', locale) ?? row.titleAr,
     closesAt: row.closesAt,
+    vacancyId: row.vacancyId,
     slotsLeft:
       row.capacity === null ? null : Math.max(0, row.capacity - row.submissionCount),
   }));
@@ -216,30 +220,41 @@ export const listOpenForms = cached(_listOpenForms, ['application-form-list'], {
 export { _listOpenForms };
 
 /**
- * The form attached to a vacancy, for the "apply" button on its page.
+ * Where a new application on this form is announced, beyond the HR inbox.
  *
- * Returns the slug only. The vacancy page needs a link, not a form, and
- * fetching the fields to render a button would pull a dozen rows per card.
+ * Uncached and never part of `PublicForm`: that object is handed to a Client
+ * Component, so anything on it is in the page's markup, and staff addresses do
+ * not belong there. Read once per submission, from `after()`.
  */
-async function _getFormSlugForVacancy(vacancyId: string): Promise<string | null> {
+export async function _getFormNotifyEmails(formId: string): Promise<string[]> {
   const [row] = await db
-    .select({ slug: applicationForms.slug })
+    .select({ notifyEmails: applicationForms.notifyEmails })
     .from(applicationForms)
-    .where(
-      and(
-        eq(applicationForms.vacancyId, vacancyId),
-        eq(applicationForms.status, 'published'),
-      ),
-    )
+    .where(and(eq(applicationForms.id, formId), eq(applicationForms.status, 'published')))
     .limit(1);
 
-  return row?.slug ?? null;
+  return row?.notifyEmails ?? [];
 }
 
-export const getFormSlugForVacancy = cached(
-  _getFormSlugForVacancy,
-  ['application-form-for-vacancy'],
-  { tags: [TAGS.applicationFormList] },
-);
-
-export { _getFormSlugForVacancy };
+/**
+ * Where each field on a published form came from — its catalogue key and its
+ * type — for the submission path only.
+ *
+ * `PublicForm` drops `catalogKey` because that object is handed to a Client
+ * Component; this reads it separately, server-side, so `extractIdentity` can
+ * match on real provenance rather than assuming a field's key is its
+ * catalogue key.
+ */
+export async function _getFormFieldProvenance(
+  formId: string,
+): Promise<{ key: string; catalogKey: string | null; type: ApplicationFieldType }[]> {
+  return db
+    .select({
+      key: applicationFormFields.key,
+      catalogKey: applicationFormFields.catalogKey,
+      type: applicationFormFields.type,
+    })
+    .from(applicationFormFields)
+    .innerJoin(applicationForms, eq(applicationForms.id, applicationFormFields.formId))
+    .where(and(eq(applicationFormFields.formId, formId), eq(applicationForms.status, 'published')));
+}

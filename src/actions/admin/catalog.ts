@@ -89,7 +89,8 @@ export async function updateSubmissionState(formData: FormData): Promise<void> {
     }
     await setSubmissionState(db, actor, parsed.data.id, {
       state: parsed.data.state,
-      internalNote: parsed.data.internalNote || null,
+      // Absent from the post keeps the stored note; a posted blank clears it.
+      internalNote: parsed.data.internalNote,
     });
     // Submissions are never cached — nothing to revalidate.
     return ok({ id: parsed.data.id }, 'admin.saved');

@@ -4,17 +4,24 @@ import { DEFAULT_LOCALE, isLocale, type Locale } from '@/lib/i18n/config';
 import { OG_CONTENT_TYPE, OG_SIZE, renderOgImage } from '@/lib/seo/og';
 
 /**
- * The site-wide Open Graph card — every route under `[locale]` that has no
- * `opengraph-image.tsx` of its own shares it (lists, about, contact, verify).
+ * The site-wide Open Graph card, used by every route under `[locale]` that
+ * has no `opengraph-image.tsx` of its own (lists, about, contact, verify).
+ *
+ * It does **not** reach them by inheritance. A file card is merged only into
+ * its own segment's metadata, and each page's `generateMetadata` declares
+ * `openGraph`, which replaces the layout's object wholesale. `buildMetadata`
+ * therefore names this card by URL (`siteCardImage` / `SITE_CARD_SEGMENT` in
+ * `src/lib/seo/metadata.ts`); moving or renaming this file, or changing the
+ * `id` below, has to be matched there — `tests/unit/seo-site-card.test.ts`
+ * catches the first two.
  *
  * The organisation's short name is the title, its short description the
  * eyebrow; both come from `organization_settings`, so a rename in the admin
  * changes every card on the next revalidation.
  *
- * `generateImageMetadata` sets `alt` per locale. The alt text is the
- * organisation's name — a description of what the card *shows* — because the
- * dictionaries carry no `seo` namespace yet (requested in the migration note;
- * switch to `dict.seo.ogImageAlt` when it lands).
+ * `generateImageMetadata` sets `alt` per locale to the organisation's name,
+ * the same text `buildMetadata` gives the card when it names it explicitly, so
+ * the `og:image:alt` a page emits does not depend on which path produced it.
  */
 
 export const size = OG_SIZE;

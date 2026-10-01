@@ -20,6 +20,7 @@ import {
   createForm,
   deleteField,
   deleteForm,
+  ensureFormForVacancy,
   reorderFields,
   saveField,
   setFormStatus,
@@ -53,8 +54,14 @@ export type FormResult = ActionResult<{ id: string }>;
  * advertising a form that has closed. A builder edit is rare and both tags are
  * cheap, so there is no case for being clever about which one changed.
  */
-function bustForm(slug?: string | null) {
-  revalidate(slug ? [TAGS.applicationForm(slug), TAGS.applicationFormList] : [TAGS.applicationFormList]);
+function bustForm(slug?: string | null, options: { vacancyLink?: boolean } = {}) {
+  revalidate([
+    ...(slug ? [TAGS.applicationForm(slug)] : []),
+    TAGS.applicationFormList,
+    // Only where a form's vacancy or status can change: which vacancy has a
+    // published form is its own cache entry, not busted by every field edit.
+    ...(options.vacancyLink ? [TAGS.applicationFormVacancyLink] : []),
+  ]);
 }
 
 const FORM_SHAPE = {
@@ -81,7 +88,7 @@ export async function createApplicationForm(
     const starters = STARTER_FIELDS[parsed.data.kind] ?? [];
     const form = await createForm(db, actor, parsed.data, starters);
 
-    bustForm(form.slug);
+    bustForm(form.slug, { vacancyLink: true });
     return ok({ id: form.id }, 'admin.saved');
   });
 
@@ -108,7 +115,7 @@ export async function updateApplicationForm(
     // The slug may have changed, so the *old* one has to be busted too or its
     // cached page outlives the rename.
     const previousSlug = String(formData.get('previousSlug') ?? '');
-    bustForm(form.slug);
+    bustForm(form.slug, { vacancyLink: true });
     if (previousSlug && previousSlug !== form.slug) bustForm(previousSlug);
 
     return ok({ id: form.id }, 'admin.saved');
@@ -138,11 +145,33 @@ export async function setApplicationFormStatus(formData: FormData): Promise<void
     }
 
     const form = await setFormStatus(db, actor, id, raw);
-    bustForm(form.slug);
+    bustForm(form.slug, { vacancyLink: true });
     return ok({ id }, 'admin.statusChanged');
   });
 
   redirect(withFlash(returnTo ?? `/admin/careers/${id}`, result));
+}
+
+/**
+ * The vacancy editor's "create its application form" button — for a vacancy
+ * that predates its form, or one switched from email to the portal.
+ */
+export async function createVacancyApplicationForm(formData: FormData): Promise<void> {
+  const vacancyId = String(formData.get('vacancyId') ?? '');
+
+  const result = await runAction<{ id: string }>(async () => {
+    const actor = await requireActor();
+    const form = await ensureFormForVacancy(db, actor, vacancyId);
+    if (!form) return err('validation', 'errors.applicationForm.vacancyByEmail');
+    bustForm(form.slug, { vacancyLink: true });
+    return ok({ id: form.id }, 'admin.saved');
+  });
+
+  redirect(
+    result.ok
+      ? withFlash(`/admin/careers/${result.data.id}`, result)
+      : withFlash(`/admin/vacancies/${vacancyId}`, result),
+  );
 }
 
 export async function deleteApplicationForm(formData: FormData): Promise<void> {
@@ -150,8 +179,29 @@ export async function deleteApplicationForm(formData: FormData): Promise<void> {
 
   const result = await runAction<{ id: string }>(async () => {
     const actor = await requireActor();
-    await deleteForm(db, actor, id);
-    bustForm(String(formData.get('slug') ?? ''));
+    const { slug, attachmentPaths } = await deleteForm(db, actor, id);
+
+    // The rows are gone; their files must go too, or every CV the form ever
+    // received stays in the bucket with nothing left to find it. A storage
+    // failure is logged rather than reported: the deletion the admin asked
+    // for did happen, and rolling it back is not possible anyway.
+    if (attachmentPaths.length > 0) {
+      try {
+        const { createSupabaseAdminClient } = await import('@/lib/auth/supabase-server');
+        const { error } = await createSupabaseAdminClient()
+          .storage.from('applications')
+          .remove(attachmentPaths);
+        if (error) throw error;
+      } catch (error) {
+        console.error('[application-forms] attachment cleanup failed', {
+          formId: id,
+          count: attachmentPaths.length,
+          error,
+        });
+      }
+    }
+
+    bustForm(slug, { vacancyLink: true });
     return ok({ id }, 'admin.deleted');
   });
 

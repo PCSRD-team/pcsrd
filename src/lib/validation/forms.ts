@@ -12,6 +12,35 @@ import {
   turnstileToken,
 } from './common';
 
+// The option lists live in an import-free module so the Client Component
+// forms can read them without pulling Zod into the browser bundle.
+import {
+  ORGANIZATION_TYPES,
+  PARTNERSHIP_INTERESTS,
+  PROGRAM_KEYS,
+  ENQUIRY_TYPES,
+  AGE_BANDS,
+  GOVERNORATES,
+  VOLUNTEER_AREAS,
+  AVAILABILITY,
+  COMPLAINT_CATEGORIES,
+  FRAUD_CHANNELS,
+  CONTACT_PREFERENCES,
+} from './form-options';
+export {
+  ORGANIZATION_TYPES,
+  PARTNERSHIP_INTERESTS,
+  PROGRAM_KEYS,
+  ENQUIRY_TYPES,
+  AGE_BANDS,
+  GOVERNORATES,
+  VOLUNTEER_AREAS,
+  AVAILABILITY,
+  COMPLAINT_CATEGORIES,
+  FRAUD_CHANNELS,
+  CONTACT_PREFERENCES,
+} from './form-options';
+
 /**
  * The six public forms (02-API §5.2, §5.3).
  *
@@ -38,37 +67,17 @@ const envelope = {
 
 // ── Partnership ──────────────────────────────────────────────────────────
 
-export const ORGANIZATION_TYPES = [
-  'un',
-  'ingo',
-  'foundation',
-  'government',
-  'local_ngo',
-  'private',
-  'other',
-] as const;
-
-export const PARTNERSHIP_INTERESTS = [
-  'funding',
-  'consortium',
-  'implementation',
-  'technical',
-  'other',
-] as const;
-
-export const PROGRAM_KEYS = ['protection', 'humanitarian_response', 'early_recovery'] as const;
-
 export const partnershipSchema = z.object({
   organizationName: shortText(2, 120),
-  organizationType: z.enum(ORGANIZATION_TYPES),
+  organizationType: z.enum(ORGANIZATION_TYPES, { message: 'errors.field.required' }),
   /** ISO 3166-1 alpha-2. */
   country: z.string().trim().length(2, { message: 'errors.field.country' }),
   contactName: shortText(2, 80),
   role: shortText(2, 80),
   email: emailSchema,
   phone: optionalPhone,
-  interest: z.array(z.enum(PARTNERSHIP_INTERESTS)).min(1, { message: 'errors.field.required' }),
-  programs: z.array(z.enum(PROGRAM_KEYS)).default([]),
+  interest: z.array(z.enum(PARTNERSHIP_INTERESTS, { message: 'errors.field.invalidChoice' })).min(1, { message: 'errors.field.required' }),
+  programs: z.array(z.enum(PROGRAM_KEYS, { message: 'errors.field.invalidChoice' })).default([]),
   message: longText(20, 2000),
   ...envelope,
 });
@@ -79,13 +88,11 @@ export const PARTNERSHIP_MULTI = ['interest', 'programs'] as const;
 
 // ── Contact ──────────────────────────────────────────────────────────────
 
-export const ENQUIRY_TYPES = ['general', 'partnership', 'media', 'complaint'] as const;
-
 export const contactSchema = z.object({
   name: shortText(2, 80),
   email: emailSchema,
   phone: optionalPhone,
-  enquiryType: z.enum(ENQUIRY_TYPES).default('general'),
+  enquiryType: z.enum(ENQUIRY_TYPES, { message: 'errors.field.invalidChoice' }).default('general'),
   subject: shortText(3, 150),
   message: longText(20, 2000),
   ...envelope,
@@ -94,42 +101,15 @@ export type ContactInput = z.infer<typeof contactSchema>;
 
 // ── Volunteer ────────────────────────────────────────────────────────────
 
-/**
- * An age *band*, not a date of birth. The only thing the organisation needs to
- * know is whether a volunteer is a minor and roughly which cohort they belong
- * to; a birth date is a permanent identifier collected for no reason.
- */
-export const AGE_BANDS = ['under_18', '18_24', '25_34', '35_49', '50_plus'] as const;
-
-export const GOVERNORATES = [
-  'north_gaza',
-  'gaza',
-  'middle',
-  'khan_younis',
-  'rafah',
-] as const;
-
-export const VOLUNTEER_AREAS = [
-  'psychosocial',
-  'education',
-  'relief_distribution',
-  'media',
-  'logistics',
-  'administration',
-  'other',
-] as const;
-
-export const AVAILABILITY = ['weekdays', 'weekends', 'evenings', 'flexible'] as const;
-
 export const volunteerSchema = z.object({
   name: shortText(2, 80),
   email: emailSchema,
   phone: phoneSchema,
-  ageBand: z.enum(AGE_BANDS),
+  ageBand: z.enum(AGE_BANDS, { message: 'errors.field.required' }),
   /** Governorate, not an address. */
-  governorate: z.enum(GOVERNORATES),
-  areas: z.array(z.enum(VOLUNTEER_AREAS)).min(1, { message: 'errors.field.required' }),
-  availability: z.enum(AVAILABILITY).default('flexible'),
+  governorate: z.enum(GOVERNORATES, { message: 'errors.field.required' }),
+  areas: z.array(z.enum(VOLUNTEER_AREAS, { message: 'errors.field.invalidChoice' })).min(1, { message: 'errors.field.required' }),
+  availability: z.enum(AVAILABILITY, { message: 'errors.field.invalidChoice' }).default('flexible'),
   experience: optionalText(1500),
   motivation: longText(20, 1500),
   ...envelope,
@@ -138,34 +118,7 @@ export type VolunteerInput = z.infer<typeof volunteerSchema>;
 
 export const VOLUNTEER_MULTI = ['areas'] as const;
 
-// ── Job application ──────────────────────────────────────────────────────
-
-/**
- * The CV itself is not described here. A `File` cannot be meaningfully
- * validated by Zod — the check that matters reads magic bytes, and that lives
- * in `security/upload.ts`.
- */
-export const jobApplicationSchema = z.object({
-  vacancyId: z.uuid({ message: 'errors.field.required' }),
-  name: shortText(2, 80),
-  email: emailSchema,
-  phone: phoneSchema,
-  coverNote: optionalText(2000),
-  portfolioUrl: optionalUrl,
-  ...envelope,
-});
-export type JobApplicationInput = z.infer<typeof jobApplicationSchema>;
-
 // ── Complaint (CFM) ──────────────────────────────────────────────────────
-
-export const COMPLAINT_CATEGORIES = [
-  'service_quality',
-  'staff_conduct',
-  'selection_process',
-  'safeguarding',
-  'corruption',
-  'other',
-] as const;
 
 /**
  * Every identity field is optional and there is no `email` requirement, because
@@ -174,7 +127,7 @@ export const COMPLAINT_CATEGORIES = [
  * be reachable would be to fill in fields the form says are optional.
  */
 export const complaintSchema = z.object({
-  category: z.enum(COMPLAINT_CATEGORIES),
+  category: z.enum(COMPLAINT_CATEGORIES, { message: 'errors.field.required' }),
   incidentDate: z
     .union([z.iso.date({ message: 'errors.field.date' }), z.literal('')])
     .optional(),
@@ -186,7 +139,7 @@ export const complaintSchema = z.object({
   name: optionalText(80),
   email: z.union([emailSchema, z.literal('')]).optional(),
   phone: optionalPhone,
-  contactPreference: z.enum(['none', 'email', 'phone']).default('none'),
+  contactPreference: z.enum(CONTACT_PREFERENCES, { message: 'errors.field.invalidChoice' }).default('none'),
 
   ...envelope,
 });
@@ -194,21 +147,8 @@ export type ComplaintInput = z.infer<typeof complaintSchema>;
 
 // ── Fraud / impersonation report ─────────────────────────────────────────
 
-export const FRAUD_CHANNELS = [
-  'facebook',
-  'instagram',
-  'whatsapp',
-  'telegram',
-  'x',
-  'website',
-  'phone_call',
-  'sms',
-  'in_person',
-  'other',
-] as const;
-
 export const fraudReportSchema = z.object({
-  channel: z.enum(FRAUD_CHANNELS),
+  channel: z.enum(FRAUD_CHANNELS, { message: 'errors.field.required' }),
   /** The impostor's handle, number or URL, as the reporter saw it. */
   identifier: shortText(2, 200),
   evidenceUrl: optionalUrl,

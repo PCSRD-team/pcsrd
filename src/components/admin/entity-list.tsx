@@ -1,5 +1,5 @@
 import { adminDict } from '@/components/admin/admin-dict';
-import { adminUi, fill } from '@/components/admin/admin-ui-dict';
+import { adminUi, count } from '@/components/admin/admin-ui-dict';
 import { AdminPagination, DateCell, STATUS_LABEL, StatusBadge } from '@/components/admin/controls';
 import { Flash } from '@/components/admin/flash';
 import { RowActions } from '@/components/admin/row-actions';
@@ -84,7 +84,7 @@ export async function EntityListPage({
     <>
       <AdminHeader
         title={meta.title}
-        description={fill(t.itemCount, { n: result.total })}
+        description={count(t.itemCount, result.total)}
         action={
           meta.canCreate ? (
             <ButtonLink href={`/admin/${meta.path}/new`}>{adminDict.form.add}</ButtonLink>

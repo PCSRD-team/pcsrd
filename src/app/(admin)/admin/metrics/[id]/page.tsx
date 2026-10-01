@@ -6,10 +6,10 @@ import { metricFields } from '@/components/admin/field-configs';
 import { Flash } from '@/components/admin/flash';
 import { DeletePanel } from '@/components/admin/row-actions';
 import { AdminHeader } from '@/components/admin/shell';
-import { Bidi } from '@/components/ui/bidi';
 import { Meta } from '@/components/ui/typography';
 import { getAdminMetric, listRelationOptions } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
+import { formatPeriod } from '@/lib/format';
 import { can } from '@/services/_shared/permissions';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +30,7 @@ export default async function Page({ params, searchParams }: PageProps<'/admin/m
         title={row.labelAr}
         meta={
           <Meta>
-            <Bidi>{`${row.periodStart} → ${row.periodEnd}`}</Bidi>
+            {formatPeriod(row.periodStart, row.periodEnd, 'ar')}
           </Meta>
         }
       />

@@ -8,7 +8,6 @@ import { type ActionErr, type ActionOk, err, ok, runAction } from '@/lib/errors'
 import { getClientIp, hashIp } from '@/lib/security/ip';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { verifyTurnstile } from '@/lib/security/turnstile';
-import { validateCvUpload, storagePath } from '@/lib/security/upload';
 import {
   type FormValues,
   echoFormValues,
@@ -21,7 +20,6 @@ import {
   complaintSchema,
   contactSchema,
   fraudReportSchema,
-  jobApplicationSchema,
   partnershipSchema,
   volunteerSchema,
 } from '@/lib/validation/forms';
@@ -29,11 +27,12 @@ import { createSubmission, isSensitiveType } from '@/services/submission/submiss
 import type { z } from 'zod';
 
 /**
- * The six public forms.
+ * The five public forms. Job and volunteer-role applications are not here:
+ * they go through the careers portal (`src/actions/public/apply.ts`).
  *
  * Each is the same pipeline in the same order:
  *
- *     honeypot → rate limit → validate (Zod) → Turnstile → upload → persist → notify
+ *     honeypot → rate limit → validate (Zod) → Turnstile → persist → notify
  *
  * - **Honeypot first.** It costs nothing and a bot that fills it should not
  *   spend a Redis round trip or a slot in a real visitor's shared-IP window.
@@ -80,11 +79,6 @@ type Pipeline<TSchema extends z.ZodType> = {
   schema: TSchema;
   type: SubmissionType;
   multi?: readonly string[];
-  /** Extra work between the captcha and persistence — currently only uploads. */
-  prepare?: (
-    input: z.infer<TSchema>,
-    formData: FormData,
-  ) => Promise<{ attachmentPath?: string | null } | SubmissionResult>;
 };
 
 async function submit<TSchema extends z.ZodType>(
@@ -98,8 +92,8 @@ async function submit<TSchema extends z.ZodType>(
     const ip = await getClientIp();
     const sensitive = isSensitiveType(pipeline.type);
 
-    const limiter = pipeline.type === 'job' ? 'upload' : 'form';
-    const rate = await checkRateLimit(limiter, hashIp(ip) ?? 'unknown');
+    const clientKey = hashIp(ip) ?? 'unknown';
+    const rate = await checkRateLimit('form', clientKey);
 
     // A safeguarding disclosure and a partnership enquiry do not deserve the
     // same treatment when anti-abuse is down. A degraded limiter means the primary
@@ -109,6 +103,14 @@ async function submit<TSchema extends z.ZodType>(
     // than an unthrottled complaint: the honeypot and Turnstile still stand,
     // and the throttle is the outer wall, not the only one.
     if (!rate.success && !(rate.degraded && sensitive)) {
+      return err('rate_limited', 'errors.rateLimited');
+    }
+
+    // The site-wide window as well, so a client cannot rotate between the
+    // forms and the careers portal with a fresh allowance on each. The same
+    // degraded-backend exception holds for a complaint.
+    const site = await checkRateLimit('global', clientKey);
+    if (!site.success && !(site.degraded && sensitive)) {
       return err('rate_limited', 'errors.rateLimited');
     }
 
@@ -136,13 +138,6 @@ async function submit<TSchema extends z.ZodType>(
       return err('captcha', 'errors.captcha');
     }
 
-    let attachmentPath: string | null = null;
-    if (pipeline.prepare) {
-      const prepared = await pipeline.prepare(parsed.data, formData);
-      if ('ok' in prepared) return prepared;
-      attachmentPath = prepared.attachmentPath ?? null;
-    }
-
     // The envelope fields are transport, not content, and must not be stored.
     const { turnstileToken: _t, website: _w, ...payload } = input;
     void _t;
@@ -152,7 +147,7 @@ async function submit<TSchema extends z.ZodType>(
       type: pipeline.type,
       locale: input.locale,
       payload: payload as Record<string, unknown>,
-      attachmentPath,
+      attachmentPath: null,
       ip,
       userAgent: (await headers()).get('user-agent'),
     });
@@ -201,42 +196,6 @@ export async function submitVolunteer(
     schema: volunteerSchema,
     type: 'volunteer',
     multi: VOLUNTEER_MULTI,
-  });
-}
-
-export async function submitJobApplication(
-  _prev: SubmissionResult | null,
-  formData: FormData,
-): Promise<SubmissionResult> {
-  return submit(formData, {
-    schema: jobApplicationSchema,
-    type: 'job',
-    prepare: async (_input, form) => {
-      const file = form.get('cv');
-      if (!(file instanceof File) || file.size === 0) {
-        return err('validation', 'errors.validation', { cv: ['errors.field.required'] });
-      }
-
-      const validated = await validateCvUpload(file);
-      if (!validated.ok) {
-        return err('upload_rejected', `errors.upload.${validated.reason}`, {
-          cv: [`errors.upload.${validated.reason}`],
-        });
-      }
-
-      const { createSupabaseAdminClient } = await import('@/lib/auth/supabase-server');
-      const path = storagePath('cv', validated.ext);
-      const { error } = await createSupabaseAdminClient()
-        .storage.from('applications')
-        .upload(path, validated.buffer, { contentType: validated.mime, upsert: false });
-
-      if (error) {
-        return err('upload_rejected', 'errors.upload.failed', {
-          cv: ['errors.upload.failed'],
-        });
-      }
-      return { attachmentPath: path };
-    },
   });
 }
 

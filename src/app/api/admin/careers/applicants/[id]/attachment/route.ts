@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { db } from '@/db';
 import { requireActor } from '@/lib/auth/guard';
 import { createSupabaseAdminClient } from '@/lib/auth/supabase-server';
@@ -28,7 +29,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireActor();
-    const { id } = await context.params;
+    // A malformed id is a missing page, not a Postgres `invalid input syntax
+    // for type uuid` surfacing as a 500.
+    const parsedId = z.uuid().safeParse((await context.params).id);
+    if (!parsedId.success) return new Response('Not found', { status: 404 });
+    const id = parsedId.data;
 
     const path = new URL(request.url).searchParams.get('path');
     if (!path) return new Response('Not found', { status: 404 });

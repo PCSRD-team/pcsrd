@@ -79,18 +79,25 @@ export function RequiredMark() {
  * The error line under a control. A glyph and a word, never colour alone.
  * `role="alert"` so a server-rendered error after a failed submit is read
  * out when the page replaces itself.
+ *
+ * `announce={false}` drops the role where something else already announces
+ * the failure — the public form shell has one assertive live region and moves
+ * focus to the first invalid control, so a per-field alert on top of that
+ * reads every error out twice.
  */
 export function FieldError({
   id,
   children,
   className,
+  announce = true,
 }: {
   id: string;
   children: ReactNode;
   className?: string;
+  announce?: boolean;
 }) {
   return (
-    <p id={id} role="alert" className={cn(styles.error, className)}>
+    <p id={id} role={announce ? 'alert' : undefined} className={cn(styles.error, className)}>
       <span className="mbs-0.5 shrink-0">
         <Icon name="error" size={16} />
       </span>
@@ -131,6 +138,7 @@ export function Field({
   optionalLabel,
   children,
   className,
+  announce,
 }: {
   name: string;
   label: string;
@@ -140,6 +148,8 @@ export function Field({
   optionalLabel?: string;
   children: ReactNode;
   className?: string;
+  /** See `FieldError`. */
+  announce?: boolean;
 }) {
   const message = errorText(error);
   return (
@@ -154,7 +164,11 @@ export function Field({
       </label>
       {hint ? <FieldHint id={`${name}-hint`}>{hint}</FieldHint> : null}
       {children}
-      {message ? <FieldError id={`${name}-error`}>{message}</FieldError> : null}
+      {message ? (
+        <FieldError id={`${name}-error`} announce={announce}>
+          {message}
+        </FieldError>
+      ) : null}
     </div>
   );
 }
@@ -174,6 +188,7 @@ export function Fieldset({
   children,
   className,
   disabled,
+  announce,
 }: {
   name: string;
   legend: string;
@@ -184,6 +199,8 @@ export function Fieldset({
   children: ReactNode;
   className?: string;
   disabled?: boolean;
+  /** See `FieldError`. */
+  announce?: boolean;
 }) {
   const message = errorText(error);
   return (
@@ -208,7 +225,7 @@ export function Fieldset({
       ) : null}
       <div className="mbs-3">{children}</div>
       {message ? (
-        <FieldError id={`${name}-error`} className="mbs-2">
+        <FieldError id={`${name}-error`} className="mbs-2" announce={announce}>
           {message}
         </FieldError>
       ) : null}

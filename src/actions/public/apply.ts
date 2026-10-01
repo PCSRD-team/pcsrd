@@ -3,7 +3,12 @@
 import { after } from 'next/server';
 import { headers } from 'next/headers';
 import { db } from '@/db';
-import { _getApplicationForm, type PublicForm } from '@/db/queries/applications';
+import {
+  _getApplicationForm,
+  _getFormFieldProvenance,
+  _getFormNotifyEmails,
+  type PublicForm,
+} from '@/db/queries/applications';
 import type { ApplicationAttachment } from '@/db/schema/applications';
 import type { LocaleCode } from '@/db/schema/enums';
 import { type ActionErr, type ActionOk, err, ok, runAction } from '@/lib/errors';
@@ -11,7 +16,9 @@ import { getClientIp, hashIp } from '@/lib/security/ip';
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { verifyTurnstile } from '@/lib/security/turnstile';
 import { storagePath } from '@/lib/security/upload';
-import { parseAnswers } from '@/lib/applications/answer-schema';
+import { revalidate } from '@/lib/cache/revalidate';
+import { TAGS } from '@/lib/cache/tags';
+import { extractIdentity, isFieldVisible, parseAnswers } from '@/lib/applications/answer-schema';
 import { validateAttachment } from '@/lib/applications/attachments';
 import {
   type FormValues,
@@ -26,7 +33,13 @@ import { submitApplication } from '@/services/applications/application.service';
  * The same pipeline as the six fixed forms in `actions/public/forms.ts`, in the
  * same order and for the same reasons:
  *
- *     honeypot → rate limit → load the form → validate → captcha → upload → persist → notify
+ *     honeypot → load the form → validate → captcha → rate limit → upload → persist → notify
+ *
+ * The rate limit sits after validation and the captcha, unlike the six fixed
+ * forms: a portal form can run to forty fields, and a limiter counted before
+ * validation charged an applicant one of their attempts for every mistyped
+ * phone number. What the limit protects is the storage write, and nothing
+ * before it writes anything.
  *
  * What differs is that the schema is not a constant. The form's fields are read
  * from the database and compiled into a validator per request by
@@ -78,9 +91,32 @@ const HONEYPOT_FIELD = 'website';
  */
 const MAX_TOTAL_UPLOAD_BYTES = 4 * 1024 * 1024;
 
-/** The `file` fields the form declares, in order. */
-const fileFields = (form: PublicForm) =>
-  form.fields.filter((field) => field.type === 'file');
+/**
+ * The `file` fields the applicant was actually shown.
+ *
+ * A file field behind a `visibleWhen` the applicant's answers did not satisfy
+ * was never on their screen, so its `required` cannot apply — the same rule
+ * `parseAnswers` follows for every other field. Without it, "upload the
+ * certificate if you have one" refused everyone who answered "no".
+ */
+const visibleFileFields = (form: PublicForm, raw: Record<string, unknown>) => {
+  const known = new Set(form.fields.map((field) => field.key));
+  return form.fields.filter(
+    (field) => field.type === 'file' && isFieldVisible(field, raw, known),
+  );
+};
+
+/** Best-effort removal of objects that no stored row will ever reference. */
+async function removeUploads(paths: string[]): Promise<void> {
+  if (paths.length === 0) return;
+  try {
+    const { createSupabaseAdminClient } = await import('@/lib/auth/supabase-server');
+    const { error } = await createSupabaseAdminClient().storage.from('applications').remove(paths);
+    if (error) throw error;
+  } catch (error) {
+    console.error('[apply] could not remove orphaned uploads', { count: paths.length, error });
+  }
+}
 
 /**
  * Collects and validates every attachment, then uploads them.
@@ -93,11 +129,12 @@ const fileFields = (form: PublicForm) =>
 async function collectAttachments(
   form: PublicForm,
   formData: FormData,
+  raw: Record<string, unknown>,
 ): Promise<{ attachments: ApplicationAttachment[] } | ApplyResult> {
   const pending: { fieldKey: string; file: File; mime: string; ext: string }[] = [];
   let total = 0;
 
-  for (const field of fileFields(form)) {
+  for (const field of visibleFileFields(form, raw)) {
     const value = formData.get(field.key);
     const file = value instanceof File && value.size > 0 ? value : null;
 
@@ -145,9 +182,7 @@ async function collectAttachments(
       // Roll back what did upload. Leaving them is not harmless: they are a
       // stranger's CV sitting in a bucket with nothing pointing at it and no
       // retention rule that will ever reach it.
-      if (attachments.length > 0) {
-        await storage.remove(attachments.map((file) => file.path)).catch(() => undefined);
-      }
+      await removeUploads(attachments.map((file) => file.path));
       return err('upload_rejected', 'errors.upload.failed', {
         [entry.fieldKey]: ['errors.upload.failed'],
       });
@@ -177,15 +212,12 @@ export async function submitApplicationForm(
 
   const slug = String(formData.get('formSlug') ?? '');
   const locale = (formData.get('locale') === 'en' ? 'en' : 'ar') as LocaleCode;
+  // Known once the form is loaded. The failure path echoes the answers back,
+  // and a multi-select with one box ticked must come back as a list or the
+  // re-rendered form loses the tick.
+  let multiKeys: string[] = [];
 
   const result = await runAction<{ reference: string; waitlisted: boolean }>(async () => {
-    const ip = await getClientIp();
-
-    // The `upload` limiter, not `form`: an application writes to storage, and
-    // three per hour per address is the budget that limiter exists to enforce.
-    const rate = await checkRateLimit('upload', hashIp(ip) ?? 'unknown');
-    if (!rate.success) return err('rate_limited', 'errors.rateLimited');
-
     // The uncached read. `getApplicationForm` would serve an entry up to an
     // hour old, and validating a submission against a stale field list is how
     // an answer to a deleted question gets stored — or a newly required one
@@ -193,61 +225,94 @@ export async function submitApplicationForm(
     const form = await _getApplicationForm(slug, locale);
     if (!form) return err('not_found', 'errors.notFound');
 
-    const raw = formDataToObject(
-      formData,
-      form.fields.filter((field) => field.type === 'multi_select').map((field) => field.key),
-    );
+    multiKeys = form.fields
+      .filter((field) => field.type === 'multi_select')
+      .map((field) => field.key);
+    const raw = formDataToObject(formData, multiKeys);
 
     const answers = parseAnswers(form.fields, raw, { requireConsent: form.requireConsent });
     if (!answers.ok) {
       return err('validation', 'errors.validation', answers.fieldErrors);
     }
 
+    const ip = await getClientIp();
+
     const token = String(formData.get('cf-turnstile-response') ?? '');
     if (!(await verifyTurnstile(token, ip))) return err('captcha', 'errors.captcha');
 
-    const uploaded = await collectAttachments(form, formData);
+    // The per-form window and the site-wide one. Without the second, a
+    // client could spend its `apply` allowance and then move on to the six
+    // fixed forms with a fresh one, and the other way round.
+    const clientKey = hashIp(ip) ?? 'unknown';
+    const rate = await checkRateLimit('apply', clientKey);
+    if (!rate.success) return err('rate_limited', 'errors.rateLimited');
+    const site = await checkRateLimit('global', clientKey);
+    if (!site.success) return err('rate_limited', 'errors.rateLimited');
+
+    const uploaded = await collectAttachments(form, formData, raw);
     if ('ok' in uploaded) return uploaded;
 
-    const { extractIdentity } = await import('@/lib/applications/answer-schema');
-    const identity = extractIdentity(
-      form.fields.map((field) => ({
-        key: field.key,
-        // The public projection drops `catalogKey`; the fallback key match in
-        // `extractIdentity` is what covers it, and a catalogue field's key *is*
-        // its catalogue key, so nothing is lost.
-        catalogKey: field.key,
-        type: field.type,
-      })),
-      answers.answers,
-    );
+    // The real provenance, read server-side: the public projection drops
+    // `catalogKey`, and a field's key is only its catalogue key until an admin
+    // renames it.
+    const identity = extractIdentity(await _getFormFieldProvenance(form.id), answers.answers);
 
-    const created = await submitApplication(db, {
-      formId: form.id,
-      locale,
-      answers: answers.answers,
-      attachments: uploaded.attachments,
-      applicantName: identity.name,
-      applicantEmail: identity.email,
-      applicantPhone: identity.phone,
-      ip,
-      userAgent: (await headers()).get('user-agent'),
-    });
+    let created: Awaited<ReturnType<typeof submitApplication>>;
+    try {
+      created = await submitApplication(db, {
+        formId: form.id,
+        locale,
+        answers: answers.answers,
+        attachments: uploaded.attachments,
+        applicantName: identity.name,
+        applicantEmail: identity.email,
+        applicantPhone: identity.phone,
+        ip,
+        userAgent: (await headers()).get('user-agent'),
+      });
+    } catch (error) {
+      // The files went up before the database had its say, and it said no —
+      // a duplicate, a cap reached a second ago, a deadline just passed. No
+      // row will ever point at them, so no purge will ever reach them: a
+      // stranger's CV would sit in the bucket for good. Remove them, then let
+      // the refusal reach the applicant as it would have.
+      await removeUploads(uploaded.attachments.map((file) => file.path));
+      throw error;
+    }
+
+    // The page shows how many places are left, and that number just changed.
+    // The form's own page drops now — the applicant may reload it. The list is
+    // shared by every form page and the careers index, so it is refreshed
+    // stale-while-revalidate: one busy recruitment must not turn every
+    // submission into a cold render of every form on the site.
+    revalidate([TAGS.applicationForm(form.slug)]);
+    revalidate([TAGS.applicationFormList], 'stale');
 
     // Persist before notify, always. Email is the least reliable link in the
     // chain and a lost application is the most expensive failure this portal
     // can produce. `after()` runs once the response is on its way, so a Resend
     // outage delays nothing and loses nothing.
     after(async () => {
-      const { notifyApplication } = await import('@/lib/mail/send');
+      const [{ notifyApplication }, notifyEmails] = await Promise.all([
+        import('@/lib/mail/send'),
+        // Read here rather than carried on `PublicForm`: that object is handed
+        // to a Client Component, and staff addresses have no business in the
+        // page's markup.
+        _getFormNotifyEmails(form.id),
+      ]);
       await notifyApplication({
+        applicationId: created.id,
         reference: created.reference,
+        kind: form.kind,
         locale,
         formTitle: form.title,
+        confirmation: form.confirmation,
         applicantName: identity.name,
         applicantEmail: identity.email,
         waitlisted: created.waitlisted,
+        hasAttachments: uploaded.attachments.length > 0,
         answers: answers.answers,
+        notifyEmails,
       });
     });
 
@@ -262,5 +327,5 @@ export async function submitApplicationForm(
   // What the visitor typed, so a no-JavaScript re-render keeps it. Files are
   // never echoed: a browser will not re-fill a file input from markup, and the
   // bytes have no business in a rendered page.
-  return { ...result, values: echoFormValues(formData) };
+  return { ...result, values: echoFormValues(formData, multiKeys) };
 }

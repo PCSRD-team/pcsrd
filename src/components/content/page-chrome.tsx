@@ -5,7 +5,7 @@ import { ButtonLink } from '@/components/ui/button';
 import { UntranslatedNotice } from '@/components/ui/feedback';
 import { Grid, Section, SectionHeading } from '@/components/ui/layout';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
-import { DEFAULT_LOCALE, type Locale, localePath } from '@/lib/i18n/config';
+import { DEFAULT_LOCALE, type Locale, localePath, splitLocalePath } from '@/lib/i18n/config';
 import { ProjectCard, type ProjectCardRecord } from './cards';
 
 /**
@@ -32,11 +32,17 @@ export function ContentBreadcrumbs({
   locale,
   dict,
   trail,
+  currentPath,
   className,
 }: {
   locale: Locale;
   dict: Dictionary;
   trail: Crumb[];
+  /**
+   * The current page's canonical path — locale-less (`/news/slug`) or already
+   * prefixed (`/ar/news/slug`). Gives the last crumb its URL in the JSON-LD.
+   */
+  currentPath?: string;
   className?: string;
 }) {
   const items = [{ label: dict.nav.home, path: '/' }, ...trail];
@@ -44,13 +50,17 @@ export function ContentBreadcrumbs({
     label: item.label,
     href: item.path ? localePath(locale, item.path) : undefined,
   }));
-  // The current page has no `path`; the schema still wants a URL for it, and
-  // the page's own canonical is the right one — but only the route knows it.
-  // Items without a path are therefore listed by name alone, which the
-  // BreadcrumbList spec allows for the final element.
-  const jsonLdItems = items
-    .filter((item): item is Required<Crumb> => Boolean(item.path))
-    .map((item) => ({ name: item.label, url: localePath(locale, item.path) }));
+  // The current page has no `path` (it renders as text), but the structured
+  // data must still list it: a BreadcrumbList that stops at the parent tells a
+  // search engine the page is not part of its own trail. Only the route knows
+  // its canonical URL, so it passes `currentPath`; an item with neither is
+  // skipped rather than given a guessed URL.
+  const toUrl = (path: string) => (splitLocalePath(path) ? path : localePath(locale, path));
+  const lastIndex = items.length - 1;
+  const jsonLdItems = items.flatMap((item, index) => {
+    const path = item.path ?? (index === lastIndex ? currentPath : undefined);
+    return path ? [{ name: item.label, url: toUrl(path) }] : [];
+  });
 
   return (
     <Breadcrumbs
@@ -60,6 +70,17 @@ export function ContentBreadcrumbs({
       jsonLd={<BreadcrumbJsonLd items={jsonLdItems} />}
     />
   );
+}
+
+/**
+ * `vacancies.employment_type` holds schema.org vocabulary (`FULL_TIME`), which
+ * is right for JSON-LD and wrong on screen. An unknown value falls back to
+ * itself rather than to nothing, so a new enum value is visible, not lost.
+ */
+export function employmentTypeLabel(value: string | null | undefined, dict: Dictionary): string | null {
+  if (!value) return null;
+  const labels: Record<string, string> = dict.careers.employmentTypes;
+  return labels[value] ?? value;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { and, arrayOverlaps, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, arrayOverlaps, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   mediaAssets,
@@ -101,10 +101,14 @@ export async function _listProjects(locale: Locale, filters: ProjectFilters) {
           themes: projects.themes,
           programKey: programs.key,
           programTitle: pickCol(programs.titleAr, programs.titleEn, locale),
-          heroMediaId: projects.heroMediaId,
+          // Joined rather than fetched in a second, serial round trip.
+          heroPath: mediaAssets.path,
+          heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+          heroBlur: mediaAssets.blurDataUrl,
         })
         .from(projects)
         .innerJoin(programs, eq(programs.id, projects.programId))
+        .leftJoin(mediaAssets, eq(mediaAssets.id, projects.heroMediaId))
         .where(where)
         .orderBy(desc(projects.publishedAt))
         .limit(PROJECTS_PER_PAGE)
@@ -130,31 +134,7 @@ export async function _listProjects(locale: Locale, filters: ProjectFilters) {
   }
 
   const total = counted[0]?.count ?? 0;
-  const heroIds = Array.from(
-    new Set(rows.map((row) => row.heroMediaId).filter((id): id is string => Boolean(id))),
-  );
-  const heroRows =
-    heroIds.length > 0
-      ? await db
-          .select({
-            id: mediaAssets.id,
-            heroPath: mediaAssets.path,
-            heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-            heroBlur: mediaAssets.blurDataUrl,
-          })
-          .from(mediaAssets)
-          .where(inArray(mediaAssets.id, heroIds))
-      : [];
-  const mediaById = new Map(heroRows.map((row) => [row.id, row]));
-  const items = rows.map(({ heroMediaId, ...row }) => {
-    const media = heroMediaId ? mediaById.get(heroMediaId) : null;
-    return {
-      ...row,
-      heroPath: media?.heroPath ?? null,
-      heroAlt: media?.heroAlt ?? null,
-      heroBlur: media?.heroBlur ?? null,
-    };
-  });
+  const items = rows;
 
   return {
     items: items as ProjectCard[],
@@ -187,10 +167,13 @@ export async function _listFeaturedProjects(locale: Locale, limit = 2) {
         themes: projects.themes,
         programKey: programs.key,
         programTitle: pickCol(programs.titleAr, programs.titleEn, locale),
-        heroMediaId: projects.heroMediaId,
+        heroPath: mediaAssets.path,
+        heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
+        heroBlur: mediaAssets.blurDataUrl,
       })
       .from(projects)
       .innerJoin(programs, eq(programs.id, projects.programId))
+      .leftJoin(mediaAssets, eq(mediaAssets.id, projects.heroMediaId))
       .where(and(eq(projects.status, 'published'), eq(projects.isFeatured, true)))
       .orderBy(desc(projects.publishedAt))
       .limit(limit);
@@ -199,32 +182,7 @@ export async function _listFeaturedProjects(locale: Locale, limit = 2) {
     throw error;
   }
 
-  const heroIds = Array.from(
-    new Set(rows.map((row) => row.heroMediaId).filter((id): id is string => Boolean(id))),
-  );
-  const heroRows =
-    heroIds.length > 0
-      ? await db
-          .select({
-            id: mediaAssets.id,
-            heroPath: mediaAssets.path,
-            heroAlt: pickCol(mediaAssets.altAr, mediaAssets.altEn, locale),
-            heroBlur: mediaAssets.blurDataUrl,
-          })
-          .from(mediaAssets)
-          .where(inArray(mediaAssets.id, heroIds))
-      : [];
-  const mediaById = new Map(heroRows.map((row) => [row.id, row]));
-
-  return rows.map(({ heroMediaId, ...row }) => {
-    const media = heroMediaId ? mediaById.get(heroMediaId) : null;
-    return {
-      ...row,
-      heroPath: media?.heroPath ?? null,
-      heroAlt: media?.heroAlt ?? null,
-      heroBlur: media?.heroBlur ?? null,
-    };
-  }) as ProjectCard[];
+  return rows as ProjectCard[];
 }
 
 export const listFeaturedProjects = cached(_listFeaturedProjects, ['projects:featured'], {
@@ -403,6 +361,7 @@ export async function _listProjectSlugs() {
       slugAr: projects.slugAr,
       slugEn: projects.slugEn,
       translationStatus: projects.translationStatus,
+      noIndex: projects.noIndex,
       updatedAt: projects.updatedAt,
       publishedAt: projects.publishedAt,
     })
@@ -412,5 +371,29 @@ export async function _listProjectSlugs() {
 }
 
 export const listProjectSlugs = cached(_listProjectSlugs, ['projects:slugs'], {
+  tags: [TAGS.projectList],
+});
+
+/**
+ * The slug this project has in `locale`, found by its slug in the other
+ * locale — see `findSlugForLocale` in `./content.ts`. The language switcher
+ * swaps only the prefix, so the detail route asks this on a miss and
+ * redirects to the right URL.
+ */
+export async function _findProjectSlugForLocale(slug: string, locale: Locale) {
+  const [row] = await db
+    .select({ slug: slugCol(projects.slugAr, projects.slugEn, locale) })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.status, 'published'),
+        eq(locale === 'ar' ? projects.slugEn : projects.slugAr, slug),
+      ),
+    )
+    .limit(1);
+  return row?.slug ?? null;
+}
+
+export const findProjectSlugForLocale = cached(_findProjectSlugForLocale, ['projects:cross-locale'], {
   tags: [TAGS.projectList],
 });
