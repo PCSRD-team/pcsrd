@@ -15,6 +15,7 @@ export * from './publications';
 export * from './pages';
 export * from './submissions';
 export * from './applications';
+export * from './donations';
 export * from './audit';
 export * from './redirects';
 export * from './rate-limit';

@@ -214,3 +214,20 @@ export const applicationCapacityRule = pgEnum('application_capacity_rule', [
   'waitlist',
 ]);
 export type ApplicationCapacityRule = (typeof applicationCapacityRule.enumValues)[number];
+
+/**
+ * Where a donation notice stands. `pending` until someone has matched it
+ * against the bank statement; `confirmed` records that the money arrived;
+ * `rejected` that it did not, or the notice was not genuine.
+ */
+export const donationStatus = pgEnum('donation_status', ['pending', 'confirmed', 'rejected']);
+export type DonationStatus = (typeof donationStatus.enumValues)[number];
+
+/** How the donor says they sent it. */
+export const donationMethod = pgEnum('donation_method', [
+  'bank_transfer',
+  'iburaq',
+  'card',
+  'other',
+]);
+export type DonationMethod = (typeof donationMethod.enumValues)[number];

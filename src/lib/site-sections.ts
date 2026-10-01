@@ -16,6 +16,7 @@ export const SITE_SECTIONS: ReadonlySet<string> = new Set([
   'apply',
   'careers',
   'contact',
+  'donate',
   'get-involved',
   'impact',
   'legal',

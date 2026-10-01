@@ -37,6 +37,19 @@ export const CAPABILITIES = [
    * need an ID number. Every use is audited as `view_sensitive`.
    */
   'applications.sensitive',
+  /**
+   * Donation notices: read them, match them against the bank statement,
+   * confirm or reject them, export them for the accounts. Admin and content
+   * manager, like `submissions.read` — the same people who read the inbox.
+   */
+  'donations.manage',
+  /**
+   * The donate page's settings and bank accounts. Admin only: an IBAN on that
+   * page decides where a donor's money goes, so changing one is the most
+   * consequential edit in the admin. The database refuses it to anyone else
+   * too (`donation_accounts.rt_update` is `app.is_admin()`).
+   */
+  'donations.settings',
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -52,6 +65,7 @@ const MATRIX: Record<UserRole, ReadonlySet<Capability>> = {
     'media.delete',
     'submissions.read',
     'submissions.handle',
+    'donations.manage',
   ]),
   editor: new Set<Capability>(['content.read', 'content.write', 'media.upload']),
 };

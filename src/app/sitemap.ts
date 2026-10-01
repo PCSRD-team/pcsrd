@@ -59,6 +59,7 @@ const STATIC_PATHS: { path: string; changeFrequency: ChangeFrequency; priority: 
   { path: '/resources', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/careers', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/contact', changeFrequency: 'yearly', priority: 0.5 },
+  { path: '/donate', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/verify', changeFrequency: 'yearly', priority: 0.7 },
   { path: '/get-involved', changeFrequency: 'yearly', priority: 0.6 },
   { path: '/get-involved/partner', changeFrequency: 'yearly', priority: 0.6 },

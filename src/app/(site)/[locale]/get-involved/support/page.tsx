@@ -19,12 +19,13 @@ import { buildWhatsAppUrl } from '@/lib/utils';
 export const revalidate = 3600;
 
 /**
- * `/get-involved/support` — WhatsApp only (03-FRONTEND §6.3).
+ * `/get-involved/support` — the way to `/donate` first, then a conversation.
  *
- * The site takes no payments. The page says how support reaches the
- * organisation today — a conversation on its official WhatsApp number, read
- * from `organization_settings` — and puts the verify callout beside it,
- * because the support page is the one most often impersonated.
+ * The site still takes no payments: `/donate` publishes the organisation's
+ * accounts and records a donor's notice. This page sends people there first,
+ * and keeps the official WhatsApp number (from `organization_settings`) for
+ * anyone who would rather ask before they give. The verify callout stays
+ * beside both, because the support page is the one most often impersonated.
  */
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/get-involved/support'>): Promise<Metadata> {
@@ -72,9 +73,21 @@ export default async function SupportPage({ params }: PageProps<'/[locale]/get-i
             <p>{dict.getInvolved.supportBody}</p>
           </Prose>
 
+          {/* Giving comes first: the published accounts and the notice form. */}
+          <Panel className="mbs-8 border-bs-2 border-bs-ink">
+            <p className="text-h4 font-semibold text-ink">{dict.donate.eyebrow}</p>
+            <p className="mbs-2 text-small text-ink-70">{dict.donate.lead}</p>
+            <p className="mbs-4">
+              <ButtonLink href={localePath(locale, '/donate')} tone="primary" size="lg">
+                {dict.donate.navCta}
+                <Icon name="arrow" size={20} />
+              </ButtonLink>
+            </p>
+          </Panel>
+
           {whatsapp && whatsappUrl ? (
             <div className="mbs-8 flex flex-wrap items-center gap-4">
-              <ButtonLink href={whatsappUrl} external tone="primary" size="lg">
+              <ButtonLink href={whatsappUrl} external tone="secondary" size="lg">
                 <Icon name="phone" size={20} />
                 {dict.getInvolved.whatsappCta}
                 <Bidi className="font-mono text-small font-normal opacity-85">{whatsapp}</Bidi>

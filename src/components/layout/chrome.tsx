@@ -313,8 +313,21 @@ function VerifyLink({ locale, dict, className }: { locale: Locale; dict: Diction
 
 function PartnerCta({ locale, dict, className }: { locale: Locale; dict: Dictionary; className?: string }) {
   return (
-    <ButtonLink href={localePath(locale, '/get-involved/partner')} tone="primary" size="sm" pendingMark className={className}>
+    <ButtonLink href={localePath(locale, '/get-involved/partner')} tone="secondary" size="sm" pendingMark className={className}>
       {dict.nav.partner}
+    </ButtonLink>
+  );
+}
+
+/**
+ * The header's one primary action. Partnering stepped down to `secondary`
+ * when this arrived: two navy buttons side by side give the eye no first
+ * choice, and most visitors who mean to help mean to give.
+ */
+function DonateCta({ locale, dict, className }: { locale: Locale; dict: Dictionary; className?: string }) {
+  return (
+    <ButtonLink href={localePath(locale, '/donate')} tone="primary" size="sm" pendingMark className={className}>
+      {dict.donate.navCta}
     </ButtonLink>
   );
 }
@@ -370,6 +383,7 @@ function MobileNav({ locale, dict, items }: { locale: Locale; dict: Dictionary; 
             </ul>
           </nav>
           <div className="mbs-4 flex flex-wrap gap-3 border-bs border-rule pbs-4">
+            <DonateCta locale={locale} dict={dict} />
             <VerifyLink locale={locale} dict={dict} />
             <PartnerCta locale={locale} dict={dict} />
           </div>
@@ -441,7 +455,11 @@ export function SiteHeader({
 
           <div className="hidden shrink-0 items-center gap-3 lg:flex">
             <VerifyLink locale={locale} dict={dict} />
-            <PartnerCta locale={locale} dict={dict} />
+            {/* From `xl` only: at `lg` six links and three buttons do not fit
+                one row, and partnering is one click away in the footer and on
+                /get-involved. Donate and verify are never the ones to go. */}
+            <PartnerCta locale={locale} dict={dict} className="hidden xl:inline-flex" />
+            <DonateCta locale={locale} dict={dict} />
           </div>
 
           <MobileNav locale={locale} dict={dict} items={items} />
@@ -667,6 +685,7 @@ export function SiteFooter({
             <ul className="mbs-2 space-y-2 text-small">
               {[
                 { label: dict.nav.contact, href: localePath(locale, '/contact') },
+                { label: dict.donate.navCta, href: localePath(locale, '/donate') },
                 { label: dict.nav.partner, href: localePath(locale, '/get-involved/partner') },
                 { label: dict.getInvolved.volunteerTitle, href: localePath(locale, '/get-involved/volunteer') },
                 { label: dict.nav.support, href: localePath(locale, '/get-involved/support') },

@@ -396,3 +396,84 @@ export async function notifyApplication(input: NotifyApplicationInput): Promise<
     }
   }
 }
+
+// ── Donations ────────────────────────────────────────────────────────────
+
+export type NotifyDonationInput = {
+  donationId: string;
+  reference: string;
+  locale: Locale;
+  /** Already formatted, e.g. `100.00 USD`. */
+  amount: string;
+  method: string;
+  donorName: string | null;
+  donorEmail: string | null;
+  hasAttachment: boolean;
+  /** The settings' own thank-you text in the donor's locale, if any. */
+  thankYou: string | null;
+  notifyEmails: string[];
+};
+
+/**
+ * Announces a donation notice to staff and acknowledges it to the donor.
+ *
+ * The acknowledgement says the notice arrived, not that the money did: only a
+ * person matching it against the bank statement can say that, and a receipt
+ * sent before then would be a receipt for money nobody has seen.
+ */
+export async function notifyDonation(input: NotifyDonationInput): Promise<void> {
+  const labels = ar.donate.fields;
+  const recipients = [serverEnv.MAIL_TO_GENERAL, ...input.notifyEmails];
+  const notification = await renderNotification({
+    type: 'contact',
+    reference: input.reference,
+    isSensitive: false,
+    payload: {
+      [labels.amount]: input.amount,
+      [labels.method]: input.method,
+      [labels.donorName]: input.donorName,
+      [labels.email]: input.donorEmail,
+    },
+    organizationName: await resolveOrganizationName(STAFF_LOCALE),
+    hasAttachment: input.hasAttachment,
+    heading: mailDict[STAFF_LOCALE].notification.donation,
+    adminPath: `/admin/donations/${input.donationId}`,
+  });
+
+  const sends: Promise<unknown>[] = [
+    deliver({
+      from: serverEnv.MAIL_FROM,
+      to: [...new Set(recipients)],
+      subject: notification.subject,
+      html: notification.html,
+      text: notification.text,
+    }),
+  ];
+
+  if (input.donorEmail?.includes('@')) {
+    const acknowledgement = await renderAcknowledgement({
+      locale: input.locale,
+      reference: input.reference,
+      organizationName: await resolveOrganizationName(input.locale),
+      notes: [
+        mailDict[input.locale].acknowledgement.donationPending,
+        ...(input.thankYou?.trim() ? [input.thankYou.trim()] : []),
+      ],
+    });
+    sends.push(
+      deliver({
+        from: serverEnv.MAIL_FROM,
+        to: input.donorEmail,
+        subject: acknowledgement.subject,
+        html: acknowledgement.html,
+        text: acknowledgement.text,
+      }),
+    );
+  }
+
+  for (const result of await Promise.allSettled(sends)) {
+    if (result.status === 'rejected') {
+      console.error('[mail] donation send failed', { reference: input.reference, error: result.reason });
+    }
+  }
+}

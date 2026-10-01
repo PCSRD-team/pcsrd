@@ -56,6 +56,13 @@ export const TAGS = {
    */
   applicationFormVacancyLink: 'application-form:vacancy-link',
 
+  /**
+   * The donate page: its settings and its bank accounts, read together and
+   * changed together. Donation notices carry no tag — every read of them is an
+   * admin read.
+   */
+  donationPage: 'donation:page',
+
   publicationList: 'publication:list',
   publication: (slug: string) => `publication:${slug}`,
 

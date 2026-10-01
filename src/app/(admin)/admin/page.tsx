@@ -8,8 +8,11 @@ import { EmptyState } from '@/components/ui/feedback';
 import { Cluster, Grid, Section, SectionHeading } from '@/components/ui/layout';
 import { Table } from '@/components/ui/table';
 import { Caption, Eyebrow, Meta } from '@/components/ui/typography';
+import { db } from '@/db';
 import { getDashboard } from '@/db/queries/admin';
 import { requireAuth } from '@/lib/auth/guard';
+import { can } from '@/services/_shared/permissions';
+import { getDonationSummary } from '@/services/donations/donation.service';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +25,17 @@ export const dynamic = 'force-dynamic';
  */
 export default async function DashboardPage() {
   const actor = await requireAuth();
-  const data = await getDashboard(actor);
+  const [data, pendingDonations] = await Promise.all([
+    getDashboard(actor),
+    // The tile is dropped, not the dashboard, if the donation tables are not
+    // there yet.
+    can(actor, 'donations.manage')
+      ? getDonationSummary(db, actor).then(
+          (summary) => summary.pending,
+          () => null,
+        )
+      : null,
+  ]);
   const t = adminUi.dashboard;
 
   const published = data.content.filter((row) => row.status === 'published');
@@ -54,6 +67,17 @@ export default async function DashboardPage() {
             href: '/admin/submissions/sensitive',
             action: t.open,
             accent: 'var(--color-destructive)',
+          },
+        ]
+      : []),
+    ...(pendingDonations !== null
+      ? [
+          {
+            label: adminUi.donations.dashboardPending,
+            value: pendingDonations,
+            href: '/admin/donations',
+            action: adminUi.donations.dashboardOpen,
+            accent: 'var(--color-navy-700)',
           },
         ]
       : []),

@@ -3,11 +3,13 @@ import { signOut } from '@/actions/admin/auth';
 import { Button, ButtonLink, buttonClasses } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/layout';
 import { Caption } from '@/components/ui/typography';
+import { db } from '@/db';
 import { getAdminNavCounts } from '@/db/queries/admin';
 import type { UserRole } from '@/db/schema/enums';
 import { DEFAULT_LOCALE, localePath } from '@/lib/i18n/config';
 import type { Actor } from '@/services/_shared/actor';
 import { can } from '@/services/_shared/permissions';
+import { getDonationSummary } from '@/services/donations/donation.service';
 import { adminDict } from './admin-dict';
 import { adminUi } from './admin-ui-dict';
 import { AdminNav } from './nav';
@@ -63,7 +65,7 @@ export type NavGroup = { title: string; items: NavItem[] };
 
 export function buildNav(
   actor: Actor,
-  counts: { submissions?: number; sensitive?: number } = {},
+  counts: { submissions?: number; sensitive?: number; donations?: number } = {},
 ): NavGroup[] {
   const n = adminUi.nav;
   const groups: NavGroup[] = [
@@ -128,6 +130,26 @@ export function buildNav(
               },
             ]
           : []),
+      ],
+    },
+    // Notices for whoever matches them against the bank statement; the
+    // settings — which decide where donors' money goes — for admins only.
+    {
+      title: n.donations,
+      items: [
+        {
+          href: '/admin/donations',
+          label: n.donationNotices,
+          icon: 'inbox',
+          capability: 'donations.manage',
+          badge: counts.donations,
+        },
+        {
+          href: '/admin/donations/settings',
+          label: n.donationSettings,
+          icon: 'page',
+          capability: 'donations.settings',
+        },
       ],
     },
     {
@@ -233,9 +255,27 @@ export function AdminShell({
 }
 
 async function AdminNavWithCounts({ actor }: { actor: Actor }) {
-  const counts = await getAdminNavCounts(actor);
+  const [counts, donations] = await Promise.all([
+    getAdminNavCounts(actor),
+    pendingDonations(actor),
+  ]);
 
-  return <AdminNav nav={buildNav(actor, counts)} />;
+  return <AdminNav nav={buildNav(actor, { ...counts, donations })} />;
+}
+
+/**
+ * Notices waiting to be matched, for the nav badge. A failure here — the
+ * donation tables not yet migrated, say — costs the badge, never the page:
+ * the sidebar renders on every admin screen.
+ */
+async function pendingDonations(actor: Actor): Promise<number | undefined> {
+  if (!can(actor, 'donations.manage')) return undefined;
+  try {
+    return (await getDonationSummary(db, actor)).pending;
+  } catch (error) {
+    console.error('[admin-nav] donation count failed', error);
+    return undefined;
+  }
 }
 
 /**
