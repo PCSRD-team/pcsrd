@@ -23,12 +23,13 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { StrategicObjectives } from './about/_components/strategy';
 import { InvolvementCards } from './get-involved/_components/involvement-cards';
 import { plural } from '@/lib/i18n/plural';
+import styles from './home.module.css';
 
 export const revalidate = 3600;
 
 /**
- * Home — the eleven sections of `04-DESIGN-SYSTEM §3.3`, in render order,
- * closed by the verify block the design uses as the final call to action.
+ * Home — a presentation-only layout with the existing published content,
+ * closed by the verify block as the final call to action.
  *
  * Every figure on this page is a published record: an impact metric renders
  * only with its period and verification status (`Stat` refuses otherwise),
@@ -42,17 +43,15 @@ function mediaSrc(path: string) {
   return storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, 'media', path);
 }
 
-/** A section's header row: eyebrow + title on the start side, the "all …" link on the end side. */
+/** A section's title and optional link to its full collection. */
 function HomeSectionHeading({
   id,
-  index,
   title,
   lead,
   href,
   linkLabel,
 }: {
   id: string;
-  index: number;
   title: string;
   lead?: string | null;
   href?: string;
@@ -61,13 +60,14 @@ function HomeSectionHeading({
   return (
     <SectionHeading
       id={id}
-      eyebrow={String(index).padStart(2, '0')}
+      className={styles.sectionHeading}
       title={title}
       lead={lead}
       actions={
         href && linkLabel ? (
-          <ButtonLink href={href} tone="marked" size="sm" pendingMark>
+          <ButtonLink href={href} tone="primary" size="sm" pendingMark>
             {linkLabel}
+            <Icon name="arrow" size={16} />
           </ButtonLink>
         ) : null
       }
@@ -98,7 +98,7 @@ function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Or
   const licenseNumber = visibleText(org?.licenseNumber);
 
   return (
-    <Section as="section" bounded={false} labelledBy="home-hero" className="bg-paper">
+    <Section as="section" bounded={false} labelledBy="home-hero" className={styles.hero}>
       <Container className="grid items-center gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
         <div>
           {/* The eyebrow used to repeat the founding year and the licence
@@ -107,7 +107,7 @@ function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Or
               carry. The same two facts twice inside one screenful reads as a
               rendering bug to a due-diligence officer, not as emphasis. The
               ledger is the one that keeps them. */}
-          <Eyebrow as="p" className="mbe-3">
+          <Eyebrow as="p" className={styles.heroEyebrow}>
             {dict.home.heroEyebrow}
           </Eyebrow>
           <h1 id="home-hero" className="text-h1 font-semibold text-ink text-balance md:text-display-ar">
@@ -139,20 +139,24 @@ function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Or
           </div>
         </div>
 
-        {/* Decorative: the text carries the meaning and renders before the image. */}
-        <Figure
-          image={{ src: '/hero-bg.webp', width: 1672, height: 941 }}
-          alt=""
-          decorative
-          ratio="wide"
-          // The LCP element of the site's busiest page, and the only `preload`
-          // on it.
-          preload
-          // 0.92 of the two-column split, less the 64px gap: ~455px at the
-          // 1180px content width, not the 540px the old hint claimed.
-          sizes="(min-width: 1180px) 460px, (min-width: 1024px) 44vw, 100vw"
-          className="rule-edge"
-        />
+        {/* The activity photograph follows the introduction in reading order. */}
+        <div className={styles.heroVisual}>
+          <Figure
+            image={{ src: '/pcsrd-community-session.jpg', width: 1080, height: 1080 }}
+            alt={locale === 'ar' ? 'مشاركة ترتدي سترة هيئة الهلال الفلسطيني خلال جلسة نقاش جماعية' : 'A participant wearing a PCSRD vest during a group discussion'}
+            ratio="wide"
+            preload
+            sizes="(min-width: 1180px) 430px, (min-width: 1024px) 44vw, 100vw"
+            className={styles.heroImage}
+          />
+          {foundedYear ? (
+            <div className={styles.foundedBadge}>
+              <Icon name="calendar" size={24} />
+              <strong><Bidi>{foundedYear}</Bidi></strong>
+              <span>{dict.about.foundedYear}</span>
+            </div>
+          ) : null}
+        </div>
       </Container>
     </Section>
   );
@@ -186,7 +190,7 @@ function CredibilityStrip({
   if (cells.length === 0) return null;
 
   return (
-    <Section as="section" tone="alt" spacing="tight" bounded={false} labelledBy="home-credibility">
+    <Section as="section" spacing="tight" bounded={false} labelledBy="home-credibility" className={styles.credibility}>
       <h2 id="home-credibility" className="sr-only">
         {dict.homePage.identityTitle}
       </h2>
@@ -194,6 +198,7 @@ function CredibilityStrip({
         <ul className="grid divide-y divide-rule border-y border-rule sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
           {cells.map((cell) => (
             <li key={cell.key} className="px-5 py-6 sm:border-s sm:border-rule sm:first:border-s-0">
+              <span className={styles.statIcon}><Icon name={cell.key === 'years' ? 'calendar' : cell.key === 'governorates' ? 'pin' : 'user'} size={24} /></span>
               <p className="font-mono text-h2 font-semibold leading-none text-ink tabular-nums">
                 <Bidi>{formatNumber(cell.value, locale)}</Bidi>
               </p>
@@ -214,28 +219,34 @@ function AboutTeaser({ locale, dict, org }: { locale: Locale; dict: Dictionary; 
   if (!description && !hasObjectives) return null;
 
   return (
-    <Section labelledBy="home-about" spacing="default" bounded={false}>
-      <Container className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
-        <div>
-          <HomeSectionHeading id="home-about" index={1} title={dict.homePage.aboutTitle} />
+    <Section labelledBy="home-about" spacing="default" bounded={false} className={styles.about}>
+      <Container>
+        <div className={styles.aboutPanel}>
+        <div className={styles.aboutCopy}>
+          <HomeSectionHeading id="home-about" title={dict.homePage.aboutTitle} />
           {description ? <p className="measure text-body text-ink-70">{description}</p> : null}
           <div className="mbs-6 flex flex-wrap gap-3">
-            <ButtonLink href={localePath(locale, '/about')} tone="secondary" pendingMark>
+            <ButtonLink href={localePath(locale, '/about')} tone="primary" pendingMark>
               {dict.homePage.aboutCta}
+              <Icon name="arrow" size={16} />
             </ButtonLink>
             <ButtonLink href={localePath(locale, '/about/governance')} tone="marked" pendingMark>
               {dict.about.governance}
             </ButtonLink>
           </div>
         </div>
+        <div className={styles.aboutVisual}>
+          <Figure image={{ src: '/pcsrd-team-meeting.jpg', width: 1080, height: 1080 }} alt={locale === 'ar' ? 'مشاركون في نقاش حول طاولة اجتماع في مقر الهيئة' : 'Participants discussing around a meeting table at PCSRD'} ratio="wide" sizes="(min-width: 1180px) 460px, (min-width: 1024px) 42vw, 100vw" className={styles.aboutImage} />
+        </div>
         {hasObjectives ? (
-          <div>
+          <div className={styles.objectives}>
             <Eyebrow as="p" className="mbe-3">
               {dict.aboutPages.objectivesTitle}
             </Eyebrow>
             <StrategicObjectives lines={org?.strategicObjectives} locale={locale} dict={dict} heading={false} />
           </div>
         ) : null}
+        </div>
       </Container>
     </Section>
   );
@@ -255,20 +266,18 @@ function ProgramsGrid({
   if (programs.length === 0) return null;
 
   return (
-    <Section tone="alt" labelledBy="home-programs" bounded={false}>
+    <Section labelledBy="home-programs" bounded={false} className={styles.programs}>
       <Container>
         <HomeSectionHeading
           id="home-programs"
-          index={2}
           title={dict.home.programsTitle}
           lead={dict.home.programsLead}
-          href={localePath(locale, '/programs')}
-          linkLabel={dict.common.viewAll}
         />
         <Grid as="ul" cols={3} gap={6}>
           {programs.map((program, index) => (
-            <Card as="li" key={program.id} accent={`var(${program.accentToken})`} interactive>
+            <Card as="li" key={program.id} accent={`var(${program.accentToken})`} interactive className={styles.programCard}>
               <CardBody>
+                <span className={styles.programIcon}><Icon name={index === 0 ? 'user' : index === 1 ? 'plus' : 'pin'} size={24} /></span>
                 <p className="font-mono text-eyebrow text-mono-muted">
                   <Bidi>{`P-${String(index + 1).padStart(2, '0')}`}</Bidi>
                   {' · '}
@@ -299,6 +308,12 @@ function ProgramsGrid({
             </Card>
           ))}
         </Grid>
+        <div className={styles.centerAction}>
+          <ButtonLink href={localePath(locale, '/programs')} tone="primary" size="sm" pendingMark>
+            {dict.common.viewAll}
+            <Icon name="arrow" size={16} />
+          </ButtonLink>
+        </div>
       </Container>
     </Section>
   );
@@ -319,11 +334,10 @@ function ImpactStrip({
   const statusLabel = { verified: dict.impact.verified, reported: dict.impact.reported, target: dict.impact.target };
 
   return (
-    <Section labelledBy="home-impact" bounded={false}>
+    <Section labelledBy="home-impact" bounded={false} className={styles.impact}>
       <Container>
         <HomeSectionHeading
           id="home-impact"
-          index={3}
           title={dict.home.impactTitle}
           lead={dict.home.impactLead}
           href={localePath(locale, '/impact')}
@@ -333,6 +347,7 @@ function ImpactStrip({
           {metrics.slice(0, 4).map((metric) => (
             <Stat
               key={metric.id}
+              className={styles.metric}
               as="li"
               locale={locale}
               value={formatNumber(metric.value, locale)}
@@ -375,10 +390,10 @@ function WhereWeWork({
   if (rows.length === 0) return null;
 
   return (
-    <Section tone="alt" labelledBy="home-where" bounded={false}>
+    <Section labelledBy="home-where" bounded={false} className={styles.where}>
       <Container className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
         <div>
-          <HomeSectionHeading id="home-where" index={4} title={dict.homePage.whereWeWorkTitle} lead={dict.homePage.whereWeWorkLead} />
+          <HomeSectionHeading id="home-where" title={dict.homePage.whereWeWorkTitle} lead={dict.homePage.whereWeWorkLead} />
           <ButtonLink href={localePath(locale, '/projects')} tone="marked" pendingMark>
             {dict.nav.projects}
           </ButtonLink>
@@ -415,11 +430,10 @@ function FeaturedProjects({
   if (projects.length === 0) return null;
 
   return (
-    <Section labelledBy="home-projects" bounded={false}>
+    <Section labelledBy="home-projects" bounded={false} className={styles.projects}>
       <Container>
         <HomeSectionHeading
           id="home-projects"
-          index={5}
           title={dict.projects.title}
           lead={dict.projects.lead}
           href={localePath(locale, '/projects')}
@@ -464,26 +478,26 @@ function FeaturedStory({
   const href = localePath(locale, `/impact/stories/${story.slug}`);
 
   return (
-    <Section tone="inverse" labelledBy="home-story" bounded={false}>
-      <Container className="grid gap-10 lg:grid-cols-[1.25fr_0.75fr] lg:gap-16">
+    <Section labelledBy="home-story" bounded={false} className={styles.story}>
+      <Container className={story.heroPath ? styles.storyCard : styles.storyTextOnly}>
         <div>
-          <Eyebrow as="p" className="mbe-3 text-paper/80">
-            {String(6).padStart(2, '0')} · {dict.home.storiesTitle}
+          <Eyebrow as="p" className="mbe-3 text-gold-700">
+            {dict.home.storiesTitle}
           </Eyebrow>
-          <h2 id="home-story" className="text-h2 font-semibold text-paper">
+          <h2 id="home-story" className="text-h2 font-semibold text-ink">
             {story.title}
           </h2>
           <Rule weight="mark" as="span" className="mbs-4" />
           {story.quote ? (
-            <blockquote className="mbs-6 text-lead text-paper">
+            <blockquote className="mbs-6 text-lead text-ink-70">
               <p>{story.quote}</p>
-              {story.quoteAttribution ? <footer className="mbs-3 text-small text-paper/80">— {story.quoteAttribution}</footer> : null}
+              {story.quoteAttribution ? <footer className="mbs-3 text-small text-ink-55">— {story.quoteAttribution}</footer> : null}
             </blockquote>
           ) : story.summary ? (
-            <p className="measure-lead mbs-6 text-lead text-paper">{story.summary}</p>
+            <p className="measure-lead mbs-6 text-lead text-ink-70">{story.summary}</p>
           ) : null}
           <p className="mbs-8">
-            <ButtonLink href={href} tone="secondary" className="border-paper text-paper hover:bg-navy-700 hover:text-paper" pendingMark>
+            <ButtonLink href={href} tone="primary" pendingMark>
               {dict.homePage.storyCta}
             </ButtonLink>
           </p>
@@ -493,6 +507,7 @@ function FeaturedStory({
             image={{ src: mediaSrc(story.heroPath), blurDataURL: story.heroBlur ?? undefined }}
             alt={story.heroAlt ?? story.title ?? ''}
             ratio="portrait"
+            className={styles.storyImage}
             sizes="(min-width: 1180px) 400px, (min-width: 1024px) 35vw, 100vw"
           />
         ) : null}
@@ -517,11 +532,10 @@ function PartnersGrid({
   const shown = (featured.length > 0 ? featured : partners).slice(0, 8);
 
   return (
-    <Section labelledBy="home-partners" bounded={false}>
+    <Section labelledBy="home-partners" bounded={false} className={styles.partners}>
       <Container>
         <HomeSectionHeading
           id="home-partners"
-          index={7}
           title={dict.home.partnersTitle}
           href={localePath(locale, '/partners')}
           linkLabel={dict.common.viewAll}
@@ -549,9 +563,9 @@ function PartnersGrid({
 
 function GetInvolvedPanels({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   return (
-    <Section tone="alt" labelledBy="home-involved" bounded={false}>
+    <Section labelledBy="home-involved" bounded={false} className={styles.involved}>
       <Container>
-        <HomeSectionHeading id="home-involved" index={8} title={dict.homePage.getInvolvedTitle} lead={dict.homePage.getInvolvedLead} />
+        <HomeSectionHeading id="home-involved" title={dict.homePage.getInvolvedTitle} lead={dict.homePage.getInvolvedLead} />
         <InvolvementCards locale={locale} dict={dict} headingLevel={3} />
       </Container>
     </Section>
@@ -578,18 +592,17 @@ function LatestNews({
   const categoryTone = { news: 'neutral', statement: 'info', announcement: 'active' } as const;
 
   return (
-    <Section labelledBy="home-news" bounded={false}>
+    <Section labelledBy="home-news" bounded={false} className={styles.news}>
       <Container>
         <HomeSectionHeading
           id="home-news"
-          index={9}
           title={dict.home.latestTitle}
           href={localePath(locale, '/news')}
           linkLabel={dict.common.viewAll}
         />
-        <RuledList bounded>
+        <RuledList className={styles.newsGrid}>
           {posts.map((post) => (
-            <RuledListItem key={post.id} className="grid gap-x-6 gap-y-1 sm:grid-cols-[140px_120px_minmax(0,1fr)]">
+            <RuledListItem key={post.id} className={styles.newsCard}>
               {post.publishedAt ? (
                 <time dateTime={toDateTimeAttr(post.publishedAt)} className="font-mono text-caption text-mono-muted">
                   <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
@@ -601,7 +614,11 @@ function LatestNews({
                 <Badge tone={categoryTone[post.category]}>{categoryLabel[post.category]}</Badge>
               </span>
               <Link href={localePath(locale, `/news/${post.slug}`)} className="text-body font-medium text-ink no-underline hover:text-gold-700">
-                {post.title}
+                <h3 className={styles.newsTitle}>{post.title}</h3>
+                <span className={styles.newsReadMore}>
+                  {dict.common.readMore}
+                  <span className={styles.newsArrow}><Icon name="arrow" size={20} /></span>
+                </span>
               </Link>
             </RuledListItem>
           ))}
@@ -615,7 +632,7 @@ function LatestNews({
 
 function VerifyBlock({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   return (
-    <Section spacing="tight" bounded={false} labelledBy="home-verify">
+    <Section spacing="tight" bounded={false} labelledBy="home-verify" className={styles.verify}>
       <Container>
         <Panel tone="gold" className="flex flex-wrap items-center justify-between gap-6 border-bs-2 border-bs-gold-600">
           <div className="max-w-2xl">
@@ -674,8 +691,10 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   const memberships = partners.filter((partner) => partner.type === 'network' || partner.type === 'membership');
 
   return (
-    <>
+    <div className={styles.home}>
       <Hero locale={locale} dict={dict} org={org ?? null} />
+      <ProgramsGrid locale={locale} dict={dict} programs={programs} />
+      <AboutTeaser locale={locale} dict={dict} org={org ?? null} />
       <CredibilityStrip
         locale={locale}
         dict={dict}
@@ -684,16 +703,14 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         partners={partners.length}
         memberships={memberships.length}
       />
-      <AboutTeaser locale={locale} dict={dict} org={org ?? null} />
-      <ProgramsGrid locale={locale} dict={dict} programs={programs} />
       <ImpactStrip locale={locale} dict={dict} metrics={shownMetrics} />
-      <WhereWeWork locale={locale} dict={dict} governorates={facets.byGovernorate} />
-      <FeaturedProjects locale={locale} dict={dict} projects={featuredProjects} />
       <FeaturedStory locale={locale} dict={dict} story={story} />
-      <PartnersGrid locale={locale} dict={dict} partners={partners} />
-      <GetInvolvedPanels locale={locale} dict={dict} />
       <LatestNews locale={locale} dict={dict} posts={shownPosts.items} />
+      <GetInvolvedPanels locale={locale} dict={dict} />
+      <FeaturedProjects locale={locale} dict={dict} projects={featuredProjects} />
+      <WhereWeWork locale={locale} dict={dict} governorates={facets.byGovernorate} />
+      <PartnersGrid locale={locale} dict={dict} partners={partners} />
       <VerifyBlock locale={locale} dict={dict} />
-    </>
+    </div>
   );
 }

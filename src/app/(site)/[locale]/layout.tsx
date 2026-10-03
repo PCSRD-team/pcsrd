@@ -93,7 +93,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
         <OrganizationJsonLd org={org} locale={locale} />
         <WebSiteJsonLd siteName={siteName} locale={locale} description={org?.shortDescription} />
 
-        <SiteHeader locale={locale} dict={dict} org={org} />
+        <SiteHeader locale={locale} dict={dict} org={org} programs={programs} />
 
         {/* `tabIndex={-1}` so the skip link actually moves focus into the region. */}
         <main id="main" tabIndex={-1} className="flex-1 outline-none">

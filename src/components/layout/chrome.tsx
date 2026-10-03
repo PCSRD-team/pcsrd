@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Bidi } from '@/components/ui/bidi';
-import { ButtonLink, buttonClasses } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button';
 import { Container, Rule } from '@/components/ui/layout';
 import { DefinitionList } from '@/components/ui/definition-list';
 import { Icon } from '@/components/ui/icon';
@@ -14,9 +14,12 @@ import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import { type Locale, localePath } from '@/lib/i18n/config';
 import { buildWhatsAppUrl } from '@/lib/utils';
 import { LanguageSwitcher, LanguageSwitcherStatic } from './language-switcher';
+import { HeaderNavigation, type HeaderItem } from './header-navigation';
+import headerStyles from './header.module.css';
 
 /**
- * Persistent chrome — Server Components throughout.
+ * Persistent chrome — server-rendered identity and links, with a small client
+ * navigation component for active routes, hover disclosures and dismissal.
  *
  * Principle 4 of the design direction — "two doors, always open" — is why the
  * partnership CTA and the channel-verification link are in the chrome on every
@@ -28,10 +31,8 @@ import { LanguageSwitcher, LanguageSwitcherStatic } from './language-switcher';
  * into the mobile menu. Hiding the anti-impersonation link behind a hamburger
  * would defeat its purpose for exactly the audience most at risk.
  *
- * The mobile menu is a `<details>` disclosure: it opens and closes with no
- * JavaScript, which is the same guarantee the six forms make. The only client
- * code in the chrome is `LanguageSwitcher` (it must read the current URL) and
- * the kit's `LinkPendingMark` (one hook, `useLinkStatus`).
+ * Native `<details>` keep menu disclosures usable before hydration. The
+ * navigation adds hover, Escape, outside-click and route-change dismissal.
  */
 
 export type OrganizationChrome = {
@@ -211,7 +212,7 @@ export function ChannelsBar({ locale, dict }: { locale: Locale; dict: Dictionary
   const utility = secondaryNavItems(locale, dict);
 
   return (
-    <nav aria-label={dict.siteChrome.channelsBarNav} className="bg-ink text-paper">
+    <nav aria-label={dict.siteChrome.channelsBarNav} className={`bg-ink text-paper ${headerStyles.bar}`}>
       <Container className="flex min-h-11 items-center justify-between gap-4">
         <p className="flex min-w-0 items-center gap-3 text-caption">
           <span aria-hidden="true" className="inline-block size-2 shrink-0 border-2 border-gold-600" />
@@ -288,123 +289,46 @@ function aboutNavItems(locale: Locale, dict: Dictionary): NavItem[] {
   ];
 }
 
-function NavLink({ item, className }: { item: NavItem; className?: string }) {
-  return (
-    <Link
-      href={item.href}
-      className={
-        className ??
-        'motion-standard relative inline-flex min-h-target items-center px-2 text-small text-ink no-underline transition-colors hover:text-gold-700'
-      }
-    >
-      {item.label}
-      <LinkPendingMark />
-    </Link>
-  );
-}
-
-function VerifyLink({ locale, dict, className }: { locale: Locale; dict: Dictionary; className?: string }) {
-  return (
-    <ButtonLink href={localePath(locale, '/verify')} tone="marked" size="sm" pendingMark className={className}>
-      {dict.nav.verify}
-    </ButtonLink>
-  );
-}
-
-function PartnerCta({ locale, dict, className }: { locale: Locale; dict: Dictionary; className?: string }) {
-  return (
-    <ButtonLink href={localePath(locale, '/get-involved/partner')} tone="primary" size="sm" pendingMark className={className}>
-      {dict.nav.partner}
-    </ButtonLink>
-  );
-}
-
-/**
- * The mobile disclosure. `<details>` gives open/close, keyboard operation and
- * `aria-expanded` semantics natively, with JavaScript off. The panel is
- * absolutely positioned under the header row so the header keeps its height.
- */
-function MobileNav({ locale, dict, items }: { locale: Locale; dict: Dictionary; items: NavItem[] }) {
-  return (
-    <details className="group lg:hidden">
-      <summary
-        className={buttonClasses({
-          tone: 'quiet',
-          size: 'sm',
-          // The pointer comes from `buttonClasses` itself — a <summary> gets none from the UA.
-          className: 'list-none rule-edge [&::-webkit-details-marker]:hidden',
-        })}
-      >
-        <span className="group-open:hidden">
-          <Icon name="menu" size={20} />
-        </span>
-        <span className="hidden group-open:inline">
-          <Icon name="close" size={20} />
-        </span>
-        <span>{dict.common.menu}</span>
-      </summary>
-      <div className="absolute start-0 end-0 inset-bs-full z-40 max-h-[calc(100dvh-7rem)] overflow-y-auto rule-section bg-paper">
-        <Container className="pbs-2 pbe-6">
-          <nav aria-label={dict.a11y.mainNav}>
-            <ul className="border-be border-rule">
-              {[{ label: dict.nav.home, href: localePath(locale, '/') }, ...items].map((item) => (
-                <li key={item.href} className="border-bs border-rule">
-                  <NavLink
-                    item={item}
-                    className="motion-standard relative flex min-h-12 items-center text-body text-ink no-underline transition-colors hover:text-gold-700"
-                  />
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <nav aria-label={dict.siteChrome.secondaryNav} className="mbs-4">
-            <ul className="flex flex-wrap gap-x-5 gap-y-1">
-              {secondaryNavItems(locale, dict).map((item) => (
-                <li key={item.href}>
-                  <NavLink
-                    item={item}
-                    className="motion-standard relative inline-flex min-h-target items-center text-small text-ink-70 no-underline transition-colors hover:text-gold-700"
-                  />
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <div className="mbs-4 flex flex-wrap gap-3 border-bs border-rule pbs-4">
-            <VerifyLink locale={locale} dict={dict} />
-            <PartnerCta locale={locale} dict={dict} />
-          </div>
-        </Container>
-      </div>
-    </details>
-  );
-}
-
 export function SiteHeader({
   locale,
   dict,
   org,
+  programs = [],
 }: {
   locale: Locale;
   dict: Dictionary;
   org: OrganizationChrome | null;
+  programs?: ProgramLink[];
 }) {
   const name = organizationName(org);
   const logoAlt = visibleText(org?.logoPrimaryAlt) ?? name;
-  const logoSrc =
-    org?.logoPrimaryBucket && org.logoPrimaryPath
-      ? storageUrl(publicEnv.NEXT_PUBLIC_SUPABASE_URL, org.logoPrimaryBucket, org.logoPrimaryPath)
-      : '/pcsrd-logo.jpeg';
-  const items = mainNavItems(locale, dict);
+  const logoSrc = '/pcsrd-emblem-gold.png';
+  const items: HeaderItem[] = [
+    { label: dict.nav.home, href: localePath(locale, '/') },
+    { label: dict.nav.about, href: localePath(locale, '/about'), children: aboutNavItems(locale, dict) },
+    { label: dict.nav.programs, href: localePath(locale, '/programs'), children: [
+      { label: dict.home.programsTitle, href: localePath(locale, '/programs') },
+      ...programs.flatMap(program => program.slug && program.title ? [{ label: program.title, href: localePath(locale, `/programs/${program.slug}`) }] : []),
+    ] },
+    { label: dict.nav.projects, href: localePath(locale, '/projects') },
+    { label: dict.nav.contact, href: localePath(locale, '/contact') },
+    { label: dict.nav.more, href: localePath(locale, '/get-involved'), children: [
+      ...mainNavItems(locale, dict).slice(3),
+      ...secondaryNavItems(locale, dict).filter(item => item.href !== localePath(locale, '/contact')),
+      { label: dict.homePage.getInvolvedTitle, href: localePath(locale, '/get-involved') },
+      { label: dict.nav.verify, href: localePath(locale, '/verify') },
+    ] },
+  ];
 
   return (
-    <header className="sticky inset-bs-0 z-50">
+    <header className={headerStyles.header}>
       <ChannelsBar locale={locale} dict={dict} />
-      <div className="relative border-be border-rule bg-paper">
-        <Container className="flex min-h-20 items-center justify-between gap-4 py-2">
+      <div className={headerStyles.row}>
+        <Container className={headerStyles.inner}>
           <Link
             href={localePath(locale, '/')}
             aria-label={`${name} — ${dict.siteChrome.homeLinkLabel}`}
-            className="flex min-w-0 items-center gap-3 text-ink no-underline"
+            className={headerStyles.brand}
           >
             {/* A fixed 48px square box with `object-contain`.
                 `w-auto` reserved a 112×48 box from the width/height attributes
@@ -423,28 +347,24 @@ export function SiteHeader({
               sizes="48px"
               className="size-12 shrink-0 object-contain"
             />
-            <span className="min-w-0">
-              <span className="block truncate text-small font-semibold leading-tight sm:text-body">{name}</span>
-              <span className="hidden truncate text-caption text-ink-55 sm:block">{dict.home.heroEyebrow}</span>
+            <span className={headerStyles.brandText}>
+              <span className={headerStyles.brandName}>{name}</span>
+              <span className={headerStyles.brandCaption}>{dict.home.heroEyebrow}</span>
             </span>
           </Link>
 
-          <nav aria-label={dict.a11y.mainNav} className="hidden lg:block">
-            <ul className="flex items-center gap-1">
-              {items.map((item) => (
-                <li key={item.href}>
-                  <NavLink item={item} />
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="hidden shrink-0 items-center gap-3 lg:flex">
-            <VerifyLink locale={locale} dict={dict} />
-            <PartnerCta locale={locale} dict={dict} />
-          </div>
-
-          <MobileNav locale={locale} dict={dict} items={items} />
+          <HeaderNavigation
+            items={items}
+            homeHref={localePath(locale, '/')}
+            navLabel={dict.a11y.mainNav}
+            menuLabel={dict.common.menu}
+            closeLabel={dict.common.close}
+            moreLabel={dict.home.heroEyebrow}
+            donateLabel={dict.nav.donate}
+            donateHref={localePath(locale, '/get-involved/support')}
+            partnerLabel={dict.nav.partner}
+            partnerHref={localePath(locale, '/get-involved/partner')}
+          />
         </Container>
       </div>
     </header>

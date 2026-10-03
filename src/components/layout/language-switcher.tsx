@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LinkPendingMark } from '@/components/ui/link-pending';
+import styles from './header.module.css';
 import { type Locale, otherLocale, splitLocalePath } from '@/lib/i18n/config';
 import { cn } from '@/lib/utils';
 
@@ -15,8 +15,7 @@ import { cn } from '@/lib/utils';
  * current URL is `headers()`, and reading it in the layout would opt the entire
  * `(site)` subtree out of static generation for one string.
  *
- * So: `usePathname` and `useSearchParams`, and everything else in the chrome
- * stays a Server Component.
+ * `usePathname` and `useSearchParams` preserve that context client-side.
  */
 type SwitcherProps = { locale: Locale; label: string; className?: string };
 
@@ -80,15 +79,10 @@ function SwitcherLink({ href, target, label, className }: { href: string; target
       // The other locale is a different render of a page most visitors never
       // open; prefetching it doubles the work for no benefit.
       prefetch={false}
-      // `min-h-target` keeps the 44px target the design system asks for; the
-      // 1px paper edge is the only decoration — square, like every control.
-      className={cn(
-        'motion-standard relative inline-flex min-h-target items-center border border-paper/40 px-3 font-mono text-caption font-medium text-paper no-underline transition-colors hover:border-gold-600 hover:text-gold-050',
-        className,
-      )}
+      className={cn(styles.language, className)}
     >
+      <span className={styles.languageCode} aria-hidden="true" dir="ltr">{target.toUpperCase()}</span>
       {label}
-      <LinkPendingMark />
     </Link>
   );
 }

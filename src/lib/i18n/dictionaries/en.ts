@@ -37,6 +37,8 @@ export const en: Dictionary = {
 
   nav: {
     home: 'Home',
+    more: 'More',
+    donate: 'Donate now',
     about: 'About',
     programs: 'Programmes',
     projects: 'Projects',

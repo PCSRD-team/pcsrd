@@ -43,6 +43,8 @@ export const ar = {
 
   nav: {
     home: 'الرئيسية',
+    more: 'المزيد',
+    donate: 'تبرّع الآن',
     about: 'من نحن',
     programs: 'البرامج',
     projects: 'المشاريع',
