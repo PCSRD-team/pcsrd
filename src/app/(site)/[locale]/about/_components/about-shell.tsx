@@ -4,6 +4,7 @@ import { Container, PageHeader } from '@/components/ui/layout';
 import { Tabs } from '@/components/ui/tabs';
 import { type Locale, localePath } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
+import styles from '../about.module.css';
 
 /**
  * The `/about` cluster — "the due-diligence cluster" in the design — is five
@@ -100,7 +101,7 @@ export function AboutShell({
           { label: aboutSectionTitle(dict, current), path: ABOUT_PATHS[current] },
         ];
 
-  return (
+  const content = (
     <Container className="section-gap">
       <PageHeader
         eyebrow={dict.aboutPages.eyebrow}
@@ -114,4 +115,6 @@ export function AboutShell({
       <div className="mbs-10 space-y-16">{children}</div>
     </Container>
   );
+
+  return current === 'overview' ? content : <div className={`${styles.page} ${styles.details}`}>{content}</div>;
 }

@@ -99,8 +99,8 @@ function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Or
 
   return (
     <Section as="section" bounded={false} labelledBy="home-hero" className={styles.hero}>
-      <Container className="grid items-center gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
-        <div>
+      <Container className={styles.heroGrid}>
+        <div className={styles.heroCopy}>
           {/* The eyebrow used to repeat the founding year and the licence
               number, both of which the identity ledger eight lines below
               states again — with their terms, which the eyebrow could not
@@ -141,12 +141,22 @@ function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Or
 
         {/* The activity photograph follows the introduction in reading order. */}
         <div className={styles.heroVisual}>
+          <svg width="0" height="0" className={styles.heroClipDefinitions} aria-hidden="true" focusable="false">
+            <defs>
+              <clipPath id="home-hero-photo" clipPathUnits="objectBoundingBox">
+                <path d="M0.4,0.025 C0.62,-0.015 0.84,0.085 1,0 L1,0.91 C0.8,0.925 0.68,1.025 0.43,0.975 C0.25,0.94 0.12,0.915 0.06,0.94 C-0.045,0.72 0.015,0.48 0.09,0.29 C0.16,0.11 0.24,0.045 0.4,0.025 Z" />
+              </clipPath>
+              <clipPath id="home-hero-photo-rtl" clipPathUnits="objectBoundingBox">
+                <path transform="translate(1 0) scale(-1 1)" d="M0.4,0.025 C0.62,-0.015 0.84,0.085 1,0 L1,0.91 C0.8,0.925 0.68,1.025 0.43,0.975 C0.25,0.94 0.12,0.915 0.06,0.94 C-0.045,0.72 0.015,0.48 0.09,0.29 C0.16,0.11 0.24,0.045 0.4,0.025 Z" />
+              </clipPath>
+            </defs>
+          </svg>
           <Figure
-            image={{ src: '/pcsrd-community-session.jpg', width: 1080, height: 1080 }}
+            image={{ src: '/pcsrd-hero-workshop.png', width: 1536, height: 1024 }}
             alt={locale === 'ar' ? 'مشاركة ترتدي سترة هيئة الهلال الفلسطيني خلال جلسة نقاش جماعية' : 'A participant wearing a PCSRD vest during a group discussion'}
             ratio="wide"
             preload
-            sizes="(min-width: 1180px) 430px, (min-width: 1024px) 44vw, 100vw"
+            sizes="(min-width: 1024px) 55vw, 100vw"
             className={styles.heroImage}
           />
           {foundedYear ? (
@@ -158,6 +168,12 @@ function Hero({ locale, dict, org }: { locale: Locale; dict: Dictionary; org: Or
           ) : null}
         </div>
       </Container>
+      <svg className={styles.heroWaves} viewBox="0 0 1440 160" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <path fill="var(--color-gold-050)" d="M0 95C240 180 425 5 700 84S1110 155 1440 30V160H0Z" />
+        <path fill="var(--color-navy-700)" d="M690 142C960 190 1120 70 1440 0V160H690Z" />
+        <path fill="var(--color-gold-600)" d="M970 155C1140 145 1270 63 1440 55V160H970Z" />
+        <path fill="var(--color-paper)" d="M0 92C260 175 410 115 640 118S905 202 1150 151S1330 125 1440 116V160H0Z" />
+      </svg>
     </Section>
   );
 }
@@ -248,6 +264,7 @@ function AboutTeaser({ locale, dict, org }: { locale: Locale; dict: Dictionary; 
         ) : null}
         </div>
       </Container>
+
     </Section>
   );
 }

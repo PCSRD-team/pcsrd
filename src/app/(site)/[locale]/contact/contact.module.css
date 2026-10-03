@@ -1,0 +1,63 @@
+.page { background: var(--color-paper); }
+.page > div { padding-block: 3rem; }
+.hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  border-radius: 26px;
+  background: var(--color-navy-900);
+  color: var(--color-paper);
+  margin-block-end: 2.5rem;
+}
+.hero::after { content: ''; position: absolute; z-index: -1; width: 270px; aspect-ratio: 1; border: 45px solid color-mix(in srgb, var(--color-paper) 5%, transparent); border-radius: 50%; inset-inline-end: -55px; inset-block-end: -125px; }
+.hero h1 { color: var(--color-paper); font-size: clamp(2.1rem, 4vw, 3.4rem); }
+.hero p, .hero nav, .hero nav span, .hero a { color: var(--color-paper); }
+.hero > p:first-of-type { color: var(--color-gold-600); }
+.hero > p:last-child { max-width: 55ch; opacity: .85; }
+.page :global(.rule-mark) { width: 42px; }
+.contactGrid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 2rem; align-items: start; }
+.formCard { padding: clamp(1.5rem, 3vw, 2.5rem); border: 1px solid var(--color-hairline); border-radius: 24px; background: var(--color-paper); box-shadow: 0 12px 36px color-mix(in srgb, var(--color-navy-900) 5%, transparent); }
+.formCard h2 { font-size: 1.5rem; }
+.iconTile { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 15px; background: var(--color-navy-100); color: var(--color-navy-700); margin-block-end: 1.25rem; }
+.details { padding: clamp(1.5rem, 3vw, 2.5rem); background: var(--color-paper-alt); border: 1px solid var(--color-hairline); border-radius: 24px; }
+.details > p:first-of-type { font-family: var(--font-sans); font-size: 1.2rem; font-weight: 600; color: var(--color-ink); letter-spacing: normal; }
+.details > [role='note'] { padding: 1.5rem; border-radius: 16px; border: 1px solid var(--color-hairline); border-block-start: 3px solid var(--color-gold-600); background: var(--color-paper); }
+.details address ul { border: 0; }
+.details address li { align-items: flex-start; flex-direction: column; padding-block: 1rem; }
+.details address a { overflow-wrap: anywhere; }
+.details a { border-radius: 12px; }
+.page input:not([type='hidden']):not([type='checkbox']):not([type='radio']), .page select, .page textarea {
+  border-radius: 10px;
+  background-color: var(--color-paper);
+  border-color: var(--color-rule-control);
+  min-width: 0;
+  max-width: 100%;
+}
+.page input:not([type='hidden']):not([type='checkbox']):not([type='radio']), .page select { min-height: 48px; }
+.page textarea { min-height: 145px; }
+.page input:focus-visible, .page textarea:focus-visible, .page select:focus-visible { background-color: white; }
+.page [aria-invalid='true'] { border-color: var(--color-destructive); }
+.page button[type='submit'] { min-width: 120px; border-radius: 999px; padding-inline: 1.75rem; box-shadow: 0 5px 14px color-mix(in srgb, var(--color-navy-700) 15%, transparent); }
+.page a:global(.min-h-target) { border-radius: 999px; }
+.formCard > :last-child { border-radius: 12px; }
+.page .complaints { padding-block: 1.5rem 5rem; scroll-margin-block-start: 155px; }
+.complaintGrid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: start; gap: 2.5rem; padding: clamp(1.5rem, 3vw, 2.5rem); background: var(--color-navy-900); border-radius: 26px; }
+.complaintIntro { padding-block: 1rem; }
+.confidentialIcon { display: grid; place-items: center; width: 60px; height: 60px; margin-block-end: 2rem; background: color-mix(in srgb, var(--color-gold-600) 15%, transparent); color: var(--color-gold-600); border: 1px solid color-mix(in srgb, var(--color-gold-600) 40%, transparent); border-radius: 18px; }
+.complaintIntro h2 { font-size: clamp(1.65rem, 3vw, 2.1rem); line-height: 1.4; }
+.complaintIntro > p { padding-block-start: 1.5rem; border-block-start: 1px solid color-mix(in srgb, var(--color-paper) 20%, transparent); line-height: 1.9; opacity: .9; }
+.complaintGrid .complaintForm { padding: 1.75rem; border: 1px solid var(--color-hairline); border-radius: 20px; background: var(--color-paper); }
+.complaintForm form > :global(.border-s-2), .complaintForm form :global(.bg-warning-soft) { border-radius: 12px; }
+@media (max-width: 1023px) {
+  .contactGrid, .complaintGrid { grid-template-columns: 1fr; }
+  .complaintIntro { max-width: 65ch; }
+}
+@media (max-width: 599px) {
+  .page > div { padding-block: 1.5rem; }
+  .hero { border-radius: 20px; }
+  .formCard, .details { padding: 1.25rem; border-radius: 20px; }
+  .complaintGrid { padding: 1.25rem; gap: 1.5rem; border-radius: 22px; }
+  .complaintGrid .complaintForm { padding: 1rem; }
+  .page .complaints { padding-block-end: 3rem; }
+}

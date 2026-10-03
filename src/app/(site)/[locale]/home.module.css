@@ -30,105 +30,41 @@
 }
 
 .home .hero {
-  padding-block: clamp(3rem, 7vw, 6.5rem);
-}
-
-.hero h1 {
-  max-width: 20ch;
-  font-size: clamp(2rem, 3.35vw, 3.1rem);
-  line-height: 1.45;
-}
-
-.heroEyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .55rem .9rem;
-  margin-block-end: 1.25rem;
-  border-radius: 999px;
-  background: var(--color-navy-100);
-  color: var(--color-navy-700);
-}
-
-.heroEyebrow::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--color-gold-600);
-}
-
-.hero dl {
-  font-size: .875rem;
-  border: 0;
-  padding: 1rem 1.2rem;
-  border-radius: 14px;
-  background: var(--color-paper-alt);
-  gap: .55rem 1rem;
-}
-
-.heroVisual {
   position: relative;
   isolation: isolate;
-  padding: 2rem 1rem 3rem;
-  min-width: 0;
-}
-
-.heroVisual::before,
-.heroVisual::after {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  border-radius: 50%;
-  width: 65%;
-  aspect-ratio: 1;
-}
-
-.heroVisual::before {
-  background: var(--color-navy-100);
-  inset-block-start: 0;
-  inset-inline-start: -1rem;
-}
-
-.heroVisual::after {
-  background: var(--color-gold-050);
-  inset-block-end: 0;
-  inset-inline-end: -1rem;
-}
-
-.heroImage,
-.aboutImage {
   overflow: hidden;
-  border-radius: 22px;
-  box-shadow: var(--home-shadow);
+  padding-block: 3.5rem 7rem;
 }
-
-.heroImage > div {
-  aspect-ratio: 27 / 17;
-}
-/* Crop the original photos in the frame, keeping the people and excluding
-   the baked-in logo/footer. Preserve the original files without retouching. */
-.heroImage img, .aboutImage img { object-position: 50% 48.75%; }
-
-.foundedBadge {
-  position: absolute;
-  inset-block-end: .5rem;
-  inset-inline-start: 15%;
-  display: grid;
-  justify-items: center;
-  gap: .15rem;
-  min-width: 140px;
-  padding: 1.1rem 1.5rem;
-  border: 1px solid var(--color-hairline);
-  border-radius: 17px;
-  background: var(--color-paper);
-  box-shadow: var(--home-shadow);
-  color: var(--color-navy-700);
-}
-
+.heroGrid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 3rem; }
+.heroCopy { position: relative; z-index: 2; min-width: 0; }
+.hero h1 { max-width: 18ch; font-size: clamp(2.5rem, 4.2vw, 4.2rem); line-height: 1.3; color: var(--color-navy-900); }
+.heroEyebrow { display: block; margin-block-end: 1.5rem; color: var(--color-ink-55); letter-spacing: .14em; }
+.heroCopy > span { width: 70px !important; height: 5px; border-radius: 10px; background: var(--color-gold-600); }
+.hero dl { font-size: .8rem; border: 1px solid var(--color-hairline); padding: 1rem 1.2rem; border-radius: 16px; background: color-mix(in srgb, var(--color-paper-alt) 70%, transparent); gap: .55rem 1rem; }
+.heroVisual { position: relative; align-self: stretch; min-height: 590px; min-width: 0; margin-inline-end: min(-64px, calc((1180px - 100vw) / 2 - 64px)); }
+.heroVisual::before { content: ''; position: absolute; width: 100px; height: 150px; inset-inline-start: -25px; inset-block-start: 25px; background-image: radial-gradient(var(--color-rule) 2px, transparent 3px); background-size: 18px 18px; opacity: .55; }
+.heroClipDefinitions { position: absolute; width: 0; height: 0; pointer-events: none; }
+.heroImage { height: 100%; overflow: hidden; clip-path: url(#home-hero-photo); }
+.hero:dir(rtl) .heroImage { clip-path: url(#home-hero-photo-rtl); }
+.heroImage > div { height: 100%; aspect-ratio: auto; }
+.heroImage img { object-position: 38% center; }
+.aboutImage { overflow: hidden; border-radius: 22px; box-shadow: var(--home-shadow); }
+.aboutImage img { object-position: 50% 48.75%; }
+.foundedBadge { position: absolute; inset-block-end: 1.5rem; inset-inline-start: 1rem; display: grid; justify-items: center; gap: .15rem; min-width: 125px; padding: 1rem 1.4rem; border: 1px solid var(--color-hairline); border-radius: 18px; background: var(--color-paper); box-shadow: var(--home-shadow); color: var(--color-navy-700); }
 .foundedBadge strong { font-size: 1.9rem; line-height: 1.25; }
 .foundedBadge span { font-size: .8rem; color: var(--color-ink-55); }
-
+.heroWaves { position: absolute; z-index: 1; inset-inline: 0; bottom: -1px; width: 100%; height: 200px; pointer-events: none; }
+.hero:dir(rtl) .heroWaves { transform: scaleX(-1); }
+@media (min-width: 768px) and (max-width: 1023px) {
+  .heroCopy { max-width: 680px; }
+}
+@media (max-width: 1023px) {
+  .heroGrid { grid-template-columns: 1fr; gap: 2.5rem; }
+  .home .hero { padding-block: 2.5rem 5rem; }
+  .heroVisual { min-height: 0; height: clamp(340px, 65vw, 560px); margin-inline: 0; }
+  .heroImage img { object-position: 40% center; }
+  .heroWaves { height: 90px; }
+}
 .programs .sectionHeading,
 .impact .sectionHeading { text-align: center; }
 
@@ -354,6 +290,8 @@
   .home > section { padding-block: 2.5rem; }
   .heroVisual { max-width: 480px; width: 100%; margin-inline: auto; }
   .hero h1 { max-width: none; }
+  .hero h1 { font-size: clamp(2rem, 8vw, 3rem); }
+  .heroEyebrow { letter-spacing: .06em; line-height: 1.8; }
   .hero dl { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: baseline; }
   .newsGrid, .objectives > ol { grid-template-columns: 1fr; }
   .credibility ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }

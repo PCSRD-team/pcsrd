@@ -16,7 +16,8 @@ import { GovernanceGroups } from './_components/governance';
 import { IdentityRecord } from './_components/identity-record';
 import { MembershipList, membershipPartners } from './_components/memberships';
 import { StrategicObjectives } from './_components/strategy';
-import { TitledBlockList, VisionMission } from './_components/vision-mission';
+import { resolveBlocks, TitledBlockList, VisionMission } from './_components/vision-mission';
+import styles from './about.module.css';
 
 export const revalidate = 3600;
 
@@ -54,14 +55,16 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
   ]);
 
   const intro = visibleText(org?.shortDescription);
+  const hasIntro = Boolean(intro || resolveBlocks(org?.coreValues, locale).length);
   const board = people.filter((person) => person.category === 'board').slice(0, 4);
   const memberships = membershipPartners(partners).slice(0, 4);
 
   return (
+    <div className={styles.page}>
     <AboutShell locale={locale} dict={dict} current="overview">
       {/* Intro + identity ledger — the two-column grid the design opens with. */}
-      <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-        <div>
+      <div className={`${styles.identity} ${hasIntro ? styles.withIntro : ''}`}>
+        {hasIntro ? <div>
           {intro ? (
             <Prose measure="reading">
               <p className="text-lead text-ink-70">{intro}</p>
@@ -74,19 +77,20 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
             title={dict.about.values}
             lead={dict.aboutPages.valuesLead}
           />
-        </div>
+        </div> : null}
         <IdentityRecord org={org ?? null} dict={dict} locale={locale} />
       </div>
 
       <VisionMission org={org ?? null} dict={dict} />
 
       {/* The four sub-pages, as a row of records. */}
-      <Section spacing="none" labelledBy="about-sections">
+      <Section spacing="none" labelledBy="about-sections" className={styles.directory}>
         <SectionHeading id="about-sections" title={dict.aboutPages.sectionsTitle} />
         <Grid as="ul" cols={4} gap={6}>
-          {SUB_SECTIONS.map((section) => (
+          {SUB_SECTIONS.map((section, index) => (
             <Card as="li" key={section} interactive padding="md">
               <CardBody>
+                <span className={styles.sectionNumber} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
                 <h3 className="text-h4 font-semibold text-ink">
                   <Link
                     href={localePath(locale, ABOUT_PATHS[section])}
@@ -107,7 +111,7 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
 
       {/* Board — first four, linking to the full governance page. */}
       {board.length > 0 ? (
-        <Section spacing="none" labelledBy="about-board">
+        <Section spacing="none" labelledBy="about-board" className={styles.board}>
           <SectionHeading
             id="about-board"
             title={dict.about.board}
@@ -123,7 +127,7 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
 
       {/* Strategy — the objectives, linking to the full plan. */}
       {(org?.strategicObjectives ?? []).length > 0 ? (
-        <Section spacing="none" labelledBy="about-strategy">
+        <Section spacing="none" labelledBy="about-strategy" className={styles.strategy}>
           <SectionHeading
             id="about-strategy"
             title={dict.about.strategy}
@@ -140,7 +144,7 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
 
       {/* Memberships — the first few, linking to the full list. */}
       {memberships.length > 0 ? (
-        <Section spacing="none" labelledBy="about-membership">
+        <Section spacing="none" labelledBy="about-membership" className={styles.memberships}>
           <SectionHeading
             id="about-membership"
             title={dict.about.membership}
@@ -154,5 +158,6 @@ export default async function AboutPage({ params }: PageProps<'/[locale]/about'>
         </Section>
       ) : null}
     </AboutShell>
+    </div>
   );
 }

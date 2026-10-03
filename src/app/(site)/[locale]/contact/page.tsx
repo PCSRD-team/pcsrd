@@ -17,6 +17,7 @@ import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { formSlice, optionLabels } from '@/lib/i18n/form-dict';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { buildWhatsAppUrl } from '@/lib/utils';
+import styles from './contact.module.css';
 
 export const revalidate = 3600;
 
@@ -67,17 +68,19 @@ export default async function ContactPage({ params }: PageProps<'/[locale]/conta
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
 
   return (
-    <>
+    <div className={styles.page}>
       <Container className="section-gap">
         <PageHeader
+          className={styles.hero}
           eyebrow={dict.contactPage.eyebrow}
           title={dict.nav.contact}
           lede={dict.contactPage.lead}
           breadcrumbs={<SiteBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.nav.contact, path: '/contact' }]} />}
         />
 
-        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,400px)] lg:gap-16">
-          <Section as="section" spacing="none" labelledBy="contact-form-title" className="pbs-6">
+        <div className={styles.contactGrid}>
+          <Section as="section" spacing="none" bounded={false} labelledBy="contact-form-title" className={styles.formCard}>
+            <span className={styles.iconTile}><Icon name="mail" size={24} /></span>
             <Heading level={2} size="h3" id="contact-form-title">
               {dict.contactPage.formTitle}
             </Heading>
@@ -90,7 +93,8 @@ export default async function ContactPage({ params }: PageProps<'/[locale]/conta
             </Notice>
           </Section>
 
-          <aside aria-labelledby="contact-details-title">
+          <aside aria-labelledby="contact-details-title" className={styles.details}>
+            <span className={styles.iconTile}><Icon name="phone" size={24} /></span>
             <Eyebrow as="p" id="contact-details-title" className="mbe-3">
               {dict.contactPage.detailsTitle}
             </Eyebrow>
@@ -167,9 +171,11 @@ export default async function ContactPage({ params }: PageProps<'/[locale]/conta
       </Container>
 
       {/* The confidential complaint channel: a full-width navy band, anchored for the footer link. */}
-      <Section id="complaint" tone="inverse" labelledBy="contact-complaint" bounded={false} className="scroll-mbs-28">
-        <Container className="grid items-start gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <div>
+      <Section id="complaint" labelledBy="contact-complaint" bounded={false} className={styles.complaints}>
+        <Container>
+        <div className={styles.complaintGrid}>
+          <div className={styles.complaintIntro}>
+            <span className={styles.confidentialIcon}><Icon name="check" size={24} /></span>
             <SectionHeading
               id="contact-complaint"
               eyebrow={dict.contactPage.complaintsEyebrow}
@@ -179,14 +185,15 @@ export default async function ContactPage({ params }: PageProps<'/[locale]/conta
             />
             <p className="max-w-prose text-small text-paper">{dict.forms.anonymousNotice}</p>
           </div>
-          <Panel tone="white" labelledBy="contact-complaint-form" className="rule-section">
+          <Panel tone="white" labelledBy="contact-complaint-form" className={styles.complaintForm}>
             <Heading level={3} size="h4" id="contact-complaint-form" className="mbe-6">
               {dict.contactPage.complaintFormTitle}
             </Heading>
             <ComplaintForm dict={forms} locale={locale} labels={labels} />
           </Panel>
+        </div>
         </Container>
       </Section>
-    </>
+    </div>
   );
 }

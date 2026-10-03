@@ -87,7 +87,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
 
   return (
     <html lang={HTML_LANG[locale]} dir={DIR[locale]} suppressHydrationWarning>
-      <body className={`${fontVariables} flex min-h-screen flex-col bg-paper-ground antialiased`}>
+      <body className={`${fontVariables} flex min-h-screen flex-col bg-paper antialiased`}>
         <SkipLink label={dict.common.skipToContent} />
 
         <OrganizationJsonLd org={org} locale={locale} />
