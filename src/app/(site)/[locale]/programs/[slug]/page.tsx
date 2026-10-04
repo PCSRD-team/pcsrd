@@ -1,34 +1,45 @@
-import type { Metadata } from 'next';
-import type { CSSProperties } from 'react';
-import Link from 'next/link';
-import { notFound, permanentRedirect } from 'next/navigation';
-import { MetricCard } from '@/components/content/cards';
-import { mediaImage } from '@/components/content/media';
-import { ContentBreadcrumbs, ProjectsRail, TranslationNotice } from '@/components/content/page-chrome';
-import { RichText } from '@/components/content/rich-text';
-import { getSiteName, toTranslationStatus } from '@/components/content/site';
-import { ProgramJsonLd } from '@/components/seo/json-ld';
-import { Badge } from '@/components/ui/badge';
-import { ButtonLink } from '@/components/ui/button';
-import { Card, Panel } from '@/components/ui/card';
-import { Figure } from '@/components/ui/figure';
-import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
-import { StatGroup } from '@/components/ui/stat';
-import { Eyebrow, Heading, Lede, Prose } from '@/components/ui/typography';
+import type { Metadata } from "next";
+import type { CSSProperties } from "react";
+import Link from "next/link";
+import { notFound, permanentRedirect } from "next/navigation";
+import { MetricCard } from "@/components/content/cards";
+import { mediaImage } from "@/components/content/media";
+import {
+  ContentBreadcrumbs,
+  ProjectsRail,
+  TranslationNotice,
+} from "@/components/content/page-chrome";
+import { RichText } from "@/components/content/rich-text";
+import { getSiteName, toTranslationStatus } from "@/components/content/site";
+import { ProgramJsonLd } from "@/components/seo/json-ld";
+import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Panel } from "@/components/ui/card";
+import { Figure } from "@/components/ui/figure";
+import {
+  Container,
+  Grid,
+  PageHeader,
+  Section,
+  SectionHeading,
+} from "@/components/ui/layout";
+import { StatGroup } from "@/components/ui/stat";
+import { Eyebrow, Heading, Lede, Prose } from "@/components/ui/typography";
 import {
   findSlugForLocale,
   getProgramBySlug,
   listMetrics,
   listProgramSlugs,
   listPrograms,
-} from '@/db/queries/content';
-import { listProjects } from '@/db/queries/projects';
-import { prerenderData } from '@/lib/build-time';
-import { DEFAULT_LOCALE, isLocale, localePath } from '@/lib/i18n/config';
-import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { richTextToPlainText } from '@/lib/seo/json-ld';
-import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
-import { decodeParam } from '@/lib/route-params';
+} from "@/db/queries/content";
+import { listProjects } from "@/db/queries/projects";
+import { prerenderData } from "@/lib/build-time";
+import { DEFAULT_LOCALE, isLocale, localePath } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { richTextToPlainText } from "@/lib/seo/json-ld";
+import { buildMetadata, seoFallback } from "@/lib/seo/metadata";
+import { decodeParam } from "@/lib/route-params";
+import styles from "./program-detail.module.css";
 
 export const revalidate = 3600;
 
@@ -38,28 +49,47 @@ export const revalidate = 3600;
  * at its English URL — it is just not prerendered, matching the sitemap.
  */
 export async function generateStaticParams() {
-  const rows = await prerenderData('static params programmes', () => listProgramSlugs(), []);
+  const rows = await prerenderData(
+    "static params programmes",
+    () => listProgramSlugs(),
+    [],
+  );
   return rows.flatMap((row) => [
-    { locale: 'ar', slug: row.slugAr },
-    ...(row.translationStatus === 'ar_only' ? [] : [{ locale: 'en', slug: row.slugEn }]),
+    { locale: "ar", slug: row.slugAr },
+    ...(row.translationStatus === "ar_only"
+      ? []
+      : [{ locale: "en", slug: row.slugEn }]),
   ]);
 }
 
-export async function generateMetadata({ params }: PageProps<'/[locale]/programs/[slug]'>): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<"/[locale]/programs/[slug]">): Promise<Metadata> {
   const { locale, slug: rawSlug } = await params;
   const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) return {};
-  const [program, siteName] = await Promise.all([getProgramBySlug(slug, locale), getSiteName(locale)]);
+  const [program, siteName] = await Promise.all([
+    getProgramBySlug(slug, locale),
+    getSiteName(locale),
+  ]);
   if (!program) return {};
 
   // SEO-013: the English title is read on English pages, falling back to Arabic.
-  const seoTitle = locale === 'ar' ? program.seoTitleAr : program.seoTitleEn?.trim() || program.seoTitleAr;
+  const seoTitle =
+    locale === "ar"
+      ? program.seoTitleAr
+      : program.seoTitleEn?.trim() || program.seoTitleAr;
   const seoDescription =
-    locale === 'ar' ? program.seoDescriptionAr : program.seoDescriptionEn?.trim() || program.seoDescriptionAr;
+    locale === "ar"
+      ? program.seoDescriptionAr
+      : program.seoDescriptionEn?.trim() || program.seoDescriptionAr;
 
   return buildMetadata({
     locale,
-    path: { ar: `/programs/${program.slugAr}`, en: `/programs/${program.slugEn}` },
+    path: {
+      ar: `/programs/${program.slugAr}`,
+      en: `/programs/${program.slugEn}`,
+    },
     title: seoFallback(seoTitle, program.title, siteName),
     description: seoFallback(
       seoDescription,
@@ -73,7 +103,9 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/programs
   });
 }
 
-export default async function ProgramPage({ params }: PageProps<'/[locale]/programs/[slug]'>) {
+export default async function ProgramPage({
+  params,
+}: PageProps<"/[locale]/programs/[slug]">) {
   const { locale, slug: rawSlug } = await params;
   const slug = decodeParam(rawSlug);
   if (!isLocale(locale)) notFound();
@@ -90,8 +122,11 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
   if (!program) {
     // A slug from the other locale (the language switcher keeps it) redirects
     // to this locale's URL rather than 404ing.
-    const localized = await findSlugForLocale('program', slug, locale);
-    if (localized) permanentRedirect(localePath(locale, `/programs/${encodeURIComponent(localized)}`));
+    const localized = await findSlugForLocale("program", slug, locale);
+    if (localized)
+      permanentRedirect(
+        localePath(locale, `/programs/${encodeURIComponent(localized)}`),
+      );
     notFound();
   }
 
@@ -108,7 +143,9 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
   const accent = `var(${program.accentToken})`;
   const path = `/programs/${program.slugAr}`;
   // An untranslated programme's canonical is the Arabic URL.
-  const canonicalPath = program.isTranslated ? localePath(locale, `/programs/${slug}`) : localePath(DEFAULT_LOCALE, path);
+  const canonicalPath = program.isTranslated
+    ? localePath(locale, `/programs/${slug}`)
+    : localePath(DEFAULT_LOCALE, path);
 
   return (
     <Container className="section-gap">
@@ -120,13 +157,16 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
         audience={audience}
       />
 
-      <TranslationNotice locale={locale} dict={dict} isTranslated={program.isTranslated} arabicPath={path} />
+      <TranslationNotice
+        locale={locale}
+        dict={dict}
+        isTranslated={program.isTranslated}
+        arabicPath={path}
+      />
 
-      {/* Hero: the programme's 2px accent rule above the eyebrow is its
-          identity mark — a rule in the programme colour, never a fill. */}
       <div
         className="grid gap-8 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-start"
-        style={{ '--accent': accent } as CSSProperties}
+        style={{ "--accent": accent } as CSSProperties}
       >
         <PageHeader
           className="mbe-0"
@@ -134,16 +174,22 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
             <ContentBreadcrumbs
               locale={locale}
               dict={dict}
-              trail={[{ label: dict.programs.title, path: '/programs' }, { label: program.title ?? '' }]}
+              trail={[
+                { label: dict.programs.title, path: "/programs" },
+                { label: program.title ?? "" },
+              ]}
               currentPath={canonicalPath}
             />
           }
           eyebrow={dict.programs.title}
-          title={program.title ?? ''}
+          title={program.title ?? ""}
           lede={program.tagline}
           meta={
             audience.length > 0 ? (
-              <ul className="flex flex-wrap gap-2" aria-label={dict.programs.targetGroups}>
+              <ul
+                className={`flex flex-wrap gap-2 ${styles.tags}`}
+                aria-label={dict.programs.targetGroups}
+              >
                 {audience.map((label) => (
                   <li key={label}>
                     <Badge tone="accent" accent={accent} uppercase={false}>
@@ -156,19 +202,26 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
           }
         />
         <Figure
-          image={mediaImage(program.hero?.path, program.hero?.blur, program.hero)}
-          alt={program.hero?.alt || program.title || ''}
+          className={styles.heroImage}
+          image={mediaImage(
+            program.hero?.path,
+            program.hero?.blur,
+            program.hero,
+          )}
+          alt={program.hero?.alt || program.title || ""}
           decorative={!(program.hero?.alt || program.title)}
           sizes="(min-width: 1180px) 500px, (min-width: 768px) 46vw, 100vw"
-          // The LCP element on this route: the largest thing above the fold on
-          // a desktop viewport. The only `preload` on the page.
           preload
           fallbackLabel={dict.contentUi.noImage}
         />
       </div>
 
       {program.introduction ? (
-        <Section labelledBy="program-introduction" bounded={false} spacing="tight">
+        <Section
+          labelledBy="program-introduction"
+          bounded={false}
+          spacing="tight"
+        >
           <h2 id="program-introduction" className="sr-only">
             {program.title}
           </h2>
@@ -178,22 +231,20 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
         </Section>
       ) : null}
 
-      {/*
-        Eligibility and access come before the rationale. A beneficiary reading
-        this page needs to know whether the service is for them and how to reach
-        it; the strategic argument is for a different reader.
-      */}
       {program.eligibility || program.howToAccess ? (
-        <Section labelledBy="program-access" tone="alt" className="px-5 md:px-8">
-          <SectionHeading id="program-access" title={dict.programs.howToAccess} />
-          {/* Each panel had an eyebrow and a heading carrying the identical
-              string — "الأهلية" over "الأهلية" — so the section printed its
-              two labels four times between them. The heading stays (it is the
-              one in the document outline); the eyebrow that only echoed it is
-              gone. */}
+        <Section
+          labelledBy="program-access"
+          bounded={false}
+          spacing="none"
+          className={styles.section}
+        >
+          <SectionHeading
+            id="program-access"
+            title={dict.programs.howToAccess}
+          />
           <Grid cols={2}>
             {program.eligibility ? (
-              <Panel as="article" tone="paper">
+              <Panel as="article" tone="paper" className={styles.card}>
                 <Heading level={3} size="h3">
                   {dict.programs.eligibility}
                 </Heading>
@@ -203,15 +254,19 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
               </Panel>
             ) : null}
             {program.howToAccess ? (
-              <Panel as="article" tone="gold">
+              <Panel as="article" tone="gold" className={styles.card}>
                 <Heading level={3} size="h3">
                   {dict.programs.howToAccess}
                 </Heading>
                 <Prose className="mbs-4">
                   <RichText doc={program.howToAccess} />
                 </Prose>
-                <div className="mbs-6">
-                  <ButtonLink href={localePath(locale, '/contact')} tone="secondary" size="sm">
+                <div className={`mbs-6 ${styles.cta}`}>
+                  <ButtonLink
+                    href={localePath(locale, "/contact")}
+                    tone="secondary"
+                    size="sm"
+                  >
                     {dict.nav.contact}
                   </ButtonLink>
                 </div>
@@ -222,20 +277,44 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
       ) : null}
 
       {metrics.length > 0 ? (
-        <Section labelledBy="program-metrics">
-          <SectionHeading id="program-metrics" title={dict.impact.title} lead={dict.impact.lead} />
-          <StatGroup>
+        <Section
+          labelledBy="program-metrics"
+          bounded={false}
+          spacing="none"
+          className={styles.section}
+        >
+          <SectionHeading
+            id="program-metrics"
+            title={dict.impact.title}
+            lead={dict.impact.lead}
+          />
+          <StatGroup className={styles.metrics}>
             {metrics.map((metric) => (
-              <MetricCard key={metric.id} metric={metric} locale={locale} dict={dict} />
+              <MetricCard
+                key={metric.id}
+                metric={metric}
+                locale={locale}
+                dict={dict}
+              />
             ))}
           </StatGroup>
         </Section>
       ) : null}
 
       {program.rationale || program.strategicObjective ? (
-        <Section labelledBy="program-rationale">
-          <SectionHeading id="program-rationale" title={dict.programs.objectives} />
-          {program.strategicObjective ? <Lede className="mbe-6">{program.strategicObjective}</Lede> : null}
+        <Section
+          labelledBy="program-rationale"
+          bounded={false}
+          spacing="none"
+          className={`${styles.section} ${styles.block}`}
+        >
+          <SectionHeading
+            id="program-rationale"
+            title={dict.programs.objectives}
+          />
+          {program.strategicObjective ? (
+            <Lede className="mbe-6">{program.strategicObjective}</Lede>
+          ) : null}
           {program.rationale ? (
             <Prose>
               <RichText doc={program.rationale} />
@@ -245,8 +324,16 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
       ) : null}
 
       {program.sustainability ? (
-        <Section labelledBy="program-sustainability">
-          <SectionHeading id="program-sustainability" title={dict.programs.sustainability} />
+        <Section
+          labelledBy="program-sustainability"
+          bounded={false}
+          spacing="none"
+          className={`${styles.section} ${styles.block}`}
+        >
+          <SectionHeading
+            id="program-sustainability"
+            title={dict.programs.sustainability}
+          />
           <Prose>
             <RichText doc={program.sustainability} />
           </Prose>
@@ -254,7 +341,12 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
       ) : null}
 
       {program.impactStatement ? (
-        <Section labelledBy="program-impact">
+        <Section
+          labelledBy="program-impact"
+          bounded={false}
+          spacing="none"
+          className={`${styles.section} ${styles.block}`}
+        >
           <SectionHeading id="program-impact" title={dict.home.impactTitle} />
           <Prose>
             <RichText doc={program.impactStatement} />
@@ -262,38 +354,46 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
         </Section>
       ) : null}
 
-      <ProjectsRail
-        locale={locale}
-        dict={dict}
-        projects={projects.items}
-        title={dict.programs.projectsInProgram}
-        id="program-projects"
-        actions={
-          projects.total > projects.items.length ? (
-            <ButtonLink
-              href={localePath(locale, `/projects?program=${encodeURIComponent(program.key)}`)}
-              tone="marked"
-              size="sm"
-            >
-              {dict.common.viewAll}
-            </ButtonLink>
-          ) : null
-        }
-      />
+      <div className={styles.rail}>
+        <ProjectsRail
+          locale={locale}
+          dict={dict}
+          projects={projects.items}
+          title={dict.programs.projectsInProgram}
+          id="program-projects"
+          actions={
+            projects.total > projects.items.length ? (
+              <ButtonLink
+                href={localePath(
+                  locale,
+                  `/projects?program=${encodeURIComponent(program.key)}`,
+                )}
+                tone="marked"
+                size="sm"
+              >
+                {dict.common.viewAll}
+              </ButtonLink>
+            ) : null
+          }
+        />
+      </div>
 
       {program.gallery.length > 0 ? (
-        <Section labelledBy="program-gallery">
+        <Section
+          labelledBy="program-gallery"
+          bounded={false}
+          spacing="none"
+          className={styles.section}
+        >
           <SectionHeading id="program-gallery" title={dict.contentUi.gallery} />
           <Grid as="ul" cols={3} gap={4}>
             {program.gallery.map((item) => (
               <li key={item.path}>
-                {/* `alt` is the media asset's own — `alt_ar` is NOT NULL in the
-                    schema, so a published image always has one. */}
                 <Figure
+                  className={styles.shot}
                   image={mediaImage(item.path, item.blur, item)}
-                  alt={item.alt || program.title || ''}
+                  alt={item.alt || program.title || ""}
                   ratio="portrait"
-                  // Three-up across the 1180px content column: ~380px a tile.
                   sizes="(min-width: 1180px) 380px, (min-width: 640px) 30vw, 100vw"
                   caption={item.caption}
                 />
@@ -304,12 +404,22 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
       ) : null}
 
       {otherPrograms.length > 0 ? (
-        <Section labelledBy="program-others">
+        <Section
+          labelledBy="program-others"
+          bounded={false}
+          spacing="none"
+          className={styles.section}
+        >
           <SectionHeading id="program-others" title={dict.home.programsTitle} />
           <Grid as="ul" cols={2}>
             {otherPrograms.map((other) => (
               <li key={other.id} className="flex">
-                <Card as="article" accent={`var(${other.accentToken})`} interactive className="w-full">
+                <article
+                  className={styles.other}
+                  style={
+                    { "--accent": `var(${other.accentToken})` } as CSSProperties
+                  }
+                >
                   <Eyebrow>{dict.programs.title}</Eyebrow>
                   <Heading level={3} size="h3" className="mbs-2">
                     <Link
@@ -319,8 +429,12 @@ export default async function ProgramPage({ params }: PageProps<'/[locale]/progr
                       {other.title}
                     </Link>
                   </Heading>
-                  {other.tagline ? <p className="mbs-3 text-small text-ink-70">{other.tagline}</p> : null}
-                </Card>
+                  {other.tagline ? (
+                    <p className="mbs-3 text-small text-ink-70">
+                      {other.tagline}
+                    </p>
+                  ) : null}
+                </article>
               </li>
             ))}
           </Grid>
