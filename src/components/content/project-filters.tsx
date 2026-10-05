@@ -1,15 +1,16 @@
-import { Bidi } from '@/components/ui/bidi';
-import { Button, ButtonLink } from '@/components/ui/button';
-import { Panel } from '@/components/ui/card';
-import { Fieldset, FormActions } from '@/components/ui/field';
-import { Checkbox, RadioGroup } from '@/components/ui/inputs';
-import { Heading, Meta } from '@/components/ui/typography';
-import type { ProjectFilters } from '@/db/queries/projects';
-import { formatNumber } from '@/lib/format';
-import type { Dictionary } from '@/lib/i18n/get-dictionary';
-import { type Locale, localePath } from '@/lib/i18n/config';
-import { projectStateLabel } from './cards';
-import { plural } from '@/lib/i18n/plural';
+import { Bidi } from "@/components/ui/bidi";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Panel } from "@/components/ui/card";
+import { Fieldset, FormActions } from "@/components/ui/field";
+import { Checkbox, RadioGroup } from "@/components/ui/inputs";
+import { Heading, Meta } from "@/components/ui/typography";
+import type { ProjectFilters } from "@/db/queries/projects";
+import { formatNumber } from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { type Locale, localePath } from "@/lib/i18n/config";
+import { projectStateLabel } from "./cards";
+import { plural } from "@/lib/i18n/plural";
+import styles from "./project-filter.module.css";
 
 /**
  * The project facet panel.
@@ -52,7 +53,11 @@ function CheckboxFacet({
   if (options.length === 0) return null;
 
   return (
-    <Fieldset name={name} legend={legend} className="border-bs border-hairline pbs-4">
+    <Fieldset
+      name={name}
+      legend={legend}
+      className="border-bs border-hairline pbs-4"
+    >
       <ul className="grid gap-0">
         {options.map((option) => {
           const value = String(option.key);
@@ -96,23 +101,33 @@ export function ProjectFilterPanel({
   // Labels come from the dictionary — rule 5. A facet value the dictionary
   // does not know falls back to its raw key, which is visibly wrong rather
   // than invisibly blank.
-  const label = (group: keyof Dictionary['enums']) => (key: string) =>
+  const label = (group: keyof Dictionary["enums"]) => (key: string) =>
     (dict.enums[group] as Record<string, string>)[key] ?? key;
 
-  const headingId = 'project-filters-heading';
+  const headingId = "project-filters-heading";
 
   return (
     // Sticky from `lg`, matching the breakpoint at which `/projects` actually
     // puts the panel in a column beside the results. Below that it is a
     // full-width block above them and must scroll away with the page.
-    <Panel as="aside" padding="sm" labelledBy={headingId} className="lg:sticky lg:inset-bs-6 lg:self-start">
+    <Panel
+      as="aside"
+      padding="sm"
+      labelledBy={headingId}
+      className={`lg:sticky lg:inset-bs-6 lg:self-start ${styles.panel}`}
+    >
       <form method="get" aria-label={dict.a11y.filterPanel}>
         <div className="flex items-baseline justify-between gap-3 pbe-4">
           <Heading level={2} size="h4" id={headingId}>
             {dict.projects.filters}
           </Heading>
           <Meta as="p">
-            {plural(locale, total, dict.projects.resultsCount, formatNumber(total, locale))}
+            {plural(
+              locale,
+              total,
+              dict.projects.resultsCount,
+              formatNumber(total, locale),
+            )}
           </Meta>
         </div>
 
@@ -122,7 +137,7 @@ export function ProjectFilterPanel({
             legend={dict.projects.program}
             options={facets.byProgram}
             selected={filters.program ? [filters.program] : []}
-            labelFor={label('program')}
+            labelFor={label("program")}
             locale={locale}
           />
           <RadioGroup
@@ -130,12 +145,15 @@ export function ProjectFilterPanel({
             legend={dict.projects.state}
             columns={1}
             className="border-bs border-hairline pbs-4"
-            defaultValue={filters.state ?? ''}
+            defaultValue={filters.state ?? ""}
             options={[
-              { value: '', label: dict.filters.all },
-              { value: 'active', label: projectStateLabel('active', dict) },
-              { value: 'completed', label: projectStateLabel('completed', dict) },
-              { value: 'planned', label: projectStateLabel('planned', dict) },
+              { value: "", label: dict.filters.all },
+              { value: "active", label: projectStateLabel("active", dict) },
+              {
+                value: "completed",
+                label: projectStateLabel("completed", dict),
+              },
+              { value: "planned", label: projectStateLabel("planned", dict) },
             ]}
           />
           <CheckboxFacet
@@ -143,7 +161,7 @@ export function ProjectFilterPanel({
             legend={dict.projects.governorate}
             options={facets.byGovernorate}
             selected={filters.governorates ?? []}
-            labelFor={label('governorate')}
+            labelFor={label("governorate")}
             locale={locale}
           />
           <CheckboxFacet
@@ -151,7 +169,7 @@ export function ProjectFilterPanel({
             legend={dict.projects.theme}
             options={facets.byTheme}
             selected={filters.themes ?? []}
-            labelFor={label('theme')}
+            labelFor={label("theme")}
             locale={locale}
           />
           <CheckboxFacet
@@ -170,7 +188,11 @@ export function ProjectFilterPanel({
           </Button>
           {/* A link, not a reset button: it clears the URL too, so the back
               button and a shared link behave the same way. */}
-          <ButtonLink href={localePath(locale, '/projects')} tone="quiet" size="sm">
+          <ButtonLink
+            href={localePath(locale, "/projects")}
+            tone="quiet"
+            size="sm"
+          >
             {dict.projects.clearFilters}
           </ButtonLink>
         </FormActions>

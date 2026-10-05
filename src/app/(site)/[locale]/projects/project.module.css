@@ -1,0 +1,74 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  border-radius: 26px;
+  background: var(--color-navy-900);
+  color: var(--color-paper);
+  margin-block-end: 2.5rem;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 270px;
+  aspect-ratio: 1;
+  border: 45px solid color-mix(in srgb, var(--color-paper) 5%, transparent);
+  border-radius: 50%;
+  inset-inline-end: -55px;
+  inset-block-end: -125px;
+}
+.hero h1 {
+  color: var(--color-paper);
+  font-size: clamp(2.1rem, 4vw, 3.4rem);
+}
+.hero p,
+.hero nav,
+.hero nav span,
+.hero a {
+  color: var(--color-paper);
+}
+.hero > p:last-child {
+  max-width: 55ch;
+  opacity: 0.85;
+}
+.hero :global(.rule-mark) {
+  width: 42px;
+}
+@media (max-width: 599px) {
+  .hero {
+    border-radius: 20px;
+  }
+}
+
+.pagination li > a,
+.pagination li > span {
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-ink);
+}
+.pagination li > a:hover {
+  background: var(--color-paper-alt);
+  color: var(--color-ink);
+}
+
+.pagination li > span[aria-current="page"] {
+  border-color: var(--color-navy-900);
+  background: var(--color-navy-900);
+  color: var(--color-paper);
+  box-shadow: 0 5px 14px
+    color-mix(in srgb, var(--color-navy-700) 15%, transparent);
+}
+
+.pagination li > a[rel="prev"],
+.pagination li > a[rel="next"],
+.pagination li > span[aria-disabled="true"] {
+  padding-inline: 1.1rem;
+}
+
+.pagination li > span[aria-disabled="true"] {
+  background: var(--color-paper-alt);
+  opacity: 0.6;
+}
