@@ -1,14 +1,20 @@
-import Link from 'next/link';
-import { Badge, VerificationBadge } from '@/components/ui/badge';
-import { DateText } from '@/components/ui/bidi';
-import { Card, CardBody, CardFooter, CardMedia } from '@/components/ui/card';
-import { Figure } from '@/components/ui/figure';
-import { Stat } from '@/components/ui/stat';
-import { Eyebrow, Heading, Meta } from '@/components/ui/typography';
-import { formatDate, formatNumber, formatPeriod, toDateTimeAttr } from '@/lib/format';
-import type { Dictionary } from '@/lib/i18n/get-dictionary';
-import { type Locale, localePath } from '@/lib/i18n/config';
-import { mediaImage } from './media';
+import Link from "next/link";
+import { Badge, VerificationBadge } from "@/components/ui/badge";
+import { DateText } from "@/components/ui/bidi";
+import { Card, CardBody, CardFooter, CardMedia } from "@/components/ui/card";
+import { Figure } from "@/components/ui/figure";
+import { Stat } from "@/components/ui/stat";
+import { Eyebrow, Heading, Meta } from "@/components/ui/typography";
+import {
+  formatDate,
+  formatNumber,
+  formatPeriod,
+  toDateTimeAttr,
+} from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { type Locale, localePath } from "@/lib/i18n/config";
+import { mediaImage } from "./media";
+import styles from "./cards.module.css";
 
 /**
  * Cards — thin compositions of the kit.
@@ -24,20 +30,20 @@ import { mediaImage } from './media';
  * swallows the badge, the period and any text a reader wants to select.
  */
 
-const CARD_SIZES = '(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw';
+const CARD_SIZES = "(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw";
 
-const titleLink = 'text-ink no-underline hover:text-gold-700';
+const titleLink = "text-ink no-underline hover:text-gold-700";
 
 // ── Project ──────────────────────────────────────────────────────────────
 
 const PROJECT_STATE_TONE = {
-  active: 'active',
-  completed: 'complete',
-  planned: 'planned',
+  active: "active",
+  completed: "complete",
+  planned: "planned",
 } as const;
 
 export function projectStateLabel(
-  state: 'planned' | 'active' | 'completed',
+  state: "planned" | "active" | "completed",
   dict: Dictionary,
 ): string {
   return {
@@ -52,7 +58,7 @@ export type ProjectCardRecord = {
   slug: string;
   title: string | null;
   summary: string | null;
-  state: 'planned' | 'active' | 'completed';
+  state: "planned" | "active" | "completed";
   startDate: string | null;
   endDate: string | null;
   programTitle: string | null;
@@ -89,25 +95,29 @@ export function ProjectCard({
   const href = localePath(locale, `/projects/${project.slug}`);
 
   return (
-    <Card as="article" interactive className="w-full">
+    <Card as="article" interactive className={`w-full ${styles.card}`}>
       <CardMedia>
         <Figure
           image={mediaImage(project.heroPath, project.heroBlur)}
-          alt={project.heroAlt ?? ''}
+          alt={project.heroAlt ?? ""}
           decorative={!project.heroAlt}
           sizes={sizes}
           fallbackLabel={dict.contentUi.noImage}
         />
       </CardMedia>
       <CardBody>
-        {project.programTitle ? <Eyebrow>{project.programTitle}</Eyebrow> : null}
+        {project.programTitle ? (
+          <Eyebrow className={styles.program}>{project.programTitle}</Eyebrow>
+        ) : null}
         <Heading level={headingLevel} size="h3" className="mbs-2">
           <Link href={href} className={titleLink}>
             {project.title}
           </Link>
         </Heading>
         {project.summary ? (
-          <p className="mbs-3 line-clamp-3 text-small text-ink-70">{project.summary}</p>
+          <p className="mbs-3 line-clamp-3 text-small text-ink-70">
+            {project.summary}
+          </p>
         ) : null}
       </CardBody>
       <CardFooter>
@@ -127,7 +137,7 @@ export function ProjectCard({
 // ── Post ─────────────────────────────────────────────────────────────────
 
 export function postCategoryLabel(
-  category: 'news' | 'statement' | 'announcement',
+  category: "news" | "statement" | "announcement",
   dict: Dictionary,
 ): string {
   return {
@@ -146,7 +156,7 @@ export function PostCard({
   post: {
     id: string;
     slug: string;
-    category: 'news' | 'statement' | 'announcement';
+    category: "news" | "statement" | "announcement";
     title: string | null;
     excerpt: string | null;
     publishedAt: Date | string | null;
@@ -166,14 +176,18 @@ export function PostCard({
   const href = localePath(locale, `/news/${post.slug}`);
 
   return (
-    <Card as="article" interactive className="w-full sm:flex-row sm:items-stretch sm:gap-6">
+    <Card
+      as="article"
+      interactive
+      className="w-full sm:flex-row sm:items-stretch sm:gap-6"
+    >
       {/* A square thumbnail on the inline-start side from `sm`; above the
           text below it. `CardMedia` is for a full-bleed top slot, so the
           figure sits in a sized box of its own here. */}
       <div className="mbe-5 sm:mbe-0 sm:w-40 sm:shrink-0">
         <Figure
           image={mediaImage(post.heroPath, post.heroBlur)}
-          alt={post.heroAlt ?? ''}
+          alt={post.heroAlt ?? ""}
           decorative={!post.heroAlt}
           ratio="square"
           sizes="(min-width: 640px) 160px, 100vw"
@@ -186,7 +200,9 @@ export function PostCard({
           {post.publishedAt ? (
             <Meta as="span">
               <time dateTime={toDateTimeAttr(post.publishedAt)}>
-                <DateText locale={locale}>{formatDate(post.publishedAt, locale)}</DateText>
+                <DateText locale={locale}>
+                  {formatDate(post.publishedAt, locale)}
+                </DateText>
               </time>
             </Meta>
           ) : null}
@@ -196,7 +212,11 @@ export function PostCard({
             {post.title}
           </Link>
         </Heading>
-        {post.excerpt ? <p className="mbs-3 line-clamp-2 text-small text-ink-70">{post.excerpt}</p> : null}
+        {post.excerpt ? (
+          <p className="mbs-3 line-clamp-2 text-small text-ink-70">
+            {post.excerpt}
+          </p>
+        ) : null}
       </CardBody>
     </Card>
   );
@@ -204,7 +224,10 @@ export function PostCard({
 
 // ── Impact metric ────────────────────────────────────────────────────────
 
-export function verificationLabel(status: 'target' | 'reported' | 'verified', dict: Dictionary): string {
+export function verificationLabel(
+  status: "target" | "reported" | "verified",
+  dict: Dictionary,
+): string {
   return {
     verified: dict.impact.verified,
     reported: dict.impact.reported,
@@ -222,7 +245,7 @@ export function MetricCard({
   metric,
   locale,
   dict,
-  as = 'li',
+  as = "li",
 }: {
   metric: {
     id: string;
@@ -232,14 +255,17 @@ export function MetricCard({
     displayPrefix: string | null;
     periodStart: string;
     periodEnd: string;
-    status: 'target' | 'reported' | 'verified';
+    status: "target" | "reported" | "verified";
     verificationSource: string | null;
   };
   locale: Locale;
   dict: Dictionary;
-  as?: 'li' | 'div';
+  as?: "li" | "div";
 }) {
-  const prefix = metric.displayPrefix === '+' || metric.displayPrefix === '~' ? metric.displayPrefix : null;
+  const prefix =
+    metric.displayPrefix === "+" || metric.displayPrefix === "~"
+      ? metric.displayPrefix
+      : null;
   return (
     <Stat
       as={as}
@@ -247,7 +273,7 @@ export function MetricCard({
       value={formatNumber(metric.value, locale)}
       prefix={prefix}
       unit={metric.unit}
-      label={metric.label ?? ''}
+      label={metric.label ?? ""}
       period={{
         start: metric.periodStart,
         end: metric.periodEnd,
@@ -267,16 +293,26 @@ export function MetricStatus({
   status,
   dict,
 }: {
-  status: 'target' | 'reported' | 'verified';
+  status: "target" | "reported" | "verified";
   dict: Dictionary;
 }) {
-  return <VerificationBadge status={status} label={verificationLabel(status, dict)} />;
+  return (
+    <VerificationBadge
+      status={status}
+      label={verificationLabel(status, dict)}
+    />
+  );
 }
 
 // ── Vacancy ──────────────────────────────────────────────────────────────
 
-export function vacancyTypeLabel(type: 'job' | 'volunteer', dict: Dictionary): string {
-  return type === 'job' ? dict.contentUi.vacancyJob : dict.contentUi.vacancyVolunteer;
+export function vacancyTypeLabel(
+  type: "job" | "volunteer",
+  dict: Dictionary,
+): string {
+  return type === "job"
+    ? dict.contentUi.vacancyJob
+    : dict.contentUi.vacancyVolunteer;
 }
 
 // The vacancy list and the programme index each draw their own ruled row
@@ -318,10 +354,10 @@ export function StoryCard({
 
   return (
     <Card as="article" interactive className="w-full">
-      <CardMedia>
+      <CardMedia className={styles.media}>
         <Figure
           image={mediaImage(story.heroPath, story.heroBlur)}
-          alt={story.heroAlt ?? ''}
+          alt={story.heroAlt ?? ""}
           decorative={!story.heroAlt}
           sizes={CARD_SIZES}
           fallbackLabel={dict.contentUi.noImage}
@@ -346,7 +382,9 @@ export function StoryCard({
             ) : null}
           </blockquote>
         ) : story.summary ? (
-          <p className="mbs-3 line-clamp-3 text-small text-ink-70">{story.summary}</p>
+          <p className="mbs-3 line-clamp-3 text-small text-ink-70">
+            {story.summary}
+          </p>
         ) : null}
       </CardBody>
       {/* No second "read the story" link. It pointed at the same URL as the
@@ -355,10 +393,12 @@ export function StoryCard({
           announced under two different names. Every other card in this file
           has exactly one control; this one now matches. */}
       {story.publishedAt ? (
-        <CardFooter>
+        <CardFooter className={styles.footer}>
           <Meta as="span">
             <time dateTime={toDateTimeAttr(story.publishedAt)}>
-              <DateText locale={locale}>{formatDate(story.publishedAt, locale)}</DateText>
+              <DateText locale={locale}>
+                {formatDate(story.publishedAt, locale)}
+              </DateText>
             </time>
           </Meta>
         </CardFooter>

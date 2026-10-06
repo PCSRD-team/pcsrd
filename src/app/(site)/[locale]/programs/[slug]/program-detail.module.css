@@ -1,0 +1,116 @@
+.section {
+  margin-block-start: clamp(2.5rem, 5vw, 4rem);
+}
+
+.heroImage > div:first-child,
+.shot > :first-child {
+  border-radius: 24px;
+}
+.shot img {
+  transition: transform 0.6s ease;
+}
+.shot:hover img {
+  transform: scale(1.05);
+}
+
+.tags li > * {
+  border-radius: 999px;
+}
+
+.block {
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 1px solid var(--color-hairline);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 36px
+    color-mix(in srgb, var(--color-navy-900) 5%, transparent);
+}
+
+.card.card {
+  border: 1px solid var(--color-hairline);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 36px
+    color-mix(in srgb, var(--color-navy-900) 5%, transparent);
+}
+.cta a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-navy-900);
+  color: var(--color-paper);
+  text-decoration: none;
+  box-shadow: none;
+}
+.cta a:hover {
+  background: var(--color-navy-700);
+}
+
+.metrics.metrics {
+  gap: 1.25rem;
+}
+.metrics.metrics > li {
+  padding: 1.5rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 36px
+    color-mix(in srgb, var(--color-navy-900) 5%, transparent);
+}
+
+.other {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--color-paper));
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.other:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px
+    color-mix(in srgb, var(--color-navy-900) 8%, transparent);
+}
+.other::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 240px;
+  aspect-ratio: 1;
+  border: 40px solid color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 50%;
+  inset-inline-start: -70px;
+  inset-block-end: -130px;
+}
+.rail :global(.rule-section) {
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 599px) {
+  .block,
+  .card.card,
+  .metrics.metrics > li {
+    border-radius: 20px;
+  }
+  .other {
+    border-radius: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot img,
+  .other {
+    transition: none;
+  }
+  .shot:hover img,
+  .other:hover {
+    transform: none;
+  }
+}
