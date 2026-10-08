@@ -18,6 +18,8 @@ import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { richTextToPlainText } from '@/lib/seo/json-ld';
 import { buildMetadata, seoFallback } from '@/lib/seo/metadata';
 import { decodeParam } from '@/lib/route-params';
+import { ButtonLink } from '@/components/ui/button';
+import styles from '../news.module.css';
 
 export const revalidate = 3600;
 
@@ -93,7 +95,7 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
     (timeOf(post.updatedAt) ?? 0) - (timeOf(post.publishedAt) ?? 0) > 24 * 60 * 60 * 1000;
 
   return (
-    <Container size="narrow" className="section-gap">
+    <Container className={`${styles.page} ${styles.detail}`}>
       <ArticleJsonLd
         title={post.title}
         description={post.excerpt}
@@ -111,7 +113,9 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
       <TranslationNotice locale={locale} dict={dict} isTranslated={post.isTranslated} arabicPath={`/news/${post.slugAr}`} />
 
       <article>
+        <div className={`${styles.articleIntro} ${hero ? styles.withImage : ''}`}>
         <PageHeader
+          className={styles.articleHeader}
           breadcrumbs={
             <ContentBreadcrumbs
               locale={locale}
@@ -152,21 +156,22 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
             // illustrates — never an empty alt on the article's lead image.
             alt={post.hero?.alt || post.title || ''}
             decorative={!(post.hero?.alt || post.title)}
-            // The narrow container caps at 760px, but it only *reaches* 760px
-            // once the viewport clears 760 + the 2×64px desktop gutter. Below
-            // 888px the column is narrower than the old hint claimed.
-            sizes="(min-width: 888px) 760px, 100vw"
+            // Match the full content width and its responsive side gutters.
+            sizes="(min-width: 1180px) 494px, (min-width: 1024px) 43vw, (min-width: 768px) calc(100vw - 128px), calc(100vw - 40px)"
             // The article's hero, and the only `preload` on this route.
             preload
-            className="mbe-10"
+            className={styles.articleImage}
           />
         ) : null}
+        </div>
 
+        <div className={styles.articleBody}>
         <Prose measure="reading">
           <RichText doc={post.body} />
         </Prose>
+        </div>
         {post.gallery.length > 0 ? (
-          <Section labelledBy="post-gallery" className="mbs-12">
+          <Section labelledBy="post-gallery" bounded={false} spacing="none" className={styles.gallery}>
             <SectionHeading id="post-gallery" title={dict.contentUi.gallery} />
             <Grid as="ul" cols={3} gap={4}>
               {post.gallery.map((item) => (
@@ -177,9 +182,8 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
                     image={mediaImage(item.path, item.blur, item)}
                     alt={item.alt || post.title || ''}
                     ratio="portrait"
-                    // Three-up inside the 760px reading column, not the full
-                    // content width: ~245px a tile at the top end.
-                    sizes="(min-width: 888px) 245px, (min-width: 640px) 30vw, 100vw"
+                    // Three columns on desktop, one on small screens.
+                    sizes="(min-width: 1180px) 310px, (min-width: 768px) 28vw, calc(100vw - 80px)"
                     caption={item.caption}
                   />
                 </li>
@@ -187,6 +191,9 @@ export default async function PostPage({ params }: PageProps<'/[locale]/news/[sl
             </Grid>
           </Section>
         ) : null}
+        <div className={styles.backLink}>
+          <ButtonLink href={localePath(locale, '/news')} tone="secondary">{dict.news.title}</ButtonLink>
+        </div>
       </article>
     </Container>
   );

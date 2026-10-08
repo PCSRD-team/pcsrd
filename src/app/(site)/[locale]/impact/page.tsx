@@ -15,6 +15,7 @@ import { listMetrics, listPrograms, listStories } from '@/db/queries/content';
 import { isLocale, localePath } from '@/lib/i18n/config';
 import { getDictionary, type Dictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata } from '@/lib/seo/metadata';
+import styles from './impact.module.css';
 
 export const revalidate = 3600;
 
@@ -39,7 +40,7 @@ function MethodPanel({ dict }: { dict: Dictionary }) {
     { status: 'target', body: dict.contentUi.methodTarget },
   ] as const;
   return (
-    <Panel as="aside" padding="sm" labelledBy="impact-method">
+    <Panel as="aside" padding="sm" labelledBy="impact-method" className={styles.method}>
       <Eyebrow id="impact-method">{dict.contentUi.methodTitle}</Eyebrow>
       <DefinitionList
         layout="ruled"
@@ -92,7 +93,7 @@ export default async function ImpactPage({ params }: PageProps<'/[locale]/impact
   ];
 
   return (
-    <Container className="section-gap">
+    <Container className={styles.page}>
       <CollectionPageJsonLd
         name={dict.impact.title}
         description={dict.impact.lead}
@@ -104,9 +105,9 @@ export default async function ImpactPage({ params }: PageProps<'/[locale]/impact
         }))}
       />
 
-      <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] md:items-start">
+      <div className={styles.introduction}>
         <PageHeader
-          className="mbe-0"
+          className={styles.hero}
           title={dict.impact.title}
           lede={dict.impact.lead}
           breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.impact.title }]} currentPath="/impact" />}
@@ -114,7 +115,7 @@ export default async function ImpactPage({ params }: PageProps<'/[locale]/impact
         <MethodPanel dict={dict} />
       </div>
 
-      <Section labelledBy="impact-figures">
+      <Section labelledBy="impact-figures" bounded={false} spacing="none" className={styles.figures}>
         <SectionHeading id="impact-figures" title={dict.contentUi.metricsTitle} eyebrow={dict.impact.verified} />
         {groups.length === 0 ? (
           <EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} />
@@ -123,7 +124,7 @@ export default async function ImpactPage({ params }: PageProps<'/[locale]/impact
             {groups.map((group) => (
               <div
                 key={group.key}
-                className="grid gap-6 md:grid-cols-[12.5rem_minmax(0,1fr)] md:gap-10"
+                className={styles.metricGroup}
                 style={group.accent ? ({ '--accent': group.accent } as CSSProperties) : undefined}
               >
                 <div className={group.accent ? 'rule-accent pbs-3' : 'rule-section pbs-3'}>
@@ -142,7 +143,7 @@ export default async function ImpactPage({ params }: PageProps<'/[locale]/impact
         )}
       </Section>
 
-      <Section labelledBy="impact-stories" tone="alt" className="px-5 md:px-8">
+      <Section labelledBy="impact-stories" bounded={false} spacing="none" className={styles.stories}>
         <SectionHeading id="impact-stories" title={dict.impact.storiesTitle} lead={dict.contentUi.storiesLead} />
         {stories.length === 0 ? (
           <EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} />

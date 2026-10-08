@@ -1,0 +1,37 @@
+.page { padding-block: 3rem 5rem; }
+.hero { position: relative; overflow: hidden; isolation: isolate; padding: clamp(1.5rem, 4vw, 3.5rem); border-radius: 26px; background: var(--color-navy-900); color: var(--color-paper); margin-block-end: 2.5rem; }
+.hero::after { content: ''; position: absolute; z-index: -1; width: 290px; height: 290px; border: 45px solid color-mix(in srgb, var(--color-paper) 5%, transparent); border-radius: 50%; inset-inline-end: -70px; inset-block-end: -140px; }
+.hero h1 { color: var(--color-paper); font-size: clamp(2.1rem, 4vw, 3.4rem); }
+.hero p, .hero nav, .hero nav span, .hero a { color: var(--color-paper); }
+.hero > p:last-child { max-width: 56ch; opacity: .85; }
+.page :global(.rule-mark) { width: 42px; }
+.group { padding: clamp(1.25rem, 3vw, 2rem); border-radius: 24px; background: var(--color-paper-alt); margin-block-start: 2rem; }
+.group h2 { font-size: clamp(1.4rem, 2.5vw, 1.8rem); color: var(--color-navy-900); }
+.logos { gap: 1.25rem; }
+.logoCard { min-width: 0; padding: 1rem; border: 1px solid var(--color-hairline); border-radius: 18px; background: var(--color-paper); }
+.logoCard > a, .logoCard > div { border: 0; border-radius: 12px; background: white; }
+.logoCard > p { padding: .5rem .25rem; color: var(--color-navy-900); line-height: 1.75; font-weight: 500; }
+.logoCard > p > span { font-weight: 400; }
+.logoCard > p > span:last-child:global(.block) { font-size: .75rem; margin-block-start: .5rem; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.partnerCard { position: relative; overflow: hidden; isolation: isolate; display: flex; flex-direction: column; min-width: 0; padding: 1.5rem; border: 1px solid var(--color-hairline); border-radius: 20px; background: var(--color-paper); }
+.partnerCard::after { content: ''; position: absolute; z-index: -1; width: 160px; height: 160px; border: 28px solid color-mix(in srgb, var(--color-gold-600) 8%, transparent); border-radius: 50%; inset-inline-end: -70px; inset-block-end: -80px; }
+.type { align-self: flex-start; padding: .3rem .7rem; border-radius: 999px; background: var(--color-navy-100); color: var(--color-navy-700); font-size: .75rem; margin-block-end: 1rem; }
+.partnerCard h3 { font-size: 1.1rem; font-weight: 600; color: var(--color-navy-900); line-height: 1.7; margin-block-end: 1.25rem; }
+.partnerCard dl { display: grid; gap: 1rem; margin-block-start: auto; }
+.partnerCard dl > div { display: grid; gap: .3rem; }
+.partnerCard dt { font-size: .75rem; color: var(--color-ink-55); }
+.partnerCard dd { font-size: .9rem; line-height: 1.7; color: var(--color-ink-70); }
+.partnerCard a { display: inline-flex; align-items: baseline; gap: .5rem; color: var(--color-navy-700); text-underline-offset: 4px; }
+.partnerCard a svg { flex-shrink: 0; align-self: center; }
+.donors { background: var(--color-navy-100); }
+.donors .type { background: var(--color-gold-050); color: var(--color-gold-700); }
+.page p, .page h3, .page dd { overflow-wrap: anywhere; }
+@media (max-width: 1023px) { .cards, .logos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 599px) {
+  .page { padding-block: 1.5rem 3rem; }
+  .hero { border-radius: 20px; }
+  .group { padding: 1.25rem; border-radius: 20px; margin-block-start: 1.5rem; }
+  .cards, .logos { grid-template-columns: 1fr; }
+  .partnerCard { padding: 1.25rem; border-radius: 17px; }
+}

@@ -1,0 +1,45 @@
+.page { padding-block: 3rem 5rem; }
+.hero { position: relative; overflow: hidden; isolation: isolate; padding: clamp(1.5rem, 4vw, 3.5rem); border-radius: 26px; background: var(--color-navy-900); color: var(--color-paper); margin-block-end: 2rem; }
+.hero::after { content: ''; position: absolute; z-index: -1; width: 290px; height: 290px; border: 45px solid color-mix(in srgb, var(--color-paper) 5%, transparent); border-radius: 50%; inset-inline-end: -70px; inset-block-end: -140px; }
+.hero h1 { color: var(--color-paper); font-size: clamp(2.1rem, 4vw, 3.4rem); }
+.hero p, .hero nav, .hero nav span, .hero a { color: var(--color-paper); }
+.hero > p:last-child { max-width: 56ch; opacity: .85; }
+.page :global(.rule-mark) { width: 42px; }
+.filters { padding: .5rem; margin-block-end: 2rem; background: var(--color-paper-alt); border-radius: 16px; }
+.filters ul { border: 0; }
+.filters a { border: 0; border-radius: 11px; }
+.filters a[aria-current] { background: var(--color-navy-700); color: var(--color-paper); }
+.opportunities { border: 1px solid var(--color-hairline); border-radius: 24px; background: var(--color-paper); padding: 1.5rem; }
+.opportunities caption { padding: 0 0 1.25rem; font-size: .95rem; color: var(--color-ink-70); }
+.opportunities thead tr { background: var(--color-paper-alt); border: 0; }
+.opportunities thead th { padding: 1rem; letter-spacing: .08em; }
+.opportunities tbody th, .opportunities tbody td { padding: 1.25rem 1rem; line-height: 1.7; }
+.opportunities tbody th { width: 42%; }
+.opportunities tbody tr:last-child { border: 0; }
+.opportunities tbody th a { text-decoration: none; color: var(--color-navy-900); }
+.opportunities tbody th a:hover { color: var(--color-gold-700); text-decoration: underline; }
+.opportunities span:global(.inline-flex) { border-radius: 999px; }
+.forms { margin-block-start: 2.5rem; padding: clamp(1.25rem, 3vw, 2rem); border-radius: 24px; background: var(--color-navy-100); }
+.forms h2 { color: var(--color-navy-900); }
+.mobileLabel { display: none; }
+.page a:global(.min-h-target) { border-radius: 999px; }
+@media (max-width: 1023px) {
+  .opportunities { padding: 1.25rem; }
+  .opportunities table, .opportunities caption, .opportunities tbody { display: block; }
+  .opportunities thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .opportunities tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .opportunities tbody tr { display: grid; align-content: start; padding: 1.25rem; border: 1px solid var(--color-hairline); border-radius: 16px; background: var(--color-paper-alt); }
+  .opportunities tbody tr:last-child { border: 1px solid var(--color-hairline); }
+  .opportunities tbody th, .opportunities tbody td { display: block; width: 100%; padding: .5rem 0; white-space: normal; text-align: start; }
+  .opportunities tbody th { padding-block-start: 0; margin-block-end: .5rem; font-size: 1.1rem; }
+  .opportunities tbody td { direction: inherit; }
+  .opportunities time { white-space: normal; }
+  .mobileLabel { display: block; margin-block-end: .25rem; color: var(--color-ink-55); font-family: var(--font-sans); font-size: .75rem; }
+}
+@media (max-width: 599px) {
+  .page { padding-block: 1.5rem 3rem; }
+  .hero { border-radius: 20px; }
+  .opportunities { border-radius: 20px; padding: 1rem; }
+  .opportunities tbody { grid-template-columns: 1fr; }
+  .forms { padding: 1.25rem; border-radius: 20px; }
+}

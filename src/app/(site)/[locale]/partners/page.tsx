@@ -7,13 +7,14 @@ import { Bidi } from '@/components/ui/bidi';
 import { EmptyState } from '@/components/ui/feedback';
 import { LogoTile } from '@/components/ui/figure';
 import { Container, Grid, PageHeader, Section, SectionHeading } from '@/components/ui/layout';
-import { Table } from '@/components/ui/table';
+import { Icon } from '@/components/ui/icon';
 import { Caption } from '@/components/ui/typography';
 import { listPartners } from '@/db/queries/content';
 import type { PartnerType } from '@/db/schema/enums';
 import { isLocale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata } from '@/lib/seo/metadata';
+import styles from './partners.module.css';
 
 export const revalidate = 3600;
 
@@ -37,9 +38,8 @@ const bareHost = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/,
 
 /**
  * Partners grouped by type. Implementing partners are logo tiles — the
- * relationship is visual; donors, networks and memberships are a register,
- * because what a due-diligence reader wants there is the name, the sector
- * and the site, comparable down the column.
+ * relationship is visual; donors, networks and memberships use cards with
+ * their names, sectors and websites kept together for easy reading.
  *
  * `logoPath` is already `null` unless permission was granted — the gate is
  * in the query — so a tile without a logo sets the name in type instead.
@@ -51,8 +51,9 @@ export default async function PartnersPage({ params }: PageProps<'/[locale]/part
   const [dict, partners] = await Promise.all([getDictionary(locale), listPartners(locale)]);
 
   return (
-    <Container className="section-gap">
+    <Container className={styles.page}>
       <PageHeader
+        className={styles.hero}
         title={dict.partners.title}
         lede={dict.partners.lead}
         breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.partners.title }]} currentPath="/partners" />}
@@ -69,11 +70,11 @@ export default async function PartnersPage({ params }: PageProps<'/[locale]/part
 
           if (group === 'implementing') {
             return (
-              <Section key={group} labelledBy={headingId}>
+              <Section key={group} labelledBy={headingId} bounded={false} spacing="none" className={styles.group}>
                 <SectionHeading id={headingId} title={title} />
-                <Grid as="ul" cols={4} gap={4}>
+                <Grid as="ul" cols={4} gap={4} className={styles.logos}>
                   {members.map((partner) => (
-                    <li key={partner.id}>
+                    <li key={partner.id} className={styles.logoCard}>
                       <LogoTile
                         image={mediaImage(partner.logoPath)}
                         name={partner.logoAlt ?? partner.name ?? ''}
@@ -92,41 +93,27 @@ export default async function PartnersPage({ params }: PageProps<'/[locale]/part
           }
 
           return (
-            <Section key={group} labelledBy={headingId}>
+            <Section key={group} labelledBy={headingId} bounded={false} spacing="none" className={`${styles.group} ${group === 'donor' ? styles.donors : ''}`}>
               <SectionHeading id={headingId} title={title} />
-              <Table
-                caption={title}
-                captionHidden
-                rows={members}
-                empty={dict.states.emptyBody}
-                columns={[
-                  {
-                    key: 'name',
-                    header: dict.forms.name,
-                    rowHeader: true,
-                    cell: (partner) => partner.name,
-                  },
-                  {
-                    key: 'sector',
-                    header: dict.forms.organizationType,
-                    cell: (partner) => partner.sector ?? '—',
-                  },
-                  {
-                    key: 'website',
-                    header: dict.contentUi.partnerWebsite,
-                    numeric: true,
-                    align: 'start',
-                    cell: (partner) =>
-                      partner.website ? (
-                        <a href={partner.website} rel="noopener noreferrer" target="_blank">
-                          <Bidi>{bareHost(partner.website)}</Bidi>
-                        </a>
-                      ) : (
-                        '—'
-                      ),
-                  },
-                ]}
-              />
+              <ul className={styles.cards}>
+                {members.map((partner) => (
+                  <li key={partner.id} className={styles.partnerCard}>
+                    <span className={styles.type}>{title}</span>
+                    <h3>{partner.name}</h3>
+                    <dl>
+                      <div><dt>{dict.forms.organizationType}</dt><dd>{partner.sector ?? '—'}</dd></div>
+                      <div>
+                        <dt>{dict.contentUi.partnerWebsite}</dt>
+                        <dd>{partner.website ? (
+                          <a href={partner.website} rel="noopener noreferrer" target="_blank">
+                            <Bidi>{bareHost(partner.website)}</Bidi><Icon name="external" size={16} />
+                          </a>
+                        ) : '—'}</dd>
+                      </div>
+                    </dl>
+                  </li>
+                ))}
+              </ul>
             </Section>
           );
         })

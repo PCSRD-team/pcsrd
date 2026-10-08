@@ -14,6 +14,7 @@ import { postCategory, type PostCategory } from '@/db/schema/enums';
 import { isLocale, localePath, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata, withPagination } from '@/lib/seo/metadata';
+import styles from './news.module.css';
 
 export const revalidate = 3600;
 
@@ -83,7 +84,7 @@ export default async function NewsPage({ params, searchParams }: PageProps<'/[lo
   ];
 
   return (
-    <Container className="section-gap">
+    <Container className={styles.page}>
       <CollectionPageJsonLd
         name={dict.news.title}
         description={dict.news.lead}
@@ -93,6 +94,7 @@ export default async function NewsPage({ params, searchParams }: PageProps<'/[lo
       />
 
       <PageHeader
+        className={styles.hero}
         title={dict.news.title}
         lede={dict.news.lead}
         breadcrumbs={
@@ -105,7 +107,7 @@ export default async function NewsPage({ params, searchParams }: PageProps<'/[lo
         }
       />
 
-      <Tabs items={tabs} label={dict.filters.newsCategories} className="mbe-8" />
+      <Tabs items={tabs} label={dict.filters.newsCategories} className={styles.filters} />
 
       {result.items.length === 0 ? (
         <EmptyState
@@ -126,7 +128,7 @@ export default async function NewsPage({ params, searchParams }: PageProps<'/[lo
           <h2 id="news-list" className="sr-only">
             {dict.news.listHeading}
           </h2>
-          <ul className="grid gap-4" aria-labelledby="news-list">
+          <ul className={styles.list} aria-labelledby="news-list">
             {result.items.map((post) => (
               <li key={post.id} className="flex">
                 <PostCard post={post} locale={locale} dict={dict} />

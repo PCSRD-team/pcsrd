@@ -17,6 +17,7 @@ import { formatDate, formatInstant, toDateTimeAttr } from '@/lib/format';
 import { isLocale, localePath, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { buildMetadata } from '@/lib/seo/metadata';
+import styles from './careers.module.css';
 
 export const revalidate = 300;
 
@@ -89,7 +90,7 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
   ];
 
   return (
-    <Container className="section-gap">
+    <Container className={styles.page}>
       <CollectionPageJsonLd
         name={dict.careers.title}
         description={dict.careers.lead}
@@ -102,6 +103,7 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
       />
 
       <PageHeader
+        className={styles.hero}
         title={dict.careers.title}
         lede={dict.careers.lead}
         breadcrumbs={
@@ -114,9 +116,10 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
         }
       />
 
-      <Tabs items={tabs} label={dict.contentUi.vacancyType} className="mbe-8" />
+      <Tabs items={tabs} label={dict.contentUi.vacancyType} className={styles.filters} />
 
       <Table
+        className={styles.opportunities}
         caption={dict.tableCaptions.openVacancies}
         rows={vacancies}
         rowHref={(vacancy) => localePath(locale, `/careers/${vacancy.slug}`)}
@@ -161,9 +164,12 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
             key: 'type',
             header: dict.contentUi.vacancyType,
             cell: (vacancy) => (
+              <div>
+              <span className={styles.mobileLabel}>{dict.contentUi.vacancyType}</span>
               <Badge tone={vacancy.type === 'volunteer' ? 'info' : 'neutral'} uppercase={false}>
                 {vacancyTypeLabel(vacancy.type, dict)}
               </Badge>
+              </div>
             ),
           },
           {
@@ -171,7 +177,7 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
             header: dict.careers.employmentType,
             // A label, not a figure: no tabular numerals, no LTR cell.
             align: 'start',
-            cell: (vacancy) => employmentTypeLabel(vacancy.employmentType, dict) ?? '—',
+            cell: (vacancy) => <div><span className={styles.mobileLabel}>{dict.careers.employmentType}</span>{employmentTypeLabel(vacancy.employmentType, dict) ?? '—'}</div>,
           },
           {
             key: 'deadline',
@@ -179,17 +185,21 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
             numeric: true,
             align: 'start',
             cell: (vacancy) => (
+              <div>
+              <span className={styles.mobileLabel}>{dict.careers.deadline}</span>
               <TimeCell dateTime={vacancy.deadline} locale={locale}>{formatDate(vacancy.deadline, locale)}</TimeCell>
+              </div>
             ),
           },
         ]}
       />
 
       {standaloneForms.length > 0 ? (
-        <Section labelledBy="careers-open-forms" className="mbs-12">
+        <Section labelledBy="careers-open-forms" bounded={false} spacing="none" className={styles.forms}>
           <SectionHeading id="careers-open-forms" title={dict.careers.openForms} />
           <p className="mbe-6 max-w-prose text-body text-ink-70">{dict.careers.openFormsLead}</p>
           <Table
+            className={styles.opportunities}
             caption={dict.careers.openForms}
             rows={standaloneForms}
             rowHref={(form) => localePath(locale, `/apply/${form.slug}`)}
@@ -206,9 +216,12 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
                 key: 'kind',
                 header: dict.careers.opportunityKind,
                 cell: (form) => (
+                  <div>
+                  <span className={styles.mobileLabel}>{dict.careers.opportunityKind}</span>
                   <Badge tone="neutral" uppercase={false}>
                     {dict.apply.kind[form.kind]}
                   </Badge>
+                  </div>
                 ),
               },
               {
@@ -216,7 +229,7 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
                 header: dict.careers.deadline,
                 numeric: true,
                 align: 'start',
-                cell: (form) =>
+                cell: (form) => <div><span className={styles.mobileLabel}>{dict.careers.deadline}</span>{
                   form.closesAt ? (
                     // An instant, on the Palestine clock: `formatDate` pins UTC
                     // and showed a late-evening deadline a day early.
@@ -225,7 +238,7 @@ export default async function CareersPage({ params, searchParams }: PageProps<'/
                     </TimeCell>
                   ) : (
                     dict.careers.noDeadline
-                  ),
+                  )}</div>,
               },
             ]}
           />

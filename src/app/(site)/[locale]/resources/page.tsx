@@ -9,7 +9,9 @@ import { Bidi } from '@/components/ui/bidi';
 import { ButtonLink } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/feedback';
 import { Container, PageHeader } from '@/components/ui/layout';
-import { Table } from '@/components/ui/table';
+import { Icon } from '@/components/ui/icon';
+import { Pagination } from '@/components/ui/pagination';
+import styles from './resources.module.css';
 import { listPublications } from '@/db/queries/content';
 import { formatFileSize } from '@/lib/format';
 import { isLocale, localePath } from '@/lib/i18n/config';
@@ -32,94 +34,75 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/resource
 }
 
 /** The publications register: document, type, year, file. */
-export default async function ResourcesPage({ params }: PageProps<'/[locale]/resources'>) {
-  const { locale } = await params;
+export default async function ResourcesPage({ params, searchParams }: PageProps<'/[locale]/resources'>) {
+  const [{ locale }, search] = await Promise.all([params, searchParams]);
   if (!isLocale(locale)) notFound();
 
   const [dict, publications] = await Promise.all([getDictionary(locale), listPublications(locale)]);
+  const rawPage = Array.isArray(search.page) ? search.page[0] : search.page;
+  const requestedPage = Number(rawPage);
+  const pageSize = 9;
+  const totalPages = Math.max(1, Math.ceil(publications.length / pageSize));
+  const page = Math.min(totalPages, Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
+  const visiblePublications = publications.slice((page - 1) * pageSize, page * pageSize);
+  const pageHref = (target: number) => localePath(locale, `/resources${target > 1 ? `?page=${target}` : ''}`);
 
   return (
-    <Container className="section-gap">
+    <Container className={styles.page}>
       {/* Items point at the list itself: a publication has no page of its
           own, and a `#fragment` URL is not a distinct resource. */}
       <CollectionPageJsonLd
         name={dict.resources.title}
         description={dict.resources.lead}
-        url={localePath(locale, '/resources')}
+        url={pageHref(page)}
         locale={locale}
-        items={publications.map((publication) => ({
+        items={visiblePublications.map((publication) => ({
           name: publication.title,
           url: localePath(locale, '/resources'),
         }))}
       />
 
-      <PageHeader
+      <PageHeader className={styles.hero}
         title={dict.resources.title}
         lede={dict.resources.lead}
         breadcrumbs={<ContentBreadcrumbs locale={locale} dict={dict} trail={[{ label: dict.resources.title }]} currentPath="/resources" />}
       />
 
-      <Table
-        caption={dict.tableCaptions.publications}
-        rows={publications}
-        empty={<EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} bounded />}
-        columns={[
-          {
-            key: 'title',
-            header: dict.resources.title,
-            rowHeader: true,
-            cell: (publication) => (
-              <span className="block">
-                <span className="block text-body font-medium">{publication.title}</span>
-                {publication.description ? (
-                  <span className="measure mbs-1 block text-caption font-normal text-ink-55">
-                    {publication.description}
-                  </span>
-                ) : null}
-              </span>
-            ),
-          },
-          {
-            key: 'type',
-            header: dict.forms.category,
-            cell: (publication) => (
-              <Badge tone="neutral" uppercase={false}>
-                {dict.enums.publicationType[publication.type]}
-              </Badge>
-            ),
-          },
-          {
-            key: 'year',
-            header: dict.contentUi.year,
-            numeric: true,
-            align: 'start',
-            cell: (publication) => (publication.publishedYear ? String(publication.publishedYear) : '—'),
-          },
-          {
-            key: 'file',
-            header: dict.contentUi.file,
-            cell: (publication) =>
-              publication.filePath ? (
-                <ButtonLink
-                  href={mediaSrc(publication.filePath, 'documents')}
-                  tone="marked"
-                  size="sm"
-                  download
-                  ariaLabel={`${dict.common.download}: ${publication.title ?? ''}`}
-                >
-                  {dict.common.download}{' '}
-                  <Bidi className="font-mono text-eyebrow text-mono-muted">
-                    {formatFileSize(publication.fileSize, locale)}
-                  </Bidi>
-                </ButtonLink>
-              ) : (
-                // A publication with no file in this locale is not an error —
-                // the reader is told which language it exists in.
-                <span className="text-caption text-ink-55">{dict.resources.notAvailableInLocale}</span>
-              ),
-          },
-        ]}
-      />
+      <section aria-labelledby="publications-list">
+        <h2 id="publications-list" className={styles.listTitle}>{dict.tableCaptions.publications}</h2>
+        {publications.length === 0 ? (
+          <EmptyState title={dict.states.emptyTitle} body={dict.states.emptyBody} bounded />
+        ) : (
+          <ul className={styles.list}>
+            {visiblePublications.map((publication) => (
+              <li key={publication.id} className={styles.card}>
+                <div className={styles.cardTop}>
+                  <span className={styles.icon} aria-hidden="true"><Icon name="download" size={24} /></span>
+                  <Badge tone="neutral" uppercase={false}>{dict.enums.publicationType[publication.type]}</Badge>
+                </div>
+                <h3>{publication.title}</h3>
+                {publication.description ? <p className={styles.description}>{publication.description}</p> : null}
+                <dl className={styles.meta}>
+                  <div><dt>{dict.contentUi.year}</dt><dd><Bidi>{publication.publishedYear ? String(publication.publishedYear) : '—'}</Bidi></dd></div>
+                  {publication.filePath ? <div><dt>{dict.contentUi.file}</dt><dd><Bidi>{formatFileSize(publication.fileSize, locale)}</Bidi></dd></div> : null}
+                </dl>
+                <div className={styles.cardFooter}>
+                  {publication.filePath ? (
+                    <ButtonLink href={mediaSrc(publication.filePath, 'documents')} tone="primary" size="sm" download ariaLabel={`${dict.common.download}: ${publication.title ?? ''}`}>
+                      <Icon name="download" size={16} />{dict.common.download}
+                    </ButtonLink>
+                  ) : (
+                    <span className="text-caption text-ink-55">{dict.resources.notAvailableInLocale}</span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <Pagination page={page} totalPages={totalPages} hrefFor={pageHref}
+        label={dict.a11y.pagination} previousLabel={dict.common.previous} nextLabel={dict.common.next}
+        pageLabel={(target) => `${dict.common.page} ${target}`} className={styles.pagination} />
     </Container>
   );
 }
