@@ -1,0 +1,46 @@
+.page > div > header {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  border-radius: 26px;
+  background: var(--color-navy-900);
+  color: var(--color-paper);
+  margin-block-end: 1.5rem;
+}
+.page > div > header::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 290px;
+  aspect-ratio: 1;
+  border: 45px solid color-mix(in srgb, var(--color-paper) 5%, transparent);
+  border-radius: 50%;
+  inset-inline-end: -70px;
+  inset-block-end: -140px;
+}
+.page > div > header h1 {
+  color: var(--color-paper);
+  font-size: clamp(2.1rem, 4vw, 3.4rem);
+}
+.page > div > header p,
+.page > div > header nav,
+.page > div > header nav span,
+.page > div > header a {
+  color: var(--color-paper);
+}
+.page > div > header > p:first-of-type {
+  color: var(--color-gold-600);
+}
+.page > div > header > p:last-child {
+  max-width: 56ch;
+  opacity: 0.85;
+}
+.page :global(.rule-mark) {
+  width: 42px;
+}
+@media (max-width: 767px) {
+  .page > div > header {
+    border-radius: 20px;
+  }
+}
