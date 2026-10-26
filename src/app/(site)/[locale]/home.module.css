@@ -1,7 +1,7 @@
 /* The homepage's softer composition is intentionally local to this route.
    All colours still come from the existing PCSRD palette. */
 .home {
-  background: var(--color-paper);
+  background: #fff;
   --home-shadow: 0 10px 30px
     color-mix(in srgb, var(--color-navy-900) 8%, transparent);
 }
@@ -207,18 +207,45 @@
 
 .programs .programCard {
   padding: 2rem 1.5rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 12%, var(--color-paper));
+  border: 1px solid var(--color-hairline);
+  border-block-start: 2px solid var(--color-navy-700);
   border-radius: 20px;
-  background: color-mix(in srgb, var(--accent) 5%, var(--color-paper));
+  background: #fff;
   text-align: center;
   transition:
     box-shadow 0.2s ease,
+    background-color 0.2s ease,
     border-color 0.2s ease;
 }
 
 .programCard:hover {
   box-shadow: var(--home-shadow);
-  border-color: var(--accent);
+  border-color: color-mix(
+    in srgb,
+    var(--color-gold-600) 45%,
+    var(--color-paper)
+  );
+  border-block-start-color: var(--color-navy-700);
+  background: var(--color-gold-050);
+}
+
+.programCard .programIcon {
+  background: var(--color-navy-100);
+  color: var(--color-navy-700);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.programCard:hover .programIcon {
+  background: color-mix(in srgb, var(--color-gold-700) 10%, transparent);
+  color: var(--color-gold-700);
+}
+
+.programCard ul li {
+  border: 1px solid var(--color-rule);
+  background: #fff;
+  color: var(--color-navy-700);
 }
 
 .programCard > div:last-child {
@@ -340,12 +367,89 @@
   font-weight: 400;
 }
 
+/* ── Credibility strip (animated stat cards) ─────────────────────────── */
+
 .credibility ul {
-  gap: 1.25rem;
+  gap: 1.5rem;
   border: 0;
 }
 
-.credibility li,
+.credibility li {
+  position: relative;
+  overflow: hidden;
+  padding: 2rem 1rem 1.75rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--home-shadow);
+  text-align: center;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* Thin gold line across the top of the card, revealed on hover. */
+.credibility li::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  height: 3px;
+  background: var(--color-gold-600);
+  transform: scaleX(0);
+  transition: transform 0.35s ease;
+}
+
+.credibility .statIcon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1.25rem;
+  border-radius: 18px;
+  background: var(--color-navy-100);
+  color: var(--color-navy-700);
+  transition:
+    transform 0.3s ease,
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.credibility li > p:first-of-type {
+  font-size: clamp(2.5rem, 4vw, 3.25rem);
+  font-weight: 700;
+  color: var(--color-navy-700);
+}
+
+.credibility li > p:last-of-type {
+  color: var(--color-ink-70);
+}
+
+@media (hover: hover) {
+  .credibility li:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px
+      color-mix(in srgb, var(--color-navy-900) 14%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--color-gold-600) 45%,
+      var(--color-paper)
+    );
+  }
+  .credibility li:hover::before {
+    transform: scaleX(1);
+  }
+  .credibility li:hover .statIcon {
+    background: var(--color-navy-700);
+    color: var(--color-paper);
+    transform: scale(1.15) rotate(-6deg);
+  }
+  .credibility li:dir(rtl):hover .statIcon {
+    transform: scale(1.15) rotate(6deg);
+  }
+}
+
+/* ── Impact metrics (unchanged) ──────────────────────────────────────── */
+
 .impact .metric {
   border: 1px solid var(--color-hairline);
   padding: 1.75rem 1rem;
@@ -355,9 +459,6 @@
   text-align: center;
 }
 
-.credibility li > p:first-of-type {
-  color: var(--color-gold-700);
-}
 .impact .metric > p:first-child,
 .impact .metric > div {
   justify-content: center;
@@ -625,6 +726,15 @@
   .programCard {
     transition: none;
   }
+  .credibility li,
+  .credibility li::before,
+  .credibility .statIcon {
+    transition: none;
+  }
+  .credibility li:hover,
+  .credibility li:hover .statIcon {
+    transform: none;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -750,6 +860,185 @@
     background-color 0.5s ease,
     transform 0.5s ease;
 }
+.where > div > div:first-child > a:hover {
+  background: var(--color-navy-900);
+  transform: translateY(-2px);
+}
+.programs .centerAction a {
+  transition:
+    padding 0.25s ease,
+    margin 0.25s ease,
+    background-color 0.25s ease;
+}
+.programs .centerAction a svg {
+  transition: transform 0.25s ease;
+}
+.programs .centerAction a:hover {
+  padding-inline-end: 2.25rem;
+  margin-inline-start: 0.75rem;
+}
+.programs .centerAction a:hover svg {
+  transform: translateX(0.75rem);
+}
+.programs .centerAction a:dir(rtl):hover svg {
+  transform: translateX(-0.75rem);
+}
+.aboutPanel {
+  position: relative;
+  isolation: isolate;
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  gap: 2.5rem 3rem;
+  padding-block: 4rem 0;
+  padding-inline: max(1.25rem, calc((100vw - 1180px) / 2 + 1.25rem));
+  border: 0;
+  border-radius: 0;
+  background: var(--color-navy-900);
+  color: var(--color-paper);
+}
+.aboutPanel::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 520px;
+  aspect-ratio: 1;
+  border: 80px solid color-mix(in srgb, var(--color-paper) 5%, transparent);
+  border-radius: 50%;
+  inset-inline-end: -140px;
+  inset-block-start: -220px;
+}
+.aboutPanel::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 260px;
+  aspect-ratio: 1;
+  border: 40px solid color-mix(in srgb, var(--color-gold-600) 16%, transparent);
+  border-radius: 50%;
+  inset-inline-start: -90px;
+  inset-block-end: -110px;
+}
+.aboutCopy {
+  padding: 0;
+}
+.aboutCopy h2,
+.aboutCopy > p {
+  color: var(--color-paper);
+}
+.aboutCopy > p {
+  opacity: 0.85;
+}
+.aboutCopy a:global(.bg-navy-700) {
+  background: var(--color-paper);
+  color: var(--color-navy-900);
+  box-shadow: none;
+}
+.aboutCopy a:not(:global(.bg-navy-700)) {
+  min-height: 48px;
+  padding-inline: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-paper) 60%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-paper);
+  text-decoration: none;
+}
+.aboutCopy a:not(:global(.bg-navy-700)):hover {
+  border-color: var(--color-gold-600);
+  color: var(--color-gold-600);
+}
+.aboutVisual {
+  margin: 0;
+  padding: 0 0 1rem;
+}
+.aboutVisual::before {
+  display: none;
+}
+.aboutImage {
+  border: 1px solid var(--color-gold-600);
+  border-radius: 22px;
+}
+.objectives {
+  margin-block-start: 1rem;
+  padding: 2.5rem 0 3.5rem;
+  background: transparent;
+  border-block-start: 1px solid
+    color-mix(in srgb, var(--color-paper) 22%, transparent);
+}
+@media (min-width: 768px) {
+  .aboutPanel {
+    padding-inline: max(4rem, calc((100vw - 1180px) / 2 + 4rem));
+  }
+  .objectives > ol > li + li {
+    padding-inline-start: 1.5rem;
+    border-inline-start: 1px solid
+      color-mix(in srgb, var(--color-paper) 18%, transparent);
+  }
+}
+@media (max-width: 767px) {
+  .aboutPanel {
+    padding-block: 2.5rem 0;
+  }
+  .objectives {
+    padding: 1.75rem 0 2.5rem;
+  }
+}
+.where h2 {
+  font-weight: 600;
+  color: var(--color-navy-900);
+  margin-block-end: 0.75rem;
+}
+
+.where > div > p {
+  color: var(--color-ink-70);
+  font-size: 0.9rem;
+  margin-block-end: 1.25rem;
+}
+
+.where ol {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.where ol li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.where ol li bdi {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--color-navy-700);
+}
+
+.where ol li span:first-of-type {
+  font-weight: 600;
+  color: var(--color-navy-900);
+}
+
+.where ol li span:last-of-type {
+  color: var(--color-ink-70);
+  font-size: 0.85rem;
+}
+
+/* الزر */
+.where > div > div:first-child > a {
+  min-height: 48px;
+  padding-inline: 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-navy-700);
+  color: var(--color-paper);
+  text-decoration: none;
+  box-shadow: 0 5px 12px
+    color-mix(in srgb, var(--color-navy-900) 16%, transparent);
+  transition:
+    background-color 0.3s ease,
+    transform 0.3s ease;
+}
+
 .where > div > div:first-child > a:hover {
   background: var(--color-navy-900);
   transform: translateY(-2px);

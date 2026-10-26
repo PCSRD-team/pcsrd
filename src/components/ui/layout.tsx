@@ -1,6 +1,6 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { cn } from '@/lib/utils';
-import { Eyebrow, Lede } from './typography';
+import type { CSSProperties, ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { Eyebrow, Lede } from "./typography";
 
 /**
  * Layout primitives.
@@ -12,79 +12,90 @@ import { Eyebrow, Lede } from './typography';
  * in one file.
  */
 
-type BlockTag = 'div' | 'section' | 'article' | 'aside' | 'header' | 'footer' | 'nav' | 'main' | 'ul' | 'ol' | 'li';
+type BlockTag =
+  | "div"
+  | "section"
+  | "article"
+  | "aside"
+  | "header"
+  | "footer"
+  | "nav"
+  | "main"
+  | "ul"
+  | "ol"
+  | "li";
 
 // ── Container ────────────────────────────────────────────────────────────
 
 const styles = {
   container: {
     /** 1180px + 64px desktop / 20px mobile side gutters. */
-    default: 'container-content',
+    default: "container-content",
     /** A form, a legal page, a receipt — 760px, inside the same gutters. */
-    narrow: 'container-content max-w-narrow',
+    narrow: "container-content max-w-narrow",
     /** Full bleed inside the gutters; the max width is the viewport. */
-    wide: 'w-full px-5 md:px-16',
+    wide: "w-full px-5 md:px-16",
   },
   section: {
     tone: {
-      default: '',
-      alt: 'bg-paper-alt',
-      inverse: 'bg-navy-900 text-paper',
+      default: "",
+      alt: "bg-paper-alt",
+      inverse: "bg-navy-900 text-paper",
     },
     spacing: {
-      default: 'section-gap',
-      tight: 'py-8 md:py-12',
-      none: '',
+      default: "section-gap",
+      tight: "py-8 md:py-12",
+      none: "",
     },
   },
   gap: {
-    0: 'gap-0',
-    1: 'gap-1',
-    2: 'gap-2',
-    3: 'gap-3',
-    4: 'gap-4',
-    5: 'gap-5',
-    6: 'gap-6',
-    8: 'gap-8',
-    10: 'gap-10',
-    12: 'gap-12',
-    16: 'gap-16',
+    0: "gap-0",
+    1: "gap-1",
+    2: "gap-2",
+    3: "gap-3",
+    4: "gap-4",
+    5: "gap-5",
+    6: "gap-6",
+    8: "gap-8",
+    10: "gap-10",
+    12: "gap-12",
+    16: "gap-16",
   },
   align: {
-    start: 'items-start',
-    center: 'items-center',
-    end: 'items-end',
-    baseline: 'items-baseline',
-    stretch: 'items-stretch',
+    start: "items-start",
+    center: "items-center",
+    end: "items-end",
+    baseline: "items-baseline",
+    stretch: "items-stretch",
   },
   justify: {
-    start: 'justify-start',
-    center: 'justify-center',
-    end: 'justify-end',
-    between: 'justify-between',
+    start: "justify-start",
+    center: "justify-center",
+    end: "justify-end",
+    between: "justify-between",
   },
   cols: {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 sm:grid-cols-2',
-    3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+    1: "grid-cols-1",
+    2: "grid-cols-1 sm:grid-cols-2",
+    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
     /** Sidebar layout: content column + a narrower aside from `lg`. */
-    sidebar: 'grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]',
+    sidebar: "grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]",
   },
   /** The visual step of a heading, independent of which element draws it. */
   headingSize: {
-    h1: 'text-h1',
-    h2: 'text-h2',
-    h3: 'text-h3',
-    h4: 'text-h4',
+    h1: "text-h1",
+    h2: "text-h2",
+    h3: "text-h3",
+    h4: "text-h4",
   },
   rule: {
     /** 1px `rule` — container edge, list separator. */
-    edge: 'border-bs border-rule',
+    edge: "border-bs border-rule",
     /** 2px ink — a new record begins. */
-    section: 'rule-section',
+    section: "rule-section",
     /** 2px × 88px gold — the heading mark. */
-    mark: 'rule-mark border-0',
+    mark: "rule-mark border-0",
   },
 };
 
@@ -92,8 +103,8 @@ export type Gap = keyof typeof styles.gap;
 
 export function Container({
   children,
-  size = 'default',
-  as: Tag = 'div',
+  size = "default",
+  as: Tag = "div",
   className,
   id,
 }: {
@@ -121,11 +132,11 @@ export function Section({
   children,
   className,
   bounded = true,
-  tone = 'default',
-  spacing = 'default',
+  tone = "default",
+  spacing = "default",
   id,
   labelledBy,
-  as: Tag = 'section',
+  as: Tag = "section",
 }: {
   children: ReactNode;
   className?: string;
@@ -134,7 +145,7 @@ export function Section({
   spacing?: keyof typeof styles.section.spacing;
   id?: string;
   labelledBy?: string;
-  as?: 'section' | 'div' | 'article' | 'aside';
+  as?: "section" | "div" | "article" | "aside";
 }) {
   return (
     <Tag
@@ -143,7 +154,7 @@ export function Section({
       className={cn(
         styles.section.spacing[spacing],
         styles.section.tone[tone],
-        bounded && 'rule-section',
+        bounded && "rule-section",
         className,
       )}
     >
@@ -158,7 +169,7 @@ export function Section({
 export function Stack({
   children,
   gap = 4,
-  as: Tag = 'div',
+  as: Tag = "div",
   align,
   className,
 }: {
@@ -169,7 +180,14 @@ export function Stack({
   className?: string;
 }) {
   return (
-    <Tag className={cn('flex flex-col', styles.gap[gap], align && styles.align[align], className)}>
+    <Tag
+      className={cn(
+        "flex flex-col",
+        styles.gap[gap],
+        align && styles.align[align],
+        className,
+      )}
+    >
       {children}
     </Tag>
   );
@@ -179,9 +197,9 @@ export function Stack({
 export function Cluster({
   children,
   gap = 3,
-  align = 'center',
-  justify = 'start',
-  as: Tag = 'div',
+  align = "center",
+  justify = "start",
+  as: Tag = "div",
   className,
 }: {
   children: ReactNode;
@@ -194,7 +212,7 @@ export function Cluster({
   return (
     <Tag
       className={cn(
-        'flex flex-wrap',
+        "flex flex-wrap",
         styles.gap[gap],
         styles.align[align],
         styles.justify[justify],
@@ -224,7 +242,7 @@ export function Grid({
   children,
   cols = 3,
   gap = 6,
-  as: Tag = 'div',
+  as: Tag = "div",
   role,
   label,
   labelledBy,
@@ -236,7 +254,7 @@ export function Grid({
   gap?: Gap;
   as?: BlockTag;
   /** Defaults to `list` for `ul`/`ol`, nothing otherwise. */
-  role?: 'list' | 'group' | 'region' | 'none' | 'presentation';
+  role?: "list" | "group" | "region" | "none" | "presentation";
   /** `aria-label` — the grid's accessible name when no heading names it. */
   label?: string;
   /** `aria-labelledby` — the id of the heading that names it. Prefer this. */
@@ -244,14 +262,14 @@ export function Grid({
   className?: string;
   id?: string;
 }) {
-  const isList = Tag === 'ul' || Tag === 'ol';
+  const isList = Tag === "ul" || Tag === "ol";
   return (
     <Tag
       id={id}
-      role={role ?? (isList ? 'list' : undefined)}
+      role={role ?? (isList ? "list" : undefined)}
       aria-label={label}
       aria-labelledby={labelledBy}
-      className={cn('grid', styles.cols[cols], styles.gap[gap], className)}
+      className={cn("grid", styles.cols[cols], styles.gap[gap], className)}
     >
       {children}
     </Tag>
@@ -269,16 +287,16 @@ export function Grid({
  * Use `as="span"` inside a heading block where a separator would be noise.
  */
 export function Rule({
-  weight = 'edge',
-  as: Tag = 'hr',
+  weight = "edge",
+  as: Tag = "hr",
   className,
 }: {
   weight?: keyof typeof styles.rule;
-  as?: 'hr' | 'div' | 'span';
+  as?: "hr" | "div" | "span";
   className?: string;
 }) {
-  const classes = cn(styles.rule[weight], Tag !== 'hr' && 'block', className);
-  if (Tag === 'hr') return <hr className={classes} />;
+  const classes = cn(styles.rule[weight], Tag !== "hr" && "block", className);
+  if (Tag === "hr") return <hr className={classes} />;
   return <Tag aria-hidden="true" className={classes} />;
 }
 
@@ -303,7 +321,7 @@ export function SectionHeading({
   eyebrow,
   title,
   lead,
-  as: Tag = 'h2',
+  as: Tag = "h2",
   size,
   id,
   className,
@@ -313,9 +331,9 @@ export function SectionHeading({
   title: string;
   lead?: string | null;
   /** The element, i.e. the position in the document outline. */
-  as?: 'h1' | 'h2' | 'h3';
+  as?: "h1" | "h2" | "h3";
   /** The visual size, independent of the element. Defaults to matching `as`. */
-  size?: 'h1' | 'h2' | 'h3' | 'h4';
+  size?: "h1" | "h2" | "h3" | "h4";
   id?: string;
   className?: string;
   /** A link or button rendered on the inline-end side of the heading row. */
@@ -323,12 +341,15 @@ export function SectionHeading({
 }) {
   const visual = size ?? Tag;
   return (
-    <div className={cn('mbe-8', className)}>
+    <div className={cn("mbe-8", className)}>
       {eyebrow ? <Eyebrow className="mbe-3">{eyebrow}</Eyebrow> : null}
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Tag id={id} className={cn('font-semibold text-ink', styles.headingSize[visual])}>
+          <Tag
+            id={id}
+            className={cn("font-semibold text-ink", styles.headingSize[visual])}
+          >
             {title}
           </Tag>
           <Rule weight="mark" as="span" className="mbs-3" />
@@ -356,7 +377,7 @@ export function PageHeader({
   breadcrumbs,
   meta,
   actions,
-  as: Tag = 'h1',
+  as: Tag = "h1",
   id,
   className,
   style,
@@ -367,13 +388,13 @@ export function PageHeader({
   breadcrumbs?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
-  as?: 'h1' | 'h2';
+  as?: "h1" | "h2";
   id?: string;
   className?: string;
   style?: CSSProperties;
 }) {
   return (
-    <header className={cn('mbe-10', className)} style={style}>
+    <header className={cn("mbe-10", className)} style={style}>
       {breadcrumbs ? <div className="mbe-6">{breadcrumbs}</div> : null}
       {eyebrow ? <Eyebrow className="mbe-3">{eyebrow}</Eyebrow> : null}
 

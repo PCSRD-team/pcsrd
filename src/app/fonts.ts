@@ -1,4 +1,4 @@
-import { IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { Almarai, IBM_Plex_Mono } from "next/font/google";
 
 /**
  * The two faces, defined once.
@@ -21,21 +21,18 @@ import { IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google';
  * because module evaluation is cached.
  */
 
-export const plexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic', 'latin'],
-  // No 700: nothing sets it (the heaviest weight in the design is semibold,
-  // and globals.css maps <strong>/<b>/<th> to 600), and each weight is a
-  // separate download per subset.
-  weight: ['400', '500', '600'],
-  variable: '--font-plex-arabic',
-  display: 'swap',
+export const plexArabic = Almarai({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  variable: "--font-plex-arabic",
+  display: "swap",
 });
 
 export const plexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-plex-mono',
-  display: 'swap',
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-mono",
+  display: "swap",
   // Not preloaded: mono is eyebrows, codes and dates — never the first text
   // a reader needs — and a preload competes with the Arabic text face for the
   // first round trips on a slow connection. `swap` covers the gap.

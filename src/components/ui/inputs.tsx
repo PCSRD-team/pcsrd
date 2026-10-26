@@ -1,6 +1,6 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
-import { cn } from '@/lib/utils';
-import { describedBy, errorText, Fieldset } from './field';
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { describedBy, errorText, Fieldset } from "./field";
 
 /**
  * Form controls.
@@ -32,7 +32,7 @@ import { describedBy, errorText, Fieldset } from './field';
  */
 
 /** Text typed left-to-right whatever the page direction: an address, a URL, a number. */
-const latinTypes = new Set(['email', 'url', 'tel', 'number', 'password']);
+const latinTypes = new Set(["email", "url", "tel", "number", "password"]);
 
 type CommonControl = {
   /** The posted field name. Omit for a control that is deliberately not posted. */
@@ -58,8 +58,8 @@ function controlIdOf(id: string | undefined, name: string | undefined) {
 // ── Input ────────────────────────────────────────────────────────────────
 
 type NativeInput = Omit<
-  ComponentPropsWithoutRef<'input'>,
-  'name' | 'className' | 'id' | 'aria-invalid' | 'aria-describedby'
+  ComponentPropsWithoutRef<"input">,
+  "name" | "className" | "id" | "aria-invalid" | "aria-describedby"
 >;
 
 export function Input({
@@ -68,7 +68,7 @@ export function Input({
   hint,
   error,
   className,
-  type = 'text',
+  type = "text",
   dir,
   ...rest
 }: NativeInput & CommonControl) {
@@ -83,10 +83,12 @@ export function Input({
       type={type}
       // Latin text in an otherwise-RTL form: an email or a URL typed into a
       // right-aligned field is unreadable while being typed.
-      dir={dir ?? (latin ? 'ltr' : undefined)}
+      dir={dir ?? (latin ? "ltr" : undefined)}
       aria-invalid={message ? true : undefined}
-      aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
-      className={cn('control', latin && 'text-start', className)}
+      aria-describedby={
+        controlId ? describedBy(controlId, hint, message) : undefined
+      }
+      className={cn("control", latin && "text-start", className)}
     />
   );
 }
@@ -94,8 +96,8 @@ export function Input({
 // ── Textarea ─────────────────────────────────────────────────────────────
 
 type NativeTextarea = Omit<
-  ComponentPropsWithoutRef<'textarea'>,
-  'name' | 'className' | 'id' | 'aria-invalid' | 'aria-describedby'
+  ComponentPropsWithoutRef<"textarea">,
+  "name" | "className" | "id" | "aria-invalid" | "aria-describedby"
 >;
 
 export function Textarea({
@@ -116,8 +118,10 @@ export function Textarea({
       name={name}
       rows={rows}
       aria-invalid={message ? true : undefined}
-      aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
-      className={cn('control min-h-32 resize-y', className)}
+      aria-describedby={
+        controlId ? describedBy(controlId, hint, message) : undefined
+      }
+      className={cn("control min-h-32 resize-y", className)}
     />
   );
 }
@@ -127,8 +131,8 @@ export function Textarea({
 export type Option = { value: string; label: string; disabled?: boolean };
 
 type NativeSelect = Omit<
-  ComponentPropsWithoutRef<'select'>,
-  'name' | 'className' | 'id' | 'aria-invalid' | 'aria-describedby' | 'children'
+  ComponentPropsWithoutRef<"select">,
+  "name" | "className" | "id" | "aria-invalid" | "aria-describedby" | "children"
 >;
 
 /**
@@ -143,13 +147,14 @@ export function Select({
   error,
   className,
   options,
-  placeholder = '—',
+  placeholder = "—",
   multiple,
   value,
   defaultValue,
   required,
   ...rest
-}: NativeSelect & CommonControl & { options: Option[]; placeholder?: string | null }) {
+}: NativeSelect &
+  CommonControl & { options: Option[]; placeholder?: string | null }) {
   const message = errorText(error);
   const controlId = controlIdOf(id, name);
   return (
@@ -163,11 +168,17 @@ export function Select({
       // A single select falls back to the empty placeholder option so it opens
       // on "—" rather than the first real choice. A *controlled* select gets
       // neither fallback: React refuses `value` and `defaultValue` together.
-      defaultValue={value === undefined ? (defaultValue ?? (multiple ? undefined : '')) : undefined}
+      defaultValue={
+        value === undefined
+          ? (defaultValue ?? (multiple ? undefined : ""))
+          : undefined
+      }
       size={multiple ? Math.min(Math.max(options.length, 2), 6) : undefined}
       aria-invalid={message ? true : undefined}
-      aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
-      className={cn('control', className)}
+      aria-describedby={
+        controlId ? describedBy(controlId, hint, message) : undefined
+      }
+      className={cn("control", className)}
     >
       {!multiple && placeholder !== null ? (
         <option value="" disabled={required}>
@@ -175,7 +186,11 @@ export function Select({
         </option>
       ) : null}
       {options.map((option) => (
-        <option key={option.value} value={option.value} disabled={option.disabled}>
+        <option
+          key={option.value}
+          value={option.value}
+          disabled={option.disabled}
+        >
           {option.label}
         </option>
       ))}
@@ -186,8 +201,8 @@ export function Select({
 // ── Checkbox / Radio ─────────────────────────────────────────────────────
 
 type NativeChoice = Omit<
-  ComponentPropsWithoutRef<'input'>,
-  'name' | 'className' | 'id' | 'type' | 'aria-describedby' | 'children'
+  ComponentPropsWithoutRef<"input">,
+  "name" | "className" | "id" | "type" | "aria-describedby" | "children"
 >;
 
 /**
@@ -219,14 +234,14 @@ export function Checkbox({
   const controlId = controlIdOf(id, name);
   const message = errorText(error);
   return (
-    <div className={cn('space-y-1', className)}>
+    <div className={cn("space-y-1", className)}>
       {/* The label activates the box, so it is part of the target and carries
           the same pointer. `has-[:disabled]` keeps the two in step without the
           caller having to mirror the flag. */}
       <label
         className={cn(
-          'flex min-h-target cursor-pointer items-start gap-3 py-2 text-small text-ink',
-          'has-[:disabled]:cursor-not-allowed has-[:disabled]:text-ink-55',
+          "flex min-h-target cursor-pointer items-start gap-3 py-2 text-small text-ink",
+          "has-[:disabled]:cursor-not-allowed has-[:disabled]:text-ink-55",
         )}
       >
         <input
@@ -235,20 +250,25 @@ export function Checkbox({
           name={name}
           type="checkbox"
           aria-invalid={message ? true : undefined}
-          aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
+          aria-describedby={
+            controlId ? describedBy(controlId, hint, message) : undefined
+          }
           className="control-choice mbs-1"
         />
         <span>{label}</span>
       </label>
       {hint ? (
-        <p id={controlId ? `${controlId}-hint` : undefined} className="ps-8 text-caption text-ink-55">
+        <p
+          id={controlId ? `${controlId}-hint` : undefined}
+          className="ps-8 text-caption text-ink-55"
+        >
           {hint}
         </p>
       ) : null}
       {message ? (
         <p
           id={controlId ? `${controlId}-error` : undefined}
-          role={announce ? 'alert' : undefined}
+          role={announce ? "alert" : undefined}
           className="ps-8 text-caption text-destructive"
         >
           {message}
@@ -268,17 +288,21 @@ function ChoiceList({
   disabled,
 }: {
   name: string;
-  type: 'checkbox' | 'radio';
+  type: "checkbox" | "radio";
   options: Option[];
   defaultValue?: string | string[];
   columns?: 1 | 2;
   disabled?: boolean;
 }) {
   const selected = new Set(
-    Array.isArray(defaultValue) ? defaultValue : defaultValue ? [defaultValue] : [],
+    Array.isArray(defaultValue)
+      ? defaultValue
+      : defaultValue
+        ? [defaultValue]
+        : [],
   );
   return (
-    <ul className={cn('grid gap-1', columns === 2 && 'sm:grid-cols-2')}>
+    <ul className={cn("grid gap-1", columns === 2 && "sm:grid-cols-2")}>
       {options.map((option) => {
         const isDisabled = Boolean(disabled || option.disabled);
         return (
@@ -288,8 +312,12 @@ function ChoiceList({
                 unavailable so the state reads before the click. */}
             <label
               className={cn(
-                'flex min-h-target items-center gap-3 py-2 text-small',
-                isDisabled ? 'cursor-not-allowed text-ink-55' : 'cursor-pointer text-ink',
+                "flex min-h-target items-center gap-3 border border-[var(--color-hairline)] px-3 py-2 text-small transition-colors",
+                isDisabled
+                  ? "cursor-not-allowed text-ink-55"
+                  : "cursor-pointer text-ink",
+                !isDisabled &&
+                  "has-[:checked]:border-[color-mix(in_srgb,var(--color-gold-600)_45%,var(--color-paper))] has-[:checked]:bg-gold-050 has-[:checked]:text-gold-700",
               )}
             >
               <input
@@ -431,7 +459,7 @@ export function FileInput({
   className,
   accept,
   ...rest
-}: Omit<NativeInput, 'type' | 'dir'> & CommonControl) {
+}: Omit<NativeInput, "type" | "dir"> & CommonControl) {
   const message = errorText(error);
   const controlId = controlIdOf(id, name);
   return (
@@ -443,8 +471,10 @@ export function FileInput({
       accept={accept}
       dir="ltr"
       aria-invalid={message ? true : undefined}
-      aria-describedby={controlId ? describedBy(controlId, hint, message) : undefined}
-      className={cn('control-file text-start', className)}
+      aria-describedby={
+        controlId ? describedBy(controlId, hint, message) : undefined
+      }
+      className={cn("control-file text-start", className)}
     />
   );
 }
@@ -458,11 +488,20 @@ export function FileInput({
  * turning a real submission into a silent discard. The field name is the
  * caller's so the action and the form agree on it.
  */
-export function Honeypot({ name = 'website' }: { name?: string }) {
+export function Honeypot({ name = "website" }: { name?: string }) {
   return (
-    <div aria-hidden="true" className="absolute -inset-x-[9999px] size-px overflow-hidden">
+    <div
+      aria-hidden="true"
+      className="absolute -inset-x-[9999px] size-px overflow-hidden"
+    >
       <label htmlFor={name}>{name}</label>
-      <input id={name} name={name} type="text" tabIndex={-1} autoComplete="off" />
+      <input
+        id={name}
+        name={name}
+        type="text"
+        tabIndex={-1}
+        autoComplete="off"
+      />
     </div>
   );
 }
